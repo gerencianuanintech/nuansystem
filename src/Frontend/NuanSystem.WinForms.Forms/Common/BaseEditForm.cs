@@ -9,7 +9,7 @@ public class BaseEditForm : XtraForm
     private static readonly AsyncLocal<bool> ReadOnlyModeScope = new();
     private readonly DXErrorProvider errorProvider;
 
-    protected BaseEditForm()
+    public BaseEditForm()
     {
         errorProvider = new DXErrorProvider
         {

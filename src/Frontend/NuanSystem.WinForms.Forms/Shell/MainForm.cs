@@ -11,6 +11,7 @@ using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Forms.ConfigurationCompanies;
 using NuanSystem.WinForms.Forms.Customers;
 using NuanSystem.WinForms.Forms.Documents;
+using NuanSystem.WinForms.Forms.GeneralInventory.ItemGroups;
 using NuanSystem.WinForms.Forms.InventoryItems;
 using NuanSystem.WinForms.Forms.Roles;
 using NuanSystem.WinForms.Forms.Sap;
@@ -45,6 +46,7 @@ public sealed class MainForm : RibbonForm
     private readonly Func<FieldsForm> fieldsFormFactory;
     private readonly Func<RoleAccessForm> roleAccessFormFactory;
     private readonly Func<CustomersForm> customersFormFactory;
+    private readonly Func<ItemGroupsForm> itemGroupsFormFactory;
     private readonly Func<ItemsForm> itemsFormFactory;
     private readonly Func<DocumentsForm> documentsFormFactory;
     private readonly Func<SapSyncLogForm> sapSyncLogFormFactory;
@@ -90,6 +92,7 @@ public sealed class MainForm : RibbonForm
         fieldsFormFactory = null!;
         roleAccessFormFactory = null!;
         customersFormFactory = null!;
+        itemGroupsFormFactory = null!;
         itemsFormFactory = null!;
         documentsFormFactory = null!;
         sapSyncLogFormFactory = null!;
@@ -109,6 +112,7 @@ public sealed class MainForm : RibbonForm
         Func<FieldsForm> fieldsFormFactory,
         Func<RoleAccessForm> roleAccessFormFactory,
         Func<CustomersForm> customersFormFactory,
+        Func<ItemGroupsForm> itemGroupsFormFactory,
         Func<ItemsForm> itemsFormFactory,
         Func<DocumentsForm> documentsFormFactory,
         Func<SapSyncLogForm> sapSyncLogFormFactory,
@@ -125,6 +129,7 @@ public sealed class MainForm : RibbonForm
         this.fieldsFormFactory = fieldsFormFactory;
         this.roleAccessFormFactory = roleAccessFormFactory;
         this.customersFormFactory = customersFormFactory;
+        this.itemGroupsFormFactory = itemGroupsFormFactory;
         this.itemsFormFactory = itemsFormFactory;
         this.documentsFormFactory = documentsFormFactory;
         this.sapSyncLogFormFactory = sapSyncLogFormFactory;
@@ -1285,6 +1290,7 @@ public sealed class MainForm : RibbonForm
             "security-fields" => fieldsFormFactory(),
             "security-access" => roleAccessFormFactory(),
             "customers" => customersFormFactory(),
+            "item-groups" => itemGroupsFormFactory(),
             "items" => itemsFormFactory(),
             "documents" => documentsFormFactory(),
             "sap" => sapSyncLogFormFactory(),

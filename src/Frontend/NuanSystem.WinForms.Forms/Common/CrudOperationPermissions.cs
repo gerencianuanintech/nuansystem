@@ -19,4 +19,10 @@ public sealed record CrudOperationPermissions(
         PermissionCodes.ItemsManage,
         PermissionCodes.ItemsManage,
         PermissionCodes.ItemsManage);
+
+    public static CrudOperationPermissions ItemGroups { get; } = new(
+        PermissionCodes.ItemsRead,
+        PermissionCodes.ItemsManage,
+        PermissionCodes.ItemsManage,
+        PermissionCodes.ItemsManage);
 }

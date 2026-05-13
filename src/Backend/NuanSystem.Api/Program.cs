@@ -16,6 +16,8 @@ using NuanSystem.Application.Features.Documents.Commands;
 using NuanSystem.Application.Features.Documents.Queries;
 using NuanSystem.Application.Features.Items.Commands;
 using NuanSystem.Application.Features.Items.Queries;
+using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Commands;
+using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Queries;
 using NuanSystem.Application.Features.SapSync.Commands;
 using NuanSystem.Application.Features.SapSync.Queries;
 using NuanSystem.Application.Features.Settings.Commands;
@@ -473,6 +475,67 @@ try
     {
         var auditUser = GetAuditUser(user);
         var result = await sender.Send(new DeleteItemCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
+
+        return result.ToHttpResult();
+    })
+    .RequirePermission(PermissionCodes.ItemsManage);
+
+    app.MapGet("/api/item-groups", async (
+        ISender sender,
+        CancellationToken cancellationToken) =>
+    {
+        var result = await sender.Send(new GetItemGroupsQuery(), cancellationToken);
+
+        return result.ToHttpResult();
+    })
+    .RequirePermission(PermissionCodes.ItemsRead);
+
+    app.MapGet("/api/item-groups/{id:int}", async (
+        int id,
+        ISender sender,
+        CancellationToken cancellationToken) =>
+    {
+        var result = await sender.Send(new GetItemGroupByIdQuery(id), cancellationToken);
+
+        return result.ToHttpResult();
+    })
+    .RequirePermission(PermissionCodes.ItemsRead);
+
+    app.MapPost("/api/item-groups", async (
+        CreateItemGroupCommand command,
+        ISender sender,
+        ClaimsPrincipal user,
+        CancellationToken cancellationToken) =>
+    {
+        var auditUser = GetAuditUser(user);
+        var result = await sender.Send(command with { AuditUserId = auditUser.UserId, AuditUserName = auditUser.UserName }, cancellationToken);
+
+        return result.ToHttpResult();
+    })
+    .RequirePermission(PermissionCodes.ItemsManage);
+
+    app.MapPut("/api/item-groups/{id:int}", async (
+        int id,
+        UpdateItemGroupCommand command,
+        ISender sender,
+        ClaimsPrincipal user,
+        CancellationToken cancellationToken) =>
+    {
+        var auditUser = GetAuditUser(user);
+        var result = await sender.Send(command with { Id = id, AuditUserId = auditUser.UserId, AuditUserName = auditUser.UserName }, cancellationToken);
+
+        return result.ToHttpResult();
+    })
+    .RequirePermission(PermissionCodes.ItemsManage);
+
+    app.MapDelete("/api/item-groups/{id:int}", async (
+        int id,
+        ISender sender,
+        ClaimsPrincipal user,
+        CancellationToken cancellationToken) =>
+    {
+        var auditUser = GetAuditUser(user);
+        var result = await sender.Send(new DeleteItemGroupCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
 
         return result.ToHttpResult();
     })

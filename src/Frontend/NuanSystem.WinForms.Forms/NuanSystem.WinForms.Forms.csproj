@@ -14,33 +14,43 @@
   <ItemGroup>
     <Reference Include="DevExpress.Data.v25.2">
       <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.Data.v25.2.dll</HintPath>
+      <Private>true</Private>
     </Reference>
     <Reference Include="DevExpress.Drawing.v25.2">
       <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.Drawing.v25.2.dll</HintPath>
+      <Private>true</Private>
     </Reference>
     <Reference Include="DevExpress.Utils.v25.2">
       <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.Utils.v25.2.dll</HintPath>
+      <Private>true</Private>
     </Reference>
     <Reference Include="DevExpress.Utils.v25.2.UI">
       <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.Utils.v25.2.UI.dll</HintPath>
+      <Private>true</Private>
     </Reference>
     <Reference Include="DevExpress.Images.v25.2">
       <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.Images.v25.2.dll</HintPath>
+      <Private>true</Private>
     </Reference>
     <Reference Include="DevExpress.XtraEditors.v25.2">
       <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.XtraEditors.v25.2.dll</HintPath>
+      <Private>true</Private>
     </Reference>
     <Reference Include="DevExpress.XtraBars.v25.2">
       <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.XtraBars.v25.2.dll</HintPath>
+      <Private>true</Private>
     </Reference>
     <Reference Include="DevExpress.XtraGrid.v25.2">
       <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.XtraGrid.v25.2.dll</HintPath>
+      <Private>true</Private>
     </Reference>
     <Reference Include="DevExpress.XtraPrinting.v25.2">
       <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.XtraPrinting.v25.2.dll</HintPath>
+      <Private>true</Private>
     </Reference>
     <Reference Include="DevExpress.XtraReports.v25.2">
       <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.XtraReports.v25.2.dll</HintPath>
+      <Private>true</Private>
     </Reference>
   </ItemGroup>
 
@@ -49,6 +59,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
 
