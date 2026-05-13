@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\NuanSystem.WinForms.Services\NuanSystem.WinForms.Services.csproj" />
+    <ProjectReference Include="..\NuanSystem.WinForms.ViewModels\NuanSystem.WinForms.ViewModels.csproj" />
+    <ProjectReference Include="..\NuanSystem.WinForms.Forms\NuanSystem.WinForms.Forms.csproj" />
+    <ProjectReference Include="..\NuanSystem.WinForms.Controls\NuanSystem.WinForms.Controls.csproj" />
+    <ProjectReference Include="..\..\Backend\NuanSystem.Shared\NuanSystem.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="DevExpress.Data.v24.2">
+      <HintPath>C:\Program Files\DevExpress 24.2\Components\Bin\NetCore\DevExpress.Data.v24.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Drawing.v24.2">
+      <HintPath>C:\Program Files\DevExpress 24.2\Components\Bin\NetCore\DevExpress.Drawing.v24.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Utils.v24.2">
+      <HintPath>C:\Program Files\DevExpress 24.2\Components\Bin\NetCore\DevExpress.Utils.v24.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Utils.v24.2.UI">
+      <HintPath>C:\Program Files\DevExpress 24.2\Components\Bin\NetCore\DevExpress.Utils.v24.2.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraEditors.v24.2">
+      <HintPath>C:\Program Files\DevExpress 24.2\Components\Bin\NetCore\DevExpress.XtraEditors.v24.2.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

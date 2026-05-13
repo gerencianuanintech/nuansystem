@@ -1,0 +1,26 @@
+namespace NuanSystem.Application.Features.ConfigurationSettings.Dtos;
+
+public sealed record ConfigurationSettingDto(
+    int Id,
+    int CompanyId,
+    string Key,
+    string? Value,
+    string? Description,
+    string DataType,
+    string? Category,
+    bool IsEncrypted,
+    bool IsSystemParameter,
+    bool IsEditable,
+    int DisplayOrder,
+    string? DefaultValue,
+    string? ValidationExpression,
+    bool IsActive,
+    int? CreatedByUserId,
+    string? CreatedByUserName,
+    DateTime CreatedAt,
+    int? UpdatedByUserId,
+    string? UpdatedByUserName,
+    DateTime? UpdatedAt,
+    int? DeletedByUserId,
+    string? DeletedByUserName,
+    DateTime? DeletedAt);

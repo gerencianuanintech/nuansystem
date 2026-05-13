@@ -1,0 +1,31 @@
+using NuanSystem.Domain.Tenancy;
+
+namespace NuanSystem.Application.Features.ConfigurationCompanies.Dtos;
+
+public sealed record UpdateConfigurationCompanyData(
+    int Id,
+    string Code,
+    string CommercialName,
+    string? LegalName,
+    string? TaxIdentification,
+    string? Address,
+    string? Phone,
+    string? Email,
+    byte[]? LogoImage,
+    string? LogoImageContentType,
+    string? LogoImageFileName,
+    DatabaseEngine DatabaseEngine,
+    string Server,
+    int? Port,
+    string DatabaseName,
+    string DatabaseUser,
+    string? DatabasePasswordEncrypted,
+    bool IsActive,
+    SapIntegrationMode SapIntegrationMode,
+    int DisplayOrder,
+    bool IsDefault,
+    string TimeZoneId,
+    string CultureCode,
+    string CurrencyCode,
+    int? UpdatedByUserId,
+    string? UpdatedByUserName);

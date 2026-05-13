@@ -1,0 +1,27 @@
+namespace NuanSystem.WinForms.Services.ConfigurationCompanies.Models;
+
+public sealed record SaveConfigurationCompanyRequest(
+    string Code,
+    string CommercialName,
+    string? LegalName,
+    string? TaxIdentification,
+    string? Address,
+    string? Phone,
+    string? Email,
+    byte[]? LogoImage,
+    string? LogoImageContentType,
+    string? LogoImageFileName,
+    int DatabaseEngine,
+    string Server,
+    int? Port,
+    string DatabaseName,
+    string DatabaseUser,
+    string? DatabasePassword,
+    bool ValidateConnection,
+    bool IsActive,
+    int SapIntegrationMode,
+    int DisplayOrder,
+    bool IsDefault,
+    string TimeZoneId,
+    string CultureCode,
+    string CurrencyCode);

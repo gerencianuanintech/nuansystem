@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\NuanSystem.WinForms.Services\NuanSystem.WinForms.Services.csproj" />
+    <ProjectReference Include="..\NuanSystem.WinForms.ViewModels\NuanSystem.WinForms.ViewModels.csproj" />
+    <ProjectReference Include="..\NuanSystem.WinForms.Forms\NuanSystem.WinForms.Forms.csproj" />
+    <ProjectReference Include="..\NuanSystem.WinForms.Controls\NuanSystem.WinForms.Controls.csproj" />
+    <ProjectReference Include="..\..\Backend\NuanSystem.Shared\NuanSystem.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="DevExpress.Data.v25.2">
+      <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.Data.v25.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Drawing.v25.2">
+      <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.Drawing.v25.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Utils.v25.2">
+      <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.Utils.v25.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.Utils.v25.2.UI">
+      <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.Utils.v25.2.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraEditors.v25.2">
+      <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.XtraEditors.v25.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.DataAccess.v25.2">
+      <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.DataAccess.v25.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraPrinting.v25.2">
+      <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.XtraPrinting.v25.2.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraReports.v25.2">
+      <HintPath>C:\Program Files\DevExpress 25.2\Components\Bin\NetCore\DevExpress.XtraReports.v25.2.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <Analyzer Include="C:\Program Files\DevExpress 25.2\Components\Offline Packages\devexpress.data\25.2.6-pre-26075\analyzers\dotnet\DevExpress.Generator.dll" Visible="false" Condition="Exists('C:\Program Files\DevExpress 25.2\Components\Offline Packages\devexpress.data\25.2.6-pre-26075\analyzers\dotnet\DevExpress.Generator.dll')" />
+  </ItemGroup>
+</Project>

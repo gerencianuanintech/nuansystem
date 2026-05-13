@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="14.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NuanSystem.Application\NuanSystem.Application.csproj" />
+    <ProjectReference Include="..\NuanSystem.Infrastructure\NuanSystem.Infrastructure.csproj" />
+    <ProjectReference Include="..\NuanSystem.Persistence\NuanSystem.Persistence.csproj" />
+    <ProjectReference Include="..\NuanSystem.SapIntegration\NuanSystem.SapIntegration.csproj" />
+    <ProjectReference Include="..\NuanSystem.Shared\NuanSystem.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

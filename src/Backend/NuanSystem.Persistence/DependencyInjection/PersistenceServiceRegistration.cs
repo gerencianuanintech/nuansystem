@@ -1,0 +1,60 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using NuanSystem.Application.Abstractions.Data;
+using NuanSystem.Application.Abstractions.Authentication;
+using NuanSystem.Application.Abstractions.Tenancy;
+using NuanSystem.Application.Abstractions.Sap;
+using NuanSystem.Persistence.Connections;
+using NuanSystem.Persistence.Options;
+using NuanSystem.Persistence.Repositories;
+using NuanSystem.Persistence.Security;
+using NuanSystem.Persistence.Services;
+using NuanSystem.Persistence.Tenancy;
+
+namespace NuanSystem.Persistence.DependencyInjection;
+
+public static class PersistenceServiceRegistration
+{
+    public static IServiceCollection AddPersistenceServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<MasterDatabaseOptions>(options =>
+        {
+            options.DatabaseName = configuration[$"{MasterDatabaseOptions.SectionName}:DatabaseName"]
+                ?? options.DatabaseName;
+        });
+
+        services.AddSingleton<IMasterDatabaseInitializer, SqlServerMasterDatabaseInitializer>();
+        services.AddScoped<ICompanyContext, CompanyContext>();
+        services.AddScoped<MasterConnectionFactory>();
+        services.AddScoped<IMasterConnectionFactory>(provider => provider.GetRequiredService<MasterConnectionFactory>());
+        services.AddScoped<ITenantConnectionFactory, TenantConnectionFactory>();
+        services.AddScoped<ITenantDatabaseInitializer, SqlServerTenantDatabaseInitializer>();
+        services.AddScoped<ICompanyResolver, SqlServerCompanyResolver>();
+        services.AddScoped<ITenantConnectionStringResolver, TenantConnectionStringResolver>();
+        services.AddScoped<IAuthService, SqlServerAuthService>();
+        services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<ICompanyAdminRepository, CompanyAdminRepository>();
+        services.AddScoped<IConfigurationCompanyRepository, ConfigurationCompanyRepository>();
+        services.AddScoped<ICompanyConnectionTester, SqlServerCompanyConnectionTester>();
+        services.AddScoped<IItemRepository, ItemRepository>();
+        services.AddScoped<IDocumentRepository, DocumentRepository>();
+        services.AddScoped<ISapSyncLogRepository, SapSyncLogRepository>();
+        services.AddScoped<ICompanyParameterRepository, CompanyParameterRepository>();
+        services.AddScoped<IConfigurationSettingRepository, ConfigurationSettingRepository>();
+        services.AddScoped<IUserAdminRepository, UserAdminRepository>();
+        services.AddScoped<IRoleAdminRepository, RoleAdminRepository>();
+        services.AddScoped<ISecurityRoleRepository, SecurityRoleRepository>();
+        services.AddScoped<ISecurityOperationRepository, SecurityOperationRepository>();
+        services.AddScoped<ISecurityMenuRepository, SecurityMenuRepository>();
+        services.AddScoped<ISecurityFormRepository, SecurityFormRepository>();
+        services.AddScoped<ISecurityFieldRepository, SecurityFieldRepository>();
+        services.AddScoped<ISecurityAccessRepository, SecurityAccessRepository>();
+        services.AddScoped<IGridColumnSettingsRepository, GridColumnSettingsRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+        services.AddScoped<IInventoryAuditRepository, InventoryAuditRepository>();
+
+        return services;
+    }
+}
