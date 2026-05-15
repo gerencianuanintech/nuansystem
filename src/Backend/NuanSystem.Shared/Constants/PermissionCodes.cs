@@ -10,6 +10,8 @@ public static class PermissionCodes
     public const string CustomersManage = "CATALOG.CUSTOMERS.MANAGE";
     public const string ItemsRead = "CATALOG.ITEMS.READ";
     public const string ItemsManage = "CATALOG.ITEMS.MANAGE";
+    public const string AccountingRead = "ACCOUNTING.CHARTOFACCOUNTS.READ";
+    public const string AccountingManage = "ACCOUNTING.CHARTOFACCOUNTS.MANAGE";
     public const string DocumentsRead = "SALES.DOCUMENTS.READ";
     public const string DocumentsManage = "SALES.DOCUMENTS.MANAGE";
     public const string SapRead = "SAP.SYNC.READ";
@@ -26,6 +28,8 @@ public static class PermissionCodes
         CustomersManage,
         ItemsRead,
         ItemsManage,
+        AccountingRead,
+        AccountingManage,
         DocumentsRead,
         DocumentsManage,
         SapRead,

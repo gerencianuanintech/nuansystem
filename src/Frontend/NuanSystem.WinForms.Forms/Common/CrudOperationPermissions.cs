@@ -25,4 +25,10 @@ public sealed record CrudOperationPermissions(
         PermissionCodes.ItemsManage,
         PermissionCodes.ItemsManage,
         PermissionCodes.ItemsManage);
+
+    public static CrudOperationPermissions ChartOfAccounts { get; } = new(
+        PermissionCodes.AccountingRead,
+        PermissionCodes.AccountingManage,
+        PermissionCodes.AccountingManage,
+        PermissionCodes.AccountingManage);
 }

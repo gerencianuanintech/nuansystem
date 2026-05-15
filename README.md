@@ -22,6 +22,7 @@ Solucion empresarial modular para API REST .NET, frontend Windows Forms con DevE
 ## Documentacion
 
 - `docs/ARCHITECTURE.md`: vision general de capas, flujo multiempresa y reglas de dependencia.
+- `docs/ARQUITECTURA-COMERCIAL.md`: direccion tecnica para evolucionar hacia una plataforma comercial multi-giro con capacidades configurables, inventario, ventas, compras, caja, precios y transacciones.
 - `docs/FASE-1-BASE-TECNICA.md`: detalle de lo implementado en la Fase 1.
 - `docs/FASE-2-MULTIEMPRESA.md`: detalle de la arquitectura multiempresa y resolucion de tenant.
 - `docs/FASE-3-SEGURIDAD.md`: autenticacion JWT, roles, permisos y empresas por usuario.

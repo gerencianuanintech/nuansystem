@@ -1,0 +1,28 @@
+namespace NuanSystem.Application.Features.Accounting.ChartOfAccounts.Dtos;
+
+public sealed record UpdateChartOfAccountData(
+    int Id,
+    int CompanyId,
+    string Code,
+    string Name,
+    string? Description,
+    string? ExternalCode,
+    string AccountType,
+    string? AccountClass,
+    int? ParentAccountId,
+    bool IsTitle,
+    bool AllowsMovement,
+    bool IsActive,
+    string? CurrencyCode,
+    decimal Balance,
+    bool IsConfidential,
+    bool IsMonetaryAccount,
+    bool IsAssociatedAccount,
+    bool RevalueByIndex,
+    bool BlockManualPosting,
+    bool RelevantForCashFlow,
+    bool RequiresCostCenter,
+    bool RequiresThirdParty,
+    bool RequiresProject,
+    int? UpdatedByUserId,
+    string? UpdatedByUserName);

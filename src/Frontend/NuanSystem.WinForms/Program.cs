@@ -1,4 +1,5 @@
 ﻿using NuanSystem.WinForms.Forms.Audit;
+using NuanSystem.WinForms.Forms.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.Forms.Auth;
 using NuanSystem.WinForms.Forms.ConfigurationCompanies;
 using NuanSystem.WinForms.Forms.Customers;
@@ -19,6 +20,7 @@ using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Forms.GeneralInventory.ItemFamilies;
 using NuanSystem.WinForms.Forms.GeneralInventory.ItemGroups;
 using NuanSystem.WinForms.Services.Audit;
+using NuanSystem.WinForms.Services.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.Services.Authentication;
 using NuanSystem.WinForms.Services.Companies;
 using NuanSystem.WinForms.Services.ConfigurationCompanies;
@@ -43,6 +45,7 @@ using NuanSystem.WinForms.Services.Session;
 using NuanSystem.WinForms.Services.Settings;
 using NuanSystem.WinForms.Services.SecurityUsers;
 using NuanSystem.WinForms.ViewModels.Audit;
+using NuanSystem.WinForms.ViewModels.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.ViewModels.Auth;
 using NuanSystem.WinForms.ViewModels.Companies;
 using NuanSystem.WinForms.ViewModels.ConfigurationCompanies;
@@ -119,6 +122,7 @@ internal sealed class FrontendComposition : IDisposable
     private readonly ConfigurationCompanyClient configurationCompanyClient;
     private readonly ConfigurationSettingClient configurationSettingClient;
     private readonly CustomerClient customerClient;
+    private readonly ChartOfAccountClient chartOfAccountClient;
     private readonly ItemGroupClient itemGroupClient;
     private readonly ItemFamilyClient itemFamilyClient;
     private readonly ItemClient itemClient;
@@ -150,6 +154,7 @@ internal sealed class FrontendComposition : IDisposable
         configurationCompanyClient = new ConfigurationCompanyClient(apiClient);
         configurationSettingClient = new ConfigurationSettingClient(apiClient);
         customerClient = new CustomerClient(apiClient);
+        chartOfAccountClient = new ChartOfAccountClient(apiClient);
         itemGroupClient = new ItemGroupClient(apiClient);
         itemFamilyClient = new ItemFamilyClient(apiClient);
         itemClient = new ItemClient(apiClient);
@@ -198,6 +203,7 @@ internal sealed class FrontendComposition : IDisposable
             CreateFieldsForm,
             CreateRoleAccessForm,
             CreateCustomersForm,
+            CreateChartOfAccountsForm,
             CreateItemGroupsForm,
             CreateItemFamiliesForm,
             CreateItemsForm,
@@ -215,6 +221,11 @@ internal sealed class FrontendComposition : IDisposable
     public CustomersForm CreateCustomersForm()
     {
         return new CustomersForm(new CustomersViewModel(customerClient), session);
+    }
+
+    public ChartOfAccountsForm CreateChartOfAccountsForm()
+    {
+        return new ChartOfAccountsForm(new ChartOfAccountsViewModel(chartOfAccountClient), session, gridColumnSettingsClient);
     }
 
     public ItemGroupsForm CreateItemGroupsForm()

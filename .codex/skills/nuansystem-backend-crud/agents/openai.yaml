@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem Backend CRUD"
+  short_description: "Backend CRUD NuanSystem"
+  default_prompt: "Implementa o modifica un mantenimiento backend de NuanSystem respetando Api/Application/Domain/Persistence, permisos, multiempresa, auditoria y Dapper con procedimientos almacenados."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem SQL Standards"
+  short_description: "SP y auditoria SQL para NuanSystem"
+  default_prompt: "Crea o ajusta scripts SQL de NuanSystem usando procedimientos almacenados, auditoria estandar, eliminacion logica y nomenclatura SP_NA."

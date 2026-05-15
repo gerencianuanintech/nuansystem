@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem WinForms DevExpress"
+  short_description: "UI WinForms DevExpress para NuanSystem"
+  default_prompt: "Implementa o ajusta pantallas WinForms de NuanSystem usando DevExpress, FormStyler, BrandResources, servicios HTTP y permisos del proyecto."

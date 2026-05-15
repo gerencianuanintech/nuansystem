@@ -114,6 +114,7 @@ public sealed class ShellViewModel
             new("Seguridad", "Campos", "Campos por formulario", "security-fields", [PermissionCodes.RolesManage]),
             new("Seguridad", "Accesos", "Accesos por rol", "security-access", [PermissionCodes.RolesManage]),
             new("Seguridad", "Auditoria", "Trazabilidad del sistema", "audit", [PermissionCodes.AuditRead]),
+            new("Contabilidad", "Plan de cuentas", "Plan de cuentas contable", "chart-of-accounts", [PermissionCodes.AccountingRead, PermissionCodes.AccountingManage]),
             new("Catalogos", "Clientes", "Catalogo de clientes", "customers", [PermissionCodes.CustomersRead, PermissionCodes.CustomersManage]),
             new("Inventario General", "Grupos de Artículos", "Maestro de grupos de artículos", "item-groups", [PermissionCodes.ItemsRead, PermissionCodes.ItemsManage]),
             new("Inventario General", "Lineas/Familias", "Maestro de lineas y familias", "item-families", [PermissionCodes.ItemsRead, PermissionCodes.ItemsManage]),

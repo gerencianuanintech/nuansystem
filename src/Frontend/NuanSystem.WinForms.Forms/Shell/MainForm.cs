@@ -7,6 +7,7 @@ using DevExpress.XtraBars.Ribbon;
 using DevExpress.XtraEditors;
 using DevExpress.XtraTab;
 using NuanSystem.WinForms.Forms.Audit;
+using NuanSystem.WinForms.Forms.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Forms.ConfigurationCompanies;
 using NuanSystem.WinForms.Forms.Customers;
@@ -47,6 +48,7 @@ public sealed class MainForm : RibbonForm
     private readonly Func<FieldsForm> fieldsFormFactory;
     private readonly Func<RoleAccessForm> roleAccessFormFactory;
     private readonly Func<CustomersForm> customersFormFactory;
+    private readonly Func<ChartOfAccountsForm> chartOfAccountsFormFactory;
     private readonly Func<ItemGroupsForm> itemGroupsFormFactory;
     private readonly Func<ItemFamiliesForm> itemFamiliesFormFactory;
     private readonly Func<ItemsForm> itemsFormFactory;
@@ -94,6 +96,7 @@ public sealed class MainForm : RibbonForm
         fieldsFormFactory = null!;
         roleAccessFormFactory = null!;
         customersFormFactory = null!;
+        chartOfAccountsFormFactory = null!;
         itemGroupsFormFactory = null!;
         itemFamiliesFormFactory = null!;
         itemsFormFactory = null!;
@@ -115,6 +118,7 @@ public sealed class MainForm : RibbonForm
         Func<FieldsForm> fieldsFormFactory,
         Func<RoleAccessForm> roleAccessFormFactory,
         Func<CustomersForm> customersFormFactory,
+        Func<ChartOfAccountsForm> chartOfAccountsFormFactory,
         Func<ItemGroupsForm> itemGroupsFormFactory,
         Func<ItemFamiliesForm> itemFamiliesFormFactory,
         Func<ItemsForm> itemsFormFactory,
@@ -133,6 +137,7 @@ public sealed class MainForm : RibbonForm
         this.fieldsFormFactory = fieldsFormFactory;
         this.roleAccessFormFactory = roleAccessFormFactory;
         this.customersFormFactory = customersFormFactory;
+        this.chartOfAccountsFormFactory = chartOfAccountsFormFactory;
         this.itemGroupsFormFactory = itemGroupsFormFactory;
         this.itemFamiliesFormFactory = itemFamiliesFormFactory;
         this.itemsFormFactory = itemsFormFactory;
@@ -1295,6 +1300,7 @@ public sealed class MainForm : RibbonForm
             "security-fields" => fieldsFormFactory(),
             "security-access" => roleAccessFormFactory(),
             "customers" => customersFormFactory(),
+            "chart-of-accounts" => chartOfAccountsFormFactory(),
             "item-groups" => itemGroupsFormFactory(),
             "item-families" => itemFamiliesFormFactory(),
             "items" => itemsFormFactory(),

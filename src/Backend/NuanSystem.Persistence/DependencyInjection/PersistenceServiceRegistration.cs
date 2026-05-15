@@ -10,6 +10,7 @@ using NuanSystem.Persistence.Repositories;
 using NuanSystem.Persistence.Security;
 using NuanSystem.Persistence.Services;
 using NuanSystem.Persistence.Tenancy;
+using NuanSystem.Persistence.Transactions;
 
 namespace NuanSystem.Persistence.DependencyInjection;
 
@@ -30,6 +31,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<MasterConnectionFactory>();
         services.AddScoped<IMasterConnectionFactory>(provider => provider.GetRequiredService<MasterConnectionFactory>());
         services.AddScoped<ITenantConnectionFactory, TenantConnectionFactory>();
+        services.AddScoped<ITransactionRunner, SqlTransactionRunner>();
         services.AddScoped<ITenantDatabaseInitializer, SqlServerTenantDatabaseInitializer>();
         services.AddScoped<ICompanyResolver, SqlServerCompanyResolver>();
         services.AddScoped<ITenantConnectionStringResolver, TenantConnectionStringResolver>();
@@ -41,6 +43,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IItemRepository, ItemRepository>();
         services.AddScoped<IItemGroupRepository, ItemGroupRepository>();
         services.AddScoped<IItemFamilyRepository, ItemFamilyRepository>();
+        services.AddScoped<IChartOfAccountRepository, ChartOfAccountRepository>();
         services.AddScoped<IDocumentRepository, DocumentRepository>();
         services.AddScoped<ISapSyncLogRepository, SapSyncLogRepository>();
         services.AddScoped<ICompanyParameterRepository, CompanyParameterRepository>();
