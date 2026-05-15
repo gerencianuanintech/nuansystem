@@ -116,6 +116,7 @@ public sealed class ShellViewModel
             new("Seguridad", "Auditoria", "Trazabilidad del sistema", "audit", [PermissionCodes.AuditRead]),
             new("Catalogos", "Clientes", "Catalogo de clientes", "customers", [PermissionCodes.CustomersRead, PermissionCodes.CustomersManage]),
             new("Inventario General", "Grupos de Artículos", "Maestro de grupos de artículos", "item-groups", [PermissionCodes.ItemsRead, PermissionCodes.ItemsManage]),
+            new("Inventario General", "Lineas/Familias", "Maestro de lineas y familias", "item-families", [PermissionCodes.ItemsRead, PermissionCodes.ItemsManage]),
             new("Catalogos", "Articulos", "Catalogo de articulos", "items", [PermissionCodes.ItemsRead, PermissionCodes.ItemsManage]),
             new("Ventas", "Documentos", "Documentos comerciales", "documents", [PermissionCodes.DocumentsRead, PermissionCodes.DocumentsManage]),
             new("SAP", "Integracion SAP", "Envio y bitacora SAP", "sap", [PermissionCodes.SapRead, PermissionCodes.SapManage]),

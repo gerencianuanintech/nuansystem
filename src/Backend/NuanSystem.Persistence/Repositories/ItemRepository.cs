@@ -52,6 +52,7 @@ public sealed class ItemRepository(ITenantConnectionFactory connectionFactory) :
 
         return new ItemLookupsDto(
             (await grid.ReadAsync<ItemGroupLookupDto>()).AsList(),
+            (await grid.ReadAsync<ItemFamilyLookupDto>()).AsList(),
             (await grid.ReadAsync<UnitOfMeasureLookupDto>()).AsList(),
             (await grid.ReadAsync<TaxLookupDto>()).AsList(),
             (await grid.ReadAsync<WarehouseLookupDto>()).AsList());
@@ -112,6 +113,7 @@ public sealed class ItemRepository(ITenantConnectionFactory connectionFactory) :
             item.Name,
             item.Description,
             item.ItemGroupId,
+            item.ItemFamilyId,
             item.ItemType,
             item.InventoryUnitOfMeasureId,
             item.PurchaseUnitOfMeasureId,
@@ -150,6 +152,7 @@ public sealed class ItemRepository(ITenantConnectionFactory connectionFactory) :
             item.Name,
             item.Description,
             item.ItemGroupId,
+            item.ItemFamilyId,
             item.ItemType,
             item.InventoryUnitOfMeasureId,
             item.PurchaseUnitOfMeasureId,

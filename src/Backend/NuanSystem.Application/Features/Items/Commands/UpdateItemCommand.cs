@@ -9,6 +9,7 @@ public sealed record UpdateItemCommand(
     string Name,
     string? Description,
     int? ItemGroupId,
+    int? ItemFamilyId,
     string ItemType,
     int? InventoryUnitOfMeasureId,
     int? PurchaseUnitOfMeasureId,

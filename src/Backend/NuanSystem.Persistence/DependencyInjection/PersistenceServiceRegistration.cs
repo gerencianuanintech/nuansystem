@@ -40,6 +40,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ICompanyConnectionTester, SqlServerCompanyConnectionTester>();
         services.AddScoped<IItemRepository, ItemRepository>();
         services.AddScoped<IItemGroupRepository, ItemGroupRepository>();
+        services.AddScoped<IItemFamilyRepository, ItemFamilyRepository>();
         services.AddScoped<IDocumentRepository, DocumentRepository>();
         services.AddScoped<ISapSyncLogRepository, SapSyncLogRepository>();
         services.AddScoped<ICompanyParameterRepository, CompanyParameterRepository>();

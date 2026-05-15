@@ -1,23 +1,43 @@
 using System.ComponentModel;
 using DevExpress.XtraEditors;
+using DevExpress.XtraEditors.Controls;
 using NuanSystem.WinForms.Forms.Common;
+using NuanSystem.WinForms.Forms.GeneralInventory.ItemFamilies;
+using NuanSystem.WinForms.Forms.GeneralInventory.ItemGroups;
+using NuanSystem.WinForms.Services.GeneralInventory.ItemFamilies.Models;
+using NuanSystem.WinForms.Services.GeneralInventory.ItemGroups.Models;
 using NuanSystem.WinForms.Services.InventoryItems.Models;
 
 namespace NuanSystem.WinForms.Forms.InventoryItems;
 
 public sealed partial class ItemEditForm : BaseEditForm
 {
-    private readonly ItemLookups lookups;
+    private ItemLookups lookups;
+    private readonly Func<SaveItemGroupRequest, Task<ItemGroupLookupItem>>? createItemGroupAsync;
+    private readonly Func<SaveItemFamilyRequest, Task<ItemFamilyLookupItem>>? createItemFamilyAsync;
+    private EditorButton? createItemGroupButton;
+    private EditorButton? createItemFamilyButton;
 
     public ItemEditForm()
         : this(CreateDesignLookups())
     {
     }
 
-    public ItemEditForm(ItemLookups lookups, ItemItem? item = null, bool copyMode = false)
+    public ItemEditForm(
+        ItemLookups lookups,
+        ItemItem? item = null,
+        bool copyMode = false,
+        bool canCreateItemGroups = false,
+        Func<SaveItemGroupRequest, Task<ItemGroupLookupItem>>? createItemGroupAsync = null,
+        bool canCreateItemFamilies = false,
+        Func<SaveItemFamilyRequest, Task<ItemFamilyLookupItem>>? createItemFamilyAsync = null)
     {
         this.lookups = lookups;
+        this.createItemGroupAsync = createItemGroupAsync;
+        this.createItemFamilyAsync = createItemFamilyAsync;
         InitializeComponent();
+        ConfigureItemGroupCreateButton(canCreateItemGroups && createItemGroupAsync is not null);
+        ConfigureItemFamilyCreateButton(canCreateItemFamilies && createItemFamilyAsync is not null);
         BindLookups();
         LoadItem(item, copyMode);
         LoadInventoryDemoData();
@@ -54,6 +74,7 @@ public sealed partial class ItemEditForm : BaseEditForm
             Name = txtDescription.Text.Trim(),
             Description = string.IsNullOrWhiteSpace(memLongDescription.Text) ? null : memLongDescription.Text.Trim(),
             ItemGroupId = ToNullableInt(sleItemGroup.EditValue),
+            ItemFamilyId = ToNullableInt(sleLine.EditValue),
             ItemType = lueItemType.Text,
             InventoryUnitOfMeasureId = ToNullableInt(sleInventoryUom.EditValue ?? sleHeaderUom.EditValue),
             PurchaseUnitOfMeasureId = ToNullableInt(slePurchaseUom.EditValue),
@@ -82,6 +103,8 @@ public sealed partial class ItemEditForm : BaseEditForm
         memLongDescription.Text = item.Description;
         lueItemType.Text = item.ItemType;
         sleItemGroup.EditValue = item.ItemGroupId;
+        RefreshItemFamilyLookup(resetInvalidSelection: false);
+        sleLine.EditValue = item.ItemFamilyId;
         sleHeaderUom.EditValue = item.InventoryUnitOfMeasureId;
         sleInventoryUom.EditValue = item.InventoryUnitOfMeasureId;
         slePurchaseUom.EditValue = item.PurchaseUnitOfMeasureId;
@@ -193,13 +216,14 @@ public sealed partial class ItemEditForm : BaseEditForm
         BindSearchLookup(sleItemGroup, grvItemGroupLookup, lookups.ItemGroups);
         BindSearchLookup(sleCategory, grvCategoryLookup, lookups.ItemGroups);
         BindSearchLookup(sleSubCategory, grvSubCategoryLookup, lookups.ItemGroups);
+        sleItemGroup.EditValueChanged += (_, _) => RefreshItemFamilyLookup();
+        RefreshItemFamilyLookup();
         BindSearchLookup(sleHeaderUom, grvHeaderUomLookup, lookups.UnitOfMeasures);
         BindSearchLookup(sleInventoryUom, grvInventoryUomLookup, lookups.UnitOfMeasures);
         BindSearchLookup(slePurchaseUom, grvPurchaseUomLookup, lookups.UnitOfMeasures);
         BindSearchLookup(sleSalesUom, grvSalesUomLookup, lookups.UnitOfMeasures);
 
         sleBrand.Properties.DataSource = new[] { new DesignLookup(1, "GENERAL") };
-        sleLine.Properties.DataSource = new[] { new DesignLookup(1, "GENERAL") };
         sleManufacturer.Properties.DataSource = new[] { new DesignLookup(1, "NUAN INTECH") };
 
         if (lookups.UnitOfMeasures.FirstOrDefault() is { } uom)
@@ -211,19 +235,215 @@ public sealed partial class ItemEditForm : BaseEditForm
         }
     }
 
+    private void ConfigureItemGroupCreateButton(bool canCreateItemGroups)
+    {
+        if (!canCreateItemGroups)
+        {
+            return;
+        }
+
+        createItemGroupButton = new EditorButton(ButtonPredefines.Plus)
+        {
+            ToolTip = "Crear grupo de articulos"
+        };
+        sleItemGroup.Properties.Buttons.Add(createItemGroupButton);
+        sleItemGroup.Properties.ButtonClick += ItemGroupButtonClick;
+    }
+
+    private async void ItemGroupButtonClick(object sender, ButtonPressedEventArgs e)
+    {
+        if (!ReferenceEquals(e.Button, createItemGroupButton))
+        {
+            return;
+        }
+
+        await CreateItemGroupFromItemAsync();
+    }
+
+    private void ConfigureItemFamilyCreateButton(bool canCreateItemFamilies)
+    {
+        if (!canCreateItemFamilies)
+        {
+            return;
+        }
+
+        createItemFamilyButton = new EditorButton(ButtonPredefines.Plus)
+        {
+            ToolTip = "Crear linea/familia"
+        };
+        sleLine.Properties.Buttons.Add(createItemFamilyButton);
+        sleLine.Properties.ButtonClick += ItemFamilyButtonClick;
+    }
+
+    private async void ItemFamilyButtonClick(object sender, ButtonPressedEventArgs e)
+    {
+        if (!ReferenceEquals(e.Button, createItemFamilyButton))
+        {
+            return;
+        }
+
+        await CreateItemFamilyFromItemAsync();
+    }
+
+    private async Task CreateItemFamilyFromItemAsync()
+    {
+        if (createItemFamilyAsync is null)
+        {
+            return;
+        }
+
+        var itemGroupId = ToNullableInt(sleItemGroup.EditValue);
+        using var form = new ItemFamilyEditForm(lookups.ItemGroups, itemGroupId);
+        if (form.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        try
+        {
+            UseWaitCursor = true;
+            var itemFamily = await createItemFamilyAsync(form.Request);
+            AddItemFamilyLookup(itemFamily);
+            sleItemGroup.EditValue = itemFamily.ItemGroupId;
+            RefreshItemFamilyLookup(resetInvalidSelection: false);
+            sleLine.EditValue = itemFamily.Id;
+            XtraMessageBox.Show(this, "Linea/familia creada correctamente.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            XtraMessageBox.Show(this, ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            UseWaitCursor = false;
+        }
+    }
+
+    private async Task CreateItemGroupFromItemAsync()
+    {
+        if (createItemGroupAsync is null)
+        {
+            return;
+        }
+
+        using var form = new ItemGroupEditForm();
+        if (form.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        try
+        {
+            UseWaitCursor = true;
+            var itemGroup = await createItemGroupAsync(form.Request);
+            AddItemGroupLookup(itemGroup);
+            sleItemGroup.EditValue = itemGroup.Id;
+            XtraMessageBox.Show(this, "Grupo de articulos creado correctamente.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            XtraMessageBox.Show(this, ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            UseWaitCursor = false;
+        }
+    }
+
+    private void AddItemGroupLookup(ItemGroupLookupItem itemGroup)
+    {
+        var selectedCategory = sleCategory.EditValue;
+        var selectedSubCategory = sleSubCategory.EditValue;
+
+        lookups = lookups with
+        {
+            ItemGroups = lookups.ItemGroups
+                .Where(group => group.Id != itemGroup.Id)
+                .Append(itemGroup)
+                .OrderBy(group => group.DisplayText)
+                .ToArray()
+        };
+
+        BindSearchLookup(sleItemGroup, grvItemGroupLookup, lookups.ItemGroups);
+        BindSearchLookup(sleCategory, grvCategoryLookup, lookups.ItemGroups);
+        BindSearchLookup(sleSubCategory, grvSubCategoryLookup, lookups.ItemGroups);
+        RefreshItemFamilyLookup();
+        sleCategory.EditValue = selectedCategory;
+        sleSubCategory.EditValue = selectedSubCategory;
+    }
+
+    private void AddItemFamilyLookup(ItemFamilyLookupItem itemFamily)
+    {
+        lookups = lookups with
+        {
+            ItemFamilies = lookups.ItemFamilies
+                .Where(family => family.Id != itemFamily.Id)
+                .Append(itemFamily)
+                .OrderBy(family => family.DisplayText)
+                .ToArray()
+        };
+    }
+
+    private void RefreshItemFamilyLookup(bool resetInvalidSelection = true)
+    {
+        var itemGroupId = ToNullableInt(sleItemGroup.EditValue);
+        var currentFamilyId = ToNullableInt(sleLine.EditValue);
+        var itemFamilies = itemGroupId.HasValue
+            ? lookups.ItemFamilies.Where(family => family.ItemGroupId == itemGroupId.Value).OrderBy(family => family.DisplayText).ToArray()
+            : Array.Empty<ItemFamilyLookupItem>();
+
+        BindSearchLookup(sleLine, grvLineLookup, itemFamilies);
+        sleLine.Enabled = itemGroupId.HasValue;
+
+        if (resetInvalidSelection && (!currentFamilyId.HasValue || itemFamilies.All(family => family.Id != currentFamilyId.Value)))
+        {
+            sleLine.EditValue = null;
+        }
+    }
+
     private static void BindSearchLookup<T>(DevExpress.XtraEditors.SearchLookUpEdit control, DevExpress.XtraGrid.Views.Grid.GridView view, IReadOnlyCollection<T> dataSource)
     {
         control.Properties.DataSource = dataSource;
         view.PopulateColumns(dataSource);
-        if (view.Columns["Id"] is { } idColumn)
+        ConfigureLookupColumn(view, "Id", visible: false);
+        ConfigureLookupColumn(view, "DisplayText", visible: false);
+        ConfigureLookupColumn(view, "Code", "Codigo", 0, 110);
+        ConfigureLookupColumn(view, "Name", "Nombre", 1, 220);
+        ConfigureLookupColumn(view, "Rate", "Tarifa", 2, 90);
+    }
+
+    private static void ConfigureLookupColumn(
+        DevExpress.XtraGrid.Views.Grid.GridView view,
+        string fieldName,
+        string? caption = null,
+        int? visibleIndex = null,
+        int? width = null,
+        bool visible = true)
+    {
+        if (view.Columns[fieldName] is not { } column)
         {
-            idColumn.Visible = false;
+            return;
         }
 
-        if (view.Columns["DisplayText"] is { } displayColumn)
+        column.Visible = visible;
+        if (!visible)
         {
-            displayColumn.Caption = "Descripcion";
-            displayColumn.VisibleIndex = 0;
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(caption))
+        {
+            column.Caption = caption;
+        }
+
+        if (visibleIndex.HasValue)
+        {
+            column.VisibleIndex = visibleIndex.Value;
+        }
+
+        if (width.HasValue)
+        {
+            column.Width = width.Value;
         }
     }
 
@@ -239,13 +459,14 @@ public sealed partial class ItemEditForm : BaseEditForm
 
     private static SaveItemRequest EmptyRequest()
     {
-        return new SaveItemRequest(string.Empty, string.Empty, null, null, "Product", null, null, null, true, true, true, null, null, "MovingAverage", "None", "EveryTransaction", null, null, 0, 0, 1, 1, true, false, null, true, [], []);
+        return new SaveItemRequest(string.Empty, string.Empty, null, null, null, "Product", null, null, null, true, true, true, null, null, "MovingAverage", "None", "EveryTransaction", null, null, 0, 0, 1, 1, true, false, null, true, [], []);
     }
 
     private static ItemLookups CreateDesignLookups()
     {
         return new ItemLookups(
             [new ItemGroupLookupItem(1, "GENERAL", "General")],
+            [new ItemFamilyLookupItem(1, 1, "GENERAL", "General")],
             [new UnitOfMeasureLookupItem(1, "UND", "Unidad")],
             [new TaxLookupItem(1, "IVA15", "IVA 15%", 0.15M)],
             [new WarehouseLookupItem(1, "PRINCIPAL", "Bodega principal")]);

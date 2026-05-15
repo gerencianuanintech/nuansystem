@@ -5,6 +5,11 @@ public sealed record ItemGroupLookupItem(int Id, string Code, string Name)
     public string DisplayText => $"{Code} - {Name}";
 }
 
+public sealed record ItemFamilyLookupItem(int Id, int ItemGroupId, string Code, string Name)
+{
+    public string DisplayText => $"{Code} - {Name}";
+}
+
 public sealed record UnitOfMeasureLookupItem(int Id, string Code, string Name)
 {
     public string DisplayText => $"{Code} - {Name}";
@@ -22,6 +27,7 @@ public sealed record WarehouseLookupItem(int Id, string Code, string Name)
 
 public sealed record ItemLookups(
     IReadOnlyCollection<ItemGroupLookupItem> ItemGroups,
+    IReadOnlyCollection<ItemFamilyLookupItem> ItemFamilies,
     IReadOnlyCollection<UnitOfMeasureLookupItem> UnitOfMeasures,
     IReadOnlyCollection<TaxLookupItem> Taxes,
     IReadOnlyCollection<WarehouseLookupItem> Warehouses);

@@ -48,6 +48,7 @@ public sealed partial class MenusForm : BaseGridCrudListForm
 
         await RunWithBusyStateAsync(async () =>
         {
+            await viewModel.LoadFormsAsync();
             await viewModel.LoadAsync();
             SetGridData(viewModel.Items);
             await ApplyColumnSettingsAsync();
@@ -61,7 +62,7 @@ public sealed partial class MenusForm : BaseGridCrudListForm
             return;
         }
 
-        using var form = new MenuEditForm(viewModel.Items);
+        using var form = new MenuEditForm(viewModel.Items, viewModel.Forms);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -79,7 +80,7 @@ public sealed partial class MenusForm : BaseGridCrudListForm
             return;
         }
 
-        using var form = new MenuEditForm(viewModel.Items, menu);
+        using var form = new MenuEditForm(viewModel.Items, viewModel.Forms, menu);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -97,7 +98,7 @@ public sealed partial class MenusForm : BaseGridCrudListForm
             return;
         }
 
-        using var form = new MenuEditForm(viewModel.Items, menu, copyMode: true);
+        using var form = new MenuEditForm(viewModel.Items, viewModel.Forms, menu, copyMode: true);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;

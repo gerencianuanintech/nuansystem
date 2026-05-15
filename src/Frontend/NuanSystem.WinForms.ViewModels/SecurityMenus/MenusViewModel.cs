@@ -1,12 +1,21 @@
+using NuanSystem.WinForms.Services.SecurityForms;
+using NuanSystem.WinForms.Services.SecurityForms.Models;
 using NuanSystem.WinForms.Services.SecurityMenus;
 using NuanSystem.WinForms.Services.SecurityMenus.Models;
 using NuanSystem.WinForms.ViewModels.Common;
 
 namespace NuanSystem.WinForms.ViewModels.SecurityMenus;
 
-public sealed class MenusViewModel(ISecurityMenuClient menuClient)
+public sealed class MenusViewModel(ISecurityMenuClient menuClient, ISecurityFormClient formClient)
     : CrudViewModel<SecurityMenuItem, SaveSecurityMenuRequest>
 {
+    public IReadOnlyCollection<SecurityFormItem> Forms { get; private set; } = [];
+
+    public async Task LoadFormsAsync(CancellationToken cancellationToken = default)
+    {
+        Forms = await formClient.GetAsync(cancellationToken);
+    }
+
     public override Task LoadAsync(CancellationToken cancellationToken = default)
     {
         return LoadItemsAsync(menuClient.GetAsync, cancellationToken);

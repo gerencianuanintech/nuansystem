@@ -1,18 +1,24 @@
 using System.ComponentModel;
 using DevExpress.XtraEditors.Controls;
 using NuanSystem.WinForms.Forms.Common;
+using NuanSystem.WinForms.Services.SecurityForms.Models;
 using NuanSystem.WinForms.Services.SecurityMenus.Models;
 
 namespace NuanSystem.WinForms.Forms.SecurityMenus;
 
 public sealed partial class MenuEditForm : BaseEditForm
 {
-    public MenuEditForm(IReadOnlyCollection<SecurityMenuItem> menus, SecurityMenuItem? menu = null, bool copyMode = false)
+    public MenuEditForm(
+        IReadOnlyCollection<SecurityMenuItem> menus,
+        IReadOnlyCollection<SecurityFormItem> forms,
+        SecurityMenuItem? menu = null,
+        bool copyMode = false)
     {
         InitializeComponent();
         OperationButtonIcons.ApplySaveCancel(btnGuardar, btnCancelar);
         btnGuardar.Click += (_, _) => Save();
         LoadParents(menus, menu?.Id);
+        LoadForms(forms);
 
         if (menu is not null)
         {
@@ -22,7 +28,7 @@ public sealed partial class MenuEditForm : BaseEditForm
             nameTextEdit.Text = menu.Name;
             descriptionMemoEdit.Text = menu.Description;
             menuTypeComboBoxEdit.SelectedIndex = Math.Max(0, menu.MenuType - 1);
-            formKeyTextEdit.Text = menu.FormKey;
+            formKeyLookUpEdit.EditValue = menu.FormKey;
             iconLargeTextEdit.Text = menu.IconLarge;
             iconSmallTextEdit.Text = menu.IconSmall;
             displayOrderSpinEdit.Value = menu.DisplayOrder;
@@ -66,7 +72,7 @@ public sealed partial class MenuEditForm : BaseEditForm
             nameTextEdit.Text.Trim(),
             string.IsNullOrWhiteSpace(descriptionMemoEdit.Text) ? null : descriptionMemoEdit.Text.Trim(),
             menuTypeComboBoxEdit.SelectedIndex + 1,
-            string.IsNullOrWhiteSpace(formKeyTextEdit.Text) ? null : formKeyTextEdit.Text.Trim(),
+            formKeyLookUpEdit.EditValue is string formKey && !string.IsNullOrWhiteSpace(formKey) ? formKey.Trim() : null,
             string.IsNullOrWhiteSpace(iconLargeTextEdit.Text) ? null : iconLargeTextEdit.Text.Trim(),
             string.IsNullOrWhiteSpace(iconSmallTextEdit.Text) ? null : iconSmallTextEdit.Text.Trim(),
             Convert.ToInt32(displayOrderSpinEdit.Value),
@@ -92,8 +98,31 @@ public sealed partial class MenuEditForm : BaseEditForm
         parentLookUpEdit.Properties.Columns.Add(new LookUpColumnInfo(nameof(ParentMenuOption.Description), "Descripcion", 260));
     }
 
+    private void LoadForms(IReadOnlyCollection<SecurityFormItem> forms)
+    {
+        var formOptions = forms
+            .Where(form => form.IsActive)
+            .OrderBy(form => form.Name)
+            .Select(form => new FormKeyOption(form.FormKey, form.Code, form.Name, form.Description))
+            .ToList();
+
+        formKeyLookUpEdit.Properties.DataSource = formOptions;
+        formKeyLookUpEdit.Properties.DisplayMember = nameof(FormKeyOption.DisplayText);
+        formKeyLookUpEdit.Properties.ValueMember = nameof(FormKeyOption.FormKey);
+        formKeyLookUpEdit.Properties.NullText = "";
+        formKeyLookUpEdit.Properties.Columns.Clear();
+        formKeyLookUpEdit.Properties.Columns.Add(new LookUpColumnInfo(nameof(FormKeyOption.FormKey), "FormKey", 140));
+        formKeyLookUpEdit.Properties.Columns.Add(new LookUpColumnInfo(nameof(FormKeyOption.Code), "Codigo", 180));
+        formKeyLookUpEdit.Properties.Columns.Add(new LookUpColumnInfo(nameof(FormKeyOption.Name), "Formulario", 220));
+    }
+
     private sealed record ParentMenuOption(int Id, string Code, string Name, string? Description)
     {
         public string DisplayText => $"{Code} - {Name}";
+    }
+
+    private sealed record FormKeyOption(string FormKey, string Code, string Name, string? Description)
+    {
+        public string DisplayText => $"{FormKey} - {Name}";
     }
 }

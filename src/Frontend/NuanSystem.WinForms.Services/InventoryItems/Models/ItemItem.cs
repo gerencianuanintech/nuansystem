@@ -9,6 +9,9 @@ public sealed class ItemItem
     public int? ItemGroupId { get; set; }
     public string? ItemGroupCode { get; set; }
     public string? ItemGroupName { get; set; }
+    public int? ItemFamilyId { get; set; }
+    public string? ItemFamilyCode { get; set; }
+    public string? ItemFamilyName { get; set; }
     public string ItemType { get; set; } = "Product";
     public int? InventoryUnitOfMeasureId { get; set; }
     public string? InventoryUnitOfMeasureCode { get; set; }

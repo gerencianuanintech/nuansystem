@@ -32,6 +32,7 @@ public sealed class UpdateItemCommandHandler(IItemRepository itemRepository)
             request.Name.Trim(),
             request.Description?.Trim(),
             request.ItemGroupId,
+            request.ItemFamilyId,
             request.ItemType.Trim(),
             request.InventoryUnitOfMeasureId,
             request.PurchaseUnitOfMeasureId,

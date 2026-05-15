@@ -16,6 +16,7 @@ using NuanSystem.WinForms.Forms.ConfigurationSettings;
 using NuanSystem.WinForms.Forms.Shell;
 using NuanSystem.WinForms.Forms.SecurityUsers;
 using NuanSystem.WinForms.Forms.Common;
+using NuanSystem.WinForms.Forms.GeneralInventory.ItemFamilies;
 using NuanSystem.WinForms.Forms.GeneralInventory.ItemGroups;
 using NuanSystem.WinForms.Services.Audit;
 using NuanSystem.WinForms.Services.Authentication;
@@ -27,6 +28,7 @@ using NuanSystem.WinForms.Services.Customers;
 using NuanSystem.WinForms.Services.Documents;
 using NuanSystem.WinForms.Services.Http;
 using NuanSystem.WinForms.Services.GridColumnSettings;
+using NuanSystem.WinForms.Services.GeneralInventory.ItemFamilies;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemGroups;
 using NuanSystem.WinForms.Services.InventoryItems;
 using NuanSystem.WinForms.Services.Roles;
@@ -47,6 +49,7 @@ using NuanSystem.WinForms.ViewModels.ConfigurationCompanies;
 using NuanSystem.WinForms.ViewModels.ConfigurationSettings;
 using NuanSystem.WinForms.ViewModels.Customers;
 using NuanSystem.WinForms.ViewModels.Documents;
+using NuanSystem.WinForms.ViewModels.GeneralInventory.ItemFamilies;
 using NuanSystem.WinForms.ViewModels.GeneralInventory.ItemGroups;
 using NuanSystem.WinForms.ViewModels.InventoryItems;
 using NuanSystem.WinForms.ViewModels.Roles;
@@ -117,6 +120,7 @@ internal sealed class FrontendComposition : IDisposable
     private readonly ConfigurationSettingClient configurationSettingClient;
     private readonly CustomerClient customerClient;
     private readonly ItemGroupClient itemGroupClient;
+    private readonly ItemFamilyClient itemFamilyClient;
     private readonly ItemClient itemClient;
     private readonly DocumentClient documentClient;
     private readonly SapClient sapClient;
@@ -147,6 +151,7 @@ internal sealed class FrontendComposition : IDisposable
         configurationSettingClient = new ConfigurationSettingClient(apiClient);
         customerClient = new CustomerClient(apiClient);
         itemGroupClient = new ItemGroupClient(apiClient);
+        itemFamilyClient = new ItemFamilyClient(apiClient);
         itemClient = new ItemClient(apiClient);
         documentClient = new DocumentClient(apiClient);
         sapClient = new SapClient(apiClient);
@@ -194,6 +199,7 @@ internal sealed class FrontendComposition : IDisposable
             CreateRoleAccessForm,
             CreateCustomersForm,
             CreateItemGroupsForm,
+            CreateItemFamiliesForm,
             CreateItemsForm,
             CreateDocumentsForm,
             CreateSapSyncLogForm,
@@ -214,6 +220,11 @@ internal sealed class FrontendComposition : IDisposable
     public ItemGroupsForm CreateItemGroupsForm()
     {
         return new ItemGroupsForm(new ItemGroupsViewModel(itemGroupClient), session, auditClient, gridColumnSettingsClient);
+    }
+
+    public ItemFamiliesForm CreateItemFamiliesForm()
+    {
+        return new ItemFamiliesForm(new ItemFamiliesViewModel(itemFamilyClient, itemClient), session, auditClient, gridColumnSettingsClient);
     }
 
     public ConfigurationCompaniesForm CreateConfigurationCompaniesForm()
@@ -238,7 +249,7 @@ internal sealed class FrontendComposition : IDisposable
 
     public MenusForm CreateMenusForm()
     {
-        return new MenusForm(new MenusViewModel(securityMenuClient), session, auditClient, gridColumnSettingsClient);
+        return new MenusForm(new MenusViewModel(securityMenuClient, securityFormClient), session, auditClient, gridColumnSettingsClient);
     }
 
     public FormsForm CreateFormsForm()
@@ -258,7 +269,7 @@ internal sealed class FrontendComposition : IDisposable
 
     public ItemsForm CreateItemsForm()
     {
-        return new ItemsForm(new ItemsViewModel(itemClient), session, auditClient, gridColumnSettingsClient);
+        return new ItemsForm(new ItemsViewModel(itemClient, itemGroupClient, itemFamilyClient, securityAccessClient), session, auditClient, gridColumnSettingsClient);
     }
 
     public DocumentsForm CreateDocumentsForm()

@@ -11,6 +11,7 @@ using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Forms.ConfigurationCompanies;
 using NuanSystem.WinForms.Forms.Customers;
 using NuanSystem.WinForms.Forms.Documents;
+using NuanSystem.WinForms.Forms.GeneralInventory.ItemFamilies;
 using NuanSystem.WinForms.Forms.GeneralInventory.ItemGroups;
 using NuanSystem.WinForms.Forms.InventoryItems;
 using NuanSystem.WinForms.Forms.Roles;
@@ -47,6 +48,7 @@ public sealed class MainForm : RibbonForm
     private readonly Func<RoleAccessForm> roleAccessFormFactory;
     private readonly Func<CustomersForm> customersFormFactory;
     private readonly Func<ItemGroupsForm> itemGroupsFormFactory;
+    private readonly Func<ItemFamiliesForm> itemFamiliesFormFactory;
     private readonly Func<ItemsForm> itemsFormFactory;
     private readonly Func<DocumentsForm> documentsFormFactory;
     private readonly Func<SapSyncLogForm> sapSyncLogFormFactory;
@@ -93,6 +95,7 @@ public sealed class MainForm : RibbonForm
         roleAccessFormFactory = null!;
         customersFormFactory = null!;
         itemGroupsFormFactory = null!;
+        itemFamiliesFormFactory = null!;
         itemsFormFactory = null!;
         documentsFormFactory = null!;
         sapSyncLogFormFactory = null!;
@@ -113,6 +116,7 @@ public sealed class MainForm : RibbonForm
         Func<RoleAccessForm> roleAccessFormFactory,
         Func<CustomersForm> customersFormFactory,
         Func<ItemGroupsForm> itemGroupsFormFactory,
+        Func<ItemFamiliesForm> itemFamiliesFormFactory,
         Func<ItemsForm> itemsFormFactory,
         Func<DocumentsForm> documentsFormFactory,
         Func<SapSyncLogForm> sapSyncLogFormFactory,
@@ -130,6 +134,7 @@ public sealed class MainForm : RibbonForm
         this.roleAccessFormFactory = roleAccessFormFactory;
         this.customersFormFactory = customersFormFactory;
         this.itemGroupsFormFactory = itemGroupsFormFactory;
+        this.itemFamiliesFormFactory = itemFamiliesFormFactory;
         this.itemsFormFactory = itemsFormFactory;
         this.documentsFormFactory = documentsFormFactory;
         this.sapSyncLogFormFactory = sapSyncLogFormFactory;
@@ -431,7 +436,7 @@ public sealed class MainForm : RibbonForm
         navigationMenu.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
         navigationMenu.Appearance.AccordionControl.BackColor = Color.White;
         navigationMenu.Appearance.AccordionControl.Options.UseBackColor = true;
-        navigationMenu.Appearance.Group.Normal.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+        navigationMenu.Appearance.Group.Normal.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
         navigationMenu.Appearance.Group.Normal.ForeColor = BrandResources.Text;
         navigationMenu.Appearance.Group.Normal.Options.UseFont = true;
         navigationMenu.Appearance.Group.Normal.Options.UseForeColor = true;
@@ -614,7 +619,7 @@ public sealed class MainForm : RibbonForm
             Tag = module,
             Expanded = false
         };
-        if (hasChildren || isRoot)
+        if (isRoot)
         {
             ApplyNavigationGroupStyle(element);
         }
@@ -1291,6 +1296,7 @@ public sealed class MainForm : RibbonForm
             "security-access" => roleAccessFormFactory(),
             "customers" => customersFormFactory(),
             "item-groups" => itemGroupsFormFactory(),
+            "item-families" => itemFamiliesFormFactory(),
             "items" => itemsFormFactory(),
             "documents" => documentsFormFactory(),
             "sap" => sapSyncLogFormFactory(),

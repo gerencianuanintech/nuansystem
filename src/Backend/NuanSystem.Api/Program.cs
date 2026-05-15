@@ -16,6 +16,8 @@ using NuanSystem.Application.Features.Documents.Commands;
 using NuanSystem.Application.Features.Documents.Queries;
 using NuanSystem.Application.Features.Items.Commands;
 using NuanSystem.Application.Features.Items.Queries;
+using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Commands;
+using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Queries;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Commands;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Queries;
 using NuanSystem.Application.Features.SapSync.Commands;
@@ -536,6 +538,78 @@ try
     {
         var auditUser = GetAuditUser(user);
         var result = await sender.Send(new DeleteItemGroupCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
+
+        return result.ToHttpResult();
+    })
+    .RequirePermission(PermissionCodes.ItemsManage);
+
+    app.MapGet("/api/item-families", async (
+        ISender sender,
+        CancellationToken cancellationToken) =>
+    {
+        var result = await sender.Send(new GetItemFamiliesQuery(), cancellationToken);
+
+        return result.ToHttpResult();
+    })
+    .RequirePermission(PermissionCodes.ItemsRead);
+
+    app.MapGet("/api/item-families/{id:int}", async (
+        int id,
+        ISender sender,
+        CancellationToken cancellationToken) =>
+    {
+        var result = await sender.Send(new GetItemFamilyByIdQuery(id), cancellationToken);
+
+        return result.ToHttpResult();
+    })
+    .RequirePermission(PermissionCodes.ItemsRead);
+
+    app.MapGet("/api/item-families/by-group/{itemGroupId:int}", async (
+        int itemGroupId,
+        ISender sender,
+        CancellationToken cancellationToken) =>
+    {
+        var result = await sender.Send(new GetItemFamiliesByGroupQuery(itemGroupId), cancellationToken);
+
+        return result.ToHttpResult();
+    })
+    .RequirePermission(PermissionCodes.ItemsRead);
+
+    app.MapPost("/api/item-families", async (
+        CreateItemFamilyCommand command,
+        ISender sender,
+        ClaimsPrincipal user,
+        CancellationToken cancellationToken) =>
+    {
+        var auditUser = GetAuditUser(user);
+        var result = await sender.Send(command with { AuditUserId = auditUser.UserId, AuditUserName = auditUser.UserName }, cancellationToken);
+
+        return result.ToHttpResult();
+    })
+    .RequirePermission(PermissionCodes.ItemsManage);
+
+    app.MapPut("/api/item-families/{id:int}", async (
+        int id,
+        UpdateItemFamilyCommand command,
+        ISender sender,
+        ClaimsPrincipal user,
+        CancellationToken cancellationToken) =>
+    {
+        var auditUser = GetAuditUser(user);
+        var result = await sender.Send(command with { Id = id, AuditUserId = auditUser.UserId, AuditUserName = auditUser.UserName }, cancellationToken);
+
+        return result.ToHttpResult();
+    })
+    .RequirePermission(PermissionCodes.ItemsManage);
+
+    app.MapDelete("/api/item-families/{id:int}", async (
+        int id,
+        ISender sender,
+        ClaimsPrincipal user,
+        CancellationToken cancellationToken) =>
+    {
+        var auditUser = GetAuditUser(user);
+        var result = await sender.Send(new DeleteItemFamilyCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
 
         return result.ToHttpResult();
     })

@@ -25,6 +25,7 @@ public sealed record SaveItemRequest(
     string Name,
     string? Description,
     int? ItemGroupId,
+    int? ItemFamilyId,
     string ItemType,
     int? InventoryUnitOfMeasureId,
     int? PurchaseUnitOfMeasureId,

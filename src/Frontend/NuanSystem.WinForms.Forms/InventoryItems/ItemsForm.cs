@@ -42,6 +42,7 @@ public sealed partial class ItemsForm : BaseGridCrudListForm
 
         await RunWithBusyStateAsync(async () =>
         {
+            await viewModel.LoadItemGroupCreateAccessAsync();
             await viewModel.LoadLookupsAsync();
             await viewModel.LoadAsync();
             SetGridData(viewModel.Items);
@@ -51,7 +52,7 @@ public sealed partial class ItemsForm : BaseGridCrudListForm
 
     protected override async Task CreateAsync()
     {
-        using var form = new ItemEditForm(viewModel.Lookups);
+        using var form = CreateEditForm();
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -70,7 +71,7 @@ public sealed partial class ItemsForm : BaseGridCrudListForm
         }
 
         var fullItem = await viewModel.GetByIdAsync(item.Id);
-        using var form = new ItemEditForm(viewModel.Lookups, fullItem);
+        using var form = CreateEditForm(fullItem);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -89,7 +90,7 @@ public sealed partial class ItemsForm : BaseGridCrudListForm
         }
 
         var fullItem = await viewModel.GetByIdAsync(item.Id);
-        using var form = new ItemEditForm(viewModel.Lookups, fullItem, copyMode: true);
+        using var form = CreateEditForm(fullItem, copyMode: true);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -144,16 +145,17 @@ public sealed partial class ItemsForm : BaseGridCrudListForm
         ConfigureColumn(nameof(ItemItem.Code), "Codigo", 1, 120);
         ConfigureColumn(nameof(ItemItem.Name), "Nombre", 2, 220);
         ConfigureColumn(nameof(ItemItem.ItemGroupName), "Grupo", 3, 150);
-        ConfigureColumn(nameof(ItemItem.ItemType), "Tipo", 4, 100);
-        ConfigureColumn(nameof(ItemItem.IsPurchaseItem), "Compra", 5, 70);
-        ConfigureColumn(nameof(ItemItem.IsSalesItem), "Venta", 6, 70);
-        ConfigureColumn(nameof(ItemItem.IsInventoryItem), "Inventario", 7, 85);
-        ConfigureColumn(nameof(ItemItem.ManagedBy), "Maneja por", 8, 100);
-        ConfigureColumn(nameof(ItemItem.PurchaseTaxName), "Impuesto compra", 9, 150);
-        ConfigureColumn(nameof(ItemItem.SalesTaxName), "Impuesto venta", 10, 150);
-        ConfigureColumn(nameof(ItemItem.BaseSalesPrice), "Precio venta", 11, 100);
-        ConfigureColumn(nameof(ItemItem.ReferenceCost), "Costo", 12, 100);
-        ConfigureColumn(nameof(ItemItem.IsActive), "Activo", 13, 70);
+        ConfigureColumn(nameof(ItemItem.ItemFamilyName), "Linea/Familia", 4, 150);
+        ConfigureColumn(nameof(ItemItem.ItemType), "Tipo", 5, 100);
+        ConfigureColumn(nameof(ItemItem.IsPurchaseItem), "Compra", 6, 70);
+        ConfigureColumn(nameof(ItemItem.IsSalesItem), "Venta", 7, 70);
+        ConfigureColumn(nameof(ItemItem.IsInventoryItem), "Inventario", 8, 85);
+        ConfigureColumn(nameof(ItemItem.ManagedBy), "Maneja por", 9, 100);
+        ConfigureColumn(nameof(ItemItem.PurchaseTaxName), "Impuesto compra", 10, 150);
+        ConfigureColumn(nameof(ItemItem.SalesTaxName), "Impuesto venta", 11, 150);
+        ConfigureColumn(nameof(ItemItem.BaseSalesPrice), "Precio venta", 12, 100);
+        ConfigureColumn(nameof(ItemItem.ReferenceCost), "Costo", 13, 100);
+        ConfigureColumn(nameof(ItemItem.IsActive), "Activo", 14, 70);
 
         GridView.OptionsSelection.CheckBoxSelectorColumnWidth = 30;
     }
@@ -161,6 +163,18 @@ public sealed partial class ItemsForm : BaseGridCrudListForm
     private ItemItem? SelectedItem()
     {
         return SelectedGridItem<ItemItem>();
+    }
+
+    private ItemEditForm CreateEditForm(ItemItem? item = null, bool copyMode = false)
+    {
+        return new ItemEditForm(
+            viewModel.Lookups,
+            item,
+            copyMode,
+            viewModel.CanCreateItemGroups,
+            request => viewModel.CreateItemGroupAsync(request),
+            viewModel.CanCreateItemFamilies,
+            request => viewModel.CreateItemFamilyAsync(request));
     }
 
     private void ConfigureColumn(string fieldName, string caption, int visibleIndex, int width)

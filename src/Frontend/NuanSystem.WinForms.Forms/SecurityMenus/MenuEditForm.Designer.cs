@@ -19,7 +19,7 @@ partial class MenuEditForm
         lblTipo = new LabelControl();
         menuTypeComboBoxEdit = new ComboBoxEdit();
         lblFormKey = new LabelControl();
-        formKeyTextEdit = new TextEdit();
+        formKeyLookUpEdit = new LookUpEdit();
         lblIconLarge = new LabelControl();
         iconLargeTextEdit = new TextEdit();
         lblIconSmall = new LabelControl();
@@ -35,7 +35,7 @@ partial class MenuEditForm
         ((System.ComponentModel.ISupportInitialize)nameTextEdit.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)descriptionMemoEdit.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)menuTypeComboBoxEdit.Properties).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)formKeyTextEdit.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)formKeyLookUpEdit.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)iconLargeTextEdit.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)iconSmallTextEdit.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)displayOrderSpinEdit.Properties).BeginInit();
@@ -77,8 +77,10 @@ partial class MenuEditForm
 
         lblFormKey.Location = new Point(311, 164);
         lblFormKey.Text = "FormKey";
-        formKeyTextEdit.Location = new Point(370, 162);
-        formKeyTextEdit.Size = new Size(130, 20);
+        formKeyLookUpEdit.Location = new Point(370, 162);
+        formKeyLookUpEdit.Size = new Size(130, 20);
+        formKeyLookUpEdit.Properties.AllowNullInput = DevExpress.Utils.DefaultBoolean.True;
+        formKeyLookUpEdit.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
 
         lblIconLarge.Location = new Point(29, 190);
         lblIconLarge.Text = "Imagen grande";
@@ -164,7 +166,7 @@ partial class MenuEditForm
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = btnCancelar;
         ClientSize = new Size(540, 327);
-        Controls.AddRange(new Control[] { lblPadre, parentLookUpEdit, lblCodigo, codeTextEdit, lblNombre, nameTextEdit, lblDescripcion, descriptionMemoEdit, lblTipo, menuTypeComboBoxEdit, lblFormKey, formKeyTextEdit, lblIconLarge, iconLargeTextEdit, lblIconSmall, iconSmallTextEdit, lblDisplayOrder, displayOrderSpinEdit, visibleCheckEdit, activeCheckEdit, btnGuardar, btnCancelar });
+        Controls.AddRange(new Control[] { lblPadre, parentLookUpEdit, lblCodigo, codeTextEdit, lblNombre, nameTextEdit, lblDescripcion, descriptionMemoEdit, lblTipo, menuTypeComboBoxEdit, lblFormKey, formKeyLookUpEdit, lblIconLarge, iconLargeTextEdit, lblIconSmall, iconSmallTextEdit, lblDisplayOrder, displayOrderSpinEdit, visibleCheckEdit, activeCheckEdit, btnGuardar, btnCancelar });
         Font = new Font("Segoe UI", 9F);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -176,7 +178,7 @@ partial class MenuEditForm
         ((System.ComponentModel.ISupportInitialize)nameTextEdit.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)descriptionMemoEdit.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)menuTypeComboBoxEdit.Properties).EndInit();
-        ((System.ComponentModel.ISupportInitialize)formKeyTextEdit.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)formKeyLookUpEdit.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)iconLargeTextEdit.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)iconSmallTextEdit.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)displayOrderSpinEdit.Properties).EndInit();
@@ -207,7 +209,7 @@ partial class MenuEditForm
     private LabelControl lblTipo;
     private ComboBoxEdit menuTypeComboBoxEdit;
     private LabelControl lblFormKey;
-    private TextEdit formKeyTextEdit;
+    private LookUpEdit formKeyLookUpEdit;
     private LabelControl lblIconLarge;
     private TextEdit iconLargeTextEdit;
     private LabelControl lblIconSmall;
