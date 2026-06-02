@@ -1,6 +1,7 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Common.Models;
+using NuanSystem.Application.Features.Purchasing.PurchaseOrders;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders.Dtos;
 
 namespace NuanSystem.Application.Features.Purchasing.PurchaseOrders.Commands;
@@ -37,9 +38,10 @@ public sealed class UpdatePurchaseOrderCommandHandler(IPurchaseOrderRepository r
             return Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.");
         }
 
-        if (current.Status is PurchaseOrderStatuses.Closed or PurchaseOrderStatuses.Cancelled or PurchaseOrderStatuses.SapSynced)
+        var validation = PurchaseOrderWorkflowPolicy.EnsureCanEdit(current.Status);
+        if (!validation.IsSuccess)
         {
-            return Result<PurchaseOrderDto>.Failure("La orden de compra no se puede modificar en su estado actual.");
+            return Result<PurchaseOrderDto>.Failure(validation.Message);
         }
 
         var data = PurchaseOrderCalculator.BuildPersistData(
@@ -74,9 +76,10 @@ public sealed class DeletePurchaseOrderCommandHandler(IPurchaseOrderRepository r
             return Result<bool>.Failure("No se encontro la orden de compra.");
         }
 
-        if (current.Status is not PurchaseOrderStatuses.Draft and not PurchaseOrderStatuses.Rejected)
+        var validation = PurchaseOrderWorkflowPolicy.EnsureCanDelete(current.Status);
+        if (!validation.IsSuccess)
         {
-            return Result<bool>.Failure("Solo se pueden eliminar ordenes en borrador o rechazadas.");
+            return Result<bool>.Failure(validation.Message);
         }
 
         var deleted = await repository.DeleteAsync(request.Id, request.AuditUserId, request.AuditUserName, cancellationToken);
@@ -96,6 +99,7 @@ public sealed class SendPurchaseOrderToApprovalCommandHandler(IPurchaseOrderRepo
             request.Id,
             PurchaseOrderStatuses.PendingApproval,
             "Orden enviada a aprobacion.",
+            PurchaseOrderWorkflowPolicy.EnsureCanSendToApproval,
             request.AuditUserId,
             request.AuditUserName,
             cancellationToken);
@@ -112,6 +116,7 @@ public sealed class ApprovePurchaseOrderCommandHandler(IPurchaseOrderRepository 
             request.Id,
             PurchaseOrderStatuses.Approved,
             "Orden aprobada correctamente.",
+            PurchaseOrderWorkflowPolicy.EnsureCanApprove,
             request.AuditUserId,
             request.AuditUserName,
             cancellationToken);
@@ -128,6 +133,7 @@ public sealed class RejectPurchaseOrderCommandHandler(IPurchaseOrderRepository r
             request.Id,
             PurchaseOrderStatuses.Rejected,
             "Orden rechazada.",
+            PurchaseOrderWorkflowPolicy.EnsureCanReject,
             request.AuditUserId,
             request.AuditUserName,
             cancellationToken);
@@ -145,10 +151,11 @@ public sealed class SyncPurchaseOrderSapCommandHandler(IPurchaseOrderRepository 
             return Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.");
         }
 
-        if (current.Status is not PurchaseOrderStatuses.Approved and not PurchaseOrderStatuses.SapPending)
+        var validation = PurchaseOrderWorkflowPolicy.EnsureCanRequestSapSync(current.Status);
+        if (!validation.IsSuccess)
         {
-            await repository.AddSapLogAsync(request.Id, "PurchaseOrderSync", "Skipped", "Solo se pueden sincronizar ordenes aprobadas.", request.AuditUserId, request.AuditUserName, cancellationToken);
-            return Result<PurchaseOrderDto>.Failure("Solo se pueden sincronizar ordenes aprobadas.");
+            await repository.AddSapLogAsync(request.Id, "PurchaseOrderSync", "Skipped", validation.Message, request.AuditUserId, request.AuditUserName, cancellationToken);
+            return Result<PurchaseOrderDto>.Failure(validation.Message);
         }
 
         if (current.SapStatus == PurchaseOrderSapStatuses.Synced)
@@ -257,6 +264,7 @@ internal static class PurchaseOrderWorkflow
         int id,
         string status,
         string message,
+        Func<string, Result<bool>> validateCurrentStatus,
         int? userId,
         string? userName,
         CancellationToken cancellationToken)
@@ -267,6 +275,14 @@ internal static class PurchaseOrderWorkflow
             return Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.");
         }
 
+        var validation = validateCurrentStatus(current.Status);
+        if (!validation.IsSuccess)
+        {
+            return Result<PurchaseOrderDto>.Failure(validation.Message);
+        }
+
+        // TODO: Persistir aprobador, fecha, observacion y nivel de aprobacion.
+        // TODO: Agregar guarda atomica en SQL para validar estado origen/destino.
         var updated = await repository.UpdateStatusAsync(id, status, userId, userName, cancellationToken);
         if (!updated)
         {
@@ -297,9 +313,10 @@ internal static class PurchaseOrderCollections
             return Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.");
         }
 
-        if (current.Status is PurchaseOrderStatuses.Closed or PurchaseOrderStatuses.Cancelled or PurchaseOrderStatuses.SapSynced)
+        var validation = PurchaseOrderWorkflowPolicy.EnsureCanModifyAttachmentsOrRelatedDocuments(current.Status);
+        if (!validation.IsSuccess)
         {
-            return Result<PurchaseOrderDto>.Failure("La orden de compra no se puede modificar en su estado actual.");
+            return Result<PurchaseOrderDto>.Failure(validation.Message);
         }
 
         var data = PurchaseOrderCalculator.BuildPersistData(
