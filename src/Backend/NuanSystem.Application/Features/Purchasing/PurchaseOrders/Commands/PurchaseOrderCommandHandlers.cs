@@ -44,6 +44,7 @@ public sealed class UpdatePurchaseOrderCommandHandler(IPurchaseOrderRepository r
             return Result<PurchaseOrderDto>.Failure(validation.Message);
         }
 
+        // TODO: Implementar UpdateIfEditableAsync con guarda atomica y control de concurrencia optimista/RowVersion.
         var data = PurchaseOrderCalculator.BuildPersistData(
             request.Id,
             request.ToRequest(),
@@ -82,6 +83,7 @@ public sealed class DeletePurchaseOrderCommandHandler(IPurchaseOrderRepository r
             return Result<bool>.Failure(validation.Message);
         }
 
+        // TODO: Implementar DeleteIfCurrentAsync para anulacion segura con guarda atomica.
         var deleted = await repository.DeleteAsync(request.Id, request.AuditUserId, request.AuditUserName, cancellationToken);
         return deleted
             ? Result<bool>.Success(true, "Orden de compra eliminada correctamente.")
@@ -99,6 +101,7 @@ public sealed class SendPurchaseOrderToApprovalCommandHandler(IPurchaseOrderRepo
             request.Id,
             PurchaseOrderStatuses.PendingApproval,
             "Orden enviada a aprobacion.",
+            [PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected],
             PurchaseOrderWorkflowPolicy.EnsureCanSendToApproval,
             request.AuditUserId,
             request.AuditUserName,
@@ -116,6 +119,7 @@ public sealed class ApprovePurchaseOrderCommandHandler(IPurchaseOrderRepository 
             request.Id,
             PurchaseOrderStatuses.Approved,
             "Orden aprobada correctamente.",
+            [PurchaseOrderStatuses.PendingApproval],
             PurchaseOrderWorkflowPolicy.EnsureCanApprove,
             request.AuditUserId,
             request.AuditUserName,
@@ -133,6 +137,7 @@ public sealed class RejectPurchaseOrderCommandHandler(IPurchaseOrderRepository r
             request.Id,
             PurchaseOrderStatuses.Rejected,
             "Orden rechazada.",
+            [PurchaseOrderStatuses.PendingApproval],
             PurchaseOrderWorkflowPolicy.EnsureCanReject,
             request.AuditUserId,
             request.AuditUserName,
@@ -164,7 +169,17 @@ public sealed class SyncPurchaseOrderSapCommandHandler(IPurchaseOrderRepository 
         }
 
         await repository.AddSapLogAsync(request.Id, "PurchaseOrderSync", "Pending", "Pendiente de envio a SAP Business One. ObjectType 22.", request.AuditUserId, request.AuditUserName, cancellationToken);
-        await repository.UpdateStatusAsync(request.Id, PurchaseOrderStatuses.SapPending, request.AuditUserId, request.AuditUserName, cancellationToken);
+        var updated = await repository.UpdateStatusIfCurrentAsync(
+            request.Id,
+            PurchaseOrderStatuses.SapPending,
+            [PurchaseOrderStatuses.Approved, PurchaseOrderStatuses.SapError],
+            request.AuditUserId,
+            request.AuditUserName,
+            cancellationToken);
+        if (!updated)
+        {
+            return Result<PurchaseOrderDto>.Failure("No se pudo actualizar el estado de la orden.");
+        }
 
         var order = await repository.GetByIdAsync(request.Id, cancellationToken);
         return order is null
@@ -264,6 +279,7 @@ internal static class PurchaseOrderWorkflow
         int id,
         string status,
         string message,
+        IReadOnlyCollection<string> expectedCurrentStatuses,
         Func<string, Result<bool>> validateCurrentStatus,
         int? userId,
         string? userName,
@@ -282,8 +298,7 @@ internal static class PurchaseOrderWorkflow
         }
 
         // TODO: Persistir aprobador, fecha, observacion y nivel de aprobacion.
-        // TODO: Agregar guarda atomica en SQL para validar estado origen/destino.
-        var updated = await repository.UpdateStatusAsync(id, status, userId, userName, cancellationToken);
+        var updated = await repository.UpdateStatusIfCurrentAsync(id, status, expectedCurrentStatuses, userId, userName, cancellationToken);
         if (!updated)
         {
             return Result<PurchaseOrderDto>.Failure("No se pudo actualizar el estado de la orden.");

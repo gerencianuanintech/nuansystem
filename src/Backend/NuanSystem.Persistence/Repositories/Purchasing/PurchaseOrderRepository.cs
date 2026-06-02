@@ -113,6 +113,37 @@ public sealed class PurchaseOrderRepository(ITenantConnectionFactory connectionF
         return affectedRows > 0;
     }
 
+    public async Task<bool> UpdateStatusIfCurrentAsync(
+        int id,
+        string nextStatus,
+        IReadOnlyCollection<string> expectedCurrentStatuses,
+        int? userId,
+        string? userName,
+        CancellationToken cancellationToken = default)
+    {
+        if (expectedCurrentStatuses is null || expectedCurrentStatuses.Count == 0)
+        {
+            throw new ArgumentException("At least one expected current status is required.", nameof(expectedCurrentStatuses));
+        }
+
+        using var connection = connectionFactory.CreateConnection();
+        var affectedRows = await connection.ExecuteScalarAsync<int>(
+            new CommandDefinition(
+                UpdateStatusProcedure,
+                new
+                {
+                    Id = id,
+                    Status = nextStatus,
+                    ExpectedStatusesJson = JsonSerializer.Serialize(expectedCurrentStatuses, JsonOptions),
+                    UpdatedByUserId = userId,
+                    UpdatedByUserName = userName
+                },
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
+
+        return affectedRows > 0;
+    }
+
     public async Task<PurchaseOrderSapSyncLogDto> AddSapLogAsync(int id, string process, string status, string? message, int? userId, string? userName, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();

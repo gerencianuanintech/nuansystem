@@ -27,7 +27,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Message.Should().Be(PurchaseOrderWorkflowPolicy.SendToApprovalInvalidMessage);
         await _repository.DidNotReceive()
-            .UpdateStatusAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+            .UpdateStatusIfCurrentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -43,7 +43,25 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Message.Should().Be("Orden enviada a aprobacion.");
         await _repository.Received(1)
-            .UpdateStatusAsync(OrderId, PurchaseOrderStatuses.PendingApproval, AuditUserId, AuditUserName, Arg.Any<CancellationToken>());
+            .UpdateStatusIfCurrentAsync(
+                OrderId,
+                PurchaseOrderStatuses.PendingApproval,
+                Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected)),
+                AuditUserId,
+                AuditUserName,
+                Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SendToApproval_ReturnsFailure_WhenAtomicTransitionDoesNotUpdateRows()
+    {
+        SetupStatusChange(PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.PendingApproval, updated: false);
+        var handler = new SendPurchaseOrderToApprovalCommandHandler(_repository);
+
+        var result = await handler.Handle(CreateSendToApprovalCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Message.Should().Be("No se pudo actualizar el estado de la orden.");
     }
 
     [Fact]
@@ -58,7 +76,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Message.Should().Be(PurchaseOrderWorkflowPolicy.ApproveInvalidMessage);
         await _repository.DidNotReceive()
-            .UpdateStatusAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+            .UpdateStatusIfCurrentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -72,7 +90,13 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Message.Should().Be("Orden aprobada correctamente.");
         await _repository.Received(1)
-            .UpdateStatusAsync(OrderId, PurchaseOrderStatuses.Approved, AuditUserId, AuditUserName, Arg.Any<CancellationToken>());
+            .UpdateStatusIfCurrentAsync(
+                OrderId,
+                PurchaseOrderStatuses.Approved,
+                Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.PendingApproval)),
+                AuditUserId,
+                AuditUserName,
+                Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -87,7 +111,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Message.Should().Be(PurchaseOrderWorkflowPolicy.RejectInvalidMessage);
         await _repository.DidNotReceive()
-            .UpdateStatusAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+            .UpdateStatusIfCurrentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -101,7 +125,13 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Message.Should().Be("Orden rechazada.");
         await _repository.Received(1)
-            .UpdateStatusAsync(OrderId, PurchaseOrderStatuses.Rejected, AuditUserId, AuditUserName, Arg.Any<CancellationToken>());
+            .UpdateStatusIfCurrentAsync(
+                OrderId,
+                PurchaseOrderStatuses.Rejected,
+                Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.PendingApproval)),
+                AuditUserId,
+                AuditUserName,
+                Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -119,7 +149,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         await _repository.Received(1)
             .AddSapLogAsync(OrderId, "PurchaseOrderSync", "Skipped", PurchaseOrderWorkflowPolicy.SapSyncInvalidMessage, AuditUserId, AuditUserName, Arg.Any<CancellationToken>());
         await _repository.DidNotReceive()
-            .UpdateStatusAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+            .UpdateStatusIfCurrentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -135,7 +165,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Message.Should().Be(PurchaseOrderWorkflowPolicy.SapSyncInvalidMessage);
         await _repository.DidNotReceive()
-            .UpdateStatusAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+            .UpdateStatusIfCurrentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -145,7 +175,13 @@ public sealed class PurchaseOrderWorkflowHandlerTests
     {
         _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
             .Returns(CreateOrder(status), CreateOrder(PurchaseOrderStatuses.SapPending));
-        _repository.UpdateStatusAsync(OrderId, PurchaseOrderStatuses.SapPending, AuditUserId, AuditUserName, Arg.Any<CancellationToken>())
+        _repository.UpdateStatusIfCurrentAsync(
+                OrderId,
+                PurchaseOrderStatuses.SapPending,
+                Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.Approved, PurchaseOrderStatuses.SapError)),
+                AuditUserId,
+                AuditUserName,
+                Arg.Any<CancellationToken>())
             .Returns(true);
         SetupSapLog();
         var handler = new SyncPurchaseOrderSapCommandHandler(_repository);
@@ -157,7 +193,35 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         await _repository.Received(1)
             .AddSapLogAsync(OrderId, "PurchaseOrderSync", "Pending", "Pendiente de envio a SAP Business One. ObjectType 22.", AuditUserId, AuditUserName, Arg.Any<CancellationToken>());
         await _repository.Received(1)
-            .UpdateStatusAsync(OrderId, PurchaseOrderStatuses.SapPending, AuditUserId, AuditUserName, Arg.Any<CancellationToken>());
+            .UpdateStatusIfCurrentAsync(
+                OrderId,
+                PurchaseOrderStatuses.SapPending,
+                Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.Approved, PurchaseOrderStatuses.SapError)),
+                AuditUserId,
+                AuditUserName,
+                Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SyncSap_ReturnsFailure_WhenAtomicTransitionDoesNotUpdateRows()
+    {
+        _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
+            .Returns(CreateOrder(PurchaseOrderStatuses.Approved));
+        _repository.UpdateStatusIfCurrentAsync(
+                OrderId,
+                PurchaseOrderStatuses.SapPending,
+                Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.Approved, PurchaseOrderStatuses.SapError)),
+                AuditUserId,
+                AuditUserName,
+                Arg.Any<CancellationToken>())
+            .Returns(false);
+        SetupSapLog();
+        var handler = new SyncPurchaseOrderSapCommandHandler(_repository);
+
+        var result = await handler.Handle(CreateSyncSapCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Message.Should().Be("No se pudo actualizar el estado de la orden.");
     }
 
     [Theory]
@@ -233,12 +297,18 @@ public sealed class PurchaseOrderWorkflowHandlerTests
             .DeleteAsync(OrderId, AuditUserId, AuditUserName, Arg.Any<CancellationToken>());
     }
 
-    private void SetupStatusChange(string currentStatus, string nextStatus)
+    private void SetupStatusChange(string currentStatus, string nextStatus, bool updated = true)
     {
         _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
             .Returns(CreateOrder(currentStatus), CreateOrder(nextStatus));
-        _repository.UpdateStatusAsync(OrderId, nextStatus, AuditUserId, AuditUserName, Arg.Any<CancellationToken>())
-            .Returns(true);
+        _repository.UpdateStatusIfCurrentAsync(
+                OrderId,
+                nextStatus,
+                Arg.Any<IReadOnlyCollection<string>>(),
+                AuditUserId,
+                AuditUserName,
+                Arg.Any<CancellationToken>())
+            .Returns(updated);
     }
 
     private void SetupSapLog()
@@ -399,5 +469,10 @@ public sealed class PurchaseOrderWorkflowHandlerTests
             Phone: null,
             Email: null,
             IsModified: false);
+    }
+
+    private static bool Matches(IReadOnlyCollection<string> actual, params string[] expected)
+    {
+        return actual.Count == expected.Length && !expected.Except(actual).Any();
     }
 }

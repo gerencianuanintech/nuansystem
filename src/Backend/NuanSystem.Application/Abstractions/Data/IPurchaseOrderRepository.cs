@@ -18,6 +18,14 @@ public interface IPurchaseOrderRepository
 
     Task<bool> UpdateStatusAsync(int id, string status, int? userId, string? userName, CancellationToken cancellationToken = default);
 
+    Task<bool> UpdateStatusIfCurrentAsync(
+        int id,
+        string nextStatus,
+        IReadOnlyCollection<string> expectedCurrentStatuses,
+        int? userId,
+        string? userName,
+        CancellationToken cancellationToken = default);
+
     Task<PurchaseOrderSapSyncLogDto> AddSapLogAsync(int id, string process, string status, string? message, int? userId, string? userName, CancellationToken cancellationToken = default);
 }
 
