@@ -11,6 +11,7 @@ partial class OperationsForm
         // 
         // OperationsForm
         // 
+        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         Name = "OperationsForm";
         Text = "Operaciones";
         ResumeLayout(false);

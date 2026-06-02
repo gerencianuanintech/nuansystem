@@ -11,6 +11,8 @@ public class BaseEditForm : XtraForm
 
     public BaseEditForm()
     {
+        AppTypography.ApplyToForm(this);
+
         errorProvider = new DXErrorProvider
         {
             ContainerControl = this
@@ -64,6 +66,16 @@ public class BaseEditForm : XtraForm
     protected void ShowWarning(string message)
     {
         XtraMessageBox.Show(this, message, Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+    }
+
+    protected void ShowError(Exception exception)
+    {
+        UiExceptionHandler.ShowError(this, Text, exception);
+    }
+
+    protected Task RunWithUiExceptionHandlingAsync(Func<Task> action)
+    {
+        return UiExceptionHandler.RunAsync(this, Text, action);
     }
 
     protected override void OnShown(EventArgs e)

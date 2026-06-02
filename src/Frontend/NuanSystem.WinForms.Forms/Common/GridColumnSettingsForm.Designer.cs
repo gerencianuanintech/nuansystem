@@ -89,6 +89,16 @@ partial class GridColumnSettingsForm
         Text = "Personalizar columnas";
         ((System.ComponentModel.ISupportInitialize)grcColumnas).EndInit();
         ((System.ComponentModel.ISupportInitialize)grvColumnas).EndInit();
+
+        // Tipografia estandar de GridView
+        grvColumnas.Appearance.HeaderPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point);
+        grvColumnas.Appearance.HeaderPanel.Options.UseFont = true;
+        grvColumnas.Appearance.Row.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        grvColumnas.Appearance.Row.Options.UseFont = true;
+        grvColumnas.Appearance.FooterPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point);
+        grvColumnas.Appearance.FooterPanel.Options.UseFont = true;
+        grvColumnas.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        grvColumnas.Appearance.FilterPanel.Options.UseFont = true;
         ResumeLayout(false);
     }
 

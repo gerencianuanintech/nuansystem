@@ -44,6 +44,13 @@ public sealed class NuanApiClient : INuanApiClient
         return await SendAsync<TResponse>(request, cancellationToken);
     }
 
+    public async Task<bool> IsAvailableAsync(string path = "/health", CancellationToken cancellationToken = default)
+    {
+        using var request = CreateRequest(HttpMethod.Get, path);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        return response.IsSuccessStatusCode;
+    }
+
     private HttpRequestMessage CreateRequest(HttpMethod method, string path)
     {
         var request = new HttpRequestMessage(method, path);
@@ -79,7 +86,7 @@ public sealed class NuanApiClient : INuanApiClient
             }
 
             throw new ApiClientException(
-                $"La API respondio {(int)response.StatusCode} {response.ReasonPhrase} sin contenido.",
+                ResolveEmptyErrorMessage(response),
                 (int)response.StatusCode);
         }
 
@@ -95,5 +102,16 @@ public sealed class NuanApiClient : INuanApiClient
         }
 
         return apiResponse.Data!;
+    }
+
+    private static string ResolveEmptyErrorMessage(HttpResponseMessage response)
+    {
+        return response.StatusCode switch
+        {
+            System.Net.HttpStatusCode.Unauthorized => "Tu sesion no es valida o expiro. Inicia sesion nuevamente.",
+            System.Net.HttpStatusCode.Forbidden => "No tienes permiso para realizar esta accion. Solicita al administrador que revise tus accesos.",
+            System.Net.HttpStatusCode.TooManyRequests => "Se realizaron demasiados intentos. Espera un momento e intenta nuevamente.",
+            _ => $"La API respondio {(int)response.StatusCode} {response.ReasonPhrase} sin detalle adicional."
+        };
     }
 }

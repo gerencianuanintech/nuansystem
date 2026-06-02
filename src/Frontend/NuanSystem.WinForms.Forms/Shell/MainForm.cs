@@ -8,13 +8,43 @@ using DevExpress.XtraEditors;
 using DevExpress.XtraTab;
 using NuanSystem.WinForms.Forms.Audit;
 using NuanSystem.WinForms.Forms.Accounting.ChartOfAccounts;
+using NuanSystem.WinForms.Forms.BusinessPartners;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Forms.ConfigurationCompanies;
-using NuanSystem.WinForms.Forms.Customers;
-using NuanSystem.WinForms.Forms.Documents;
+using NuanSystem.WinForms.Forms.GeneralSupplier.ContactChannels;
+using NuanSystem.WinForms.Forms.GeneralSupplier.ContactTypes;
+using NuanSystem.WinForms.Forms.GeneralSupplier.EconomicActivities;
+using NuanSystem.WinForms.Forms.GeneralSupplier.Catalogs;
+using NuanSystem.WinForms.Forms.GeneralSupplier.SupplierClasses;
+using NuanSystem.WinForms.Forms.GeneralSupplier.SupplierGroups;
+using NuanSystem.WinForms.Forms.GeneralSupplier.SupplyMethods;
+using NuanSystem.WinForms.Forms.GeneralSupplier.Zones;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.Banks;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.BankAccountTypes;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.Currencies;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.PriceLists;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.PurchasingAgents;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.AccountingPaymentMethods;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.ApprovalFlows;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.Branches;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.BusinessLines;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.CostCenters;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.Departments;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.PaymentDocumentTypes;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.PaymentPriorities;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.Projects;
+using NuanSystem.WinForms.Forms.TaxCatalogs.RetentionTypes;
+using NuanSystem.WinForms.Forms.TaxCatalogs.RetentionConcepts;
+using NuanSystem.WinForms.Forms.TaxCatalogs.TaxRegimes;
+using NuanSystem.WinForms.Forms.TaxCatalogs.TaxSupports;
+using NuanSystem.WinForms.Forms.TaxCatalogs.TaxpayerTypes;
+using NuanSystem.WinForms.Forms.Geography.Cities;
+using NuanSystem.WinForms.Forms.Geography.Countries;
+using NuanSystem.WinForms.Forms.Geography.Provinces;
 using NuanSystem.WinForms.Forms.GeneralInventory.ItemFamilies;
 using NuanSystem.WinForms.Forms.GeneralInventory.ItemGroups;
 using NuanSystem.WinForms.Forms.InventoryItems;
+using NuanSystem.WinForms.Forms.Purchasing.PurchaseOrders;
 using NuanSystem.WinForms.Forms.Roles;
 using NuanSystem.WinForms.Forms.Sap;
 using NuanSystem.WinForms.Forms.SecurityOperations;
@@ -47,12 +77,43 @@ public sealed class MainForm : RibbonForm
     private readonly Func<FormsForm> formsFormFactory;
     private readonly Func<FieldsForm> fieldsFormFactory;
     private readonly Func<RoleAccessForm> roleAccessFormFactory;
-    private readonly Func<CustomersForm> customersFormFactory;
+    private readonly Func<BusinessPartnersForm> customersFormFactory;
+    private readonly Func<BusinessPartnersForm> suppliersFormFactory;
     private readonly Func<ChartOfAccountsForm> chartOfAccountsFormFactory;
+    private readonly Func<SupplierGroupsForm> supplierGroupsFormFactory;
+    private readonly Func<SupplierClassesForm> supplierClassesFormFactory;
+    private readonly Func<EconomicActivitiesForm> economicActivitiesFormFactory;
+    private readonly Func<ZonesForm> zonesFormFactory;
+    private readonly Func<SupplyMethodsForm> supplyMethodsFormFactory;
+    private readonly Func<ContactTypesForm> contactTypesFormFactory;
+    private readonly Func<ContactChannelsForm> contactChannelsFormFactory;
+    private readonly Func<BanksForm> banksFormFactory;
+    private readonly Func<BankAccountTypesForm> bankAccountTypesFormFactory;
+    private readonly Func<CurrenciesForm> currenciesFormFactory;
+    private readonly Func<PriceListsForm> priceListsFormFactory;
+    private readonly Func<PurchasingAgentsForm> purchasingAgentsFormFactory;
+    private readonly Func<AccountingPaymentMethodsForm> accountingPaymentMethodsFormFactory;
+    private readonly Func<PaymentPrioritiesForm> paymentPrioritiesFormFactory;
+    private readonly Func<ApprovalFlowsForm> approvalFlowsFormFactory;
+    private readonly Func<PaymentDocumentTypesForm> paymentDocumentTypesFormFactory;
+    private readonly Func<BranchesForm> branchesFormFactory;
+    private readonly Func<DepartmentsForm> departmentsFormFactory;
+    private readonly Func<BusinessLinesForm> businessLinesFormFactory;
+    private readonly Func<CostCentersForm> costCentersFormFactory;
+    private readonly Func<ProjectsForm> projectsFormFactory;
+    private readonly Func<TaxRegimesForm> taxRegimesFormFactory;
+    private readonly Func<TaxpayerTypesForm> taxpayerTypesFormFactory;
+    private readonly Func<RetentionTypesForm> retentionTypesFormFactory;
+    private readonly Func<RetentionConceptsForm> retentionConceptsFormFactory;
+    private readonly Func<TaxSupportsForm> taxSupportsFormFactory;
+    private readonly Func<CountriesForm> countriesFormFactory;
+    private readonly Func<ProvincesForm> provincesFormFactory;
+    private readonly Func<CitiesForm> citiesFormFactory;
+    private readonly Func<string, Form?> generalInventoryCatalogFormFactory;
     private readonly Func<ItemGroupsForm> itemGroupsFormFactory;
     private readonly Func<ItemFamiliesForm> itemFamiliesFormFactory;
     private readonly Func<ItemsForm> itemsFormFactory;
-    private readonly Func<DocumentsForm> documentsFormFactory;
+    private readonly Func<PurchaseOrdersForm> purchaseOrdersFormFactory;
     private readonly Func<SapSyncLogForm> sapSyncLogFormFactory;
     private readonly Func<AuditLogsForm> auditLogsFormFactory;
     private readonly Func<SettingsForm> settingsFormFactory;
@@ -96,11 +157,42 @@ public sealed class MainForm : RibbonForm
         fieldsFormFactory = null!;
         roleAccessFormFactory = null!;
         customersFormFactory = null!;
+        suppliersFormFactory = null!;
         chartOfAccountsFormFactory = null!;
+        supplierGroupsFormFactory = null!;
+        supplierClassesFormFactory = null!;
+        economicActivitiesFormFactory = null!;
+        zonesFormFactory = null!;
+        supplyMethodsFormFactory = null!;
+        contactTypesFormFactory = null!;
+        contactChannelsFormFactory = null!;
+        banksFormFactory = null!;
+        bankAccountTypesFormFactory = null!;
+        currenciesFormFactory = null!;
+        priceListsFormFactory = null!;
+        purchasingAgentsFormFactory = null!;
+        accountingPaymentMethodsFormFactory = null!;
+        paymentPrioritiesFormFactory = null!;
+        approvalFlowsFormFactory = null!;
+        paymentDocumentTypesFormFactory = null!;
+        branchesFormFactory = null!;
+        departmentsFormFactory = null!;
+        businessLinesFormFactory = null!;
+        costCentersFormFactory = null!;
+        projectsFormFactory = null!;
+        taxRegimesFormFactory = null!;
+        taxpayerTypesFormFactory = null!;
+        retentionTypesFormFactory = null!;
+        retentionConceptsFormFactory = null!;
+        taxSupportsFormFactory = null!;
+        countriesFormFactory = null!;
+        provincesFormFactory = null!;
+        citiesFormFactory = null!;
+        generalInventoryCatalogFormFactory = null!;
         itemGroupsFormFactory = null!;
         itemFamiliesFormFactory = null!;
         itemsFormFactory = null!;
-        documentsFormFactory = null!;
+        purchaseOrdersFormFactory = null!;
         sapSyncLogFormFactory = null!;
         auditLogsFormFactory = null!;
         settingsFormFactory = null!;
@@ -117,12 +209,43 @@ public sealed class MainForm : RibbonForm
         Func<FormsForm> formsFormFactory,
         Func<FieldsForm> fieldsFormFactory,
         Func<RoleAccessForm> roleAccessFormFactory,
-        Func<CustomersForm> customersFormFactory,
+        Func<BusinessPartnersForm> customersFormFactory,
+        Func<BusinessPartnersForm> suppliersFormFactory,
         Func<ChartOfAccountsForm> chartOfAccountsFormFactory,
+        Func<SupplierGroupsForm> supplierGroupsFormFactory,
+        Func<SupplierClassesForm> supplierClassesFormFactory,
+        Func<EconomicActivitiesForm> economicActivitiesFormFactory,
+        Func<ZonesForm> zonesFormFactory,
+        Func<SupplyMethodsForm> supplyMethodsFormFactory,
+        Func<ContactTypesForm> contactTypesFormFactory,
+        Func<ContactChannelsForm> contactChannelsFormFactory,
+        Func<BanksForm> banksFormFactory,
+        Func<BankAccountTypesForm> bankAccountTypesFormFactory,
+        Func<CurrenciesForm> currenciesFormFactory,
+        Func<PriceListsForm> priceListsFormFactory,
+        Func<PurchasingAgentsForm> purchasingAgentsFormFactory,
+        Func<AccountingPaymentMethodsForm> accountingPaymentMethodsFormFactory,
+        Func<PaymentPrioritiesForm> paymentPrioritiesFormFactory,
+        Func<ApprovalFlowsForm> approvalFlowsFormFactory,
+        Func<PaymentDocumentTypesForm> paymentDocumentTypesFormFactory,
+        Func<BranchesForm> branchesFormFactory,
+        Func<DepartmentsForm> departmentsFormFactory,
+        Func<BusinessLinesForm> businessLinesFormFactory,
+        Func<CostCentersForm> costCentersFormFactory,
+        Func<ProjectsForm> projectsFormFactory,
+        Func<TaxRegimesForm> taxRegimesFormFactory,
+        Func<TaxpayerTypesForm> taxpayerTypesFormFactory,
+        Func<RetentionTypesForm> retentionTypesFormFactory,
+        Func<RetentionConceptsForm> retentionConceptsFormFactory,
+        Func<TaxSupportsForm> taxSupportsFormFactory,
+        Func<CountriesForm> countriesFormFactory,
+        Func<ProvincesForm> provincesFormFactory,
+        Func<CitiesForm> citiesFormFactory,
+        Func<string, Form?> generalInventoryCatalogFormFactory,
         Func<ItemGroupsForm> itemGroupsFormFactory,
         Func<ItemFamiliesForm> itemFamiliesFormFactory,
         Func<ItemsForm> itemsFormFactory,
-        Func<DocumentsForm> documentsFormFactory,
+        Func<PurchaseOrdersForm> purchaseOrdersFormFactory,
         Func<SapSyncLogForm> sapSyncLogFormFactory,
         Func<AuditLogsForm> auditLogsFormFactory,
         Func<SettingsForm> settingsFormFactory)
@@ -137,11 +260,42 @@ public sealed class MainForm : RibbonForm
         this.fieldsFormFactory = fieldsFormFactory;
         this.roleAccessFormFactory = roleAccessFormFactory;
         this.customersFormFactory = customersFormFactory;
+        this.suppliersFormFactory = suppliersFormFactory;
         this.chartOfAccountsFormFactory = chartOfAccountsFormFactory;
+        this.supplierGroupsFormFactory = supplierGroupsFormFactory;
+        this.supplierClassesFormFactory = supplierClassesFormFactory;
+        this.economicActivitiesFormFactory = economicActivitiesFormFactory;
+        this.zonesFormFactory = zonesFormFactory;
+        this.supplyMethodsFormFactory = supplyMethodsFormFactory;
+        this.contactTypesFormFactory = contactTypesFormFactory;
+        this.contactChannelsFormFactory = contactChannelsFormFactory;
+        this.banksFormFactory = banksFormFactory;
+        this.bankAccountTypesFormFactory = bankAccountTypesFormFactory;
+        this.currenciesFormFactory = currenciesFormFactory;
+        this.priceListsFormFactory = priceListsFormFactory;
+        this.purchasingAgentsFormFactory = purchasingAgentsFormFactory;
+        this.accountingPaymentMethodsFormFactory = accountingPaymentMethodsFormFactory;
+        this.paymentPrioritiesFormFactory = paymentPrioritiesFormFactory;
+        this.approvalFlowsFormFactory = approvalFlowsFormFactory;
+        this.paymentDocumentTypesFormFactory = paymentDocumentTypesFormFactory;
+        this.branchesFormFactory = branchesFormFactory;
+        this.departmentsFormFactory = departmentsFormFactory;
+        this.businessLinesFormFactory = businessLinesFormFactory;
+        this.costCentersFormFactory = costCentersFormFactory;
+        this.projectsFormFactory = projectsFormFactory;
+        this.taxRegimesFormFactory = taxRegimesFormFactory;
+        this.taxpayerTypesFormFactory = taxpayerTypesFormFactory;
+        this.retentionTypesFormFactory = retentionTypesFormFactory;
+        this.retentionConceptsFormFactory = retentionConceptsFormFactory;
+        this.taxSupportsFormFactory = taxSupportsFormFactory;
+        this.countriesFormFactory = countriesFormFactory;
+        this.provincesFormFactory = provincesFormFactory;
+        this.citiesFormFactory = citiesFormFactory;
+        this.generalInventoryCatalogFormFactory = generalInventoryCatalogFormFactory;
         this.itemGroupsFormFactory = itemGroupsFormFactory;
         this.itemFamiliesFormFactory = itemFamiliesFormFactory;
         this.itemsFormFactory = itemsFormFactory;
-        this.documentsFormFactory = documentsFormFactory;
+        this.purchaseOrdersFormFactory = purchaseOrdersFormFactory;
         this.sapSyncLogFormFactory = sapSyncLogFormFactory;
         this.auditLogsFormFactory = auditLogsFormFactory;
         this.settingsFormFactory = settingsFormFactory;
@@ -197,13 +351,13 @@ public sealed class MainForm : RibbonForm
         var pageInicio = new RibbonPage("Inicio");
         var pageHerramientas = new RibbonPage("Herramientas");
         var pageAyuda = new RibbonPage("Ayuda");
-        ribbon.Pages.AddRange([pageInicio, pageHerramientas, pageAyuda]);
+        ribbon.Pages.AddRange(new RibbonPage[] { pageInicio, pageHerramientas, pageAyuda });
 
         var groupNavigation = new RibbonPageGroup("Navegacion");
         var groupActions = new RibbonPageGroup("Acciones");
         var groupSession = new RibbonPageGroup("Sesion");
         sessionRibbonGroup = groupSession;
-        pageInicio.Groups.AddRange([groupNavigation, groupActions, groupSession]);
+        pageInicio.Groups.AddRange(new RibbonPageGroup[] { groupNavigation, groupActions, groupSession });
 
         homeButton = CreateRibbonButton("Inicio", "Home_32x32.svg", RibbonItemStyles.Large);
         ConfigureRibbonButtonHelp(homeButton, "Volver a la pantalla de inicio.", new RibbonShortcut(Keys.Control | Keys.I, "Ctrl + I"));
@@ -1277,7 +1431,7 @@ public sealed class MainForm : RibbonForm
         }
         catch (Exception exception)
         {
-            XtraMessageBox.Show(this, exception.Message, "Cargar accesos", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            UiExceptionHandler.ShowError(this, "Cargar accesos", exception);
         }
     }
 
@@ -1300,11 +1454,56 @@ public sealed class MainForm : RibbonForm
             "security-fields" => fieldsFormFactory(),
             "security-access" => roleAccessFormFactory(),
             "customers" => customersFormFactory(),
+            "suppliers" => suppliersFormFactory(),
             "chart-of-accounts" => chartOfAccountsFormFactory(),
+            "supplier-groups" => supplierGroupsFormFactory(),
+            "supplier-classes" => supplierClassesFormFactory(),
+            "economic-activities" => economicActivitiesFormFactory(),
+            "supplier-zones" => zonesFormFactory(),
+            "supply-methods" => supplyMethodsFormFactory(),
+            "supplier-contact-types" => contactTypesFormFactory(),
+            "supplier-contact-channels" => contactChannelsFormFactory(),
+            "banks" => banksFormFactory(),
+            "bank-account-types" => bankAccountTypesFormFactory(),
+            "currencies" => currenciesFormFactory(),
+            "price-lists" => priceListsFormFactory(),
+            "purchasing-agents" => purchasingAgentsFormFactory(),
+            "accounting-payment-methods" => accountingPaymentMethodsFormFactory(),
+            "payment-priorities" => paymentPrioritiesFormFactory(),
+            "approval-flows" => approvalFlowsFormFactory(),
+            "payment-document-types" => paymentDocumentTypesFormFactory(),
+            "branches" => branchesFormFactory(),
+            "departments" => departmentsFormFactory(),
+            "business-lines" => businessLinesFormFactory(),
+            "cost-centers" => costCentersFormFactory(),
+            "projects" => projectsFormFactory(),
+            "tax-regimes" => taxRegimesFormFactory(),
+            "taxpayer-types" => taxpayerTypesFormFactory(),
+            "retention-types" => retentionTypesFormFactory(),
+            "retention-concepts" => retentionConceptsFormFactory(),
+            "tax-supports" => taxSupportsFormFactory(),
+            "countries" => countriesFormFactory(),
+            "provinces" => provincesFormFactory(),
+            "cities" => citiesFormFactory(),
+            "inventory-unit-measures" => generalInventoryCatalogFormFactory(module.Key),
+            "inventory-warehouses" => generalInventoryCatalogFormFactory(module.Key),
+            "inventory-item-brands" => generalInventoryCatalogFormFactory(module.Key),
+            "inventory-item-types" => generalInventoryCatalogFormFactory(module.Key),
+            "inventory-product-types" => generalInventoryCatalogFormFactory(module.Key),
+            "inventory-item-lines" => generalInventoryCatalogFormFactory(module.Key),
+            "inventory-item-subgroups" => generalInventoryCatalogFormFactory(module.Key),
+            "inventory-sales-channels" => generalInventoryCatalogFormFactory(module.Key),
+            "inventory-warehouse-locations" => generalInventoryCatalogFormFactory(module.Key),
+            "inventory-storage-zones" => generalInventoryCatalogFormFactory(module.Key),
+            "inventory-storage-conditions" => generalInventoryCatalogFormFactory(module.Key),
+            "inventory-replenishment-methods" => generalInventoryCatalogFormFactory(module.Key),
+            "inventory-variant-attributes" => generalInventoryCatalogFormFactory(module.Key),
+            "inventory-attachment-document-types" => generalInventoryCatalogFormFactory(module.Key),
+            "inventory-attachment-categories" => generalInventoryCatalogFormFactory(module.Key),
             "item-groups" => itemGroupsFormFactory(),
             "item-families" => itemFamiliesFormFactory(),
             "items" => itemsFormFactory(),
-            "documents" => documentsFormFactory(),
+            "purchase-orders" => purchaseOrdersFormFactory(),
             "sap" => sapSyncLogFormFactory(),
             "audit" => auditLogsFormFactory(),
             "configuration-settings" => settingsFormFactory(),

@@ -69,6 +69,12 @@ BEGIN
         DiApiServer nvarchar(200) NULL,
         LicenseServer nvarchar(200) NULL,
         Language nvarchar(20) NULL,
+        HanaServer nvarchar(200) NULL,
+        HanaPort int NULL,
+        HanaSchema nvarchar(128) NULL,
+        HanaUser nvarchar(128) NULL,
+        HanaPasswordEncrypted nvarchar(max) NULL,
+        MaxRetryCount int NOT NULL CONSTRAINT DF_SapCompanySettings_MaxRetryCount DEFAULT 3,
         CreatedAt datetime2(0) NOT NULL CONSTRAINT DF_SapCompanySettings_CreatedAt DEFAULT SYSUTCDATETIME(),
         UpdatedAt datetime2(0) NULL,
         CONSTRAINT FK_SapCompanySettings_Companies FOREIGN KEY (CompanyId) REFERENCES dbo.Companies(Id),
@@ -76,6 +82,20 @@ BEGIN
         CONSTRAINT CK_SapCompanySettings_IntegrationMode CHECK (IntegrationMode IN (0, 1, 2))
     );
 END;
+GO
+
+IF COL_LENGTH(N'dbo.SapCompanySettings', N'HanaServer') IS NULL
+    ALTER TABLE dbo.SapCompanySettings ADD HanaServer nvarchar(200) NULL;
+IF COL_LENGTH(N'dbo.SapCompanySettings', N'HanaPort') IS NULL
+    ALTER TABLE dbo.SapCompanySettings ADD HanaPort int NULL;
+IF COL_LENGTH(N'dbo.SapCompanySettings', N'HanaSchema') IS NULL
+    ALTER TABLE dbo.SapCompanySettings ADD HanaSchema nvarchar(128) NULL;
+IF COL_LENGTH(N'dbo.SapCompanySettings', N'HanaUser') IS NULL
+    ALTER TABLE dbo.SapCompanySettings ADD HanaUser nvarchar(128) NULL;
+IF COL_LENGTH(N'dbo.SapCompanySettings', N'HanaPasswordEncrypted') IS NULL
+    ALTER TABLE dbo.SapCompanySettings ADD HanaPasswordEncrypted nvarchar(max) NULL;
+IF COL_LENGTH(N'dbo.SapCompanySettings', N'MaxRetryCount') IS NULL
+    ALTER TABLE dbo.SapCompanySettings ADD MaxRetryCount int NOT NULL CONSTRAINT DF_SapCompanySettings_MaxRetryCount DEFAULT 3;
 GO
 
 IF OBJECT_ID(N'dbo.CompanyParameters', N'U') IS NULL
@@ -125,6 +145,7 @@ BEGIN
         ProfileImage varbinary(max) NULL,
         ProfileImageContentType nvarchar(100) NULL,
         ProfileImageFileName nvarchar(260) NULL,
+        IsDeleted bit NOT NULL CONSTRAINT DF_Users_IsDeleted DEFAULT 0,
         CreatedAt datetime2(0) NOT NULL CONSTRAINT DF_Users_CreatedAt DEFAULT SYSUTCDATETIME(),
         UpdatedAt datetime2(0) NULL,
         CONSTRAINT UQ_Users_NormalizedUserName UNIQUE (NormalizedUserName)
@@ -278,6 +299,12 @@ BEGIN
     VALUES (@securityModuleId, N'SECURITY.ROLES.MANAGE', N'Gestionar roles', N'Crear roles y asignar permisos');
 END;
 
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'SECURITY.ACCESS.BYPASS')
+BEGIN
+    INSERT INTO dbo.Permissions (ModuleId, Code, Name, Description)
+    VALUES (@securityModuleId, N'SECURITY.ACCESS.BYPASS', N'Omitir permisos de formulario', N'Permite omitir la autorizacion dinamica por formulario y operacion');
+END;
+
 IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'COMPANIES.MANAGE')
 BEGIN
     INSERT INTO dbo.Permissions (ModuleId, Code, Name, Description)
@@ -290,7 +317,7 @@ DECLARE @adminRoleId int = (SELECT Id FROM dbo.Roles WHERE Code = N'ADMIN');
 INSERT INTO dbo.RolePermissions (RoleId, PermissionId)
 SELECT @adminRoleId, p.Id
 FROM dbo.Permissions p
-WHERE p.Code IN (N'SECURITY.USERS.MANAGE', N'SECURITY.ROLES.MANAGE', N'COMPANIES.MANAGE')
+WHERE p.Code IN (N'SECURITY.USERS.MANAGE', N'SECURITY.ROLES.MANAGE', N'SECURITY.ACCESS.BYPASS', N'COMPANIES.MANAGE')
   AND NOT EXISTS
   (
       SELECT 1

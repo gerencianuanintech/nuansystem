@@ -1,10 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
-using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.SapIntegration.Abstractions;
 using NuanSystem.SapIntegration.Clients;
 using NuanSystem.SapIntegration.Clients.DiApi;
 using NuanSystem.SapIntegration.Clients.ServiceLayer;
-using NuanSystem.SapIntegration.Documents;
+using NuanSystem.SapIntegration.Hana;
+using NuanSystem.SapIntegration.Suppliers;
+using NuanSystem.Application.Abstractions.Sap;
 
 namespace NuanSystem.SapIntegration.DependencyInjection;
 
@@ -16,7 +17,9 @@ public static class SapIntegrationServiceRegistration
         services.AddScoped<SapServiceLayerClient>();
         services.AddScoped<SapDiApiClient>();
         services.AddScoped<ISapClientFactory, SapClientFactory>();
-        services.AddScoped<ISapDocumentSender, SapDocumentSender>();
+        services.AddScoped<ISapHanaConnectionFactory, SapHanaConnectionFactory>();
+        services.AddScoped<ISapHanaQueryClient, SapHanaQueryClient>();
+        services.AddScoped<ISapSupplierReader, SapSupplierReader>();
 
         return services;
     }

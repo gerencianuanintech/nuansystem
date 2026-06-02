@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using DevExpress.XtraEditors;
+using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Services.Companies.Models;
 using NuanSystem.WinForms.Services.SecurityUsers.Models;
 
@@ -10,6 +11,7 @@ public sealed partial class UserCompanyAssignForm : XtraForm
     public UserCompanyAssignForm(UserAdminItem user, IReadOnlyCollection<CompanyAdminItem> companies)
     {
         InitializeComponent();
+        FormStyler.ApplyBase(this);
         Text = $"Asignar empresa - {user.UserName}";
         lueEmpresa.Properties.DataSource = companies.ToList();
         lueEmpresa.Properties.DisplayMember = nameof(CompanyAdminItem.CommercialName);

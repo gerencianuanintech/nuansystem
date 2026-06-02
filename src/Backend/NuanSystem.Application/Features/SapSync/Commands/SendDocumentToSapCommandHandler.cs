@@ -2,6 +2,7 @@ using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.SapSync.Dtos;
+using NuanSystem.Shared.Responses;
 
 namespace NuanSystem.Application.Features.SapSync.Commands;
 
@@ -12,10 +13,23 @@ public sealed class SendDocumentToSapCommandHandler(ISapDocumentSender sapDocume
         SendDocumentToSapCommand request,
         CancellationToken cancellationToken)
     {
-        var result = await sapDocumentSender.SendDocumentAsync(request.DocumentId, cancellationToken);
+        if (request.DocumentId <= 0)
+        {
+            return Result<SapSendResultDto>.Failure(
+                "El documento a sincronizar no es valido.",
+                [new ApiError("SAP_DOCUMENT_INVALID_ID", "El identificador del documento debe ser mayor a cero.", nameof(request.DocumentId))]);
+        }
 
-        return result.Success
-            ? Result<SapSendResultDto>.Success(result, "Documento enviado a SAP correctamente.")
-            : Result<SapSendResultDto>.Failure(result.ErrorMessage ?? "No se pudo enviar el documento a SAP.");
+        return await sapDocumentSender.SendAsync(
+            request.DocumentId,
+            Normalize(request.DocumentType),
+            request.AuditUserId,
+            Normalize(request.AuditUserName),
+            cancellationToken);
+    }
+
+    private static string? Normalize(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 }

@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Claims;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Shared.Responses;
 
@@ -34,7 +35,18 @@ public sealed class CompanyContextMiddleware(
         }
 
         var companyCode = headerValue.ToString().Trim();
-        var company = await companyResolver.ResolveByCodeAsync(companyCode, context.RequestAborted);
+        if (!TryGetUserId(context.User, out var userId))
+        {
+            await WriteErrorAsync(
+                context,
+                HttpStatusCode.Unauthorized,
+                "La sesion autenticada es requerida.",
+                "UserSessionMissing",
+                "No fue posible identificar al usuario autenticado.");
+            return;
+        }
+
+        var company = await companyResolver.ResolveByCodeForUserAsync(companyCode, userId, context.RequestAborted);
         if (company is null)
         {
             logger.LogWarning("Empresa no encontrada, inactiva o no disponible: {CompanyCode}", companyCode);
@@ -64,6 +76,12 @@ public sealed class CompanyContextMiddleware(
             || path.StartsWithSegments("/swagger")
             || path.StartsWithSegments("/api/auth")
             || path.StartsWithSegments("/api/companies");
+    }
+
+    private static bool TryGetUserId(ClaimsPrincipal user, out int userId)
+    {
+        var userIdValue = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(userIdValue, out userId);
     }
 
     private static async Task WriteErrorAsync(

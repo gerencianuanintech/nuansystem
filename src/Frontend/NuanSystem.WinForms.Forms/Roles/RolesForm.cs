@@ -1,9 +1,10 @@
 ﻿using NuanSystem.WinForms.Services.Roles.Models;
+using DevExpress.XtraEditors;
 using NuanSystem.WinForms.ViewModels.Roles;
 
 namespace NuanSystem.WinForms.Forms.Roles;
 
-public sealed class RolesForm : Form
+public sealed class RolesForm : XtraForm
 {
     private readonly RolesViewModel viewModel;
     private readonly DataGridView grid = new();
@@ -38,14 +39,20 @@ public sealed class RolesForm : Form
 
         var toolbar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 44, Padding = new Padding(8), BackColor = Color.White };
         refreshButton.Text = "Actualizar";
+        refreshButton.Font = Common.AppTypography.ButtonFont;
         newButton.Text = "Nuevo";
+        newButton.Font = Common.AppTypography.ButtonFont;
         assignPermissionButton.Text = "Asignar permiso";
+        assignPermissionButton.Font = Common.AppTypography.ButtonFont;
         refreshButton.Click += async (_, _) => await LoadDataAsync();
         newButton.Click += async (_, _) => await CreateAsync();
         assignPermissionButton.Click += async (_, _) => await AssignPermissionAsync();
-        toolbar.Controls.AddRange([refreshButton, newButton, assignPermissionButton]);
+        toolbar.Controls.AddRange(new Control[] { refreshButton, newButton, assignPermissionButton });
 
         grid.Dock = DockStyle.Fill;
+        grid.Font = Common.AppTypography.GridRowFont;
+        grid.ColumnHeadersDefaultCellStyle.Font = Common.AppTypography.GridHeaderFont;
+        grid.DefaultCellStyle.Font = Common.AppTypography.GridRowFont;
         grid.ReadOnly = true;
         grid.AllowUserToAddRows = false;
         grid.AllowUserToDeleteRows = false;
@@ -79,7 +86,7 @@ public sealed class RolesForm : Form
         }
         catch (Exception exception)
         {
-            MessageBox.Show(this, exception.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            Common.UiExceptionHandler.ShowError(this, Text, exception);
         }
         finally
         {

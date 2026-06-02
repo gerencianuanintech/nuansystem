@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using NuanSystem.Application.Abstractions.Authentication;
+using NuanSystem.Shared.Constants;
 
 namespace NuanSystem.Infrastructure.Authentication;
 
@@ -13,6 +14,8 @@ public sealed class JwtTokenService(IConfiguration configuration) : IJwtTokenSer
         int userId,
         string userName,
         string displayName,
+        bool mustChangePassword,
+        string securityStamp,
         IReadOnlyCollection<string> roles,
         IReadOnlyCollection<string> permissions)
     {
@@ -27,11 +30,13 @@ public sealed class JwtTokenService(IConfiguration configuration) : IJwtTokenSer
             new(JwtRegisteredClaimNames.UniqueName, userName),
             new(ClaimTypes.NameIdentifier, userId.ToString()),
             new(ClaimTypes.Name, userName),
-            new("display_name", displayName)
+            new(AuthClaimNames.DisplayName, displayName),
+            new(AuthClaimNames.MustChangePassword, mustChangePassword ? "true" : "false"),
+            new(AuthClaimNames.SecurityStamp, securityStamp)
         };
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
-        claims.AddRange(permissions.Select(permission => new Claim("permission", permission)));
+        claims.AddRange(permissions.Select(permission => new Claim(AuthClaimNames.Permission, permission)));
 
         var token = new JwtSecurityToken(
             issuer: options.Issuer,

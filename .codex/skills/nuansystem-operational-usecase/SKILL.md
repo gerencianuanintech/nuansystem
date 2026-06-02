@@ -32,6 +32,17 @@ For every operational use case, define:
 - Concurrency risk.
 - Failure behavior.
 
+## Concurrency Rules
+
+- Operational use cases must validate the current persisted state before applying changes.
+- Do not trust totals, stock, prices, cash amounts, or document status sent from the frontend.
+- Recalculate sensitive totals in Application, Domain, stored procedures, or transactional services.
+- Use transaction boundaries for multi-table writes.
+- Use stored procedure guards, row version checks, or status checks to prevent duplicate posting.
+- Validate document status before posting, canceling, closing, reversing, or syncing.
+- Do not allow duplicate SAP sync for already successful documents unless explicitly forced and audited.
+- Any operation affecting stock or money must be transactional.
+
 ## References
 
 - Load `references/operational-checklist.md` before implementing a process that is not simple maintenance CRUD.

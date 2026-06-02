@@ -1,4 +1,4 @@
-using DevExpress.Utils;
+﻿using DevExpress.Utils;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
 using NuanSystem.WinForms.Forms.Common;
@@ -38,7 +38,7 @@ partial class LoginForm
         // 
         // picLogo
         // 
-        picLogo.EditValue = resources.GetObject("logoPictureBox.EditValue");
+        picLogo.EditValue = resources.GetObject("picLogo.EditValue");
         picLogo.Location = new Point(36, 12);
         picLogo.Name = "picLogo";
         picLogo.Properties.ShowCameraMenuItem = CameraMenuItemVisibility.Auto;
@@ -49,7 +49,7 @@ partial class LoginForm
         // btnEstadoApi
         // 
         btnEstadoApi.Appearance.BackColor = Color.FromArgb(235, 235, 225);
-        btnEstadoApi.Appearance.Font = new Font("Segoe UI", 7.5F);
+        btnEstadoApi.Appearance.Font = new Font("Segoe UI", 8.5F);
         btnEstadoApi.Appearance.ForeColor = Color.FromArgb(110, 108, 100);
         btnEstadoApi.Appearance.Options.UseBackColor = true;
         btnEstadoApi.Appearance.Options.UseFont = true;
@@ -75,7 +75,7 @@ partial class LoginForm
         // 
         // lblStep
         // 
-        lblStep.Appearance.Font = new Font("Segoe UI", 7.5F);
+        lblStep.Appearance.Font = new Font("Segoe UI", 8.5F);
         lblStep.Appearance.ForeColor = Color.FromArgb(150, 148, 140);
         lblStep.Appearance.Options.UseFont = true;
         lblStep.Appearance.Options.UseForeColor = true;
@@ -88,7 +88,7 @@ partial class LoginForm
         // 
         // lblTitle
         // 
-        lblTitle.Appearance.Font = new Font("Segoe UI", 17F, FontStyle.Bold);
+        lblTitle.Appearance.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
         lblTitle.Appearance.ForeColor = Color.FromArgb(30, 30, 28);
         lblTitle.Appearance.Options.UseFont = true;
         lblTitle.Appearance.Options.UseForeColor = true;
@@ -101,7 +101,7 @@ partial class LoginForm
         // 
         // lblSubtitle
         // 
-        lblSubtitle.Appearance.Font = new Font("Segoe UI", 9F);
+        lblSubtitle.Appearance.Font = new Font("Segoe UI", 10F);
         lblSubtitle.Appearance.ForeColor = Color.FromArgb(110, 108, 100);
         lblSubtitle.Appearance.Options.UseFont = true;
         lblSubtitle.Appearance.Options.UseForeColor = true;
@@ -114,7 +114,7 @@ partial class LoginForm
         // 
         // lblUsuario
         // 
-        lblUsuario.Appearance.Font = new Font("Segoe UI", 8.5F);
+        lblUsuario.Appearance.Font = new Font("Segoe UI", 9F);
         lblUsuario.Appearance.ForeColor = Color.FromArgb(110, 108, 100);
         lblUsuario.Appearance.Options.UseFont = true;
         lblUsuario.Appearance.Options.UseForeColor = true;
@@ -129,16 +129,16 @@ partial class LoginForm
         // 
         txtUsuario.Location = new Point(37, 216);
         txtUsuario.Name = "txtUsuario";
-        txtUsuario.Properties.Appearance.Font = new Font("Segoe UI", 10F);
+        txtUsuario.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         txtUsuario.Properties.Appearance.Options.UseFont = true;
         txtUsuario.Properties.BorderStyle = BorderStyles.HotFlat;
         txtUsuario.Properties.NullValuePrompt = "admin";
-        txtUsuario.Size = new Size(318, 26);
+        txtUsuario.Size = new Size(318, 24);
         txtUsuario.TabIndex = 19;
         // 
         // lblPassword
         // 
-        lblPassword.Appearance.Font = new Font("Segoe UI", 8.5F);
+        lblPassword.Appearance.Font = new Font("Segoe UI", 9F);
         lblPassword.Appearance.ForeColor = Color.FromArgb(110, 108, 100);
         lblPassword.Appearance.Options.UseFont = true;
         lblPassword.Appearance.Options.UseForeColor = true;
@@ -153,17 +153,17 @@ partial class LoginForm
         // 
         txtPassword.Location = new Point(37, 278);
         txtPassword.Name = "txtPassword";
-        txtPassword.Properties.Appearance.Font = new Font("Segoe UI", 10F);
+        txtPassword.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         txtPassword.Properties.Appearance.Options.UseFont = true;
         txtPassword.Properties.BorderStyle = BorderStyles.HotFlat;
         txtPassword.Properties.NullValuePrompt = "********";
         txtPassword.Properties.PasswordChar = '*';
-        txtPassword.Size = new Size(318, 26);
+        txtPassword.Size = new Size(318, 24);
         txtPassword.TabIndex = 21;
         // 
         // lblEmpresa
         // 
-        lblEmpresa.Appearance.Font = new Font("Segoe UI", 8.5F);
+        lblEmpresa.Appearance.Font = new Font("Segoe UI", 9F);
         lblEmpresa.Appearance.ForeColor = Color.FromArgb(110, 108, 100);
         lblEmpresa.Appearance.Options.UseFont = true;
         lblEmpresa.Appearance.Options.UseForeColor = true;
@@ -179,23 +179,23 @@ partial class LoginForm
         // 
         lueEmpresa.Location = new Point(37, 339);
         lueEmpresa.Name = "lueEmpresa";
-        lueEmpresa.Properties.Appearance.Font = new Font("Segoe UI", 10F);
+        lueEmpresa.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         lueEmpresa.Properties.Appearance.Options.UseFont = true;
         lueEmpresa.Properties.BorderStyle = BorderStyles.HotFlat;
         lueEmpresa.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueEmpresa.Properties.Columns.AddRange(new LookUpColumnInfo[] { new LookUpColumnInfo("CommercialName", "Nombre comercial") });
         lueEmpresa.Properties.DisplayMember = "CommercialName";
-        lueEmpresa.Properties.ShowHeader = false;
         lueEmpresa.Properties.NullText = "Seleccione una empresa";
+        lueEmpresa.Properties.ShowHeader = false;
         lueEmpresa.Properties.ValueMember = "Id";
-        lueEmpresa.Size = new Size(318, 26);
+        lueEmpresa.Size = new Size(318, 24);
         lueEmpresa.TabIndex = 26;
         lueEmpresa.Visible = false;
         // 
         // btnContinuar
         // 
         btnContinuar.Appearance.BackColor = Color.FromArgb(0, 184, 148);
-        btnContinuar.Appearance.Font = new Font("Segoe UI", 10F);
+        btnContinuar.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnContinuar.Appearance.ForeColor = Color.White;
         btnContinuar.Appearance.Options.UseBackColor = true;
         btnContinuar.Appearance.Options.UseFont = true;
@@ -208,7 +208,6 @@ partial class LoginForm
         btnContinuar.AppearancePressed.ForeColor = Color.White;
         btnContinuar.AppearancePressed.Options.UseBackColor = true;
         btnContinuar.AppearancePressed.Options.UseForeColor = true;
-        btnContinuar.ForeColor = Color.White;
         btnContinuar.Location = new Point(37, 335);
         btnContinuar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         btnContinuar.LookAndFeel.UseDefaultLookAndFeel = false;
@@ -242,6 +241,7 @@ partial class LoginForm
         // 
         // LoginForm
         // 
+        Appearance.Options.UseFont = true;
         ClientSize = new Size(401, 524);
         Controls.Add(picLogo);
         Controls.Add(btnEstadoApi);
@@ -258,6 +258,7 @@ partial class LoginForm
         Controls.Add(btnContinuar);
         Controls.Add(btnCambiarUsuario);
         Controls.Add(lblStatus);
+        Font = new Font("Segoe UI", 9F);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         LookAndFeel.SkinName = "Office 2019 White";
         LookAndFeel.UseDefaultLookAndFeel = false;
@@ -290,3 +291,6 @@ partial class LoginForm
     private SimpleButton btnCambiarUsuario;
     private LabelControl lblStatus;
 }
+
+
+

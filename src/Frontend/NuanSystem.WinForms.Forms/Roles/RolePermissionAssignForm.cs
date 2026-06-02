@@ -1,11 +1,12 @@
 ﻿using System.ComponentModel;
+using DevExpress.XtraEditors;
 using NuanSystem.WinForms.Services.Roles.Models;
 
 namespace NuanSystem.WinForms.Forms.Roles;
 
-public sealed class RolePermissionAssignForm : Form
+public sealed class RolePermissionAssignForm : XtraForm
 {
-    private readonly ComboBox permissionComboBox = new();
+    private readonly System.Windows.Forms.ComboBox permissionComboBox = new();
 
     public RolePermissionAssignForm(RoleAdminItem role, IReadOnlyCollection<PermissionItem> permissions)
     {
@@ -16,8 +17,10 @@ public sealed class RolePermissionAssignForm : Form
         MaximizeBox = false;
 
         var label = new Label { Text = "Permiso", AutoSize = true, Location = new Point(24, 28) };
+        label.Font = Common.AppTypography.LabelFont;
         permissionComboBox.Location = new Point(24, 54);
         permissionComboBox.Width = 500;
+        permissionComboBox.Font = Common.AppTypography.InputFont;
         permissionComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
         permissionComboBox.DisplayMember = nameof(PermissionDisplay.Text);
         permissionComboBox.ValueMember = nameof(PermissionDisplay.Id);
@@ -27,11 +30,13 @@ public sealed class RolePermissionAssignForm : Form
 
         var okButton = new Button { Text = "Asignar", Width = 100, Height = 32, Location = new Point(318, 106) };
         var cancelButton = new Button { Text = "Cancelar", Width = 100, Height = 32, Location = new Point(424, 106), DialogResult = DialogResult.Cancel };
+        okButton.Font = Common.AppTypography.ButtonFont;
+        cancelButton.Font = Common.AppTypography.ButtonFont;
         okButton.Click += (_, _) =>
         {
             if (permissionComboBox.SelectedItem is not PermissionDisplay permission)
             {
-                MessageBox.Show(this, "Seleccione un permiso.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                XtraMessageBox.Show(this, "Seleccione un permiso.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -42,7 +47,7 @@ public sealed class RolePermissionAssignForm : Form
 
         AcceptButton = okButton;
         CancelButton = cancelButton;
-        Controls.AddRange([label, permissionComboBox, okButton, cancelButton]);
+        Controls.AddRange(new Control[] { label, permissionComboBox, okButton, cancelButton });
     }
 
     [Browsable(false)]

@@ -1,4 +1,4 @@
-namespace NuanSystem.WinForms.Forms.GeneralInventory.ItemGroups;
+﻿namespace NuanSystem.WinForms.Forms.GeneralInventory.ItemGroups;
 
 partial class ItemGroupsForm
 {
@@ -10,9 +10,10 @@ partial class ItemGroupsForm
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(1100, 640);
+        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         MinimumSize = new Size(900, 520);
         Name = "ItemGroupsForm";
-        Text = "Grupos de Artículos";
+        Text = "Grupos de ArtÃ­culos";
     }
 
     protected override void Dispose(bool disposing)
@@ -25,3 +26,4 @@ partial class ItemGroupsForm
         base.Dispose(disposing);
     }
 }
+

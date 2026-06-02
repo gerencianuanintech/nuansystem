@@ -69,6 +69,7 @@ partial class UserCompanyAssignForm
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = btnCancelar;
         ClientSize = new Size(480, 180);
+        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         Controls.Add(btnCancelar);
         Controls.Add(btnAsignar);
         Controls.Add(lueEmpresa);
@@ -100,4 +101,5 @@ partial class UserCompanyAssignForm
     private SimpleButton btnAsignar;
     private SimpleButton btnCancelar;
 }
+
 

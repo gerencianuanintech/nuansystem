@@ -1,9 +1,10 @@
 ﻿using System.ComponentModel;
+using DevExpress.XtraEditors;
 using NuanSystem.WinForms.Services.Roles.Models;
 
 namespace NuanSystem.WinForms.Forms.Roles;
 
-public sealed class RoleEditForm : Form
+public sealed class RoleEditForm : XtraForm
 {
     private readonly TextBox codeTextBox = new();
     private readonly TextBox nameTextBox = new();
@@ -38,6 +39,7 @@ public sealed class RoleEditForm : Form
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
         activeCheckBox.Text = "Activo";
+        activeCheckBox.Font = Common.AppTypography.LabelFont;
         activeCheckBox.Checked = true;
 
         AddRow(layout, 0, "Codigo", codeTextBox);
@@ -47,10 +49,13 @@ public sealed class RoleEditForm : Form
         layout.Controls.Add(activeCheckBox, 1, 3);
 
         var buttonsPanel = new FlowLayoutPanel { FlowDirection = FlowDirection.RightToLeft, Dock = DockStyle.Fill };
-        var saveButton = new Button { Text = "Guardar", Width = 100, Height = 32 };
-        var cancelButton = new Button { Text = "Cancelar", Width = 100, Height = 32, DialogResult = DialogResult.Cancel };
+        var saveButton = new Button { Text = "Guardar", Width = 100, Height = 36 };
+        var cancelButton = new Button { Text = "Cancelar", Width = 100, Height = 36, DialogResult = DialogResult.Cancel };
+        saveButton.Font = Common.AppTypography.ButtonFont;
+        cancelButton.Font = Common.AppTypography.ButtonFont;
         saveButton.Click += SaveButton_Click;
-        buttonsPanel.Controls.AddRange([saveButton, cancelButton]);
+        buttonsPanel.Controls.Add(saveButton);
+        buttonsPanel.Controls.Add(cancelButton);
         layout.Controls.Add(buttonsPanel, 1, 4);
 
         AcceptButton = saveButton;
@@ -61,8 +66,9 @@ public sealed class RoleEditForm : Form
     private static void AddRow(TableLayoutPanel layout, int row, string label, TextBox textBox)
     {
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-        layout.Controls.Add(new Label { Text = label, AutoSize = true, Anchor = AnchorStyles.Left }, 0, row);
+        layout.Controls.Add(new Label { Text = label, AutoSize = true, Anchor = AnchorStyles.Left, Font = Common.AppTypography.LabelFont }, 0, row);
         textBox.Dock = DockStyle.Fill;
+        textBox.Font = Common.AppTypography.InputFont;
         layout.Controls.Add(textBox, 1, row);
     }
 
@@ -70,7 +76,7 @@ public sealed class RoleEditForm : Form
     {
         if (string.IsNullOrWhiteSpace(codeTextBox.Text) || string.IsNullOrWhiteSpace(nameTextBox.Text))
         {
-            MessageBox.Show(this, "Codigo y nombre son requeridos.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            XtraMessageBox.Show(this, "Codigo y nombre son requeridos.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 

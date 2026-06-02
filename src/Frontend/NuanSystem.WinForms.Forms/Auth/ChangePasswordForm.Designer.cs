@@ -1,4 +1,4 @@
-using DevExpress.XtraEditors;
+﻿using DevExpress.XtraEditors;
 using NuanSystem.WinForms.Forms.Common;
 
 namespace NuanSystem.WinForms.Forms.Auth;
@@ -124,6 +124,7 @@ partial class ChangePasswordForm
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = btnCancelar;
         ClientSize = new Size(369, 157);
+        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         Controls.Add(btnCancelar);
         Controls.Add(btnGuardar);
         Controls.Add(txtConfirmarClave);
@@ -164,3 +165,4 @@ partial class ChangePasswordForm
     private SimpleButton btnGuardar;
     private SimpleButton btnCancelar;
 }
+

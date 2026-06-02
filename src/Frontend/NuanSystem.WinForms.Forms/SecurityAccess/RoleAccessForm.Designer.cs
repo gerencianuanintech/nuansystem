@@ -53,6 +53,8 @@ partial class RoleAccessForm
         saveButton.Size = new Size(130, 36);
         saveButton.TabIndex = 1;
         saveButton.Text = "Guardar cambios";
+        saveButton.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point);
+        saveButton.Appearance.Options.UseFont = true;
         mainLayout.ColumnCount = 3;
         mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 240F));
         mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 300F));
@@ -144,7 +146,10 @@ partial class RoleAccessForm
         operationsGrid.BackgroundColor = Color.White;
         operationsGrid.BorderStyle = BorderStyle.FixedSingle;
         operationsGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+        operationsGrid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point);
+        operationsGrid.DefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         operationsGrid.Dock = DockStyle.Fill;
+        operationsGrid.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         operationsGrid.Location = new Point(0, 34);
         operationsGrid.Name = "operationsGrid";
         operationsGrid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;

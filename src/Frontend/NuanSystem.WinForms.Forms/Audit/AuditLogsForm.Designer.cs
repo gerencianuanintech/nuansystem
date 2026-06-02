@@ -1,4 +1,4 @@
-namespace NuanSystem.WinForms.Forms.Audit;
+﻿namespace NuanSystem.WinForms.Forms.Audit;
 
 partial class AuditLogsForm
 {
@@ -107,6 +107,7 @@ partial class AuditLogsForm
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(1120, 620);
+        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         Controls.Add(grcAuditoria);
         Controls.Add(pnlFiltros);
         MinimumSize = new Size(860, 460);
@@ -118,6 +119,12 @@ partial class AuditLogsForm
         ((System.ComponentModel.ISupportInitialize)sedRegistros.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)grcAuditoria).EndInit();
         ((System.ComponentModel.ISupportInitialize)grvAuditoria).EndInit();
+
+        // Tipografia estandar de GridView
+        grvAuditoria.Appearance.FooterPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point);
+        grvAuditoria.Appearance.FooterPanel.Options.UseFont = true;
+        grvAuditoria.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        grvAuditoria.Appearance.FilterPanel.Options.UseFont = true;
         ResumeLayout(false);
     }
 
@@ -131,3 +138,4 @@ partial class AuditLogsForm
         base.Dispose(disposing);
     }
 }
+

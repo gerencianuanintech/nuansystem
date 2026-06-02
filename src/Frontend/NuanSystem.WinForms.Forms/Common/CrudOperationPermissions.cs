@@ -8,6 +8,12 @@ public sealed record CrudOperationPermissions(
     string Update,
     string Delete)
 {
+    public static CrudOperationPermissions BusinessPartners { get; } = new(
+        PermissionCodes.BusinessPartnersRead,
+        PermissionCodes.BusinessPartnersManage,
+        PermissionCodes.BusinessPartnersManage,
+        PermissionCodes.BusinessPartnersManage);
+
     public static CrudOperationPermissions Customers { get; } = new(
         PermissionCodes.CustomersRead,
         PermissionCodes.CustomersManage,
@@ -19,6 +25,12 @@ public sealed record CrudOperationPermissions(
         PermissionCodes.ItemsManage,
         PermissionCodes.ItemsManage,
         PermissionCodes.ItemsManage);
+
+    public static CrudOperationPermissions PurchaseOrders { get; } = new(
+        PermissionCodes.PurchaseOrdersRead,
+        PermissionCodes.PurchaseOrdersManage,
+        PermissionCodes.PurchaseOrdersManage,
+        PermissionCodes.PurchaseOrdersManage);
 
     public static CrudOperationPermissions ItemGroups { get; } = new(
         PermissionCodes.ItemsRead,

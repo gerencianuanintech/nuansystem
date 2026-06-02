@@ -42,7 +42,10 @@ public static class EndpointAuthorizationExtensions
 
                 return isAllowed
                     ? await next(context)
-                    : Results.Forbid();
+                    : Forbidden(
+                        "No tienes permiso para ejecutar esta accion.",
+                        "FormOperationDenied",
+                        $"El rol actual no tiene la operacion '{actionKey}' habilitada para el formulario '{resolvedFormKey}'.");
             });
     }
 
@@ -77,7 +80,10 @@ public static class EndpointAuthorizationExtensions
 
                 if (string.IsNullOrWhiteSpace(formKey))
                 {
-                    return Results.Forbid();
+                    return Forbidden(
+                        "No tienes permiso para consultar este historial.",
+                        "SecurityHistoryFormUnsupported",
+                        "La entidad solicitada no esta asociada a un formulario de seguridad.");
                 }
 
                 var repository = context.HttpContext.RequestServices.GetRequiredService<ISecurityAccessRepository>();
@@ -89,7 +95,10 @@ public static class EndpointAuthorizationExtensions
 
                 return isAllowed
                     ? await next(context)
-                    : Results.Forbid();
+                    : Forbidden(
+                        "No tienes permiso para consultar este historial.",
+                        "SecurityHistoryOperationDenied",
+                        $"El rol actual no tiene la operacion de historial habilitada para el formulario '{formKey}'.");
             });
     }
 
@@ -140,7 +149,16 @@ public static class EndpointAuthorizationExtensions
 
     private static bool HasSecurityAdminBypass(ClaimsPrincipal user)
     {
-        return user.HasClaim("permission", PermissionCodes.RolesManage);
+        return user.HasClaim(AuthClaimNames.Permission, PermissionCodes.SecurityAccessBypass);
+    }
+
+    private static IResult Forbidden(string message, string code, string detail)
+    {
+        return Results.Json(
+            NuanSystem.Shared.Responses.ApiResponse<object>.Fail(
+                message,
+                [new NuanSystem.Shared.Responses.ApiError(code, detail)]),
+            statusCode: StatusCodes.Status403Forbidden);
     }
 
     private static string NormalizeOperation(string operation)

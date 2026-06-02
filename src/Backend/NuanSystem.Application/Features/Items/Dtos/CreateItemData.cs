@@ -50,5 +50,6 @@ public sealed record CreateItemData(
     bool IsActive,
     IReadOnlyCollection<SaveItemBarcodeData> Barcodes,
     IReadOnlyCollection<SaveItemWarehouseData> Warehouses,
+    ItemMasterData? MasterData,
     int? CreatedByUserId,
     string? CreatedByUserName);

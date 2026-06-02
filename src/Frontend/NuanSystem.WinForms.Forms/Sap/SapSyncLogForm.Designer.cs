@@ -145,6 +145,16 @@ partial class SapSyncLogForm
         Text = "Logs de integracion SAP";
         ((System.ComponentModel.ISupportInitialize)grcSapLogs).EndInit();
         ((System.ComponentModel.ISupportInitialize)grvSapLogs).EndInit();
+
+        // Tipografia estandar de GridView
+        grvSapLogs.Appearance.HeaderPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point);
+        grvSapLogs.Appearance.HeaderPanel.Options.UseFont = true;
+        grvSapLogs.Appearance.Row.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        grvSapLogs.Appearance.Row.Options.UseFont = true;
+        grvSapLogs.Appearance.FooterPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point);
+        grvSapLogs.Appearance.FooterPanel.Options.UseFont = true;
+        grvSapLogs.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        grvSapLogs.Appearance.FilterPanel.Options.UseFont = true;
         ResumeLayout(false);
     }
 

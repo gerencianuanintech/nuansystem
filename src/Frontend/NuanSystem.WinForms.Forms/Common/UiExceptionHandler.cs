@@ -1,4 +1,5 @@
 using DevExpress.XtraEditors;
+using NuanSystem.WinForms.Services.Http;
 
 namespace NuanSystem.WinForms.Forms.Common;
 
@@ -13,7 +14,27 @@ public static class UiExceptionHandler
         catch (Exception exception)
         {
             GlobalUiExceptionHandler.Handle(exception, title, owner is Control control ? control.Name : null, showMessage: false);
-            XtraMessageBox.Show(owner, exception.Message, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            ShowError(owner, title, exception, registerError: false);
         }
+    }
+
+    public static void ShowError(IWin32Window owner, string title, Exception exception, bool registerError = true)
+    {
+        if (registerError)
+        {
+            GlobalUiExceptionHandler.Handle(exception, title, owner is Control control ? control.Name : null, showMessage: false);
+        }
+
+        XtraMessageBox.Show(owner, GetUserMessage(exception), title, MessageBoxButtons.OK, MessageBoxIcon.Error);
+    }
+
+    public static string GetUserMessage(Exception exception)
+    {
+        if (exception is ApiClientException apiException && !string.IsNullOrWhiteSpace(apiException.Message))
+        {
+            return apiException.Message;
+        }
+
+        return "Ocurrio un error inesperado. Intente nuevamente o contacte soporte.";
     }
 }

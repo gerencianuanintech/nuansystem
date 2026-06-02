@@ -8,6 +8,7 @@ public sealed partial class ChangePasswordForm : XtraForm
     public ChangePasswordForm()
     {
         InitializeComponent();
+        FormStyler.ApplyBase(this);
         ApplyButtonIcons();
         btnGuardar.Click += BtnGuardar_Click;
     }

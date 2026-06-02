@@ -1,10 +1,10 @@
 ﻿using NuanSystem.WinForms.Forms.Audit;
 using NuanSystem.WinForms.Forms.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.Forms.Auth;
+using NuanSystem.WinForms.Forms.BusinessPartners;
 using NuanSystem.WinForms.Forms.ConfigurationCompanies;
-using NuanSystem.WinForms.Forms.Customers;
-using NuanSystem.WinForms.Forms.Documents;
 using NuanSystem.WinForms.Forms.InventoryItems;
+using NuanSystem.WinForms.Forms.Purchasing.PurchaseOrders;
 using NuanSystem.WinForms.Forms.Roles;
 using NuanSystem.WinForms.Forms.Sap;
 using NuanSystem.WinForms.Forms.SecurityOperations;
@@ -17,8 +17,56 @@ using NuanSystem.WinForms.Forms.ConfigurationSettings;
 using NuanSystem.WinForms.Forms.Shell;
 using NuanSystem.WinForms.Forms.SecurityUsers;
 using NuanSystem.WinForms.Forms.Common;
+using NuanSystem.WinForms.Forms.GeneralSupplier.Catalogs;
+using NuanSystem.WinForms.Forms.GeneralSupplier.ContactChannels;
+using NuanSystem.WinForms.Forms.GeneralSupplier.ContactTypes;
+using NuanSystem.WinForms.Forms.GeneralSupplier.EconomicActivities;
+using NuanSystem.WinForms.Forms.GeneralSupplier.SupplierClasses;
+using NuanSystem.WinForms.Forms.GeneralSupplier.SupplierGroups;
+using NuanSystem.WinForms.Forms.GeneralSupplier.SupplyMethods;
+using NuanSystem.WinForms.Forms.GeneralSupplier.Zones;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.Banks;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.BankAccountTypes;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.AccountingPaymentMethods;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.ApprovalFlows;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.Branches;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.BusinessLines;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.Catalogs;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.CostCenters;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.Currencies;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.Departments;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.PaymentDocumentTypes;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.PaymentPriorities;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.PriceLists;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.Projects;
+using NuanSystem.WinForms.Forms.FinancialCatalogs.PurchasingAgents;
+using NuanSystem.WinForms.Forms.TaxCatalogs.Catalogs;
+using NuanSystem.WinForms.Forms.TaxCatalogs.RetentionConcepts;
+using NuanSystem.WinForms.Forms.TaxCatalogs.RetentionTypes;
+using NuanSystem.WinForms.Forms.TaxCatalogs.TaxRegimes;
+using NuanSystem.WinForms.Forms.TaxCatalogs.TaxSupports;
+using NuanSystem.WinForms.Forms.TaxCatalogs.TaxpayerTypes;
+using NuanSystem.WinForms.Forms.Geography.Cities;
+using NuanSystem.WinForms.Forms.Geography.Countries;
+using NuanSystem.WinForms.Forms.Geography.Provinces;
+using NuanSystem.WinForms.Forms.GeneralInventory.AttachmentCategories;
+using NuanSystem.WinForms.Forms.GeneralInventory.AttachmentDocumentTypes;
+using NuanSystem.WinForms.Forms.GeneralInventory.Catalogs;
+using NuanSystem.WinForms.Forms.GeneralInventory.ItemBrands;
 using NuanSystem.WinForms.Forms.GeneralInventory.ItemFamilies;
 using NuanSystem.WinForms.Forms.GeneralInventory.ItemGroups;
+using NuanSystem.WinForms.Forms.GeneralInventory.ItemLines;
+using NuanSystem.WinForms.Forms.GeneralInventory.ItemSubgroups;
+using NuanSystem.WinForms.Forms.GeneralInventory.ItemTypes;
+using NuanSystem.WinForms.Forms.GeneralInventory.ProductTypes;
+using NuanSystem.WinForms.Forms.GeneralInventory.ReplenishmentMethods;
+using NuanSystem.WinForms.Forms.GeneralInventory.SalesChannels;
+using NuanSystem.WinForms.Forms.GeneralInventory.StorageConditions;
+using NuanSystem.WinForms.Forms.GeneralInventory.StorageZones;
+using NuanSystem.WinForms.Forms.GeneralInventory.UnitMeasures;
+using NuanSystem.WinForms.Forms.GeneralInventory.VariantAttributes;
+using NuanSystem.WinForms.Forms.GeneralInventory.WarehouseLocations;
+using NuanSystem.WinForms.Forms.GeneralInventory.Warehouses;
 using NuanSystem.WinForms.Services.Audit;
 using NuanSystem.WinForms.Services.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.Services.Authentication;
@@ -26,13 +74,18 @@ using NuanSystem.WinForms.Services.Companies;
 using NuanSystem.WinForms.Services.ConfigurationCompanies;
 using NuanSystem.WinForms.Services.ConfigurationSettings;
 using NuanSystem.WinForms.Services.Configuration;
-using NuanSystem.WinForms.Services.Customers;
-using NuanSystem.WinForms.Services.Documents;
+using NuanSystem.WinForms.Services.BusinessPartners;
 using NuanSystem.WinForms.Services.Http;
 using NuanSystem.WinForms.Services.GridColumnSettings;
+using NuanSystem.WinForms.Services.FinancialCatalogs.Catalogs;
+using NuanSystem.WinForms.Services.TaxCatalogs.Catalogs;
+using NuanSystem.WinForms.Services.Geography;
+using NuanSystem.WinForms.Services.GeneralInventory.Catalogs;
+using NuanSystem.WinForms.Services.GeneralSupplier.Catalogs;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemFamilies;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemGroups;
 using NuanSystem.WinForms.Services.InventoryItems;
+using NuanSystem.WinForms.Services.Purchasing.PurchaseOrders;
 using NuanSystem.WinForms.Services.Roles;
 using NuanSystem.WinForms.Services.Sap;
 using NuanSystem.WinForms.Services.SecurityOperations;
@@ -47,14 +100,19 @@ using NuanSystem.WinForms.Services.SecurityUsers;
 using NuanSystem.WinForms.ViewModels.Audit;
 using NuanSystem.WinForms.ViewModels.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.ViewModels.Auth;
+using NuanSystem.WinForms.ViewModels.BusinessPartners;
 using NuanSystem.WinForms.ViewModels.Companies;
 using NuanSystem.WinForms.ViewModels.ConfigurationCompanies;
 using NuanSystem.WinForms.ViewModels.ConfigurationSettings;
-using NuanSystem.WinForms.ViewModels.Customers;
-using NuanSystem.WinForms.ViewModels.Documents;
+using NuanSystem.WinForms.ViewModels.FinancialCatalogs.Catalogs;
+using NuanSystem.WinForms.ViewModels.TaxCatalogs.Catalogs;
+using NuanSystem.WinForms.ViewModels.Geography;
+using NuanSystem.WinForms.ViewModels.GeneralInventory.Catalogs;
+using NuanSystem.WinForms.ViewModels.GeneralSupplier.Catalogs;
 using NuanSystem.WinForms.ViewModels.GeneralInventory.ItemFamilies;
 using NuanSystem.WinForms.ViewModels.GeneralInventory.ItemGroups;
 using NuanSystem.WinForms.ViewModels.InventoryItems;
+using NuanSystem.WinForms.ViewModels.Purchasing.PurchaseOrders;
 using NuanSystem.WinForms.ViewModels.Roles;
 using NuanSystem.WinForms.ViewModels.Sap;
 using NuanSystem.WinForms.ViewModels.SecurityOperations;
@@ -79,36 +137,78 @@ static class Program
     {
         ApplicationConfiguration.Initialize();
 
-        using var composition = BuildComposition();
-        composition.ConfigureGlobalErrorHandling();
-
-        while (true)
+        try
         {
-            composition.ClearSession();
-            using var loginForm = composition.CreateLoginForm();
-            if (loginForm.ShowDialog() != DialogResult.OK)
-            {
-                return;
-            }
+            using var composition = BuildComposition();
+            composition.ConfigureGlobalErrorHandling();
 
-            using var mainForm = composition.CreateMainForm();
-            var mainResult = mainForm.ShowDialog();
-            if (mainResult != DialogResult.Retry)
+            while (true)
             {
-                return;
+                composition.ClearSession();
+                using var loginForm = composition.CreateLoginForm();
+                if (loginForm.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                using var mainForm = composition.CreateMainForm();
+                var mainResult = mainForm.ShowDialog();
+                if (mainResult != DialogResult.Retry)
+                {
+                    return;
+                }
             }
         }
-    }    
+        catch (Exception exception)
+        {
+            TryWriteStartupError(exception);
+            MessageBox.Show(
+                "No fue posible iniciar NuanSystem. Revise la configuracion de la URL de API y el log de arranque.",
+                "NuanSystem",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+    }
 
     private static FrontendComposition BuildComposition()
     {
-        var baseUrl = Environment.GetEnvironmentVariable("NUANSYSTEM_API_URL") ?? "https://localhost:7293";
+        var baseUrl = NormalizeApiBaseUrl(Environment.GetEnvironmentVariable("NUANSYSTEM_API_URL"));
         var options = new ApiClientOptions
         {
             BaseUrl = baseUrl
         };
 
         return new FrontendComposition(options);
+    }
+
+    private static string NormalizeApiBaseUrl(string? configuredBaseUrl)
+    {
+        if (string.IsNullOrWhiteSpace(configuredBaseUrl))
+        {
+            return "https://localhost:7293";
+        }
+
+        return Uri.TryCreate(configuredBaseUrl, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+            ? uri.ToString().TrimEnd('/')
+            : "https://localhost:7293";
+    }
+
+    private static void TryWriteStartupError(Exception exception)
+    {
+        try
+        {
+            var logDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
+            Directory.CreateDirectory(logDirectory);
+            var logPath = Path.Combine(logDirectory, $"winforms-startup-{DateTime.UtcNow:yyyyMMdd}.log");
+            File.AppendAllText(
+                logPath,
+                $"[{DateTime.UtcNow:O}] {exception}{Environment.NewLine}{Environment.NewLine}");
+        }
+        catch
+        {
+            // Startup logging must never prevent the user-facing error message.
+        }
     }
 }
 
@@ -121,12 +221,17 @@ internal sealed class FrontendComposition : IDisposable
     private readonly CompanyClient companyClient;
     private readonly ConfigurationCompanyClient configurationCompanyClient;
     private readonly ConfigurationSettingClient configurationSettingClient;
-    private readonly CustomerClient customerClient;
+    private readonly BusinessPartnerClient businessPartnerClient;
     private readonly ChartOfAccountClient chartOfAccountClient;
+    private readonly FinancialCatalogClient financialCatalogClient;
+    private readonly TaxCatalogClient taxCatalogClient;
+    private readonly GeographyClient geographyClient;
+    private readonly GeneralSupplierCatalogClient generalSupplierCatalogClient;
+    private readonly GeneralInventoryCatalogClient generalInventoryCatalogClient;
     private readonly ItemGroupClient itemGroupClient;
     private readonly ItemFamilyClient itemFamilyClient;
     private readonly ItemClient itemClient;
-    private readonly DocumentClient documentClient;
+    private readonly PurchaseOrderClient purchaseOrderClient;
     private readonly SapClient sapClient;
     private readonly AuditClient auditClient;
     private readonly SettingsClient settingsClient;
@@ -153,12 +258,17 @@ internal sealed class FrontendComposition : IDisposable
         companyClient = new CompanyClient(apiClient);
         configurationCompanyClient = new ConfigurationCompanyClient(apiClient);
         configurationSettingClient = new ConfigurationSettingClient(apiClient);
-        customerClient = new CustomerClient(apiClient);
+        businessPartnerClient = new BusinessPartnerClient(apiClient);
         chartOfAccountClient = new ChartOfAccountClient(apiClient);
+        financialCatalogClient = new FinancialCatalogClient(apiClient);
+        taxCatalogClient = new TaxCatalogClient(apiClient);
+        geographyClient = new GeographyClient(apiClient);
+        generalSupplierCatalogClient = new GeneralSupplierCatalogClient(apiClient);
+        generalInventoryCatalogClient = new GeneralInventoryCatalogClient(apiClient);
         itemGroupClient = new ItemGroupClient(apiClient);
         itemFamilyClient = new ItemFamilyClient(apiClient);
         itemClient = new ItemClient(apiClient);
-        documentClient = new DocumentClient(apiClient);
+        purchaseOrderClient = new PurchaseOrderClient(apiClient);
         sapClient = new SapClient(apiClient);
         auditClient = new AuditClient(apiClient);
         settingsClient = new SettingsClient(apiClient);
@@ -184,7 +294,7 @@ internal sealed class FrontendComposition : IDisposable
         return new LoginForm(
             new LoginViewModel(authenticationClient),
             new CompanySelectionViewModel(companyClient, session),
-            httpClient.BaseAddress?.ToString() ?? string.Empty);
+            apiClient);
     }
 
     public MainForm CreateMainForm()
@@ -203,11 +313,42 @@ internal sealed class FrontendComposition : IDisposable
             CreateFieldsForm,
             CreateRoleAccessForm,
             CreateCustomersForm,
+            CreateSuppliersForm,
             CreateChartOfAccountsForm,
+            CreateSupplierGroupsForm,
+            CreateSupplierClassesForm,
+            CreateEconomicActivitiesForm,
+            CreateZonesForm,
+            CreateSupplyMethodsForm,
+            CreateContactTypesForm,
+            CreateContactChannelsForm,
+            CreateBanksForm,
+            CreateBankAccountTypesForm,
+            CreateCurrenciesForm,
+            CreatePriceListsForm,
+            CreatePurchasingAgentsForm,
+            CreateAccountingPaymentMethodsForm,
+            CreatePaymentPrioritiesForm,
+            CreateApprovalFlowsForm,
+            CreatePaymentDocumentTypesForm,
+            CreateBranchesForm,
+            CreateDepartmentsForm,
+            CreateBusinessLinesForm,
+            CreateCostCentersForm,
+            CreateProjectsForm,
+            CreateTaxRegimesForm,
+            CreateTaxpayerTypesForm,
+            CreateRetentionTypesForm,
+            CreateRetentionConceptsForm,
+            CreateTaxSupportsForm,
+            CreateCountriesForm,
+            CreateProvincesForm,
+            CreateCitiesForm,
+            CreateGeneralInventoryCatalogForm,
             CreateItemGroupsForm,
             CreateItemFamiliesForm,
             CreateItemsForm,
-            CreateDocumentsForm,
+            CreatePurchaseOrdersForm,
             CreateSapSyncLogForm,
             CreateAuditLogsForm,
             CreateSettingsForm);
@@ -218,9 +359,67 @@ internal sealed class FrontendComposition : IDisposable
         session.Clear();
     }
 
-    public CustomersForm CreateCustomersForm()
+    public BusinessPartnersForm CreateCustomersForm()
     {
-        return new CustomersForm(new CustomersViewModel(customerClient), session);
+        return new BusinessPartnersForm(
+            new BusinessPartnersViewModel(businessPartnerClient, "Customer", "customers"),
+            session,
+            auditClient,
+            gridColumnSettingsClient,
+            "Customer",
+            "customers",
+            "Clientes");
+    }
+
+    public BusinessPartnersForm CreateSuppliersForm()
+    {
+        return new BusinessPartnersForm(
+            new BusinessPartnersViewModel(businessPartnerClient, "Supplier", "suppliers"),
+            session,
+            auditClient,
+            gridColumnSettingsClient,
+            "Supplier",
+            "suppliers",
+            "Proveedores",
+            CreateGeneralSupplierMaintenanceForm,
+            geographyClient);
+    }
+
+    private Form? CreateGeneralSupplierMaintenanceForm(string formKey)
+    {
+        return formKey switch
+        {
+            "supplier-groups" => CreateSupplierGroupsForm(),
+            "supplier-classes" => CreateSupplierClassesForm(),
+            "economic-activities" => CreateEconomicActivitiesForm(),
+            "supplier-zones" => CreateZonesForm(),
+            "supply-methods" => CreateSupplyMethodsForm(),
+            "supplier-contact-types" => CreateContactTypesForm(),
+            "supplier-contact-channels" => CreateContactChannelsForm(),
+            "banks" => CreateBanksForm(),
+            "bank-account-types" => CreateBankAccountTypesForm(),
+            "currencies" => CreateCurrenciesForm(),
+            "price-lists" => CreatePriceListsForm(),
+            "purchasing-agents" => CreatePurchasingAgentsForm(),
+            "accounting-payment-methods" => CreateAccountingPaymentMethodsForm(),
+            "payment-priorities" => CreatePaymentPrioritiesForm(),
+            "approval-flows" => CreateApprovalFlowsForm(),
+            "payment-document-types" => CreatePaymentDocumentTypesForm(),
+            "branches" => CreateBranchesForm(),
+            "departments" => CreateDepartmentsForm(),
+            "business-lines" => CreateBusinessLinesForm(),
+            "cost-centers" => CreateCostCentersForm(),
+            "projects" => CreateProjectsForm(),
+            "tax-regimes" => CreateTaxRegimesForm(),
+            "taxpayer-types" => CreateTaxpayerTypesForm(),
+            "retention-types" => CreateRetentionTypesForm(),
+            "retention-concepts" => CreateRetentionConceptsForm(),
+            "tax-supports" => CreateTaxSupportsForm(),
+            "countries" => CreateCountriesForm(),
+            "provinces" => CreateProvincesForm(),
+            "cities" => CreateCitiesForm(),
+            _ => null
+        };
     }
 
     public ChartOfAccountsForm CreateChartOfAccountsForm()
@@ -228,9 +427,346 @@ internal sealed class FrontendComposition : IDisposable
         return new ChartOfAccountsForm(new ChartOfAccountsViewModel(chartOfAccountClient), session, gridColumnSettingsClient);
     }
 
+    public SupplierGroupsForm CreateSupplierGroupsForm()
+    {
+        return new SupplierGroupsForm(
+            new GeneralSupplierCatalogsViewModel(generalSupplierCatalogClient, GeneralSupplierCatalogDescriptors.SupplierGroups.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public SupplierClassesForm CreateSupplierClassesForm()
+    {
+        return new SupplierClassesForm(
+            new GeneralSupplierCatalogsViewModel(generalSupplierCatalogClient, GeneralSupplierCatalogDescriptors.SupplierClasses.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public EconomicActivitiesForm CreateEconomicActivitiesForm()
+    {
+        return new EconomicActivitiesForm(
+            new GeneralSupplierCatalogsViewModel(generalSupplierCatalogClient, GeneralSupplierCatalogDescriptors.EconomicActivities.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public ZonesForm CreateZonesForm()
+    {
+        return new ZonesForm(
+            new GeneralSupplierCatalogsViewModel(generalSupplierCatalogClient, GeneralSupplierCatalogDescriptors.Zones.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public SupplyMethodsForm CreateSupplyMethodsForm()
+    {
+        return new SupplyMethodsForm(
+            new GeneralSupplierCatalogsViewModel(generalSupplierCatalogClient, GeneralSupplierCatalogDescriptors.SupplyMethods.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public ContactTypesForm CreateContactTypesForm()
+    {
+        return new ContactTypesForm(
+            new GeneralSupplierCatalogsViewModel(generalSupplierCatalogClient, GeneralSupplierCatalogDescriptors.ContactTypes.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public ContactChannelsForm CreateContactChannelsForm()
+    {
+        return new ContactChannelsForm(
+            new GeneralSupplierCatalogsViewModel(generalSupplierCatalogClient, GeneralSupplierCatalogDescriptors.ContactChannels.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public BanksForm CreateBanksForm()
+    {
+        return new BanksForm(
+            new FinancialCatalogsViewModel(financialCatalogClient, FinancialCatalogDescriptors.Banks.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public BankAccountTypesForm CreateBankAccountTypesForm()
+    {
+        return new BankAccountTypesForm(
+            new FinancialCatalogsViewModel(financialCatalogClient, FinancialCatalogDescriptors.BankAccountTypes.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public CurrenciesForm CreateCurrenciesForm()
+    {
+        return new CurrenciesForm(
+            new FinancialCatalogsViewModel(financialCatalogClient, FinancialCatalogDescriptors.Currencies.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public PriceListsForm CreatePriceListsForm()
+    {
+        return new PriceListsForm(
+            new FinancialCatalogsViewModel(financialCatalogClient, FinancialCatalogDescriptors.PriceLists.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public PurchasingAgentsForm CreatePurchasingAgentsForm()
+    {
+        return new PurchasingAgentsForm(
+            new FinancialCatalogsViewModel(financialCatalogClient, FinancialCatalogDescriptors.PurchasingAgents.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public AccountingPaymentMethodsForm CreateAccountingPaymentMethodsForm()
+    {
+        return new AccountingPaymentMethodsForm(
+            new FinancialCatalogsViewModel(financialCatalogClient, FinancialCatalogDescriptors.AccountingPaymentMethods.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public PaymentPrioritiesForm CreatePaymentPrioritiesForm()
+    {
+        return new PaymentPrioritiesForm(
+            new FinancialCatalogsViewModel(financialCatalogClient, FinancialCatalogDescriptors.PaymentPriorities.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public ApprovalFlowsForm CreateApprovalFlowsForm()
+    {
+        return new ApprovalFlowsForm(
+            new FinancialCatalogsViewModel(financialCatalogClient, FinancialCatalogDescriptors.ApprovalFlows.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public PaymentDocumentTypesForm CreatePaymentDocumentTypesForm()
+    {
+        return new PaymentDocumentTypesForm(
+            new FinancialCatalogsViewModel(financialCatalogClient, FinancialCatalogDescriptors.PaymentDocumentTypes.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public BranchesForm CreateBranchesForm()
+    {
+        return new BranchesForm(
+            new FinancialCatalogsViewModel(financialCatalogClient, FinancialCatalogDescriptors.Branches.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public DepartmentsForm CreateDepartmentsForm()
+    {
+        return new DepartmentsForm(
+            new FinancialCatalogsViewModel(financialCatalogClient, FinancialCatalogDescriptors.Departments.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public BusinessLinesForm CreateBusinessLinesForm()
+    {
+        return new BusinessLinesForm(
+            new FinancialCatalogsViewModel(financialCatalogClient, FinancialCatalogDescriptors.BusinessLines.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public CostCentersForm CreateCostCentersForm()
+    {
+        return new CostCentersForm(
+            new FinancialCatalogsViewModel(financialCatalogClient, FinancialCatalogDescriptors.CostCenters.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public ProjectsForm CreateProjectsForm()
+    {
+        return new ProjectsForm(
+            new FinancialCatalogsViewModel(financialCatalogClient, FinancialCatalogDescriptors.Projects.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public TaxRegimesForm CreateTaxRegimesForm()
+    {
+        return new TaxRegimesForm(
+            new TaxCatalogsViewModel(taxCatalogClient, TaxCatalogDescriptors.TaxRegimes.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public TaxpayerTypesForm CreateTaxpayerTypesForm()
+    {
+        return new TaxpayerTypesForm(
+            new TaxCatalogsViewModel(taxCatalogClient, TaxCatalogDescriptors.TaxpayerTypes.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public RetentionTypesForm CreateRetentionTypesForm()
+    {
+        return new RetentionTypesForm(
+            new TaxCatalogsViewModel(taxCatalogClient, TaxCatalogDescriptors.RetentionTypes.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public RetentionConceptsForm CreateRetentionConceptsForm()
+    {
+        return new RetentionConceptsForm(
+            new RetentionConceptsViewModel(taxCatalogClient),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public TaxSupportsForm CreateTaxSupportsForm()
+    {
+        return new TaxSupportsForm(
+            new TaxCatalogsViewModel(taxCatalogClient, TaxCatalogDescriptors.TaxSupports.Route),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public CountriesForm CreateCountriesForm()
+    {
+        return new CountriesForm(
+            new CountriesViewModel(geographyClient),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public ProvincesForm CreateProvincesForm()
+    {
+        return new ProvincesForm(
+            new ProvincesViewModel(geographyClient),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public CitiesForm CreateCitiesForm()
+    {
+        return new CitiesForm(
+            new CitiesViewModel(geographyClient),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public Form? CreateGeneralInventoryCatalogForm(string formKey)
+    {
+        return formKey switch
+        {
+            "inventory-unit-measures" => CreateUnitMeasuresForm(),
+            "inventory-warehouses" => CreateWarehousesForm(),
+            "inventory-item-brands" => CreateItemBrandsForm(),
+            "inventory-item-types" => CreateItemTypesForm(),
+            "inventory-product-types" => CreateProductTypesForm(),
+            "inventory-item-lines" => CreateItemLinesForm(),
+            "inventory-item-subgroups" => CreateItemSubgroupsForm(),
+            "inventory-sales-channels" => CreateSalesChannelsForm(),
+            "inventory-warehouse-locations" => CreateWarehouseLocationsForm(),
+            "inventory-storage-zones" => CreateStorageZonesForm(),
+            "inventory-storage-conditions" => CreateStorageConditionsForm(),
+            "inventory-replenishment-methods" => CreateReplenishmentMethodsForm(),
+            "inventory-variant-attributes" => CreateVariantAttributesForm(),
+            "inventory-attachment-document-types" => CreateAttachmentDocumentTypesForm(),
+            "inventory-attachment-categories" => CreateAttachmentCategoriesForm(),
+            _ => null
+        };
+    }
+
+    public UnitMeasuresForm CreateUnitMeasuresForm()
+    {
+        return CreateCatalogForm<UnitMeasuresForm>(GeneralInventoryCatalogDescriptors.UnitMeasures);
+    }
+
+    public WarehousesForm CreateWarehousesForm()
+    {
+        return CreateCatalogForm<WarehousesForm>(GeneralInventoryCatalogDescriptors.Warehouses);
+    }
+
+    public ItemBrandsForm CreateItemBrandsForm()
+    {
+        return CreateCatalogForm<ItemBrandsForm>(GeneralInventoryCatalogDescriptors.ItemBrands);
+    }
+
+    public ItemTypesForm CreateItemTypesForm()
+    {
+        return CreateCatalogForm<ItemTypesForm>(GeneralInventoryCatalogDescriptors.ItemTypes);
+    }
+
+    public ProductTypesForm CreateProductTypesForm()
+    {
+        return CreateCatalogForm<ProductTypesForm>(GeneralInventoryCatalogDescriptors.ProductTypes);
+    }
+
+    public ItemLinesForm CreateItemLinesForm()
+    {
+        return CreateCatalogForm<ItemLinesForm>(GeneralInventoryCatalogDescriptors.ItemLines);
+    }
+
+    public ItemSubgroupsForm CreateItemSubgroupsForm()
+    {
+        return CreateCatalogForm<ItemSubgroupsForm>(GeneralInventoryCatalogDescriptors.ItemSubgroups);
+    }
+
+    public SalesChannelsForm CreateSalesChannelsForm()
+    {
+        return CreateCatalogForm<SalesChannelsForm>(GeneralInventoryCatalogDescriptors.SalesChannels);
+    }
+
+    public WarehouseLocationsForm CreateWarehouseLocationsForm()
+    {
+        return CreateCatalogForm<WarehouseLocationsForm>(GeneralInventoryCatalogDescriptors.WarehouseLocations);
+    }
+
+    public StorageZonesForm CreateStorageZonesForm()
+    {
+        return CreateCatalogForm<StorageZonesForm>(GeneralInventoryCatalogDescriptors.StorageZones);
+    }
+
+    public StorageConditionsForm CreateStorageConditionsForm()
+    {
+        return CreateCatalogForm<StorageConditionsForm>(GeneralInventoryCatalogDescriptors.StorageConditions);
+    }
+
+    public ReplenishmentMethodsForm CreateReplenishmentMethodsForm()
+    {
+        return CreateCatalogForm<ReplenishmentMethodsForm>(GeneralInventoryCatalogDescriptors.ReplenishmentMethods);
+    }
+
+    public VariantAttributesForm CreateVariantAttributesForm()
+    {
+        return CreateCatalogForm<VariantAttributesForm>(GeneralInventoryCatalogDescriptors.VariantAttributes);
+    }
+
+    public AttachmentDocumentTypesForm CreateAttachmentDocumentTypesForm()
+    {
+        return CreateCatalogForm<AttachmentDocumentTypesForm>(GeneralInventoryCatalogDescriptors.AttachmentDocumentTypes);
+    }
+
+    public AttachmentCategoriesForm CreateAttachmentCategoriesForm()
+    {
+        return CreateCatalogForm<AttachmentCategoriesForm>(GeneralInventoryCatalogDescriptors.AttachmentCategories);
+    }
+
+    private TForm CreateCatalogForm<TForm>(GeneralInventoryCatalogDescriptor descriptor)
+        where TForm : Form
+    {
+        var viewModel = new GeneralInventoryCatalogsViewModel(generalInventoryCatalogClient, descriptor.Route);
+        return (TForm)Activator.CreateInstance(typeof(TForm), viewModel, session, gridColumnSettingsClient)!;
+    }
+
     public ItemGroupsForm CreateItemGroupsForm()
     {
-        return new ItemGroupsForm(new ItemGroupsViewModel(itemGroupClient), session, auditClient, gridColumnSettingsClient);
+        return new ItemGroupsForm(new ItemGroupsViewModel(itemGroupClient, chartOfAccountClient), session, auditClient, gridColumnSettingsClient);
     }
 
     public ItemFamiliesForm CreateItemFamiliesForm()
@@ -280,12 +816,26 @@ internal sealed class FrontendComposition : IDisposable
 
     public ItemsForm CreateItemsForm()
     {
-        return new ItemsForm(new ItemsViewModel(itemClient, itemGroupClient, itemFamilyClient, securityAccessClient), session, auditClient, gridColumnSettingsClient);
+        return new ItemsForm(
+            new ItemsViewModel(
+                itemClient,
+                itemGroupClient,
+                itemFamilyClient,
+                generalInventoryCatalogClient,
+                chartOfAccountClient,
+                securityAccessClient),
+            session,
+            auditClient,
+            gridColumnSettingsClient,
+            CreateGeneralInventoryCatalogForm);
     }
 
-    public DocumentsForm CreateDocumentsForm()
+    public PurchaseOrdersForm CreatePurchaseOrdersForm()
     {
-        return new DocumentsForm(new DocumentsViewModel(documentClient, customerClient, itemClient, sapClient));
+        return new PurchaseOrdersForm(
+            new PurchaseOrdersViewModel(purchaseOrderClient),
+            session,
+            gridColumnSettingsClient);
     }
 
     public SapSyncLogForm CreateSapSyncLogForm()

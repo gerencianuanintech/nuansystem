@@ -362,6 +362,7 @@ partial class UserEditForm
         btnGuardar.AppearanceHovered.Options.UseBackColor = true;
         btnGuardar.AppearanceHovered.Options.UseForeColor = true;
         btnGuardar.DialogResult = DialogResult.None;
+        btnGuardar.ImageOptions.SvgImageSize = new Size(32, 32);
         btnGuardar.Location = new Point(464, 386);
         btnGuardar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         btnGuardar.LookAndFeel.UseDefaultLookAndFeel = false;
@@ -372,6 +373,17 @@ partial class UserEditForm
         // 
         // btnCancelar
         // 
+        btnCancelar.Appearance.BackColor = Color.FromArgb(99, 110, 114);
+        btnCancelar.Appearance.ForeColor = Color.White;
+        btnCancelar.AppearanceHovered.BackColor = Color.FromArgb(78, 87, 90);
+        btnCancelar.AppearanceHovered.ForeColor = Color.White;
+        btnCancelar.Appearance.Options.UseBackColor = true;
+        btnCancelar.Appearance.Options.UseForeColor = true;
+        btnCancelar.AppearanceHovered.Options.UseBackColor = true;
+        btnCancelar.AppearanceHovered.Options.UseForeColor = true;
+        btnCancelar.ImageOptions.SvgImageSize = new Size(32, 32);
+        btnCancelar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
+        btnCancelar.LookAndFeel.UseDefaultLookAndFeel = false;
         btnCancelar.DialogResult = DialogResult.Cancel;
         btnCancelar.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         btnCancelar.Appearance.Options.UseForeColor = true;
@@ -497,4 +509,5 @@ partial class UserEditForm
     private SimpleButton btnGuardar;
     private SimpleButton btnCancelar;
 }
+
 

@@ -43,6 +43,32 @@ Business presets should only apply default configuration:
 - `TiendaEspecializada`
 - `ServiciosConInventario`
 
+## Integration Capabilities
+
+- `Integrations.SapEnabled`
+- `Integrations.SapMode`
+- `Integrations.SapServiceLayerEnabled`
+- `Integrations.SapDiApiEnabled`
+- `Documents.SapSyncRequired`
+- `Documents.AllowManualSapRetry`
+- `Documents.RequireApproval`
+- `Documents.AllowDrafts`
+- `Documents.AllowCancellation`
+- `Security.CompanyPermissionsEnabled`
+- `Security.ModulePermissionsEnabled`
+- `Inventory.RequiresLotManagement`
+- `Inventory.RequiresSerialManagement`
+- `Inventory.RequiresExpirationDate`
+- `Sales.RequiresCreditLimitValidation`
+- `Purchasing.RequiresApproval`
+
+Rules:
+
+- Capabilities should configure behavior.
+- Capabilities should not create hard-coded business-specific branches.
+- Presets can enable capabilities but must not replace modular design.
+- SAP capabilities must be optional by company.
+
 ## References
 
 - Load `references/capability-checklist.md` before adding a new rule that might vary by company.

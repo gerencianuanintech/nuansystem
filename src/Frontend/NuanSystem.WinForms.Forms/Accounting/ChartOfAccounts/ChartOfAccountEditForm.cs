@@ -15,6 +15,7 @@ public sealed partial class ChartOfAccountEditForm : BaseEditForm
     private IReadOnlyCollection<ChartOfAccountLookupItem> parentAccounts;
     private EditorButton? createParentButton;
     private bool loadingParentAccounts;
+    private int? currentAccountId;
 
     public ChartOfAccountEditForm(
         int companyId,
@@ -27,6 +28,7 @@ public sealed partial class ChartOfAccountEditForm : BaseEditForm
         this.parentAccounts = parentAccounts;
         InitializeComponent();
         ConfigureForm(canCreateParent);
+        lueTipoCuenta.EditValue = account?.AccountType ?? "ASSET";
         LoadParentAccounts(parentAccounts, account?.Id);
 
         if (account is not null)
@@ -35,7 +37,6 @@ public sealed partial class ChartOfAccountEditForm : BaseEditForm
         }
         else
         {
-            lueTipoCuenta.EditValue = "ASSET";
             lueClaseCuenta.EditValue = "OTHER";
             txtSaldo.Text = 0m.ToString("N2", CultureInfo.CurrentCulture);
             chkPermiteMovimiento.Checked = true;
@@ -134,7 +135,6 @@ public sealed partial class ChartOfAccountEditForm : BaseEditForm
 
     private void ConfigureForm(bool canCreateParent)
     {
-        FormStyler.ApplyBase(this);
         OperationButtonIcons.ApplySaveCancel(btnGuardar, btnCancelar);
         btnGuardar.Click += (_, _) => Save();
         ApplyAccountTypeButtonIcons();
@@ -166,6 +166,7 @@ public sealed partial class ChartOfAccountEditForm : BaseEditForm
         lueClaseCuenta.Properties.NullText = "";
 
         chkTitulo.CheckedChanged += (_, _) => ApplyTitleMovementRule();
+        lueTipoCuenta.EditValueChanged += (_, _) => RefreshParentAccountOptions();
         lueCuentaPadre.EditValueChanged += (_, _) => RefreshLevelPreview();
         trlAccounts.FocusedNodeChanged += AccountTreeFocusedNodeChanged;
 
@@ -262,24 +263,61 @@ public sealed partial class ChartOfAccountEditForm : BaseEditForm
 
     private void LoadParentAccounts(IReadOnlyCollection<ChartOfAccountLookupItem> accounts, int? currentId)
     {
-        var options = accounts
-            .Where(account => !currentId.HasValue || account.Id != currentId.Value)
-            .OrderBy(account => account.Code)
-            .ToList();
+        parentAccounts = accounts;
+        currentAccountId = currentId;
 
         loadingParentAccounts = true;
-        lueCuentaPadre.Properties.DataSource = options;
         lueCuentaPadre.Properties.DisplayMember = nameof(ChartOfAccountLookupItem.DisplayText);
         lueCuentaPadre.Properties.ValueMember = nameof(ChartOfAccountLookupItem.Id);
         lueCuentaPadre.Properties.NullText = "";
         lueCuentaPadre.Properties.Columns.Clear();
         lueCuentaPadre.Properties.Columns.Add(new LookUpColumnInfo(nameof(ChartOfAccountLookupItem.Code), "Codigo", 120));
         lueCuentaPadre.Properties.Columns.Add(new LookUpColumnInfo(nameof(ChartOfAccountLookupItem.Name), "Nombre", 240));
+        loadingParentAccounts = false;
 
-        trlAccounts.DataSource = options;
+        RefreshParentAccountOptions();
+    }
+
+    private void RefreshParentAccountOptions()
+    {
+        var selectedType = Convert.ToString(lueTipoCuenta.EditValue);
+        var selectedParentId = lueCuentaPadre.EditValue is int parentId ? parentId : (int?)null;
+        var options = parentAccounts
+            .Where(account => !currentAccountId.HasValue || account.Id != currentAccountId.Value)
+            .Where(account => string.IsNullOrWhiteSpace(selectedType) || account.AccountType == selectedType)
+            .OrderBy(account => account.Code)
+            .ToList();
+
+        loadingParentAccounts = true;
+        lueCuentaPadre.Properties.DataSource = options;
+        trlAccounts.DataSource = BuildTreeOptions(options);
         trlAccounts.ExpandAll();
+
+        if (selectedParentId.HasValue && options.All(account => account.Id != selectedParentId.Value))
+        {
+            lueCuentaPadre.EditValue = null;
+        }
+
         loadingParentAccounts = false;
         RefreshLevelPreview();
+    }
+
+    private static IReadOnlyCollection<ChartOfAccountTreeItem> BuildTreeOptions(
+        IReadOnlyCollection<ChartOfAccountLookupItem> accounts)
+    {
+        var availableIds = accounts.Select(account => account.Id).ToHashSet();
+        return accounts
+            .Select(account => new ChartOfAccountTreeItem(
+                account.Id,
+                account.Code,
+                account.Name,
+                account.AccountType,
+                account.ParentAccountId.HasValue && availableIds.Contains(account.ParentAccountId.Value)
+                    ? account.ParentAccountId
+                    : null,
+                account.Level,
+                account.IsActive))
+            .ToList();
     }
 
     private void AccountTreeFocusedNodeChanged(object? sender, FocusedNodeChangedEventArgs e)
@@ -373,6 +411,18 @@ public sealed partial class ChartOfAccountEditForm : BaseEditForm
     }
 
     private sealed record AccountTypeOption(string Code, string Name)
+    {
+        public string DisplayText => $"{Code} - {Name}";
+    }
+
+    private sealed record ChartOfAccountTreeItem(
+        int Id,
+        string Code,
+        string Name,
+        string AccountType,
+        int? ParentAccountId,
+        int Level,
+        bool IsActive)
     {
         public string DisplayText => $"{Code} - {Name}";
     }

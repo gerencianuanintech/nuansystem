@@ -31,5 +31,6 @@ public sealed record UpdateItemData(
     bool IsActive,
     IReadOnlyCollection<SaveItemBarcodeData> Barcodes,
     IReadOnlyCollection<SaveItemWarehouseData> Warehouses,
+    ItemMasterData? MasterData,
     int? UpdatedByUserId,
     string? UpdatedByUserName);

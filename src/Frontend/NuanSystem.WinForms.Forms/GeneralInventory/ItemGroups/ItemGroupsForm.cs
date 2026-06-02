@@ -50,7 +50,8 @@ public sealed partial class ItemGroupsForm : BaseGridCrudListForm
 
     protected override async Task CreateAsync()
     {
-        using var form = new ItemGroupEditForm();
+        await viewModel.LoadAccountLookupsAsync();
+        using var form = new ItemGroupEditForm(viewModel.AccountLookups);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -69,7 +70,8 @@ public sealed partial class ItemGroupsForm : BaseGridCrudListForm
         }
 
         var fullItem = await viewModel.GetByIdAsync(item.Id);
-        using var form = new ItemGroupEditForm(fullItem);
+        await viewModel.LoadAccountLookupsAsync();
+        using var form = new ItemGroupEditForm(fullItem, viewModel.AccountLookups);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -88,7 +90,8 @@ public sealed partial class ItemGroupsForm : BaseGridCrudListForm
         }
 
         var fullItem = await viewModel.GetByIdAsync(item.Id);
-        using var form = new ItemGroupEditForm(fullItem, copyMode: true);
+        await viewModel.LoadAccountLookupsAsync();
+        using var form = new ItemGroupEditForm(fullItem, viewModel.AccountLookups, copyMode: true);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;

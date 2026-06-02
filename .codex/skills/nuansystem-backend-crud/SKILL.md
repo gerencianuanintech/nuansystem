@@ -28,6 +28,27 @@ description: Build or modify NuanSystem backend CRUD features for administrative
 - Delete operations are logical deletes when the table has audit columns.
 - Use `CancellationToken` on async paths.
 
+## Auxiliary Master Rules
+
+- Administrable auxiliary masters must be implemented as independent backend features, not as helper arrays inside another feature.
+- Each auxiliary master requires its own module/feature folder, DTOs, commands, queries, validators, repository contract, SQL Server Persistence repository, API endpoints, permission codes, and lookup query.
+- Parent modules may reference auxiliary masters by stable Id/code values and consume lookup endpoints, but must not contain CRUD handlers for those auxiliary masters unless they are the owning module.
+- Use a shared descriptor approach only to remove repetitive CRUD boilerplate; the descriptor must still preserve independent routes, permissions, forms, tables, and stored procedures per auxiliary master.
+- Do not use hard-coded lookup values in backend handlers for catalogs that users can maintain, vary by company, or need permissions.
+- When a consuming form has a `+` selector action, the backend must expose create permission and create endpoint for the owning auxiliary master.
+
+## API Error Rules
+
+- Do not return raw exceptions from endpoints.
+- Handlers must return `Result<T>` with business errors.
+- Unexpected exceptions must be handled by the global exception middleware.
+- Validation failures must return a consistent validation response.
+- Use stable error codes for frontend handling.
+- Controllers or endpoints must not contain business logic.
+- Controllers or endpoints must only receive request, call MediatR/use case, and return response.
+- Do not expose SQL errors directly to the frontend.
+- Do not expose stack traces in production.
+
 ## References
 
 - Load `references/module-checklist.md` before implementing a new maintenance module.

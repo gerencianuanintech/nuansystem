@@ -1,4 +1,4 @@
-namespace NuanSystem.WinForms.Forms.ConfigurationSettings;
+﻿namespace NuanSystem.WinForms.Forms.ConfigurationSettings;
 
 partial class SettingsForm
 {
@@ -13,6 +13,7 @@ partial class SettingsForm
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(1000, 600);
+        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         Name = "SettingsForm";
         Text = "Parametros";
         ResumeLayout(false);
@@ -28,3 +29,4 @@ partial class SettingsForm
         base.Dispose(disposing);
     }
 }
+

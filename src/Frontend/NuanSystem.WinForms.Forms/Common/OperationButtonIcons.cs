@@ -20,10 +20,14 @@ internal static class OperationButtonIcons
         SimpleButton cancelButton,
         [CallerFilePath] string callerFilePath = "")
     {
-        ApplySave(saveButton, callerFilePath);
-        ApplyCancelStyle(cancelButton);
+        var saveBounds = saveButton.Bounds;
+        var cancelBounds = cancelButton.Bounds;
+
         ApplySvg(cancelButton, "cancelar_32.svg", Color.White, callerFilePath);
-        PlaceCancelBeforeSave(saveButton, cancelButton);
+        ApplySvg(saveButton, "diskette_32.svg", SaveForeColor, callerFilePath);
+
+        saveButton.Bounds = saveBounds;
+        cancelButton.Bounds = cancelBounds;
     }
 
     public static void ApplySave(SimpleButton button, [CallerFilePath] string callerFilePath = "")

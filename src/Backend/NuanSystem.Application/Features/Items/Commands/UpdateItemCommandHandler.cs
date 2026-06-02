@@ -57,6 +57,7 @@ public sealed class UpdateItemCommandHandler(IItemRepository itemRepository)
             request.IsActive,
             CreateItemCommandHandler.NormalizeBarcodes(request.Barcodes),
             CreateItemCommandHandler.NormalizeWarehouses(request.Warehouses),
+            CreateItemCommandHandler.NormalizeMasterData(request.MasterData),
             request.AuditUserId,
             request.AuditUserName?.Trim()), cancellationToken);
 

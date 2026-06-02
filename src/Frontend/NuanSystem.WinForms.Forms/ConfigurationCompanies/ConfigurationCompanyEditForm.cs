@@ -20,8 +20,8 @@ public sealed partial class ConfigurationCompanyEditForm : BaseEditForm
         OperationButtonIcons.ApplySaveCancel(btnGuardar, btnCancelar);
         btnGuardar.Click += (_, _) => Save();
 
-        cmbMotor.Properties.Items.AddRange(["SQL Server"]);
-        cmbSap.Properties.Items.AddRange(["Sin SAP", "Service Layer", "DI API"]);
+        cmbMotor.Properties.Items.AddRange(new object[] { "SQL Server" });
+        cmbSap.Properties.Items.AddRange(new object[] { "Sin SAP", "Service Layer", "DI API" });
         btnCargarLogo.Click += (_, _) => LoadLogoImage();
         btnQuitarLogo.Click += (_, _) => ClearLogoImage();
 

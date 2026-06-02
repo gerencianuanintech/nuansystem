@@ -1,0 +1,879 @@
+MAESTRO DE ITEMS / ARTICULOS - DETALLE FUNCIONAL DE CAMPOS
+NuanSystem ERP
+
+Este documento describe el contenido funcional del Maestro de Items / Articulos.
+El maestro centraliza la definicion comercial, logistica, fiscal, contable,
+operativa y de integracion de cada articulo dentro del ERP.
+
+
+1. ENCABEZADO FIJO
+
+Codigo
+Identificador interno unico del articulo. Se usa en busquedas, documentos,
+reportes, integraciones y trazabilidad.
+
+Descripcion
+Nombre operativo principal del articulo. Es el texto base que se muestra en
+documentos internos, consultas y listados.
+
+Nombre comercial
+Nombre presentable para ventas, cotizaciones, portal, catalogos o documentos
+comerciales.
+
+Tipo de item
+Clasifica la naturaleza del articulo: mercaderia, producto terminado, servicio,
+insumo, kit, materia prima u otro tipo configurable.
+
+Grupo
+Categoria principal del articulo. Ejemplo: Alimentos, Repuestos, Servicios.
+
+Familia
+Clasificacion mas especifica dentro del grupo. Ejemplo: Granos y cereales.
+
+Marca
+Marca comercial, fabricante o linea de marca asociada al articulo.
+
+Unidad base
+Unidad principal de control del articulo. Sirve como referencia para factores,
+stock y conversiones.
+
+Estado
+Estado operativo del articulo: Activo, Inactivo, Bloqueado, Descontinuado u otro
+estado definido por el ERP.
+
+Imagen del producto
+Imagen visual principal para identificar rapidamente el articulo.
+
+Indicadores resumen
+Muestran informacion rapida del articulo: stock total, costo promedio, precio
+venta, ultima compra y estado de sincronizacion SAP.
+
+
+2. PESTANA GENERAL
+
+Codigo alterno
+Codigo secundario usado por proveedor, sistema anterior, catalogo externo o
+referencia comercial alternativa.
+
+SKU proveedor
+Codigo o referencia del proveedor para el articulo. Ayuda en compras,
+cotizaciones y ordenes a proveedor.
+
+Descripcion larga
+Descripcion extendida del articulo, con caracteristicas, uso, calidad,
+presentacion u observaciones comerciales.
+
+Tipo de producto
+Clasificacion funcional del producto: mercaderia, materia prima, producto
+terminado, servicio, kit, insumo, etc.
+
+Origen
+Procedencia del articulo: local, importado, fabricacion propia, tercero,
+nacional u otro valor configurable.
+
+Linea
+Linea comercial o agrupacion operativa del articulo.
+
+Subgrupo
+Clasificacion mas detallada dentro de la linea o familia.
+
+Modelo
+Modelo comercial o tecnico del articulo, si aplica.
+
+Referencia
+Referencia interna, tecnica o comercial adicional.
+
+Activo para venta
+Indica si el articulo puede usarse en documentos de venta.
+
+Activo para compra
+Indica si el articulo puede usarse en documentos de compra.
+
+Maneja inventario
+Indica si el articulo genera y controla stock.
+
+Es servicio
+Indica si el articulo representa un servicio. Normalmente no maneja stock.
+
+Es kit
+Indica si el articulo se compone de otros articulos.
+
+Controla lote
+Obliga o permite trazabilidad por lote.
+
+Controla serie
+Obliga o permite trazabilidad por numero de serie.
+
+Perecible
+Indica si el articulo se deteriora o requiere control especial de vida util.
+
+Maneja vencimiento
+Indica si se controla fecha de vencimiento o caducidad.
+
+Requiere balanza
+Indica si el articulo puede venderse o manejarse por peso.
+
+Permite descuento
+Indica si se pueden aplicar descuentos comerciales al articulo.
+
+Afecta inventario
+Indica si los movimientos del articulo modifican existencias.
+
+Resumen del articulo
+Muestra indicadores: stock disponible, pedidos abiertos, compras 12 meses,
+ventas 12 meses, estado SAP y variantes activas.
+
+
+3. PESTANA UNIDADES Y CODIGOS
+
+Unidad de inventario
+Unidad en la que se controla el stock real del articulo.
+
+Permite fracciones
+Indica si se permiten cantidades decimales. Ejemplo: 1.25 kg.
+
+Redondeo de cantidad
+Precision permitida en cantidades: enteros, decimas, centesimas, milesimas, etc.
+
+Peso neto
+Peso del producto sin empaque.
+
+Peso bruto
+Peso del producto con empaque.
+
+Volumen
+Volumen logistico ocupado por el articulo.
+
+Unidad de peso
+Unidad usada para expresar peso: kg, g, lb, etc.
+
+Unidad de volumen
+Unidad usada para expresar volumen: m3, litros, cm3, etc.
+
+Codigo QR
+Identificador codificado en QR, si la empresa lo utiliza.
+
+PLU
+Codigo corto usado comunmente en POS o balanzas para identificar productos.
+
+Codigo anterior
+Codigo usado en un sistema previo o codificacion historica.
+
+Referencia fabricante
+Codigo tecnico o comercial asignado por el fabricante.
+
+SAT/UNSPSC
+Codigo estandar fiscal o internacional para clasificar productos y servicios.
+
+Codigo arancelario
+Partida o codigo usado en comercio exterior, importaciones o exportaciones.
+
+Origen del codigo
+Indica de donde proviene el codigo: interno, proveedor, fabricante, fiscal,
+estandar internacional, etc.
+
+Grilla de presentaciones, unidades y codigos
+Cada fila representa una forma valida de manejar el mismo articulo.
+
+Presentacion
+Nombre de la presentacion. Ejemplo: Unidad 1 kg, Caja 12 unidades, Bulto 24.
+
+Unidad
+Unidad de medida asociada a la presentacion. Ejemplo: UND, CAJ, BUL.
+
+Factor
+Equivalencia contra la unidad base o de inventario. Ejemplo: caja de 12 = 12.
+
+Codigo de barras
+Codigo escaneable de esa presentacion.
+
+Compra
+Indica si la presentacion puede usarse en documentos de compra.
+
+Venta
+Indica si la presentacion puede usarse en documentos de venta.
+
+Inventario
+Indica si la presentacion aplica para control de inventario.
+
+Principal
+Indica la presentacion principal o por defecto.
+
+Activa
+Indica si la presentacion esta disponible para uso.
+
+
+4. PESTANA INVENTARIO
+
+Maneja inventario
+Activa o desactiva el control de stock del articulo.
+
+Metodo de valuacion
+Define como se valoriza el inventario: promedio ponderado, FIFO, costo estandar,
+etc.
+
+Politica de stock negativo
+Define si el sistema permite movimientos cuando no existe stock suficiente.
+
+Reposicion automatica
+Indica si el sistema puede generar sugerencias o alertas de reabastecimiento.
+
+Maneja ubicaciones
+Permite controlar ubicaciones internas dentro de bodegas: pasillo, rack, nivel,
+zona, etc.
+
+Requiere conteo ciclico
+Indica si el articulo debe revisarse periodicamente mediante conteos ciclicos.
+
+Dias de cobertura
+Cantidad de dias objetivo que se desea cubrir con stock disponible.
+
+Stock minimo global
+Nivel minimo recomendado del articulo.
+
+Stock maximo global
+Nivel maximo recomendado del articulo.
+
+Punto de reorden
+Nivel de stock en el que se debe sugerir reposicion.
+
+Tiempo de reposicion
+Dias estimados para reponer el articulo.
+
+Stock por bodega
+Muestra existencias por bodega: stock actual, comprometido, pedido, disponible,
+minimo, maximo y reorden.
+
+Bodega principal
+Bodega por defecto para recepcion, despacho, transferencia o reposicion.
+
+Metodo de abastecimiento
+Fuente normal del articulo: compra, produccion, transferencia, consignacion,
+tercero o no aplica.
+
+Metodo de reposicion
+Regla que indica como se calcula o genera la necesidad de reponer: manual,
+punto de reorden, minimo-maximo, demanda proyectada, MRP o bajo pedido.
+
+Clasificacion ABC
+Clasifica la importancia del articulo por rotacion, valor o criticidad.
+
+Cuenta conteo ciclico
+Cuenta o referencia usada para ajustes generados por diferencias de conteo.
+
+Ubicacion por defecto
+Ubicacion interna sugerida dentro de la bodega.
+
+Zona
+Area logica dentro de la bodega: recepcion, picking, reserva, despacho,
+cuarentena, devoluciones, camara fria, etc.
+
+Condicion
+Estado operativo del stock: disponible, cuarentena, bloqueado, danado, vencido,
+reservado, en inspeccion, consignacion, muestra, no conforme, etc.
+
+Control de lote obligatorio
+Obliga a registrar lote en movimientos de inventario.
+
+Control de serie obligatorio
+Obliga a registrar numero de serie en movimientos de inventario.
+
+Permite transferencias
+Indica si el articulo puede moverse entre bodegas o sucursales.
+
+Almacenable
+Indica si el articulo se guarda fisicamente en bodega.
+
+Observacion operativa
+Notas internas para manejo logistico o almacenamiento.
+
+
+5. PESTANA COMPRAS
+
+Compra habilitada
+Indica si el articulo puede comprarse.
+
+Proveedor principal
+Proveedor sugerido o preferido para comprar el articulo.
+
+Proveedor alterno
+Proveedor secundario disponible para el articulo.
+
+Unidad de compra
+Unidad sugerida para comprar el articulo.
+
+Multiplo de compra
+Cantidad minima o incremento permitido para compras.
+
+Pedido minimo
+Cantidad minima que se debe solicitar al proveedor.
+
+Tiempo de entrega
+Dias estimados de entrega del proveedor.
+
+Moneda compra preferida
+Moneda usual para comprar el articulo.
+
+Permite backorder
+Indica si se permite dejar cantidades pendientes por recibir.
+
+Requiere aprobacion de compra
+Indica si las compras de este articulo necesitan aprobacion.
+
+Ultimo costo compra
+Ultimo costo registrado en una compra.
+
+Costo estandar compra
+Costo esperado o parametrizado para compras.
+
+Descuento proveedor %
+Descuento comercial usual del proveedor.
+
+IVA compras
+Impuesto aplicado en compras.
+
+Retencion compra
+Retencion sugerida o aplicable en compras.
+
+Cuenta gasto compra
+Cuenta contable usada si la compra se registra como gasto.
+
+Comprador asignado
+Usuario o responsable de compras para el articulo.
+
+Politica de devolucion
+Condiciones para devolver el articulo al proveedor.
+
+Fecha ultima compra
+Fecha de la ultima compra registrada.
+
+Historial de compras recientes
+Lista de compras recientes con fecha, documento, proveedor, cantidad, unidad,
+costo, moneda y estado.
+
+Metricas de compra
+Incluye ultima compra, promedio 12 meses, lead time promedio y cumplimiento del
+proveedor.
+
+
+6. PESTANA VENTAS
+
+Venta habilitada
+Indica si el articulo puede venderse.
+
+Unidad de venta
+Unidad sugerida para vender el articulo.
+
+Precio base
+Precio comercial base.
+
+Lista de precios principal
+Lista de precios por defecto del articulo.
+
+Permite descuento
+Indica si se pueden aplicar descuentos.
+
+Descuento maximo %
+Limite maximo de descuento permitido.
+
+Margen minimo %
+Margen minimo aceptado para vender el articulo.
+
+Venta minima
+Cantidad minima permitida en venta.
+
+Multiplo de venta
+Incremento permitido para vender.
+
+Comision %
+Porcentaje de comision asociado al articulo.
+
+IVA venta
+Impuesto aplicado en ventas.
+
+ICE
+Impuesto especial, si aplica.
+
+Retencion sugerida
+Retencion aplicable o sugerida en ventas.
+
+Producto gravado
+Indica si el articulo genera impuesto.
+
+Afecta promociones
+Indica si puede participar en promociones.
+
+Permite devolucion
+Indica si puede devolverse.
+
+Bloqueado para e-commerce
+Impide que el articulo se publique o venda en canales digitales.
+
+Canal preferido
+Canal comercial por defecto: POS, mayorista, minorista, e-commerce, marketplace,
+distribuidor, institucional, exportacion, etc.
+
+Politica comercial
+Observaciones o reglas comerciales del articulo.
+
+Listas de precio y desempeno
+Muestra precios por lista, moneda, margen, vigencia, estado y metricas como
+ventas 30 dias, ventas 12 meses, ultimo precio vendido y clientes activos.
+
+
+7. PESTANA COSTOS Y PRECIOS
+
+Costo promedio
+Costo promedio ponderado actual.
+
+Ultimo costo
+Ultimo costo registrado.
+
+Costo estandar
+Costo parametrizado para control y comparacion.
+
+Costo reposicion
+Costo estimado para reponer el articulo.
+
+Moneda costo
+Moneda usada para los costos.
+
+Fecha actualizacion
+Fecha de ultima actualizacion de costos.
+
+Metodo costeo
+Metodo usado para calcular o administrar costos.
+
+Componentes del costo
+Detalle de los elementos que forman el costo: materia prima, flete, seguro,
+gastos indirectos, otros, etc.
+
+Precio base
+Precio actual base.
+
+Precio sugerido
+Precio calculado o recomendado segun costo y margen.
+
+Margen bruto
+Diferencia entre precio y costo.
+
+Margen bruto %
+Margen expresado como porcentaje.
+
+Margen minimo permitido
+Margen minimo aceptado por politica.
+
+Rentabilidad 12m
+Rentabilidad historica de los ultimos 12 meses.
+
+Ultima actualizacion de precio
+Fecha y hora de ultimo cambio de precio.
+
+Simulador simple
+Permite estimar precio sugerido usando costo y margen objetivo.
+
+
+8. PESTANA CONTABILIDAD
+
+Cuenta inventario
+Cuenta contable para registrar inventario.
+
+Cuenta ingresos
+Cuenta contable para ventas.
+
+Cuenta costo de ventas
+Cuenta contable para costo de ventas.
+
+Cuenta devolucion venta
+Cuenta usada para devoluciones de venta.
+
+Cuenta devolucion compra
+Cuenta usada para devoluciones de compra.
+
+Cuenta variacion costo
+Cuenta usada para diferencias o variaciones de costo.
+
+Cuenta ajuste inventario
+Cuenta usada para ajustes de inventario.
+
+Cuenta gasto compra
+Cuenta usada cuando la compra debe ir a gasto.
+
+Sucursal por defecto
+Sucursal contable u operativa sugerida.
+
+Centro de costo
+Centro de costo asociado al articulo.
+
+Proyecto
+Proyecto relacionado al articulo.
+
+Linea de negocio
+Linea de negocio para reportes y contabilizacion.
+
+Departamento
+Departamento asociado.
+
+Permite override en documentos
+Permite cambiar dimensiones o cuentas al registrar documentos.
+
+Requiere dimension en movimientos
+Obliga a informar dimensiones contables en movimientos.
+
+Genera asiento inventario
+Indica si los movimientos generan asiento contable.
+
+Usa cuenta por bodega
+Permite cuentas contables distintas por bodega.
+
+Usa cuenta por grupo
+Permite heredar cuentas desde el grupo de articulos.
+
+Permite compensacion
+Permite compensaciones contables segun reglas.
+
+Bloqueado contable
+Impide operaciones contables para el articulo.
+
+Dias de conciliacion
+Dias permitidos para conciliacion o revision contable.
+
+Metodo de integracion contable
+Forma de enviar o generar contabilizacion: manual, lote, tiempo real, etc.
+
+Observaciones contables
+Notas internas sobre tratamiento contable.
+
+
+9. PESTANA IMPUESTOS
+
+Tipo fiscal del articulo
+Clasificacion tributaria: gravado, exento, no sujeto, servicio, bien, etc.
+
+IVA compra
+IVA aplicable en compras.
+
+IVA venta
+IVA aplicable en ventas.
+
+ICE
+Impuesto especial, si aplica.
+
+Servicio gravado
+Indica si el servicio esta gravado.
+
+Bien exento
+Indica si el bien esta exento de impuestos.
+
+Retencion sugerida
+Retencion sugerida para el articulo.
+
+Sustento tributario
+Base legal o sustento usado para documentos fiscales.
+
+Codigo fiscal
+Codigo interno fiscal del articulo.
+
+Pais fiscal
+Pais o jurisdiccion fiscal aplicable.
+
+Aplica en compras
+Indica si la regla tributaria aplica en compras.
+
+Aplica en ventas
+Indica si la regla tributaria aplica en ventas.
+
+Afecta retencion
+Indica si interviene en calculos de retencion.
+
+Aplica nota credito
+Indica si la regla se considera en notas de credito.
+
+Aplica exportacion
+Indica si aplica a operaciones de exportacion.
+
+Requiere codigo arancelario
+Obliga a informar partida arancelaria.
+
+Clasificacion aduanera
+Clasificacion usada en importacion/exportacion.
+
+Observacion tributaria
+Notas fiscales o legales.
+
+Historial / matrices tributarias
+Muestra reglas fiscales por empresa, regimen, impuestos, vigencia y estado.
+
+
+10. PESTANA LOTES / SERIES
+
+Control por lotes
+Indica si el articulo se controla por lote.
+
+Control por series
+Indica si el articulo se controla por numero de serie.
+
+Requiere vencimiento
+Indica si debe capturarse fecha de vencimiento.
+
+Vencimiento obligatorio
+Obliga a informar vencimiento para operaciones.
+
+Dias de alerta de vencimiento
+Dias antes del vencimiento en que se genera alerta.
+
+Dias cuarentena
+Dias que el producto debe permanecer bloqueado o en revision.
+
+Genera lote automatico
+Permite generar codigos de lote automaticamente.
+
+Prefijo lote
+Prefijo usado para numeracion automatica de lotes.
+
+Longitud serie
+Longitud esperada del numero de serie.
+
+Metodo FEFO/FIFO
+Regla para despacho: primero en vencer, primero en salir, etc.
+
+Admite multiples lotes por documento
+Permite manejar varios lotes en una misma linea o documento.
+
+Permite recepcion sin lote
+Permite recibir sin lote cuando la politica lo autoriza.
+
+Permite venta lote vencido
+Permite o bloquea venta de lotes vencidos.
+
+Requiere lote en transferencias
+Obliga lote en transferencias entre bodegas.
+
+Requiere serie en despacho
+Obliga serie al despachar.
+
+Lotes / series recientes
+Muestra registros recientes con tipo, numero, fechas, stock, bodega y estado.
+
+
+11. PESTANA VARIANTES
+
+Maneja variantes
+Indica si el articulo tiene variantes.
+
+Tipo de variante
+Tipo principal: presentacion, color, talla, sabor, empaque, medida, etc.
+
+Generar codigo automatico
+Permite crear codigos de variante automaticamente.
+
+Mascara codigo
+Formato para generar codigos de variante.
+
+Variante base
+Variante principal o base del articulo.
+
+Permite venta por variante
+Indica si se puede vender por variante.
+
+Permite compra por variante
+Indica si se puede comprar por variante.
+
+Permite stock por variante
+Indica si el stock se controla por variante.
+
+Atributo principal
+Atributo base para combinaciones.
+
+Atributos y valores
+Lista de atributos, valores y estado activo.
+
+Metodo de combinacion
+Define si las variantes se generan manual o automaticamente.
+
+Variantes registradas
+Lista de variantes con codigo, descripcion, presentacion, unidad, factor,
+codigo de barras, stock, principal, activa y estado SAP.
+
+
+12. PESTANA SAP
+
+Sincronizado con SAP
+Indica si el articulo ya fue sincronizado.
+
+Codigo SAP
+Codigo interno o referencia SAP.
+
+ItemCode SAP
+Codigo de articulo en SAP Business One.
+
+Fecha ultima sincronizacion
+Fecha y hora del ultimo envio o consulta SAP.
+
+Estado sincronizacion
+Estado actual: sincronizado, pendiente, error, no aplica.
+
+Empresa SAP
+Empresa o sociedad SAP relacionada.
+
+Base destino
+Base de datos SAP destino.
+
+Error ultimo intento
+Ultimo error seguro mostrado al usuario, sin credenciales ni detalles sensibles.
+
+Sincronizar articulo
+Indica si el articulo debe sincronizarse.
+
+Grupo SAP
+Grupo de articulo equivalente en SAP.
+
+Grupo unidad medida SAP
+Grupo de unidades SAP asociado.
+
+Metodo planificacion SAP
+Metodo usado por SAP para planificar.
+
+Metodo abastecimiento SAP
+Metodo de abastecimiento en SAP.
+
+Metodo valuacion SAP
+Metodo de valuacion en SAP.
+
+Gestiona lote en SAP
+Indica si SAP manejara lote.
+
+Gestiona serie en SAP
+Indica si SAP manejara serie.
+
+Activo de sincronizacion por empresa
+Estado de integracion por empresa.
+
+Campos sincronizados / historial
+Muestra campos enviados, campo SAP equivalente, valor, obligatoriedad, ultimo
+envio y estado. Tambien muestra historial de sincronizaciones.
+
+
+13. PESTANA IMAGENES / ANEXOS
+
+Imagen principal
+Vista grande de la imagen principal del producto.
+
+Cargar imagen
+Permite seleccionar una imagen para el articulo.
+
+Quitar imagen
+Retira la imagen asociada.
+
+Vista previa
+Permite revisar el archivo o imagen.
+
+Marcar principal
+Define el archivo seleccionado como imagen principal.
+
+Tipo documento
+Tipo de archivo: imagen producto, ficha tecnica, registro sanitario, hoja
+logistica, etc.
+
+Nombre archivo
+Nombre fisico o logico del archivo.
+
+Descripcion
+Descripcion del archivo.
+
+Categoria
+Categoria documental: comercial, tecnica, sanitaria, logistica, etc.
+
+Visible en ventas
+Indica si el archivo puede verse en ventas.
+
+Visible en compras
+Indica si el archivo puede verse en compras.
+
+Visible en portal
+Indica si el archivo puede publicarse en portal o e-commerce.
+
+Estado
+Estado del archivo: activo, inactivo, vencido, reemplazado, etc.
+
+Extension
+Tipo de archivo: PNG, JPG, PDF, XLSX, etc.
+
+Tamano
+Peso del archivo.
+
+Fecha carga
+Fecha y hora de carga.
+
+Usuario
+Usuario que cargo el archivo.
+
+Archivos registrados
+Lista de archivos asociados con acciones de agregar, actualizar, quitar,
+descargar, abrir y marcar principal.
+
+
+14. PESTANA OBSERVACIONES
+
+Observaciones generales
+Notas internas generales del articulo.
+
+Alerta operativa general
+Mensaje importante visible para operaciones.
+
+Compras
+Observaciones especificas para procesos de compra.
+
+Ventas
+Observaciones especificas para procesos de venta.
+
+Inventario
+Observaciones para almacenamiento, reposicion o movimientos.
+
+Logistica / Calidad
+Notas de manipulacion, calidad, recepcion, despacho o control sanitario.
+
+Alertas operativas
+Lista de alertas con tipo, proceso, mensaje, fecha desde, fecha hasta,
+bloqueante y activa.
+
+Tipo alerta
+Clasificacion de la alerta: informativa, advertencia, bloqueante.
+
+Proceso
+Proceso donde aplica: compras, ventas, inventario, SAP, calidad, etc.
+
+Mensaje
+Texto que se mostrara al usuario.
+
+Desde / Hasta
+Vigencia de la alerta.
+
+Bloqueante
+Indica si impide continuar el proceso.
+
+Activa
+Indica si la alerta esta vigente.
+
+
+15. CAPACIDADES CONFIGURABLES POR EMPRESA
+
+El maestro debe respetar capacidades por empresa o giro de negocio, como:
+
+- Manejo de lotes.
+- Manejo de vencimientos.
+- Manejo de series.
+- Manejo de variantes.
+- Venta por peso.
+- Multiples unidades.
+- Stock negativo.
+- Reposicion automatica.
+- Integracion SAP.
+- E-commerce.
+- Promociones.
+- Cuentas contables por bodega o grupo.
+- Configuracion tributaria por empresa.
+
+Estas capacidades permiten que el maestro funcione para empresas comerciales,
+industriales, distribuidoras, servicios, alimentos, retail, importadoras y otros
+giros sin quemar reglas de un solo negocio.

@@ -55,4 +55,5 @@ public sealed class ItemDto
     public DateTime? DeletedAt { get; set; }
     public IReadOnlyCollection<ItemBarcodeDto> Barcodes { get; set; } = [];
     public IReadOnlyCollection<ItemWarehouseDto> Warehouses { get; set; } = [];
+    public ItemMasterData? MasterData { get; set; }
 }

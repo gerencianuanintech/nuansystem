@@ -49,4 +49,5 @@ public sealed record SaveItemRequest(
     string? Remarks,
     bool IsActive,
     IReadOnlyCollection<SaveItemBarcodeRequest> Barcodes,
-    IReadOnlyCollection<SaveItemWarehouseRequest> Warehouses);
+    IReadOnlyCollection<SaveItemWarehouseRequest> Warehouses,
+    ItemMasterData? MasterData);

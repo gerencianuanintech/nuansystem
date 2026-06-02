@@ -1,3 +1,4 @@
+using DevExpress.XtraEditors;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Services.Roles.Models;
 using NuanSystem.WinForms.Services.SecurityAccess.Models;
@@ -5,7 +6,7 @@ using NuanSystem.WinForms.ViewModels.SecurityAccess;
 
 namespace NuanSystem.WinForms.Forms.SecurityAccess;
 
-public sealed partial class RoleAccessForm : Form
+public sealed partial class RoleAccessForm : XtraForm
 {
     private readonly RoleAccessViewModel viewModel;
     private RoleAdminItem? selectedRole;
@@ -15,6 +16,7 @@ public sealed partial class RoleAccessForm : Form
     {
         viewModel = null!;
         InitializeComponent();
+        FormStyler.ApplyBase(this);
         OperationButtonIcons.ApplySave(saveButton);
         WireEvents();
     }
@@ -23,6 +25,7 @@ public sealed partial class RoleAccessForm : Form
     {
         this.viewModel = viewModel;
         InitializeComponent();
+        FormStyler.ApplyBase(this);
         OperationButtonIcons.ApplySave(saveButton);
         WireEvents();
     }
@@ -57,7 +60,7 @@ public sealed partial class RoleAccessForm : Form
         }
         catch (Exception exception)
         {
-            MessageBox.Show(this, exception.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            UiExceptionHandler.ShowError(this, Text, exception);
         }
         finally
         {
@@ -82,7 +85,7 @@ public sealed partial class RoleAccessForm : Form
         }
         catch (Exception exception)
         {
-            MessageBox.Show(this, exception.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            UiExceptionHandler.ShowError(this, Text, exception);
         }
         finally
         {
@@ -219,14 +222,14 @@ public sealed partial class RoleAccessForm : Form
         try
         {
             await viewModel.SaveAsync(selectedRole.Id, menus, operations);
-            MessageBox.Show(this, "Accesos guardados correctamente.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            XtraMessageBox.Show(this, "Accesos guardados correctamente.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
             await viewModel.LoadAccessAsync(selectedRole.Id);
             BindMenus();
             BindOperationsForSelectedMenu();
         }
         catch (Exception exception)
         {
-            MessageBox.Show(this, exception.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            UiExceptionHandler.ShowError(this, Text, exception);
         }
         finally
         {

@@ -6,7 +6,9 @@ using NuanSystem.Shared.Responses;
 
 namespace NuanSystem.Application.Features.GeneralInventory.ItemGroups.Commands;
 
-public sealed class UpdateItemGroupCommandHandler(IItemGroupRepository itemGroupRepository)
+public sealed class UpdateItemGroupCommandHandler(
+    IItemGroupRepository itemGroupRepository,
+    IChartOfAccountRepository chartOfAccountRepository)
     : ICommandHandler<UpdateItemGroupCommand, ItemGroupDto>
 {
     public async Task<Result<ItemGroupDto>> Handle(UpdateItemGroupCommand request, CancellationToken cancellationToken)
@@ -24,6 +26,21 @@ public sealed class UpdateItemGroupCommandHandler(IItemGroupRepository itemGroup
             return Result<ItemGroupDto>.Failure(
                 "Ya existe otro grupo de artículos con el código indicado.",
                 [new ApiError("ItemGroupCodeAlreadyExists", "El código de grupo ya existe.", nameof(request.Code))]);
+        }
+
+        var accountValidation = await CreateItemGroupCommandHandler.ValidateAccountCodesAsync(
+            chartOfAccountRepository,
+            [
+                new CreateItemGroupCommandHandler.AccountCodeField(nameof(request.InventoryAccountCode), CreateItemGroupCommandHandler.NormalizeOptional(request.InventoryAccountCode), "cuenta de inventario"),
+                new CreateItemGroupCommandHandler.AccountCodeField(nameof(request.CostOfSalesAccountCode), CreateItemGroupCommandHandler.NormalizeOptional(request.CostOfSalesAccountCode), "cuenta de costo de ventas"),
+                new CreateItemGroupCommandHandler.AccountCodeField(nameof(request.SalesAccountCode), CreateItemGroupCommandHandler.NormalizeOptional(request.SalesAccountCode), "cuenta de ventas"),
+                new CreateItemGroupCommandHandler.AccountCodeField(nameof(request.PurchaseAccountCode), CreateItemGroupCommandHandler.NormalizeOptional(request.PurchaseAccountCode), "cuenta de compras")
+            ],
+            cancellationToken);
+
+        if (!accountValidation.IsSuccess)
+        {
+            return Result<ItemGroupDto>.Failure(accountValidation.Message, accountValidation.Errors);
         }
 
         var updated = await itemGroupRepository.UpdateAsync(new UpdateItemGroupData(

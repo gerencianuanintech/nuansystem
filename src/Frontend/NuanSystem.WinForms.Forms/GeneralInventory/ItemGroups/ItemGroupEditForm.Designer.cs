@@ -1,4 +1,4 @@
-using DevExpress.XtraEditors;
+﻿using DevExpress.XtraEditors;
 
 namespace NuanSystem.WinForms.Forms.GeneralInventory.ItemGroups;
 
@@ -15,13 +15,13 @@ partial class ItemGroupEditForm
         lblDescripcion = new LabelControl();
         memDescripcion = new MemoEdit();
         lblCuentaInventario = new LabelControl();
-        txtCuentaInventario = new TextEdit();
+        lueCuentaInventario = new LookUpEdit();
         lblCuentaCostoVentas = new LabelControl();
-        txtCuentaCostoVentas = new TextEdit();
+        lueCuentaCostoVentas = new LookUpEdit();
         lblCuentaVentas = new LabelControl();
-        txtCuentaVentas = new TextEdit();
+        lueCuentaVentas = new LookUpEdit();
         lblCuentaCompras = new LabelControl();
-        txtCuentaCompras = new TextEdit();
+        lueCuentaCompras = new LookUpEdit();
         lblGrupoSap = new LabelControl();
         txtGrupoSap = new TextEdit();
         lblCodigoSap = new LabelControl();
@@ -32,10 +32,10 @@ partial class ItemGroupEditForm
         ((System.ComponentModel.ISupportInitialize)txtCodigo.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtNombre.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)memDescripcion.Properties).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)txtCuentaInventario.Properties).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)txtCuentaCostoVentas.Properties).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)txtCuentaVentas.Properties).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)txtCuentaCompras.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueCuentaInventario.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueCuentaCostoVentas.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueCuentaVentas.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueCuentaCompras.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtGrupoSap.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtCodigoSap.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)chkActivo.Properties).BeginInit();
@@ -113,13 +113,13 @@ partial class ItemGroupEditForm
         lblCuentaInventario.TabIndex = 6;
         lblCuentaInventario.Text = "Cuenta contable inventario";
         // 
-        // txtCuentaInventario
+        // lueCuentaInventario
         // 
-        txtCuentaInventario.Location = new Point(190, 144);
-        txtCuentaInventario.Name = "txtCuentaInventario";
-        txtCuentaInventario.Properties.MaxLength = 120;
-        txtCuentaInventario.Size = new Size(350, 20);
-        txtCuentaInventario.TabIndex = 7;
+        lueCuentaInventario.Location = new Point(190, 144);
+        lueCuentaInventario.Name = "lueCuentaInventario";
+        lueCuentaInventario.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+        lueCuentaInventario.Size = new Size(350, 20);
+        lueCuentaInventario.TabIndex = 7;
         // 
         // lblCuentaCostoVentas
         // 
@@ -133,13 +133,13 @@ partial class ItemGroupEditForm
         lblCuentaCostoVentas.TabIndex = 8;
         lblCuentaCostoVentas.Text = "Cuenta contable costo ventas";
         // 
-        // txtCuentaCostoVentas
+        // lueCuentaCostoVentas
         // 
-        txtCuentaCostoVentas.Location = new Point(190, 170);
-        txtCuentaCostoVentas.Name = "txtCuentaCostoVentas";
-        txtCuentaCostoVentas.Properties.MaxLength = 120;
-        txtCuentaCostoVentas.Size = new Size(350, 20);
-        txtCuentaCostoVentas.TabIndex = 9;
+        lueCuentaCostoVentas.Location = new Point(190, 170);
+        lueCuentaCostoVentas.Name = "lueCuentaCostoVentas";
+        lueCuentaCostoVentas.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+        lueCuentaCostoVentas.Size = new Size(350, 20);
+        lueCuentaCostoVentas.TabIndex = 9;
         // 
         // lblCuentaVentas
         // 
@@ -153,13 +153,13 @@ partial class ItemGroupEditForm
         lblCuentaVentas.TabIndex = 10;
         lblCuentaVentas.Text = "Cuenta contable ventas";
         // 
-        // txtCuentaVentas
+        // lueCuentaVentas
         // 
-        txtCuentaVentas.Location = new Point(190, 196);
-        txtCuentaVentas.Name = "txtCuentaVentas";
-        txtCuentaVentas.Properties.MaxLength = 120;
-        txtCuentaVentas.Size = new Size(350, 20);
-        txtCuentaVentas.TabIndex = 11;
+        lueCuentaVentas.Location = new Point(190, 196);
+        lueCuentaVentas.Name = "lueCuentaVentas";
+        lueCuentaVentas.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+        lueCuentaVentas.Size = new Size(350, 20);
+        lueCuentaVentas.TabIndex = 11;
         // 
         // lblCuentaCompras
         // 
@@ -173,13 +173,13 @@ partial class ItemGroupEditForm
         lblCuentaCompras.TabIndex = 12;
         lblCuentaCompras.Text = "Cuenta contable compras";
         // 
-        // txtCuentaCompras
+        // lueCuentaCompras
         // 
-        txtCuentaCompras.Location = new Point(190, 222);
-        txtCuentaCompras.Name = "txtCuentaCompras";
-        txtCuentaCompras.Properties.MaxLength = 120;
-        txtCuentaCompras.Size = new Size(350, 20);
-        txtCuentaCompras.TabIndex = 13;
+        lueCuentaCompras.Location = new Point(190, 222);
+        lueCuentaCompras.Name = "lueCuentaCompras";
+        lueCuentaCompras.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+        lueCuentaCompras.Size = new Size(350, 20);
+        lueCuentaCompras.TabIndex = 13;
         // 
         // lblGrupoSap
         // 
@@ -236,20 +236,34 @@ partial class ItemGroupEditForm
         btnGuardar.Appearance.ForeColor = Color.White;
         btnGuardar.Appearance.Options.UseBackColor = true;
         btnGuardar.Appearance.Options.UseForeColor = true;
-        btnGuardar.Location = new Point(440, 342);
+        btnGuardar.AppearanceHovered.BackColor = Color.FromArgb(0, 160, 128);
+        btnGuardar.AppearanceHovered.ForeColor = Color.White;
+        btnGuardar.AppearanceHovered.Options.UseBackColor = true;
+        btnGuardar.AppearanceHovered.Options.UseForeColor = true;
+        btnGuardar.ImageOptions.SvgImageSize = new Size(32, 32);        btnGuardar.Location = new Point(440, 342);
         btnGuardar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         btnGuardar.LookAndFeel.UseDefaultLookAndFeel = false;
         btnGuardar.Name = "btnGuardar";
-        btnGuardar.Size = new Size(100, 32);
+        btnGuardar.Size = new Size(100, 36);
         btnGuardar.TabIndex = 20;
         btnGuardar.Text = "Guardar";
         // 
         // btnCancelar
         // 
-        btnCancelar.DialogResult = DialogResult.Cancel;
+        btnCancelar.Appearance.BackColor = Color.FromArgb(99, 110, 114);
+        btnCancelar.Appearance.ForeColor = Color.White;
+        btnCancelar.AppearanceHovered.BackColor = Color.FromArgb(78, 87, 90);
+        btnCancelar.AppearanceHovered.ForeColor = Color.White;
+        btnCancelar.Appearance.Options.UseBackColor = true;
+        btnCancelar.Appearance.Options.UseForeColor = true;
+        btnCancelar.AppearanceHovered.Options.UseBackColor = true;
+        btnCancelar.AppearanceHovered.Options.UseForeColor = true;
+        btnCancelar.ImageOptions.SvgImageSize = new Size(32, 32);
+        btnCancelar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
+        btnCancelar.LookAndFeel.UseDefaultLookAndFeel = false;        btnCancelar.DialogResult = DialogResult.Cancel;
         btnCancelar.Location = new Point(334, 342);
         btnCancelar.Name = "btnCancelar";
-        btnCancelar.Size = new Size(100, 32);
+        btnCancelar.Size = new Size(100, 36);
         btnCancelar.TabIndex = 19;
         btnCancelar.Text = "Cancelar";
         // 
@@ -270,13 +284,13 @@ partial class ItemGroupEditForm
         Controls.Add(lblDescripcion);
         Controls.Add(memDescripcion);
         Controls.Add(lblCuentaInventario);
-        Controls.Add(txtCuentaInventario);
+        Controls.Add(lueCuentaInventario);
         Controls.Add(lblCuentaCostoVentas);
-        Controls.Add(txtCuentaCostoVentas);
+        Controls.Add(lueCuentaCostoVentas);
         Controls.Add(lblCuentaVentas);
-        Controls.Add(txtCuentaVentas);
+        Controls.Add(lueCuentaVentas);
         Controls.Add(lblCuentaCompras);
-        Controls.Add(txtCuentaCompras);
+        Controls.Add(lueCuentaCompras);
         Controls.Add(lblGrupoSap);
         Controls.Add(txtGrupoSap);
         Controls.Add(lblCodigoSap);
@@ -294,10 +308,10 @@ partial class ItemGroupEditForm
         ((System.ComponentModel.ISupportInitialize)txtCodigo.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtNombre.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)memDescripcion.Properties).EndInit();
-        ((System.ComponentModel.ISupportInitialize)txtCuentaInventario.Properties).EndInit();
-        ((System.ComponentModel.ISupportInitialize)txtCuentaCostoVentas.Properties).EndInit();
-        ((System.ComponentModel.ISupportInitialize)txtCuentaVentas.Properties).EndInit();
-        ((System.ComponentModel.ISupportInitialize)txtCuentaCompras.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueCuentaInventario.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueCuentaCostoVentas.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueCuentaVentas.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueCuentaCompras.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtGrupoSap.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtCodigoSap.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)chkActivo.Properties).EndInit();
@@ -322,13 +336,13 @@ partial class ItemGroupEditForm
     private LabelControl lblDescripcion;
     private MemoEdit memDescripcion;
     private LabelControl lblCuentaInventario;
-    private TextEdit txtCuentaInventario;
+    private LookUpEdit lueCuentaInventario;
     private LabelControl lblCuentaCostoVentas;
-    private TextEdit txtCuentaCostoVentas;
+    private LookUpEdit lueCuentaCostoVentas;
     private LabelControl lblCuentaVentas;
-    private TextEdit txtCuentaVentas;
+    private LookUpEdit lueCuentaVentas;
     private LabelControl lblCuentaCompras;
-    private TextEdit txtCuentaCompras;
+    private LookUpEdit lueCuentaCompras;
     private LabelControl lblGrupoSap;
     private TextEdit txtGrupoSap;
     private LabelControl lblCodigoSap;
@@ -337,3 +351,4 @@ partial class ItemGroupEditForm
     private SimpleButton btnGuardar;
     private SimpleButton btnCancelar;
 }
+

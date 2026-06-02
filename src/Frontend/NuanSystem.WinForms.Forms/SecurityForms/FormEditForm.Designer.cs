@@ -1,4 +1,4 @@
-using DevExpress.XtraEditors;
+﻿using DevExpress.XtraEditors;
 
 namespace NuanSystem.WinForms.Forms.SecurityForms;
 
@@ -102,17 +102,31 @@ partial class FormEditForm
         btnGuardar.Appearance.ForeColor = Color.White;
         btnGuardar.Appearance.Options.UseBackColor = true;
         btnGuardar.Appearance.Options.UseForeColor = true;
-        btnGuardar.Location = new Point(294, 205);
+        btnGuardar.AppearanceHovered.BackColor = Color.FromArgb(0, 160, 128);
+        btnGuardar.AppearanceHovered.ForeColor = Color.White;
+        btnGuardar.AppearanceHovered.Options.UseBackColor = true;
+        btnGuardar.AppearanceHovered.Options.UseForeColor = true;
+        btnGuardar.ImageOptions.SvgImageSize = new Size(32, 32);        btnGuardar.Location = new Point(294, 205);
         btnGuardar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         btnGuardar.LookAndFeel.UseDefaultLookAndFeel = false;
-        btnGuardar.Size = new Size(100, 32);
+        btnGuardar.Size = new Size(100, 36);
         btnGuardar.Text = "Guardar";
         // 
         // btnCancelar
         // 
-        btnCancelar.DialogResult = DialogResult.Cancel;
+        btnCancelar.Appearance.BackColor = Color.FromArgb(99, 110, 114);
+        btnCancelar.Appearance.ForeColor = Color.White;
+        btnCancelar.AppearanceHovered.BackColor = Color.FromArgb(78, 87, 90);
+        btnCancelar.AppearanceHovered.ForeColor = Color.White;
+        btnCancelar.Appearance.Options.UseBackColor = true;
+        btnCancelar.Appearance.Options.UseForeColor = true;
+        btnCancelar.AppearanceHovered.Options.UseBackColor = true;
+        btnCancelar.AppearanceHovered.Options.UseForeColor = true;
+        btnCancelar.ImageOptions.SvgImageSize = new Size(32, 32);
+        btnCancelar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
+        btnCancelar.LookAndFeel.UseDefaultLookAndFeel = false;        btnCancelar.DialogResult = DialogResult.Cancel;
         btnCancelar.Location = new Point(400, 205);
-        btnCancelar.Size = new Size(100, 32);
+        btnCancelar.Size = new Size(100, 36);
         btnCancelar.Text = "Cancelar";
         lblCodigo.Appearance.Font = new Font("Segoe UI", 9F);
         lblCodigo.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
@@ -185,3 +199,4 @@ partial class FormEditForm
     private SimpleButton btnGuardar;
     private SimpleButton btnCancelar;
 }
+

@@ -34,5 +34,6 @@ public sealed record UpdateItemCommand(
     bool IsActive,
     IReadOnlyCollection<SaveItemBarcodeData>? Barcodes,
     IReadOnlyCollection<SaveItemWarehouseData>? Warehouses,
+    ItemMasterData? MasterData = null,
     int? AuditUserId = null,
     string? AuditUserName = null) : ICommand<ItemDto>;

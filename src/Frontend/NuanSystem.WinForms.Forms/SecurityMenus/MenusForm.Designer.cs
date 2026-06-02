@@ -8,6 +8,7 @@ partial class MenusForm
     {
         components = new System.ComponentModel.Container();
         SuspendLayout();
+        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         Name = "MenusForm";
         Text = "Menus";
         ResumeLayout(false);

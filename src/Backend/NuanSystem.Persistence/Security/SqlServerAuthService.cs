@@ -8,7 +8,8 @@ namespace NuanSystem.Persistence.Security;
 public sealed class SqlServerAuthService(
     MasterConnectionFactory connectionFactory,
     IPasswordHasher passwordHasher,
-    IJwtTokenService jwtTokenService) : IAuthService
+    IJwtTokenService jwtTokenService,
+    IUserSecurityStateService userSecurityStateService) : IAuthService
 {
     public async Task<AuthResult?> LoginAsync(
         string userNameOrEmail,
@@ -38,7 +39,20 @@ public sealed class SqlServerAuthService(
         var roles = await GetRolesAsync(connection, user.Id, cancellationToken);
         var permissions = await GetPermissionsAsync(connection, user.Id, cancellationToken);
         var companies = await GetCompaniesForUserAsync(connection, user.Id, cancellationToken);
-        var token = jwtTokenService.CreateToken(user.Id, user.UserName, user.DisplayName, roles, permissions);
+        var securityStamp = await userSecurityStateService.GetSecurityStampAsync(user.Id, cancellationToken);
+        if (string.IsNullOrWhiteSpace(securityStamp))
+        {
+            return null;
+        }
+
+        var token = jwtTokenService.CreateToken(
+            user.Id,
+            user.UserName,
+            user.DisplayName,
+            user.MustChangePassword,
+            securityStamp,
+            roles,
+            permissions);
 
         await RegisterSuccessfulLoginAsync(connection, user.Id, cancellationToken);
 
@@ -220,7 +234,11 @@ WHERE Id = @userId;
         await using var command = connection.CreateCommand();
         command.CommandText = """
 UPDATE dbo.Users
-SET FailedAccessCount = FailedAccessCount + 1
+SET FailedAccessCount = FailedAccessCount + 1,
+    LockoutEndAt = CASE
+        WHEN FailedAccessCount + 1 >= 5 THEN DATEADD(MINUTE, 15, SYSUTCDATETIME())
+        ELSE LockoutEndAt
+    END
 WHERE Id = @userId;
 """;
         command.Parameters.Add("@userId", SqlDbType.Int).Value = userId;

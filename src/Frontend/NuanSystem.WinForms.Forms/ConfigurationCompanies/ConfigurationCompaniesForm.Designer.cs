@@ -1,4 +1,4 @@
-namespace NuanSystem.WinForms.Forms.ConfigurationCompanies;
+﻿namespace NuanSystem.WinForms.Forms.ConfigurationCompanies;
 
 partial class ConfigurationCompaniesForm
 {
@@ -13,6 +13,7 @@ partial class ConfigurationCompaniesForm
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(980, 560);
+        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         Name = "ConfigurationCompaniesForm";
         Text = "Companias";
         ResumeLayout(false);
@@ -28,3 +29,4 @@ partial class ConfigurationCompaniesForm
         base.Dispose(disposing);
     }
 }
+

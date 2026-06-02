@@ -1,4 +1,5 @@
 using DevExpress.XtraEditors;
+using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.ViewModels.Audit;
 
 namespace NuanSystem.WinForms.Forms.Audit;
@@ -48,7 +49,7 @@ public sealed partial class AuditLogsForm : XtraForm
         }
         catch (Exception exception)
         {
-            MessageBox.Show(this, exception.Message, "Auditoria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            UiExceptionHandler.ShowError(this, "Auditoria", exception);
         }
         finally
         {

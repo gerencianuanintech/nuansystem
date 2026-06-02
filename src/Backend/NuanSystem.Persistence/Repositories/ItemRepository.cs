@@ -15,6 +15,8 @@ public sealed class ItemRepository(ITenantConnectionFactory connectionFactory) :
     private const string ExistsByCodeProcedure = "dbo.SP_NA_GET_ITEMSBUSCARPORCODIGO";
     private const string UpdateProcedure = "dbo.SP_NA_PUT_ITEMS_ACTUALIZAR";
     private const string DeleteProcedure = "dbo.SP_NA_DELETE_ITEMS_ELIMINAR";
+    private const string GetMasterDataProcedure = "dbo.SP_NA_GET_ITEMMASTERDATA_BUSCARPORITEMID";
+    private const string SaveMasterDataProcedure = "dbo.SP_NA_PUT_ITEMMASTERDATA_GUARDAR";
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -41,6 +43,11 @@ public sealed class ItemRepository(ITenantConnectionFactory connectionFactory) :
 
         item.Barcodes = (await grid.ReadAsync<ItemBarcodeDto>()).AsList();
         item.Warehouses = (await grid.ReadAsync<ItemWarehouseDto>()).AsList();
+
+        var masterDataJson = await connection.ExecuteScalarAsync<string?>(
+            new CommandDefinition(GetMasterDataProcedure, new { ItemId = id }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        item.MasterData = DeserializeMasterData(masterDataJson);
+
         return item;
     }
 
@@ -61,8 +68,11 @@ public sealed class ItemRepository(ITenantConnectionFactory connectionFactory) :
     public async Task<int> CreateAsync(CreateItemData item, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<int>(
+        var id = await connection.ExecuteScalarAsync<int>(
             new CommandDefinition(CreateProcedure, ToParameters(item), cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+
+        await SaveMasterDataAsync(connection, id, item.MasterData, item.CreatedByUserId, item.CreatedByUserName, cancellationToken);
+        return id;
     }
 
     public async Task<bool> ExistsByCodeAsync(string code, CancellationToken cancellationToken = default)
@@ -88,6 +98,11 @@ public sealed class ItemRepository(ITenantConnectionFactory connectionFactory) :
         using var connection = connectionFactory.CreateConnection();
         var affectedRows = await connection.ExecuteScalarAsync<int>(
             new CommandDefinition(UpdateProcedure, ToParameters(item), cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+
+        if (affectedRows > 0)
+        {
+            await SaveMasterDataAsync(connection, item.Id, item.MasterData, item.UpdatedByUserId, item.UpdatedByUserName, cancellationToken);
+        }
 
         return affectedRows > 0;
     }
@@ -180,5 +195,47 @@ public sealed class ItemRepository(ITenantConnectionFactory connectionFactory) :
             item.UpdatedByUserId,
             item.UpdatedByUserName
         };
+    }
+
+    private static async Task SaveMasterDataAsync(
+        IDbConnection connection,
+        int itemId,
+        ItemMasterData? masterData,
+        int? userId,
+        string? userName,
+        CancellationToken cancellationToken)
+    {
+        if (masterData is null)
+        {
+            return;
+        }
+
+        await connection.ExecuteAsync(
+            new CommandDefinition(
+                SaveMasterDataProcedure,
+                new
+                {
+                    ItemId = itemId,
+                    MasterDataJson = SerializeMasterData(masterData),
+                    UpdatedByUserId = userId,
+                    UpdatedByUserName = userName
+                },
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
+    }
+
+    private static string? SerializeMasterData(ItemMasterData? masterData)
+    {
+        return masterData is null ? null : JsonSerializer.Serialize(masterData, JsonOptions);
+    }
+
+    private static ItemMasterData? DeserializeMasterData(string? masterDataJson)
+    {
+        if (string.IsNullOrWhiteSpace(masterDataJson))
+        {
+            return null;
+        }
+
+        return JsonSerializer.Deserialize<ItemMasterData>(masterDataJson, JsonOptions);
     }
 }

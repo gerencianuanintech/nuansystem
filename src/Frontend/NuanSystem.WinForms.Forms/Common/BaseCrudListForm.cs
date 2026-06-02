@@ -23,6 +23,11 @@ public class BaseCrudListForm : XtraForm
     private bool canExportXml = true;
     private bool actionsEnabled = true;
 
+    public BaseCrudListForm()
+    {
+        AppTypography.ApplyToForm(this);
+    }
+
     public event EventHandler? ActionStateChanged;
 
     public bool CanRefresh => actionsEnabled && canRefresh;

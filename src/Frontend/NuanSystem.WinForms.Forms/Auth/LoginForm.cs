@@ -4,6 +4,7 @@ using DevExpress.XtraEditors.Controls;
 using System.ComponentModel;
 using NuanSystem.Shared.Contracts.Auth;
 using NuanSystem.WinForms.Forms.Common;
+using NuanSystem.WinForms.Services.Http;
 using NuanSystem.WinForms.ViewModels.Auth;
 using NuanSystem.WinForms.ViewModels.Companies;
 
@@ -19,24 +20,26 @@ public sealed partial class LoginForm : XtraForm
 
     private readonly LoginViewModel viewModel;
     private readonly CompanySelectionViewModel companyViewModel;
-    private readonly string apiBaseUrl;
+    private readonly INuanApiClient apiClient;
     private bool credentialsAccepted;
 
     public LoginForm()
     {
         viewModel = null!;
         companyViewModel = null!;
-        apiBaseUrl = string.Empty;
+        apiClient = null!;
         InitializeComponent();
+        FormStyler.ApplyBase(this);
         WireEvents();
     }
 
-    public LoginForm(LoginViewModel viewModel, CompanySelectionViewModel companyViewModel, string apiBaseUrl)
+    public LoginForm(LoginViewModel viewModel, CompanySelectionViewModel companyViewModel, INuanApiClient apiClient)
     {
         this.viewModel = viewModel;
         this.companyViewModel = companyViewModel;
-        this.apiBaseUrl = apiBaseUrl;
+        this.apiClient = apiClient;
         InitializeComponent();
+        FormStyler.ApplyBase(this);
         WireEvents();
 
         this.txtUsuario.Text = "admin";
@@ -69,7 +72,7 @@ public sealed partial class LoginForm : XtraForm
 
     private async Task CheckApiAsync()
     {
-        if (IsInDesignMode || string.IsNullOrWhiteSpace(apiBaseUrl))
+        if (IsInDesignMode || apiClient is null)
         {
             return;
         }
@@ -78,9 +81,7 @@ public sealed partial class LoginForm : XtraForm
 
         try
         {
-            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-            using var response = await httpClient.GetAsync($"{apiBaseUrl.TrimEnd('/')}/health");
-            if (response.IsSuccessStatusCode)
+            if (await apiClient.IsAvailableAsync(cancellationToken: CancellationToken.None))
             {
                 SetApiStatus("API activa", BrandResources.SuccessBack, BrandResources.SuccessText);
                 return;
@@ -133,8 +134,8 @@ public sealed partial class LoginForm : XtraForm
         }
         catch (Exception exception)
         {
-            lblStatus.Text = exception.Message;
-            XtraMessageBox.Show(this, exception.Message, "Login", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            lblStatus.Text = UiExceptionHandler.GetUserMessage(exception);
+            UiExceptionHandler.ShowError(this, "Login", exception);
         }
         finally
         {
@@ -169,7 +170,7 @@ public sealed partial class LoginForm : XtraForm
             }
             catch (Exception exception)
             {
-                XtraMessageBox.Show(this, exception.Message, "Cambio de clave", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                UiExceptionHandler.ShowError(this, "Cambio de clave", exception);
             }
         }
     }
@@ -247,6 +248,8 @@ public sealed partial class LoginForm : XtraForm
 
         base.Dispose(disposing);
     }
+
+
 
     private bool IsInDesignMode => DesignMode || LicenseManager.UsageMode == LicenseUsageMode.Designtime;
 }

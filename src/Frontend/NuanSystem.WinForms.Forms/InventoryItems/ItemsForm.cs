@@ -13,6 +13,7 @@ public sealed partial class ItemsForm : BaseGridCrudListForm
     private readonly ItemsViewModel viewModel;
     private readonly ApiSession session;
     private readonly IAuditClient auditClient;
+    private readonly Func<string, Form?>? relatedCatalogFormFactory;
 
     public ItemsForm()
     {
@@ -23,11 +24,17 @@ public sealed partial class ItemsForm : BaseGridCrudListForm
         WireEvents();
     }
 
-    public ItemsForm(ItemsViewModel viewModel, ApiSession session, IAuditClient auditClient, IGridColumnSettingsClient columnSettingsClient)
+    public ItemsForm(
+        ItemsViewModel viewModel,
+        ApiSession session,
+        IAuditClient auditClient,
+        IGridColumnSettingsClient columnSettingsClient,
+        Func<string, Form?>? relatedCatalogFormFactory = null)
     {
         this.viewModel = viewModel;
         this.session = session;
         this.auditClient = auditClient;
+        this.relatedCatalogFormFactory = relatedCatalogFormFactory;
         InitializeComponent();
         ConfigureColumnPersonalization(columnSettingsClient, "items");
         WireEvents();
@@ -174,7 +181,10 @@ public sealed partial class ItemsForm : BaseGridCrudListForm
             viewModel.CanCreateItemGroups,
             request => viewModel.CreateItemGroupAsync(request),
             viewModel.CanCreateItemFamilies,
-            request => viewModel.CreateItemFamilyAsync(request));
+            request => viewModel.CreateItemFamilyAsync(request),
+            viewModel.CanCreateRelatedCatalog,
+            relatedCatalogFormFactory,
+            cancellationToken => viewModel.ReloadLookupsForEditAsync(cancellationToken));
     }
 
     private void ConfigureColumn(string fieldName, string caption, int visibleIndex, int width)

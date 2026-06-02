@@ -36,7 +36,7 @@ public class BaseGridCrudListForm : BaseCrudListForm
     private readonly PanelControl auditPanel;
     private readonly LabelControl auditCreatedLabel;
     private readonly LabelControl auditUpdatedLabel;
-    private readonly List<object> items = [];
+    private readonly List<object> items = new();
     private IGridColumnSettingsClient? columnSettingsClient;
     private string? columnSettingsFormKey;
     private string columnSettingsGridName = "MainGrid";
@@ -400,26 +400,30 @@ public class BaseGridCrudListForm : BaseCrudListForm
         Appearance.Options.UseBackColor = true;
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        Font = AppTypography.BaseFont;
         ClientSize = new Size(900, 560);
         MinimumSize = new Size(720, 420);
         StartPosition = FormStartPosition.CenterScreen;
 
-        gridControl.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        gridControl.Font = AppTypography.BaseFont;
         gridControl.Dock = DockStyle.Fill;
         gridControl.MainView = gridView;
         gridControl.Name = "gridControl";
         gridControl.TabIndex = 0;
-        gridControl.ViewCollection.AddRange([gridView]);
+        gridControl.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView });
 
-        gridView.Appearance.HeaderPanel.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point);
+        gridView.Appearance.HeaderPanel.Font = AppTypography.GridHeaderFont;
         gridView.Appearance.HeaderPanel.ForeColor = BrandResources.Text;
         gridView.Appearance.HeaderPanel.Options.UseFont = true;
         gridView.Appearance.HeaderPanel.Options.UseForeColor = true;
-        gridView.Appearance.Row.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        gridView.Appearance.Row.Font = AppTypography.GridRowFont;
         gridView.Appearance.Row.ForeColor = BrandResources.Text;
         gridView.Appearance.Row.Options.UseFont = true;
         gridView.Appearance.Row.Options.UseForeColor = true;
+        gridView.Appearance.FooterPanel.Font = AppTypography.GridHeaderFont;
+        gridView.Appearance.FooterPanel.Options.UseFont = true;
+        gridView.Appearance.FilterPanel.Font = AppTypography.GridRowFont;
+        gridView.Appearance.FilterPanel.Options.UseFont = true;
         gridView.GridControl = gridControl;
         gridView.Name = "gridView";
         gridView.OptionsBehavior.Editable = false;
@@ -454,7 +458,7 @@ public class BaseGridCrudListForm : BaseCrudListForm
         ConfigureButton(nextPageButton, ">", new Point(178, 8), 3);
         ConfigureButton(lastPageButton, ">|", new Point(218, 8), 4);
 
-        pageInfoLabel.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        pageInfoLabel.Appearance.Font = AppTypography.LabelFont;
         pageInfoLabel.Appearance.ForeColor = BrandResources.Text;
         pageInfoLabel.Appearance.Options.UseFont = true;
         pageInfoLabel.Appearance.Options.UseForeColor = true;
@@ -463,7 +467,7 @@ public class BaseGridCrudListForm : BaseCrudListForm
         pageInfoLabel.TabIndex = 2;
         pageInfoLabel.Text = "Pagina 1 de 1";
 
-        pageSizeLabel.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        pageSizeLabel.Appearance.Font = AppTypography.LabelFont;
         pageSizeLabel.Appearance.ForeColor = BrandResources.Text;
         pageSizeLabel.Appearance.Options.UseFont = true;
         pageSizeLabel.Appearance.Options.UseForeColor = true;
@@ -475,15 +479,15 @@ public class BaseGridCrudListForm : BaseCrudListForm
         pageSizeCombo.EditValue = "20";
         pageSizeCombo.Location = new Point(344, 10);
         pageSizeCombo.Name = "pageSizeCombo";
-        pageSizeCombo.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        pageSizeCombo.Properties.Appearance.Font = AppTypography.InputFont;
         pageSizeCombo.Properties.Appearance.Options.UseFont = true;
-        pageSizeCombo.Properties.Buttons.AddRange([new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)]);
-        pageSizeCombo.Properties.Items.AddRange(["10", "20", "50", "100"]);
+        pageSizeCombo.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+        pageSizeCombo.Properties.Items.AddRange(new object[] { "10", "20", "50", "100" });
         pageSizeCombo.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
         pageSizeCombo.Size = new Size(70, 22);
         pageSizeCombo.TabIndex = 6;
 
-        totalInfoLabel.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        totalInfoLabel.Appearance.Font = AppTypography.LabelFont;
         totalInfoLabel.Appearance.ForeColor = BrandResources.Text;
         totalInfoLabel.Appearance.Options.UseFont = true;
         totalInfoLabel.Appearance.Options.UseForeColor = true;
@@ -493,7 +497,7 @@ public class BaseGridCrudListForm : BaseCrudListForm
         totalInfoLabel.Text = "Total: 0 registros";
 
         selectionInfoLabel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        selectionInfoLabel.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        selectionInfoLabel.Appearance.Font = AppTypography.LabelFont;
         selectionInfoLabel.Appearance.ForeColor = BrandResources.Text;
         selectionInfoLabel.Appearance.Options.UseFont = true;
         selectionInfoLabel.Appearance.Options.UseForeColor = true;
@@ -523,7 +527,7 @@ public class BaseGridCrudListForm : BaseCrudListForm
         auditPanel.Size = new Size(900, 34);
         auditPanel.TabIndex = 2;
 
-        auditCreatedLabel.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        auditCreatedLabel.Appearance.Font = AppTypography.LabelFont;
         auditCreatedLabel.Appearance.ForeColor = BrandResources.Text;
         auditCreatedLabel.Appearance.Options.UseFont = true;
         auditCreatedLabel.Appearance.Options.UseForeColor = true;
@@ -532,7 +536,7 @@ public class BaseGridCrudListForm : BaseCrudListForm
         auditCreatedLabel.TabIndex = 0;
         auditCreatedLabel.Text = "Creado por: -";
 
-        auditUpdatedLabel.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        auditUpdatedLabel.Appearance.Font = AppTypography.LabelFont;
         auditUpdatedLabel.Appearance.ForeColor = BrandResources.Text;
         auditUpdatedLabel.Appearance.Options.UseFont = true;
         auditUpdatedLabel.Appearance.Options.UseForeColor = true;
@@ -547,8 +551,7 @@ public class BaseGridCrudListForm : BaseCrudListForm
 
     private static void ConfigureButton(SimpleButton button, string text, Point location, int tabIndex)
     {
-        button.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-        button.Appearance.Options.UseFont = true;
+        AppTypography.ApplyButton(button);
         button.Location = location;
         button.Size = new Size(36, 28);
         button.TabIndex = tabIndex;
@@ -620,12 +623,13 @@ public class BaseGridCrudListForm : BaseCrudListForm
         };
 
         var exportColumns = BuildPdfColumns(columns, pageWidth);
-        report.Bands.AddRange([
+        report.Bands.AddRange(new Band[]
+        {
             BuildPdfHeader(report, exportColumns, userName, companyName, companyLogoImage, pageWidth),
             BuildPdfDetail(report, exportColumns),
             BuildPdfFooter(pageWidth),
             BuildPdfPageFooter(companyName, pageWidth)
-        ]);
+        });
 
         return report;
     }
@@ -706,11 +710,12 @@ public class BaseGridCrudListForm : BaseCrudListForm
         var headerRow = BuildPdfHeaderRow(columns, pageWidth);
         headerRow.LocationF = new PointF(0, 88);
 
-        band.Controls.AddRange([
+        band.Controls.AddRange(new XRControl[]
+        {
             logoPanel, title, subtitle,
             metaFecha, metaFechaVal, metaUsuario, metaUsuarioVal, metaFiltro, metaFiltroVal, metaRegs, metaRegsVal,
             line, headerRow
-        ]);
+        });
 
         return band;
     }
@@ -792,7 +797,7 @@ public class BaseGridCrudListForm : BaseCrudListForm
             Padding = new PaddingInfo(0, 4, 0, 0)
         };
 
-        band.Controls.AddRange([line, label, total]);
+        band.Controls.AddRange(new XRControl[] { line, label, total });
         return band;
     }
 
@@ -839,7 +844,7 @@ public class BaseGridCrudListForm : BaseCrudListForm
             TextAlignment = TextAlignment.MiddleRight
         };
 
-        band.Controls.AddRange([line, company, generated, page]);
+        band.Controls.AddRange(new XRControl[] { line, company, generated, page });
         return band;
     }
 

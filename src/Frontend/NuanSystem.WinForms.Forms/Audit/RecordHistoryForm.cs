@@ -9,7 +9,7 @@ namespace NuanSystem.WinForms.Forms.Audit;
 public sealed partial class RecordHistoryForm : XtraForm
 {
     private readonly Func<CancellationToken, Task<IReadOnlyCollection<SecurityChangeItem>>> loadChangesAsync;
-    private readonly List<SecurityChangeItem> allChanges = [];
+    private readonly List<SecurityChangeItem> allChanges = new();
 
     public RecordHistoryForm()
     {
@@ -58,7 +58,7 @@ public sealed partial class RecordHistoryForm : XtraForm
         }
         catch (Exception exception)
         {
-            MessageBox.Show(this, exception.Message, "Historial", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            UiExceptionHandler.ShowError(this, "Historial", exception);
         }
         finally
         {

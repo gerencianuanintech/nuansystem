@@ -14,6 +14,11 @@ public static class ApplicationBuilderExtensions
         return app.UseMiddleware<CompanyContextMiddleware>();
     }
 
+    public static IApplicationBuilder UseRequiredPasswordChange(this IApplicationBuilder app)
+    {
+        return app.UseMiddleware<RequiredPasswordChangeMiddleware>();
+    }
+
     public static IApplicationBuilder UseAuditLogging(this IApplicationBuilder app)
     {
         return app.UseMiddleware<AuditLoggingMiddleware>();

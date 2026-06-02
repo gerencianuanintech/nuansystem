@@ -1,4 +1,4 @@
-namespace NuanSystem.WinForms.Forms.Audit;
+﻿namespace NuanSystem.WinForms.Forms.Audit;
 
 partial class RecordHistoryForm
 {
@@ -69,7 +69,7 @@ partial class RecordHistoryForm
         // 
         // lblTitulo
         // 
-        lblTitulo.Appearance.Font = new Font("Segoe UI", 15F, FontStyle.Bold, GraphicsUnit.Point);
+        lblTitulo.Appearance.Font = new Font("Segoe UI", 14F, FontStyle.Bold, GraphicsUnit.Point);
         lblTitulo.Appearance.ForeColor = NuanSystem.WinForms.Forms.Common.BrandResources.Text;
         lblTitulo.Appearance.Options.UseFont = true;
         lblTitulo.Appearance.Options.UseForeColor = true;
@@ -81,7 +81,7 @@ partial class RecordHistoryForm
         // 
         // lblSubtitulo
         // 
-        lblSubtitulo.Appearance.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
+        lblSubtitulo.Appearance.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
         lblSubtitulo.Appearance.ForeColor = NuanSystem.WinForms.Forms.Common.BrandResources.Text;
         lblSubtitulo.Appearance.Options.UseFont = true;
         lblSubtitulo.Appearance.Options.UseForeColor = true;
@@ -94,7 +94,7 @@ partial class RecordHistoryForm
         // btnActualizar
         // 
         btnActualizar.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        btnActualizar.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        btnActualizar.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point);
         btnActualizar.Appearance.Options.UseFont = true;
         btnActualizar.Location = new Point(902, 26);
         btnActualizar.Name = "btnActualizar";
@@ -146,7 +146,7 @@ partial class RecordHistoryForm
         // lblTotalRegistros
         // 
         lblTotalRegistros.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        lblTotalRegistros.Appearance.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold, GraphicsUnit.Point);
+        lblTotalRegistros.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point);
         lblTotalRegistros.Appearance.ForeColor = NuanSystem.WinForms.Forms.Common.BrandResources.Text;
         lblTotalRegistros.Appearance.Options.UseFont = true;
         lblTotalRegistros.Appearance.Options.UseForeColor = true;
@@ -175,6 +175,10 @@ partial class RecordHistoryForm
         grvHistorial.Appearance.HeaderPanel.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point);
         grvHistorial.Appearance.HeaderPanel.ForeColor = Color.Black;
         grvHistorial.Appearance.HeaderPanel.Options.UseFont = true;
+        grvHistorial.Appearance.FooterPanel.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point);
+        grvHistorial.Appearance.FooterPanel.Options.UseFont = true;
+        grvHistorial.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        grvHistorial.Appearance.FilterPanel.Options.UseFont = true;
         grvHistorial.Appearance.HeaderPanel.Options.UseForeColor = true;
         grvHistorial.Appearance.Row.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         grvHistorial.Appearance.Row.ForeColor = NuanSystem.WinForms.Forms.Common.BrandResources.Text;
@@ -259,6 +263,7 @@ partial class RecordHistoryForm
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(1040, 560);
+        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         Controls.Add(grcHistorial);
         Controls.Add(pnlFiltros);
         Controls.Add(pnlEncabezado);
@@ -290,3 +295,6 @@ partial class RecordHistoryForm
         base.Dispose(disposing);
     }
 }
+
+
+

@@ -41,6 +41,7 @@ public sealed class ItemItem
     public bool AllowSaleWithoutStock { get; set; }
     public string? Remarks { get; set; }
     public bool IsActive { get; set; }
+    public ItemMasterData? MasterData { get; set; }
     public int? CreatedByUserId { get; set; }
     public string? CreatedByUserName { get; set; }
     public DateTime CreatedAt { get; set; }

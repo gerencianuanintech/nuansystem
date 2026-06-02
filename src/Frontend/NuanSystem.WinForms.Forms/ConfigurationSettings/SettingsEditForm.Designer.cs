@@ -1,4 +1,4 @@
-using DevExpress.XtraEditors;
+﻿using DevExpress.XtraEditors;
 using NuanSystem.WinForms.Forms.Common;
 
 namespace NuanSystem.WinForms.Forms.ConfigurationSettings;
@@ -226,7 +226,17 @@ partial class SettingsEditForm
         // 
         // btnCancelar
         // 
-        btnCancelar.DialogResult = DialogResult.Cancel;
+        btnCancelar.Appearance.BackColor = Color.FromArgb(99, 110, 114);
+        btnCancelar.Appearance.ForeColor = Color.White;
+        btnCancelar.AppearanceHovered.BackColor = Color.FromArgb(78, 87, 90);
+        btnCancelar.AppearanceHovered.ForeColor = Color.White;
+        btnCancelar.Appearance.Options.UseBackColor = true;
+        btnCancelar.Appearance.Options.UseForeColor = true;
+        btnCancelar.AppearanceHovered.Options.UseBackColor = true;
+        btnCancelar.AppearanceHovered.Options.UseForeColor = true;
+        btnCancelar.ImageOptions.SvgImageSize = new Size(32, 32);
+        btnCancelar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
+        btnCancelar.LookAndFeel.UseDefaultLookAndFeel = false;        btnCancelar.DialogResult = DialogResult.Cancel;
         btnCancelar.Location = new Point(306, 424);
         btnCancelar.Name = "btnCancelar";
         btnCancelar.Size = new Size(100, 36);
@@ -239,7 +249,11 @@ partial class SettingsEditForm
         btnGuardar.Appearance.ForeColor = Color.White;
         btnGuardar.Appearance.Options.UseBackColor = true;
         btnGuardar.Appearance.Options.UseForeColor = true;
-        btnGuardar.Location = new Point(412, 424);
+        btnGuardar.AppearanceHovered.BackColor = Color.FromArgb(0, 160, 128);
+        btnGuardar.AppearanceHovered.ForeColor = Color.White;
+        btnGuardar.AppearanceHovered.Options.UseBackColor = true;
+        btnGuardar.AppearanceHovered.Options.UseForeColor = true;
+        btnGuardar.ImageOptions.SvgImageSize = new Size(32, 32);        btnGuardar.Location = new Point(412, 424);
         btnGuardar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         btnGuardar.LookAndFeel.UseDefaultLookAndFeel = false;
         btnGuardar.Name = "btnGuardar";
@@ -333,3 +347,4 @@ partial class SettingsEditForm
     private SimpleButton btnGuardar;
     private SimpleButton btnCancelar;
 }
+

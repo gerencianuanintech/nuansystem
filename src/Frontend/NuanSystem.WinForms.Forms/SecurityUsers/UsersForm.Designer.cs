@@ -7,6 +7,7 @@ partial class UsersForm
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
+        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         Text = "Usuarios";
     }
 

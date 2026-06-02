@@ -18,6 +18,10 @@ internal static class BrandResources
     public static readonly Color WarningBack = Color.FromArgb(255, 251, 235);
     public static readonly Color ErrorText = Color.FromArgb(220, 38, 38);
     public static readonly Color ErrorBack = Color.FromArgb(254, 242, 242);
+    public static readonly Color CustomerAccent = Color.FromArgb(0, 86, 210);
+    public static readonly Color CustomerAccentSoft = Color.FromArgb(232, 241, 255);
+    public static readonly Color SupplierAccent = Color.FromArgb(91, 49, 163);
+    public static readonly Color SupplierAccentSoft = Color.FromArgb(243, 238, 255);
 
     public static Image? LoadLogo(bool horizontal = true)
     {

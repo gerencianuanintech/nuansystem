@@ -11,10 +11,6 @@ using NuanSystem.Application.Features.ConfigurationCompanies.Queries;
 using NuanSystem.Application.Features.ConfigurationSettings.Commands;
 using NuanSystem.Application.Features.ConfigurationSettings.Queries;
 using NuanSystem.Application.Features.Audit.Queries;
-using NuanSystem.Application.Features.Customers.Commands;
-using NuanSystem.Application.Features.Customers.Queries;
-using NuanSystem.Application.Features.Documents.Commands;
-using NuanSystem.Application.Features.Documents.Queries;
 using NuanSystem.Application.Features.Items.Commands;
 using NuanSystem.Application.Features.Items.Queries;
 using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Commands;
@@ -46,6 +42,7 @@ using NuanSystem.Shared.Constants;
 using NuanSystem.Shared.Contracts.Auth;
 using NuanSystem.Shared.Responses;
 using Serilog;
+using System.Data.Common;
 using System.Security.Claims;
 
 Log.Logger = new LoggerConfiguration()
@@ -97,7 +94,9 @@ try
     }
 
     app.UseHttpsRedirection();
+    app.UseRateLimiter();
     app.UseAuthentication();
+    app.UseRequiredPasswordChange();
     app.UseCompanyContext();
     app.UseAuthorization();
     app.UseAuditLogging();
@@ -149,6 +148,7 @@ try
 
         return Results.Ok(ApiResponse<LoginResponse>.Ok(response, "Login correcto."));
     })
+    .RequireRateLimiting("auth-login")
     .AllowAnonymous();
 
     app.MapPost("/api/auth/change-password", async (
@@ -168,9 +168,9 @@ try
             return Results.BadRequest(ApiResponse<object>.Fail("Clave actual y nueva clave son requeridas."));
         }
 
-        if (request.NewPassword.Length < 8)
+        if (!IsPasswordPolicyCompliant(request.NewPassword, request.CurrentPassword, out var passwordPolicyMessage))
         {
-            return Results.BadRequest(ApiResponse<object>.Fail("La nueva clave debe tener al menos 8 caracteres."));
+            return Results.BadRequest(ApiResponse<object>.Fail(passwordPolicyMessage));
         }
 
         var changed = await ChangePasswordAsync(
@@ -342,7 +342,7 @@ try
             SapIntegrationMode = companyContext.CurrentCompany.SapIntegrationMode.ToString()
         }));
     })
-    .RequirePermission(PermissionCodes.CustomersRead);
+    .RequirePermission(PermissionCodes.BusinessPartnersRead);
 
     app.MapPost("/api/tenancy/initialize-database", async (
         ITenantDatabaseInitializer initializer,
@@ -355,108 +355,16 @@ try
             Initialized = true
         }, "Base de datos tenant validada correctamente."));
     })
-    .RequirePermission(PermissionCodes.CustomersRead);
-
-    app.MapGet("/api/customers", async (
-        ISender sender,
-        CancellationToken cancellationToken) =>
-    {
-        var result = await sender.Send(new GetCustomersQuery(), cancellationToken);
-
-        return result.ToHttpResult();
-    })
-    .RequirePermission(PermissionCodes.CustomersRead);
-
-    app.MapGet("/api/customers/{id:int}", async (
-        int id,
-        ISender sender,
-        CancellationToken cancellationToken) =>
-    {
-        var result = await sender.Send(new GetCustomerByIdQuery(id), cancellationToken);
-
-        return result.ToHttpResult();
-    })
-    .RequirePermission(PermissionCodes.CustomersRead);
-
-    app.MapPost("/api/customers", async (
-        CreateCustomerCommand command,
-        ISender sender,
-        CancellationToken cancellationToken) =>
-    {
-        var result = await sender.Send(command, cancellationToken);
-
-        return result.ToHttpResult();
-    })
-    .RequirePermission(PermissionCodes.CustomersManage);
-
-    app.MapPut("/api/customers/{id:int}", async (
-        int id,
-        UpdateCustomerCommand command,
-        ISender sender,
-        CancellationToken cancellationToken) =>
-    {
-        var result = await sender.Send(command with { Id = id }, cancellationToken);
-
-        return result.ToHttpResult();
-    })
-    .RequirePermission(PermissionCodes.CustomersManage);
-
-    app.MapDelete("/api/customers/{id:int}", async (
-        int id,
-        ISender sender,
-        CancellationToken cancellationToken) =>
-    {
-        var result = await sender.Send(new DeleteCustomerCommand(id), cancellationToken);
-
-        return result.ToHttpResult();
-    })
-    .RequirePermission(PermissionCodes.CustomersManage);
+    .RequirePermission(PermissionCodes.BusinessPartnersRead);
 
     app.MapAccountingEndpoints();
     app.MapInventoryCatalogEndpoints();
-
-    app.MapGet("/api/documents", async (
-        ISender sender,
-        CancellationToken cancellationToken) =>
-    {
-        var result = await sender.Send(new GetDocumentsQuery(), cancellationToken);
-
-        return result.ToHttpResult();
-    })
-    .RequirePermission(PermissionCodes.DocumentsRead);
-
-    app.MapGet("/api/documents/{id:long}", async (
-        long id,
-        ISender sender,
-        CancellationToken cancellationToken) =>
-    {
-        var result = await sender.Send(new GetDocumentByIdQuery(id), cancellationToken);
-
-        return result.ToHttpResult();
-    })
-    .RequirePermission(PermissionCodes.DocumentsRead);
-
-    app.MapPost("/api/documents", async (
-        CreateDocumentCommand command,
-        ISender sender,
-        CancellationToken cancellationToken) =>
-    {
-        var result = await sender.Send(command, cancellationToken);
-
-        return result.ToHttpResult();
-    })
-    .RequirePermission(PermissionCodes.DocumentsManage);
-
-    app.MapPost("/api/sap/send-document/{documentId:long}", async (
-        long documentId,
-        ISender sender,
-        CancellationToken cancellationToken) =>
-    {
-        var result = await sender.Send(new SendDocumentToSapCommand(documentId), cancellationToken);
-
-        return result.ToHttpResult();
-    })
-    .RequirePermission(PermissionCodes.SapManage);
+    app.MapGeographyEndpoints();
+    app.MapFinancialCatalogEndpoints();
+    app.MapGeneralSupplierEndpoints();
+    app.MapTaxCatalogEndpoints();
+    app.MapBusinessPartnerEndpoints();
+    app.MapPurchaseOrderEndpoints();
 
     app.MapGet("/api/sap/sync-logs", async (
         ISender sender,
@@ -467,6 +375,30 @@ try
         return result.ToHttpResult();
     })
     .RequirePermission(PermissionCodes.SapRead);
+
+    app.MapGet("/api/sap/suppliers/preview", async (
+        ISender sender,
+        CancellationToken cancellationToken) =>
+    {
+        var result = await sender.Send(new PreviewSuppliersFromSapQuery(), cancellationToken);
+
+        return result.ToHttpResult();
+    })
+    .RequirePermission(PermissionCodes.SapRead);
+
+    app.MapPost("/api/sap/suppliers/import", async (
+        ISender sender,
+        ClaimsPrincipal user,
+        CancellationToken cancellationToken) =>
+    {
+        var auditUser = GetAuditUser(user);
+        var result = await sender.Send(
+            new ImportSuppliersFromSapCommand(auditUser.UserId, auditUser.UserName),
+            cancellationToken);
+
+        return result.ToHttpResult();
+    })
+    .RequirePermission(PermissionCodes.SapManage);
 
     app.MapGet("/api/settings/parameters", async (
         ISender sender,
@@ -1087,7 +1019,7 @@ try
         var result = await sender.Send(new GetRoleAccessQuery(roleId), cancellationToken);
         return result.ToHttpResult();
     })
-    .RequireFormOperation("security-access", "consult");
+    .RequirePermission(PermissionCodes.RolesManage);
 
     app.MapPut("/api/security/roles/{roleId:int}/access", async (
         int roleId,
@@ -1106,7 +1038,7 @@ try
 
         return result.ToHttpResult();
     })
-    .RequireFormOperation("security-access", "update");
+    .RequirePermission(PermissionCodes.RolesManage);
 
     app.MapGet("/api/security/grid-columns/{formKey}/{gridName}/me", async (
         string formKey,
@@ -1198,15 +1130,16 @@ try
     app.MapPost("/api/audit/error-logs", async (
         CreateAuditErrorLogData request,
         ClaimsPrincipal user,
+        HttpContext httpContext,
         IAuditLogRepository repository,
         CancellationToken cancellationToken) =>
     {
         var auditUser = GetAuditUser(user);
         var errorLog = new CreateAuditErrorLogData(
             Trim(request.Source, 30) ?? "WinForms",
-            request.UserId ?? auditUser.UserId,
-            Trim(request.UserName, 120) ?? auditUser.UserName,
-            Trim(request.CompanyCode, 50),
+            auditUser.UserId,
+            auditUser.UserName,
+            Trim(httpContext.Request.Headers["X-Company-Code"].FirstOrDefault(), 50),
             Trim(request.ModuleKey, 120),
             Trim(request.FormName, 180),
             Trim(request.ActionName, 120),
@@ -1218,14 +1151,14 @@ try
             Trim(request.ExceptionType, 300),
             request.StackTrace,
             Trim(request.TraceId, 120),
-            Trim(request.IpAddress, 64),
+            Trim(httpContext.Connection.RemoteIpAddress?.ToString(), 64),
             Trim(request.MachineName, 120),
-            Trim(request.UserAgent, 500));
+            Trim(httpContext.Request.Headers.UserAgent.FirstOrDefault(), 500));
 
         await repository.AddErrorAsync(errorLog, cancellationToken);
         return Results.Ok(ApiResponse<bool>.Ok(true, "Error registrado correctamente."));
     })
-    .AllowAnonymous();
+    .RequireAuthorization();
 
     app.Run();
 }
@@ -1270,6 +1203,30 @@ static bool TryGetUserId(ClaimsPrincipal user, out int userId)
     return int.TryParse(userIdValue, out userId);
 }
 
+static bool IsPasswordPolicyCompliant(string newPassword, string currentPassword, out string message)
+{
+    if (newPassword.Length < 10)
+    {
+        message = "La nueva clave debe tener al menos 10 caracteres.";
+        return false;
+    }
+
+    if (string.Equals(newPassword, currentPassword, StringComparison.Ordinal))
+    {
+        message = "La nueva clave debe ser diferente a la clave actual.";
+        return false;
+    }
+
+    if (!newPassword.Any(char.IsUpper) || !newPassword.Any(char.IsLower) || !newPassword.Any(char.IsDigit))
+    {
+        message = "La nueva clave debe incluir mayusculas, minusculas y numeros.";
+        return false;
+    }
+
+    message = string.Empty;
+    return true;
+}
+
 static async Task<bool> ChangePasswordAsync(
     IMasterConnectionFactory connectionFactory,
     IPasswordHasher passwordHasher,
@@ -1279,13 +1236,13 @@ static async Task<bool> ChangePasswordAsync(
     CancellationToken cancellationToken)
 {
     using var connection = connectionFactory.CreateConnection();
-    connection.Open();
+    await OpenConnectionAsync(connection, cancellationToken);
 
     using var getCommand = connection.CreateCommand();
     getCommand.CommandText = "SELECT PasswordHash FROM dbo.Users WHERE Id = @UserId AND IsActive = 1 AND IsDeleted = 0;";
     AddParameter(getCommand, "@UserId", userId);
 
-    var currentHash = (string?)getCommand.ExecuteScalar();
+    var currentHash = (string?)await ExecuteScalarAsync(getCommand, cancellationToken);
     if (string.IsNullOrWhiteSpace(currentHash) || !passwordHasher.VerifyPassword(currentPassword, currentHash))
     {
         return false;
@@ -1309,8 +1266,41 @@ WHERE Id = @UserId
     AddParameter(updateCommand, "@UserId", userId);
     AddParameter(updateCommand, "@UserName", null);
 
-    await Task.Run(updateCommand.ExecuteNonQuery, cancellationToken);
+    await ExecuteNonQueryAsync(updateCommand, cancellationToken);
     return true;
+}
+
+static async Task OpenConnectionAsync(System.Data.IDbConnection connection, CancellationToken cancellationToken)
+{
+    if (connection is DbConnection dbConnection)
+    {
+        await dbConnection.OpenAsync(cancellationToken);
+        return;
+    }
+
+    connection.Open();
+}
+
+static async Task<object?> ExecuteScalarAsync(System.Data.IDbCommand command, CancellationToken cancellationToken)
+{
+    if (command is DbCommand dbCommand)
+    {
+        return await dbCommand.ExecuteScalarAsync(cancellationToken);
+    }
+
+    cancellationToken.ThrowIfCancellationRequested();
+    return command.ExecuteScalar();
+}
+
+static async Task<int> ExecuteNonQueryAsync(System.Data.IDbCommand command, CancellationToken cancellationToken)
+{
+    if (command is DbCommand dbCommand)
+    {
+        return await dbCommand.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    cancellationToken.ThrowIfCancellationRequested();
+    return command.ExecuteNonQuery();
 }
 
 static void AddParameter(System.Data.IDbCommand command, string name, object? value)

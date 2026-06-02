@@ -1,0 +1,322 @@
+namespace NuanSystem.Application.Features.Items.Dtos;
+
+public sealed record ItemMasterData(
+    ItemGeneralData? General = null,
+    ItemUnitsData? Units = null,
+    ItemInventoryData? Inventory = null,
+    ItemPurchasingData? Purchasing = null,
+    ItemSalesData? Sales = null,
+    ItemCostsData? Costs = null,
+    ItemAccountingData? Accounting = null,
+    ItemTaxesData? Taxes = null,
+    ItemTraceabilityData? Traceability = null,
+    ItemVariantsData? Variants = null,
+    ItemSapData? Sap = null,
+    ItemAttachmentsData? Attachments = null,
+    ItemRemarksData? Remarks = null);
+
+public sealed record ItemGeneralData(
+    string? AlternateCode,
+    string? SupplierSku,
+    string? LongDescription,
+    string? ProductType,
+    string? Origin,
+    string? Line,
+    string? SubGroup,
+    string? Model,
+    string? Reference,
+    bool SalesActive,
+    bool PurchaseActive,
+    bool ManageInventory,
+    bool IsService,
+    bool IsKit,
+    bool BatchManaged,
+    bool SerialManaged,
+    bool Perishable,
+    bool ExpirationManaged,
+    bool RequiresScale,
+    bool AllowDiscount,
+    bool AffectsInventory);
+
+public sealed record ItemUnitsData(
+    int? InventoryUnitOfMeasureId,
+    int? PurchaseUnitOfMeasureId,
+    int? SalesUnitOfMeasureId,
+    decimal PurchaseFactor,
+    decimal SalesFactor,
+    decimal NetWeight,
+    decimal GrossWeight,
+    decimal Volume,
+    string? WeightUnit,
+    string? VolumeUnit,
+    decimal QuantityRounding,
+    bool AllowFractions,
+    IReadOnlyCollection<ItemPresentationData>? Presentations,
+    IReadOnlyCollection<ItemBarcodeData>? Barcodes);
+
+public sealed record ItemPresentationData(
+    string Presentation,
+    int? UnitOfMeasureId,
+    string? UnitCode,
+    decimal InventoryFactor,
+    string? Barcode,
+    bool AppliesToPurchase,
+    bool AppliesToSale,
+    bool AppliesToInventory,
+    bool IsMain,
+    bool IsActive);
+
+public sealed record ItemBarcodeData(
+    string Barcode,
+    string? Scope,
+    string? Presentation,
+    int? UnitOfMeasureId,
+    string? UnitCode,
+    decimal InventoryFactor,
+    bool IsMain,
+    bool IsActive);
+
+public sealed record ItemInventoryData(
+    bool ManageInventory,
+    string? ValuationMethod,
+    string? NegativeStockPolicy,
+    bool AutoReplenishment,
+    bool ManageLocations,
+    bool RequiresCycleCount,
+    int CoverageDays,
+    decimal GlobalMinimumStock,
+    decimal GlobalMaximumStock,
+    decimal GlobalReorderPoint,
+    int LeadTimeDays,
+    int? MainWarehouseId,
+    string? SupplyMethod,
+    string? ReplenishmentMethod,
+    string? AbcClassification,
+    string? DefaultLocationCode,
+    string? Zone,
+    string? Condition,
+    bool BatchRequired,
+    bool SerialRequired,
+    bool AllowTransfers,
+    bool Storable,
+    string? OperationNote,
+    IReadOnlyCollection<ItemWarehouseData>? Warehouses);
+
+public sealed record ItemWarehouseData(
+    int? WarehouseId,
+    string? WarehouseCode,
+    string? WarehouseName,
+    decimal CurrentStock,
+    decimal CommittedStock,
+    decimal OrderedStock,
+    decimal AvailableStock,
+    decimal MinimumStock,
+    decimal MaximumStock,
+    decimal ReorderPoint,
+    decimal RequiredStock,
+    string? DefaultLocationCode,
+    decimal WarehouseCost,
+    bool IsDefaultWarehouse,
+    bool IsLocked,
+    bool IsActive);
+
+public sealed record ItemPurchasingData(
+    bool PurchaseEnabled,
+    string? MainSupplierCode,
+    string? AlternateSupplierCode,
+    int? PurchaseUnitOfMeasureId,
+    decimal PurchaseMultiple,
+    decimal MinimumOrderQuantity,
+    int LeadTimeDays,
+    string? PreferredPurchaseCurrency,
+    bool AllowBackorder,
+    bool RequiresPurchaseApproval,
+    decimal LastPurchaseCost,
+    decimal StandardPurchaseCost,
+    decimal SupplierDiscountPercent,
+    int? PurchaseTaxId,
+    string? PurchaseRetention,
+    string? PurchaseExpenseAccountCode,
+    string? AssignedBuyer,
+    string? ReturnPolicy,
+    DateTime? LastPurchaseDate);
+
+public sealed record ItemSalesData(
+    bool SalesEnabled,
+    int? SalesUnitOfMeasureId,
+    decimal BasePrice,
+    string? MainPriceList,
+    bool AllowDiscount,
+    decimal MaximumDiscountPercent,
+    decimal MinimumMarginPercent,
+    decimal MinimumSaleQuantity,
+    decimal SalesMultiple,
+    decimal CommissionPercent,
+    int? SalesTaxId,
+    string? ExciseTax,
+    string? SuggestedRetention,
+    bool TaxableProduct,
+    bool AffectsPromotions,
+    bool AllowsReturns,
+    bool BlockedForEcommerce,
+    string? PreferredChannel,
+    string? CommercialPolicy);
+
+public sealed record ItemCostsData(
+    decimal AverageCost,
+    decimal LastCost,
+    decimal StandardCost,
+    decimal ReplacementCost,
+    string? CostCurrency,
+    DateTime? CostUpdatedAt,
+    string? CostingMethod,
+    decimal BasePrice,
+    decimal SuggestedPrice,
+    decimal GrossMargin,
+    decimal GrossMarginPercent,
+    decimal MinimumAllowedMarginPercent,
+    decimal TwelveMonthProfitabilityPercent,
+    DateTime? PriceUpdatedAt,
+    IReadOnlyCollection<ItemCostComponentData>? Components);
+
+public sealed record ItemCostComponentData(
+    string Concept,
+    decimal Value,
+    decimal Percent,
+    string? Note);
+
+public sealed record ItemAccountingData(
+    string? InventoryAccountCode,
+    string? IncomeAccountCode,
+    string? CostOfSalesAccountCode,
+    string? SalesReturnAccountCode,
+    string? PurchaseReturnAccountCode,
+    string? CostVarianceAccountCode,
+    string? InventoryAdjustmentAccountCode,
+    string? PurchaseExpenseAccountCode,
+    string? DefaultBranchCode,
+    string? CostCenterCode,
+    string? ProjectCode,
+    string? BusinessLineCode,
+    string? DepartmentCode,
+    bool AllowDocumentOverride,
+    bool RequiresDimensionInMovements,
+    bool GeneratesInventoryEntry,
+    bool UsesWarehouseAccount,
+    bool UsesGroupAccount,
+    bool AllowsCompensation,
+    bool AccountingBlocked,
+    int ReconciliationDays,
+    string? AccountingIntegrationMethod,
+    string? AccountingNotes);
+
+public sealed record ItemTaxesData(
+    string? FiscalItemType,
+    int? PurchaseVatId,
+    int? SalesVatId,
+    string? ExciseTax,
+    bool TaxableService,
+    bool ExemptGood,
+    string? SuggestedRetention,
+    string? TaxSupport,
+    string? FiscalCode,
+    string? FiscalCountry,
+    bool AppliesToPurchases,
+    bool AppliesToSales,
+    bool AffectsRetention,
+    bool AppliesCreditNote,
+    bool AppliesExport,
+    bool RequiresTariffCode,
+    string? TariffCode,
+    string? CustomsClassification,
+    string? TaxNote);
+
+public sealed record ItemTraceabilityData(
+    bool BatchControl,
+    bool SerialControl,
+    bool RequiresExpiration,
+    bool ExpirationRequired,
+    int ExpirationAlertDays,
+    int QuarantineDays,
+    bool GeneratesBatchAutomatically,
+    string? BatchPrefix,
+    int SerialLength,
+    string? FefoFifoMethod,
+    bool AllowsMultipleLotsPerDocument,
+    bool AllowsReceiptWithoutLot,
+    bool AllowsExpiredLotSale,
+    bool RequiresLotInTransfers,
+    bool RequiresSerialInDispatch,
+    string? OperationNote);
+
+public sealed record ItemVariantsData(
+    bool ManagesVariants,
+    string? VariantType,
+    bool AutoGenerateCode,
+    string? CodeMask,
+    string? BaseVariant,
+    bool AllowsSalesByVariant,
+    bool AllowsPurchasesByVariant,
+    bool AllowsStockByVariant);
+
+public sealed record ItemSapData(
+    bool IsSynchronized,
+    string? SapCode,
+    string? SapItemCode,
+    DateTime? LastSynchronizationAt,
+    string? SynchronizationStatus,
+    string? SapCompany,
+    string? TargetDatabase,
+    string? LastError,
+    bool SynchronizeItem,
+    string? SapGroup,
+    string? SapUnitGroup,
+    string? SapPlanningMethod,
+    string? SapSupplyMethod,
+    string? SapValuationMethod,
+    bool ManagesBatchInSap,
+    bool ManagesSerialInSap,
+    IReadOnlyCollection<ItemSapFieldMappingData>? FieldMappings);
+
+public sealed record ItemSapFieldMappingData(
+    string SystemField,
+    string SapField,
+    string? Description,
+    bool Required,
+    bool Enabled);
+
+public sealed record ItemAttachmentsData(
+    IReadOnlyCollection<ItemAttachmentData>? Files);
+
+public sealed record ItemAttachmentData(
+    string DocumentType,
+    string FileName,
+    string? Description,
+    string? Category,
+    string? Extension,
+    string? Size,
+    DateTime? UploadDate,
+    string? User,
+    bool IsMain,
+    bool VisibleInSales,
+    bool VisibleInPurchases,
+    bool VisibleInPortal,
+    string? Status);
+
+public sealed record ItemRemarksData(
+    string? GeneralRemarks,
+    string? GeneralOperationalAlert,
+    string? PurchasingRemarks,
+    string? SalesRemarks,
+    string? InventoryRemarks,
+    string? LogisticsQualityRemarks,
+    IReadOnlyCollection<ItemOperationalAlertData>? OperationalAlerts);
+
+public sealed record ItemOperationalAlertData(
+    string AlertType,
+    string Process,
+    string Message,
+    DateTime ValidFrom,
+    DateTime? ValidTo,
+    bool IsBlocking,
+    bool IsActive);
