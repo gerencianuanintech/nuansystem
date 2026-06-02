@@ -61,6 +61,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ISapSyncLogRepository, SapSyncLogRepository>();
         services.AddScoped<ICompanyParameterRepository, CompanyParameterRepository>();
         services.AddScoped<IConfigurationSettingRepository, ConfigurationSettingRepository>();
+        services.AddScoped<IUserCredentialRepository, SqlServerUserCredentialRepository>();
         services.AddScoped<IUserAdminRepository, UserAdminRepository>();
         services.AddScoped<IRoleAdminRepository, RoleAdminRepository>();
         services.AddScoped<ISecurityRoleRepository, SecurityRoleRepository>();
