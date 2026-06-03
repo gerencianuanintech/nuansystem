@@ -275,17 +275,22 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Message.Should().Be(PurchaseOrderWorkflowPolicy.DeleteInvalidMessage);
         await _repository.DidNotReceive()
-            .DeleteAsync(Arg.Any<int>(), Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+            .DeleteIfCurrentAsync(Arg.Any<int>(), Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
     [InlineData(PurchaseOrderStatuses.Draft)]
     [InlineData(PurchaseOrderStatuses.Rejected)]
-    public async Task Delete_CallsRepositoryDelete_WhenOrderCanBeDeleted(string status)
+    public async Task Delete_CallsRepositoryDeleteIfCurrent_WhenOrderCanBeDeleted(string status)
     {
         _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
             .Returns(CreateOrder(status));
-        _repository.DeleteAsync(OrderId, AuditUserId, AuditUserName, Arg.Any<CancellationToken>())
+        _repository.DeleteIfCurrentAsync(
+                OrderId,
+                Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected)),
+                AuditUserId,
+                AuditUserName,
+                Arg.Any<CancellationToken>())
             .Returns(true);
         var handler = new DeletePurchaseOrderCommandHandler(_repository);
 
@@ -294,7 +299,32 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Message.Should().Be("Orden de compra eliminada correctamente.");
         await _repository.Received(1)
-            .DeleteAsync(OrderId, AuditUserId, AuditUserName, Arg.Any<CancellationToken>());
+            .DeleteIfCurrentAsync(
+                OrderId,
+                Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected)),
+                AuditUserId,
+                AuditUserName,
+                Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Delete_ReturnsFailure_WhenAtomicCancellationDoesNotUpdateRows()
+    {
+        _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
+            .Returns(CreateOrder(PurchaseOrderStatuses.Draft));
+        _repository.DeleteIfCurrentAsync(
+                OrderId,
+                Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected)),
+                AuditUserId,
+                AuditUserName,
+                Arg.Any<CancellationToken>())
+            .Returns(false);
+        var handler = new DeletePurchaseOrderCommandHandler(_repository);
+
+        var result = await handler.Handle(CreateDeleteCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Message.Should().Be("No se pudo eliminar la orden de compra.");
     }
 
     private void SetupStatusChange(string currentStatus, string nextStatus, bool updated = true)

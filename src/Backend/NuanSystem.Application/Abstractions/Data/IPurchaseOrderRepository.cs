@@ -16,6 +16,13 @@ public interface IPurchaseOrderRepository
 
     Task<bool> DeleteAsync(int id, int? deletedByUserId, string? deletedByUserName, CancellationToken cancellationToken = default);
 
+    Task<bool> DeleteIfCurrentAsync(
+        int id,
+        IReadOnlyCollection<string> expectedCurrentStatuses,
+        int? deletedByUserId,
+        string? deletedByUserName,
+        CancellationToken cancellationToken = default);
+
     Task<bool> UpdateStatusAsync(int id, string status, int? userId, string? userName, CancellationToken cancellationToken = default);
 
     Task<bool> UpdateStatusIfCurrentAsync(

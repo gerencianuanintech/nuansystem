@@ -100,6 +100,35 @@ public sealed class PurchaseOrderRepository(ITenantConnectionFactory connectionF
         return affectedRows > 0;
     }
 
+    public async Task<bool> DeleteIfCurrentAsync(
+        int id,
+        IReadOnlyCollection<string> expectedCurrentStatuses,
+        int? deletedByUserId,
+        string? deletedByUserName,
+        CancellationToken cancellationToken = default)
+    {
+        if (expectedCurrentStatuses is null || expectedCurrentStatuses.Count == 0)
+        {
+            throw new ArgumentException("At least one expected current status is required.", nameof(expectedCurrentStatuses));
+        }
+
+        using var connection = connectionFactory.CreateConnection();
+        var affectedRows = await connection.ExecuteScalarAsync<int>(
+            new CommandDefinition(
+                DeleteProcedure,
+                new
+                {
+                    Id = id,
+                    ExpectedStatusesJson = JsonSerializer.Serialize(expectedCurrentStatuses, JsonOptions),
+                    DeletedByUserId = deletedByUserId,
+                    DeletedByUserName = deletedByUserName
+                },
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
+
+        return affectedRows > 0;
+    }
+
     public async Task<bool> UpdateStatusAsync(int id, string status, int? userId, string? userName, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();

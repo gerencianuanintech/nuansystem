@@ -587,20 +587,32 @@ GO
 
 CREATE OR ALTER PROCEDURE dbo.SP_NA_DELETE_PURCHASEORDERS_ELIMINAR
     @Id int,
+    @ExpectedStatusesJson nvarchar(max) = NULL,
     @DeletedByUserId int = NULL,
     @DeletedByUserName nvarchar(256) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    UPDATE dbo.PurchaseOrderHeaders
+    -- @ExpectedStatusesJson protege anulacion concurrente.
+    -- NULL queda solo por compatibilidad legacy; el backend nuevo debe enviar siempre estados esperados.
+    UPDATE h
     SET IsDeleted = 1,
         Status = N'Cancelled',
         DeletedByUserId = @DeletedByUserId,
         DeletedByUserName = @DeletedByUserName,
         DeletedAt = SYSUTCDATETIME()
-    WHERE Id = @Id
-      AND IsDeleted = 0;
+    FROM dbo.PurchaseOrderHeaders AS h
+    WHERE h.Id = @Id
+      AND h.IsDeleted = 0
+      AND (
+          @ExpectedStatusesJson IS NULL
+          OR EXISTS (
+              SELECT 1
+              FROM OPENJSON(@ExpectedStatusesJson)
+              WHERE [value] = h.Status
+          )
+      );
 
     SELECT @@ROWCOUNT;
 END;

@@ -83,8 +83,12 @@ public sealed class DeletePurchaseOrderCommandHandler(IPurchaseOrderRepository r
             return Result<bool>.Failure(validation.Message);
         }
 
-        // TODO: Implementar DeleteIfCurrentAsync para anulacion segura con guarda atomica.
-        var deleted = await repository.DeleteAsync(request.Id, request.AuditUserId, request.AuditUserName, cancellationToken);
+        var deleted = await repository.DeleteIfCurrentAsync(
+            request.Id,
+            [PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected],
+            request.AuditUserId,
+            request.AuditUserName,
+            cancellationToken);
         return deleted
             ? Result<bool>.Success(true, "Orden de compra eliminada correctamente.")
             : Result<bool>.Failure("No se pudo eliminar la orden de compra.");
