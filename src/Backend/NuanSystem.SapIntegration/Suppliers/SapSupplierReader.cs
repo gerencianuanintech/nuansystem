@@ -25,6 +25,25 @@ WHERE "CardType" = 'S'
 ORDER BY "CardCode"
 """;
 
+    private const string SupplierChangedSinceQuery = """
+SELECT
+    "CardCode",
+    "CardName",
+    "LicTradNum",
+    "CardType",
+    "GroupCode",
+    "Phone1",
+    "E_Mail",
+    "Currency",
+    "ValidFor",
+    "CreateDate",
+    "UpdateDate"
+FROM "OCRD"
+WHERE "CardType" = 'S'
+  AND (COALESCE("UpdateDate", "CreateDate") >= @ChangedSince OR "CreateDate" >= @ChangedSince)
+ORDER BY COALESCE("UpdateDate", "CreateDate"), "CardCode"
+""";
+
     public Task<IReadOnlyCollection<SapSupplierRecord>> GetSuppliersAsync(
         int companyId,
         CancellationToken cancellationToken = default)
@@ -34,6 +53,19 @@ ORDER BY "CardCode"
             SupplierQuery,
             MapSupplier,
             cancellationToken: cancellationToken);
+    }
+
+    public Task<IReadOnlyCollection<SapSupplierRecord>> GetSuppliersChangedSinceAsync(
+        int companyId,
+        DateTime changedSinceUtc,
+        CancellationToken cancellationToken = default)
+    {
+        return hanaQueryClient.QueryAsync(
+            companyId,
+            SupplierChangedSinceQuery,
+            MapSupplier,
+            new Dictionary<string, object?> { ["ChangedSince"] = changedSinceUtc.Date },
+            cancellationToken);
     }
 
     private static SapSupplierRecord MapSupplier(DbDataReader reader)
