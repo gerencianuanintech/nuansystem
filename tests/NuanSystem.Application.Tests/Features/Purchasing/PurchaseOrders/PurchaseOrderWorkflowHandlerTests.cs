@@ -238,7 +238,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Message.Should().Be(PurchaseOrderWorkflowPolicy.EditInvalidMessage);
         await _repository.DidNotReceive()
-            .UpdateAsync(Arg.Any<PurchaseOrderPersistData>(), Arg.Any<CancellationToken>());
+            .UpdateIfEditableAsync(Arg.Any<PurchaseOrderPersistData>(), Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -249,7 +249,10 @@ public sealed class PurchaseOrderWorkflowHandlerTests
     {
         _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
             .Returns(CreateOrder(status), CreateOrder(status));
-        _repository.UpdateAsync(Arg.Any<PurchaseOrderPersistData>(), Arg.Any<CancellationToken>())
+        _repository.UpdateIfEditableAsync(
+                Arg.Any<PurchaseOrderPersistData>(),
+                Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected, PurchaseOrderStatuses.SapError)),
+                Arg.Any<CancellationToken>())
             .Returns(true);
         var handler = new UpdatePurchaseOrderCommandHandler(_repository);
 
@@ -258,7 +261,28 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Message.Should().Be("Orden de compra actualizada correctamente.");
         await _repository.Received(1)
-            .UpdateAsync(Arg.Is<PurchaseOrderPersistData>(data => data.Id == OrderId && data.Status == status), Arg.Any<CancellationToken>());
+            .UpdateIfEditableAsync(
+                Arg.Is<PurchaseOrderPersistData>(data => data.Id == OrderId && data.Status == status),
+                Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected, PurchaseOrderStatuses.SapError)),
+                Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Update_ReturnsFailure_WhenAtomicEditableUpdateDoesNotUpdateRows()
+    {
+        _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
+            .Returns(CreateOrder(PurchaseOrderStatuses.Draft));
+        _repository.UpdateIfEditableAsync(
+                Arg.Any<PurchaseOrderPersistData>(),
+                Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected, PurchaseOrderStatuses.SapError)),
+                Arg.Any<CancellationToken>())
+            .Returns(false);
+        var handler = new UpdatePurchaseOrderCommandHandler(_repository);
+
+        var result = await handler.Handle(CreateUpdateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Message.Should().Be("No se pudo actualizar la orden de compra.");
     }
 
     [Theory]

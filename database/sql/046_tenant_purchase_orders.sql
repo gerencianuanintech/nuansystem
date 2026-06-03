@@ -422,13 +422,16 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_PUT_PURCHASEORDERS_ACTUALIZAR
     @AddressesJson nvarchar(max),
     @RelatedDocumentsJson nvarchar(max) = NULL,
     @AttachmentsJson nvarchar(max) = NULL,
+    @ExpectedStatusesJson nvarchar(max) = NULL,
     @AuditUserId int = NULL,
     @AuditUserName nvarchar(256) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    UPDATE dbo.PurchaseOrderHeaders
+    -- @ExpectedStatusesJson protege edicion concurrente.
+    -- NULL queda solo por compatibilidad legacy; el backend nuevo debe enviar siempre estados esperados.
+    UPDATE h
     SET BranchId = @BranchId,
         DocumentSeriesId = @DocumentSeriesId,
         SeriesCode = @SeriesCode,
@@ -466,12 +469,23 @@ BEGIN
         UpdatedByUserId = @AuditUserId,
         UpdatedByUserName = @AuditUserName,
         UpdatedAt = SYSUTCDATETIME()
-    WHERE Id = @Id
-      AND IsDeleted = 0;
+    FROM dbo.PurchaseOrderHeaders AS h
+    WHERE h.Id = @Id
+      AND h.IsDeleted = 0
+      AND (
+          @ExpectedStatusesJson IS NULL
+          OR EXISTS (
+              SELECT 1
+              FROM OPENJSON(@ExpectedStatusesJson)
+              WHERE [value] = h.Status
+          )
+      );
 
     DECLARE @Rows int = @@ROWCOUNT;
     IF @Rows > 0
+    BEGIN
         EXEC dbo.SP_NA_INTERNAL_PURCHASEORDERS_REPLACE_CHILDREN @Id, @LinesJson, @AddressesJson, @RelatedDocumentsJson, @AttachmentsJson, @AuditUserId, @AuditUserName;
+    END
 
     SELECT @Rows;
 END;

@@ -44,7 +44,6 @@ public sealed class UpdatePurchaseOrderCommandHandler(IPurchaseOrderRepository r
             return Result<PurchaseOrderDto>.Failure(validation.Message);
         }
 
-        // TODO: Implementar UpdateIfEditableAsync con guarda atomica y control de concurrencia optimista/RowVersion.
         var data = PurchaseOrderCalculator.BuildPersistData(
             request.Id,
             request.ToRequest(),
@@ -53,7 +52,10 @@ public sealed class UpdatePurchaseOrderCommandHandler(IPurchaseOrderRepository r
             request.AuditUserName,
             current.SapStatus);
 
-        var updated = await repository.UpdateAsync(data, cancellationToken);
+        var updated = await repository.UpdateIfEditableAsync(
+            data,
+            [PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected, PurchaseOrderStatuses.SapError],
+            cancellationToken);
         if (!updated)
         {
             return Result<PurchaseOrderDto>.Failure("No se pudo actualizar la orden de compra.");

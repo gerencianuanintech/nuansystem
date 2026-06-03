@@ -87,6 +87,27 @@ public sealed class PurchaseOrderRepository(ITenantConnectionFactory connectionF
         return affectedRows > 0;
     }
 
+    public async Task<bool> UpdateIfEditableAsync(
+        PurchaseOrderPersistData order,
+        IReadOnlyCollection<string> expectedCurrentStatuses,
+        CancellationToken cancellationToken = default)
+    {
+        if (expectedCurrentStatuses is null || expectedCurrentStatuses.Count == 0)
+        {
+            throw new ArgumentException("At least one expected current status is required.", nameof(expectedCurrentStatuses));
+        }
+
+        using var connection = connectionFactory.CreateConnection();
+        var affectedRows = await connection.ExecuteScalarAsync<int>(
+            new CommandDefinition(
+                UpdateProcedure,
+                ToParameters(order, JsonSerializer.Serialize(expectedCurrentStatuses, JsonOptions)),
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
+
+        return affectedRows > 0;
+    }
+
     public async Task<bool> DeleteAsync(int id, int? deletedByUserId, string? deletedByUserName, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
@@ -184,7 +205,7 @@ public sealed class PurchaseOrderRepository(ITenantConnectionFactory connectionF
                 commandType: CommandType.StoredProcedure));
     }
 
-    private static object ToParameters(PurchaseOrderPersistData order)
+    private static object ToParameters(PurchaseOrderPersistData order, string? expectedStatusesJson = null)
     {
         return new
         {
@@ -227,6 +248,7 @@ public sealed class PurchaseOrderRepository(ITenantConnectionFactory connectionF
             AddressesJson = JsonSerializer.Serialize(order.Addresses, JsonOptions),
             RelatedDocumentsJson = JsonSerializer.Serialize(order.RelatedDocuments, JsonOptions),
             AttachmentsJson = JsonSerializer.Serialize(order.Attachments, JsonOptions),
+            ExpectedStatusesJson = expectedStatusesJson,
             order.AuditUserId,
             order.AuditUserName
         };
