@@ -20,8 +20,13 @@ public sealed class SapSupplierSyncHandler(ISapSupplierImportService supplierImp
                 WriteInbox: true,
                 UseIncrementalWatermark: true,
                 context.WorkerInstance,
-                context.CorrelationId),
+            context.CorrelationId),
             cancellationToken);
+
+        if (summary.TotalRead == 0 && summary.Failed == 0)
+        {
+            return SapSyncExecutionResult.Skipped("No hay proveedores SAP cambiados.");
+        }
 
         return new SapSyncExecutionResult(
             summary.Failed > 0 ? Enums.SapSyncStatus.Failed : Enums.SapSyncStatus.Synced,
