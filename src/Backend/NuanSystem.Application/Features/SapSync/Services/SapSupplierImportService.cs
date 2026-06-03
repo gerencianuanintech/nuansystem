@@ -42,37 +42,7 @@ public sealed class SapSupplierImportService(
             ? await sapSupplierReader.GetSuppliersChangedSinceAsync(companyId, watermark.LastSuccessfulSyncAtUtc.Value, cancellationToken)
             : await sapSupplierReader.GetSuppliersAsync(companyId, cancellationToken);
 
-        var results = new List<SapSupplierImportItemResultDto>();
-        foreach (var supplier in sapSuppliers.OrderBy(item => item.CardCode))
-        {
-            long? inboxId = null;
-            if (options.WriteInbox && inboxRepository is not null && !string.IsNullOrWhiteSpace(supplier.CardCode))
-            {
-                inboxId = await inboxRepository.UpsertSupplierAsync(
-                    companyId,
-                    supplier.CardCode,
-                    JsonSerializer.Serialize(supplier, JsonOptions),
-                    SapSyncStatus.Processing,
-                    options.WorkerInstance,
-                    options.CorrelationId,
-                    cancellationToken);
-            }
-
-            var itemResult = await ImportOneAsync(supplier, options.AuditUserId, options.AuditUserName, cancellationToken);
-            results.Add(itemResult);
-
-            if (options.WriteInbox && inboxRepository is not null && inboxId is not null)
-            {
-                await MarkInboxAsync(inboxRepository, inboxId.Value, itemResult, cancellationToken);
-            }
-        }
-
-        var summary = BuildSummary(sapSuppliers.Count, results);
-
-        if (options.WritePublicSapLog)
-        {
-            await RegisterPublicSyncLogAsync(companyId, summary, cancellationToken);
-        }
+        var summary = await ImportBatchAsync(companyId, sapSuppliers, options, cancellationToken);
 
         if (options.UseIncrementalWatermark && watermarkService is not null && summary.Failed == 0)
         {
@@ -91,6 +61,51 @@ public sealed class SapSupplierImportService(
                 lastSapKey,
                 JsonSerializer.Serialize(new { summary.TotalRead, summary.Created, summary.Updated, summary.Unchanged, summary.Skipped }, JsonOptions),
                 cancellationToken);
+        }
+
+        return summary;
+    }
+
+    public async Task<SapSupplierImportResultDto> ImportBatchAsync(
+        int companyId,
+        IReadOnlyCollection<SapSupplierRecord> sapSuppliers,
+        SapSupplierImportOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        var localBusinessPartners = await businessPartnerRepository.GetAllAsync(null, cancellationToken);
+        var localIndex = BuildLocalIndex(localBusinessPartners);
+        var results = new List<SapSupplierImportItemResultDto>();
+
+        foreach (var supplier in sapSuppliers.OrderBy(item => item.CardCode))
+        {
+            long? inboxId = null;
+            if (options.WriteInbox && inboxRepository is not null && !string.IsNullOrWhiteSpace(supplier.CardCode))
+            {
+                inboxId = await inboxRepository.UpsertSupplierAsync(
+                    companyId,
+                    supplier.CardCode,
+                    JsonSerializer.Serialize(supplier, JsonOptions),
+                    SapSyncStatus.Processing,
+                    options.WorkerInstance,
+                    options.CorrelationId,
+                    cancellationToken);
+            }
+
+            var itemResult = await ImportOneCoreAsync(supplier, localIndex, options.AuditUserId, options.AuditUserName, cancellationToken);
+            results.Add(itemResult);
+            TrackImportedSupplier(localIndex, supplier, itemResult);
+
+            if (options.WriteInbox && inboxRepository is not null && inboxId is not null)
+            {
+                await MarkInboxAsync(inboxRepository, inboxId.Value, itemResult, cancellationToken);
+            }
+        }
+
+        var summary = BuildSummary(sapSuppliers.Count, results);
+
+        if (options.WritePublicSapLog)
+        {
+            await RegisterPublicSyncLogAsync(companyId, summary, cancellationToken);
         }
 
         return summary;
@@ -166,6 +181,66 @@ public sealed class SapSupplierImportService(
             results.Count(item => item.Status is "Skipped" or "Conflict"),
             results.Count(item => item.Status == "Failed"),
             results);
+    }
+
+    private static void TrackImportedSupplier(
+        LocalSupplierIndex localIndex,
+        SapSupplierRecord supplier,
+        SapSupplierImportItemResultDto result)
+    {
+        if (result.LocalBusinessPartnerId is null || result.Status is not ("Created" or "Updated"))
+        {
+            return;
+        }
+
+        var localSupplier = new BusinessPartnerDto
+        {
+            Id = result.LocalBusinessPartnerId.Value,
+            Code = NormalizeValue(supplier.CardCode),
+            Name = NormalizeValue(supplier.CardName),
+            PartnerType = "Supplier",
+            IdentificationNumber = NormalizeValue(supplier.TaxIdentification),
+            SapCardCode = NormalizeValue(supplier.CardCode),
+            SapCardType = NormalizeCardType(supplier.CardType),
+            Email = Normalize(supplier.Email),
+            Phone = Normalize(supplier.Phone),
+            PreferredCurrencyCode = Normalize(supplier.Currency),
+            IsActive = supplier.IsActive
+        };
+
+        AddOrReplace(localIndex.BySapCardCode, localSupplier.SapCardCode, localSupplier);
+        AddOrReplace(localIndex.ByCode, localSupplier.Code, localSupplier);
+
+        if (!string.IsNullOrWhiteSpace(localSupplier.IdentificationNumber))
+        {
+            AddOrReplace(localIndex.ByIdentification, localSupplier.IdentificationNumber, localSupplier);
+        }
+    }
+
+    private static void AddOrReplace(
+        IReadOnlyDictionary<string, List<BusinessPartnerDto>> index,
+        string? key,
+        BusinessPartnerDto supplier)
+    {
+        var normalizedKey = NormalizeKey(key);
+        if (string.IsNullOrWhiteSpace(normalizedKey))
+        {
+            return;
+        }
+
+        if (!index.TryGetValue(normalizedKey, out var suppliers))
+        {
+            if (index is not Dictionary<string, List<BusinessPartnerDto>> mutableIndex)
+            {
+                return;
+            }
+
+            suppliers = [];
+            mutableIndex[normalizedKey] = suppliers;
+        }
+
+        suppliers.RemoveAll(item => item.Id == supplier.Id);
+        suppliers.Add(supplier);
     }
 
     private static async Task MarkInboxAsync(

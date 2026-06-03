@@ -13,6 +13,12 @@ public interface ISapSupplierImportService
         SapSupplierImportOptions options,
         CancellationToken cancellationToken = default);
 
+    Task<SapSupplierImportResultDto> ImportBatchAsync(
+        int companyId,
+        IReadOnlyCollection<SapSupplierRecord> sapSuppliers,
+        SapSupplierImportOptions options,
+        CancellationToken cancellationToken = default);
+
     Task<SapSupplierImportItemResultDto> ImportOneAsync(
         SapSupplierRecord supplier,
         int? auditUserId,
