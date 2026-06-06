@@ -1,9 +1,9 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace NuanSystem.WinForms.Forms.BusinessPartners;
+namespace NuanSystem.WinForms.ViewModels.BusinessPartners.Suppliers;
 
-internal sealed class SupplierAddressViewModel : INotifyPropertyChanged
+public sealed class SupplierAddressViewModel : INotifyPropertyChanged
 {
     private bool isPrimary;
     private bool isDefaultBilling;

@@ -1,6 +1,6 @@
-namespace NuanSystem.WinForms.Forms.BusinessPartners;
+namespace NuanSystem.WinForms.ViewModels.BusinessPartners.Suppliers;
 
-internal sealed class SupplierPurchaseHistoryViewModel
+public sealed class SupplierPurchaseHistoryViewModel
 {
     public DateTime PurchaseDate { get; set; }
     public string DocumentNumber { get; set; } = string.Empty;
