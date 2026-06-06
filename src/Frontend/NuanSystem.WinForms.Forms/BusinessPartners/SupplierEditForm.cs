@@ -257,7 +257,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
     {
         contacts.Clear();
 
-        foreach (var contact in SupplierBusinessPartnerMapper.ToContactViewModels(partner))
+        foreach (var contact in SupplierBusinessPartnerMapper.ToContactViewModels(partner, lookups))
         {
             contacts.Add(contact);
         }
@@ -1124,7 +1124,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
 
     private void AddContact()
     {
-        using var dialog = new SupplierContactEditDialog();
+        using var dialog = new SupplierContactEditDialog(lookups.ContactTypes, lookups.ContactChannels);
         if (dialog.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -1149,7 +1149,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
             return;
         }
 
-        using var dialog = new SupplierContactEditDialog(contact);
+        using var dialog = new SupplierContactEditDialog(contact, lookups.ContactTypes, lookups.ContactChannels);
         if (dialog.ShowDialog(this) != DialogResult.OK)
         {
             return;

@@ -23,6 +23,10 @@ partial class SupplierContactEditDialog
         pnlMain = new PanelControl();
         lblContactTreatment = new LabelControl();
         lueContactTreatment = new LookUpEdit();
+        lblContactType = new LabelControl();
+        lueContactType = new LookUpEdit();
+        lblContactChannel = new LabelControl();
+        lueContactChannel = new LookUpEdit();
         lblContactFirstName = new LabelControl();
         txtContactFirstName = new TextEdit();
         lblContactLastName = new LabelControl();
@@ -55,6 +59,8 @@ partial class SupplierContactEditDialog
         ((System.ComponentModel.ISupportInitialize)pnlMain).BeginInit();
         pnlMain.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)lueContactTreatment.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueContactType.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueContactChannel.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtContactFirstName.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtContactLastName.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtContactPosition.Properties).BeginInit();
@@ -77,6 +83,10 @@ partial class SupplierContactEditDialog
         pnlMain.BorderStyle = BorderStyles.NoBorder;
         pnlMain.Controls.Add(lblContactTreatment);
         pnlMain.Controls.Add(lueContactTreatment);
+        pnlMain.Controls.Add(lblContactType);
+        pnlMain.Controls.Add(lueContactType);
+        pnlMain.Controls.Add(lblContactChannel);
+        pnlMain.Controls.Add(lueContactChannel);
         pnlMain.Controls.Add(lblContactFirstName);
         pnlMain.Controls.Add(txtContactFirstName);
         pnlMain.Controls.Add(lblContactLastName);
@@ -106,7 +116,7 @@ partial class SupplierContactEditDialog
         pnlMain.Dock = DockStyle.Fill;
         pnlMain.Location = new Point(0, 0);
         pnlMain.Name = "pnlMain";
-        pnlMain.Size = new Size(458, 378);
+        pnlMain.Size = new Size(458, 506);
         pnlMain.TabIndex = 0;
         // 
         // lblContactTreatment
@@ -129,6 +139,48 @@ partial class SupplierContactEditDialog
         lueContactTreatment.Properties.NullText = string.Empty;
         lueContactTreatment.Size = new Size(230, 22);
         lueContactTreatment.TabIndex = 1;
+        // 
+        // lblContactType
+        // 
+        lblContactType.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblContactType.Appearance.Options.UseFont = true;
+        lblContactType.Location = new Point(24, 346);
+        lblContactType.Name = "lblContactType";
+        lblContactType.Size = new Size(89, 15);
+        lblContactType.TabIndex = 26;
+        lblContactType.Text = "Tipo de contacto:";
+        // 
+        // lueContactType
+        // 
+        lueContactType.Location = new Point(142, 343);
+        lueContactType.Name = "lueContactType";
+        lueContactType.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lueContactType.Properties.Appearance.Options.UseFont = true;
+        lueContactType.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        lueContactType.Properties.NullText = string.Empty;
+        lueContactType.Size = new Size(280, 22);
+        lueContactType.TabIndex = 27;
+        // 
+        // lblContactChannel
+        // 
+        lblContactChannel.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblContactChannel.Appearance.Options.UseFont = true;
+        lblContactChannel.Location = new Point(24, 378);
+        lblContactChannel.Name = "lblContactChannel";
+        lblContactChannel.Size = new Size(93, 15);
+        lblContactChannel.TabIndex = 28;
+        lblContactChannel.Text = "Canal de contacto:";
+        // 
+        // lueContactChannel
+        // 
+        lueContactChannel.Location = new Point(142, 375);
+        lueContactChannel.Name = "lueContactChannel";
+        lueContactChannel.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lueContactChannel.Properties.Appearance.Options.UseFont = true;
+        lueContactChannel.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        lueContactChannel.Properties.NullText = string.Empty;
+        lueContactChannel.Size = new Size(280, 22);
+        lueContactChannel.TabIndex = 29;
         // 
         // lblContactFirstName
         // 
@@ -371,20 +423,20 @@ partial class SupplierContactEditDialog
         // 
         lblContactNotes.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         lblContactNotes.Appearance.Options.UseFont = true;
-        lblContactNotes.Location = new Point(24, 346);
+        lblContactNotes.Location = new Point(24, 410);
         lblContactNotes.Name = "lblContactNotes";
         lblContactNotes.Size = new Size(79, 15);
-        lblContactNotes.TabIndex = 26;
+        lblContactNotes.TabIndex = 30;
         lblContactNotes.Text = "Observaciones:";
         // 
         // memContactNotes
         // 
-        memContactNotes.Location = new Point(142, 343);
+        memContactNotes.Location = new Point(142, 407);
         memContactNotes.Name = "memContactNotes";
         memContactNotes.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         memContactNotes.Properties.Appearance.Options.UseFont = true;
         memContactNotes.Size = new Size(280, 66);
-        memContactNotes.TabIndex = 27;
+        memContactNotes.TabIndex = 31;
         // 
         // pnlFooter
         // 
@@ -392,7 +444,7 @@ partial class SupplierContactEditDialog
         pnlFooter.Controls.Add(btnSaveContact);
         pnlFooter.Controls.Add(btnCancelContact);
         pnlFooter.Dock = DockStyle.Bottom;
-        pnlFooter.Location = new Point(0, 378);
+        pnlFooter.Location = new Point(0, 506);
         pnlFooter.Name = "pnlFooter";
         pnlFooter.Size = new Size(458, 64);
         pnlFooter.TabIndex = 1;
@@ -432,7 +484,7 @@ partial class SupplierContactEditDialog
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = btnCancelContact;
-        ClientSize = new Size(458, 442);
+        ClientSize = new Size(458, 570);
         Controls.Add(pnlMain);
         Controls.Add(pnlFooter);
         Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
@@ -447,6 +499,8 @@ partial class SupplierContactEditDialog
         pnlMain.ResumeLayout(false);
         pnlMain.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)lueContactTreatment.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueContactType.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueContactChannel.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtContactFirstName.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtContactLastName.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtContactPosition.Properties).EndInit();
@@ -468,6 +522,10 @@ partial class SupplierContactEditDialog
     private PanelControl pnlMain;
     private LabelControl lblContactTreatment;
     private LookUpEdit lueContactTreatment;
+    private LabelControl lblContactType;
+    private LookUpEdit lueContactType;
+    private LabelControl lblContactChannel;
+    private LookUpEdit lueContactChannel;
     private LabelControl lblContactFirstName;
     private TextEdit txtContactFirstName;
     private LabelControl lblContactLastName;

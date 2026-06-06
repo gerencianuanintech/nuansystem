@@ -5,13 +5,23 @@ namespace NuanSystem.WinForms.ViewModels.BusinessPartners.Suppliers;
 
 public static class SupplierBusinessPartnerMapper
 {
-    public static IReadOnlyCollection<SupplierContactViewModel> ToContactViewModels(BusinessPartnerItem? partner)
+    public static IReadOnlyCollection<SupplierContactViewModel> ToContactViewModels(
+        BusinessPartnerItem? partner,
+        BusinessPartnerLookups? lookups = null)
     {
         return partner?.Contacts.Select(contact =>
         {
             var names = SplitContactName(contact.Name);
+            var contactType = LookupOption(lookups?.ContactTypes, contact.ContactTypeId);
+            var contactChannel = LookupOption(lookups?.ContactChannels, contact.ContactChannelId);
             return new SupplierContactViewModel
             {
+                ContactTypeId = contact.ContactTypeId,
+                ContactTypeCode = contactType?.Code ?? string.Empty,
+                ContactTypeName = contactType?.Name ?? string.Empty,
+                ContactChannelId = contact.ContactChannelId,
+                ContactChannelCode = contactChannel?.Code ?? string.Empty,
+                ContactChannelName = contactChannel?.Name ?? string.Empty,
                 FirstName = names.FirstName,
                 LastName = names.LastName,
                 Position = contact.Position ?? string.Empty,
@@ -150,8 +160,8 @@ public static class SupplierBusinessPartnerMapper
         return contacts
             .Where(contact => !string.IsNullOrWhiteSpace(contact.FullName))
             .Select(contact => new SaveBusinessPartnerContactRequest(
-                ContactTypeId: null,
-                ContactChannelId: null,
+                ContactTypeId: contact.ContactTypeId,
+                ContactChannelId: contact.ContactChannelId,
                 Name: contact.FullName,
                 Position: TrimOrNull(contact.Position),
                 Department: TrimOrNull(contact.Department),
@@ -381,6 +391,13 @@ public static class SupplierBusinessPartnerMapper
             string.Equals(option.Code, value, StringComparison.OrdinalIgnoreCase)
             || string.Equals(option.Name, value, StringComparison.OrdinalIgnoreCase)
             || string.Equals(option.SriCode, value, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static BusinessPartnerLookupOption? LookupOption(
+        IReadOnlyCollection<BusinessPartnerLookupOption>? options,
+        int? id)
+    {
+        return id is null ? null : options?.FirstOrDefault(option => option.Id == id.Value);
     }
 
     private static void AddAccountingAccount(

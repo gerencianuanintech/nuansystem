@@ -12,6 +12,12 @@ public sealed class SupplierContactViewModel : INotifyPropertyChanged
 
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Treatment { get; set; } = string.Empty;
+    public int? ContactTypeId { get; set; }
+    public string ContactTypeCode { get; set; } = string.Empty;
+    public string ContactTypeName { get; set; } = string.Empty;
+    public int? ContactChannelId { get; set; }
+    public string ContactChannelCode { get; set; } = string.Empty;
+    public string ContactChannelName { get; set; } = string.Empty;
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string FullName => $"{FirstName} {LastName}".Trim();
@@ -42,6 +48,12 @@ public sealed class SupplierContactViewModel : INotifyPropertyChanged
         {
             Id = Id,
             Treatment = Treatment,
+            ContactTypeId = ContactTypeId,
+            ContactTypeCode = ContactTypeCode,
+            ContactTypeName = ContactTypeName,
+            ContactChannelId = ContactChannelId,
+            ContactChannelCode = ContactChannelCode,
+            ContactChannelName = ContactChannelName,
             FirstName = FirstName,
             LastName = LastName,
             Position = Position,
@@ -60,6 +72,12 @@ public sealed class SupplierContactViewModel : INotifyPropertyChanged
     public void CopyFrom(SupplierContactViewModel source)
     {
         Treatment = source.Treatment;
+        ContactTypeId = source.ContactTypeId;
+        ContactTypeCode = source.ContactTypeCode;
+        ContactTypeName = source.ContactTypeName;
+        ContactChannelId = source.ContactChannelId;
+        ContactChannelCode = source.ContactChannelCode;
+        ContactChannelName = source.ContactChannelName;
         FirstName = source.FirstName;
         LastName = source.LastName;
         Position = source.Position;
