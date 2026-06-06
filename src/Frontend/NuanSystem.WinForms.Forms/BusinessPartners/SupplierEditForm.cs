@@ -167,7 +167,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
             Province = province,
             City = city,
             AccountingBySupplier = tglAutomaticAccounting.IsOn,
-            RequiresProvision = tglRequiresPurchaseOrder.IsOn,
+            RequiresProvision = false,
             AllowsAdvance = tglHandlesAdvances.IsOn,
             AllowsPartialPayments = true,
             IsPaymentBlocked = tglBlocked.IsOn || tglAccountingBlocked.IsOn,
@@ -183,26 +183,31 @@ public sealed partial class SupplierEditForm : BaseEditForm
             RequiredPaymentDay = NullIfEmpty(partner?.RequiredPaymentDay),
             ApprovalFlow = NullIfEmpty(partner?.ApprovalFlow),
             PaymentDocumentType = NullIfEmpty(partner?.PaymentDocumentType),
-            AveragePaymentDays = ToInt(spnAverageDeliveryDays.EditValue),
-            PaymentTolerancePercent = spnDeliveryToleranceDays.Value,
+            AveragePaymentDays = partner?.AveragePaymentDays ?? 0,
+            PaymentTolerancePercent = partner?.PaymentTolerancePercent ?? 0,
             PaymentTermId = LookupPaymentTermId(luePurchasePaymentCondition) ?? partner?.PaymentTermId,
             CreditDays = ToInt(spnPaymentTermDays.EditValue),
             CreditLimit = spnCreditLimit.Value,
             DeliveryDays = ToInt(spnDeliveryTermDays.EditValue),
             MinimumOrderAmount = spnMinimumOrderAmount.Value,
-            AllowsBackorder = tglAllowsUrgentPurchases.IsOn,
+            AllowsBackorder = partner?.AllowsBackorder ?? false,
             PreferredCurrencyCode = LookupCode(lueCurrency),
             PriceListCode = LookupTextCode(luePurchasePriceList),
             AssignedBuyerCode = LookupTextCode(lueAssignedBuyer),
-            IncotermCode = LookupTextCode(lueIncoterm),
+            Incoterm = LookupTextCode(lueIncoterm),
             CommercialDiscountPercent = spnCommercialDiscountPercent.Value,
+            PurchaseCurrencyCode = LookupCode(lueCurrency),
+            PreferredWarehouseId = null,
             PurchaseSupplierType = NullIfEmpty(Convert.ToString(lueSupplierType.EditValue)),
             PreferredWarehouseCode = LookupTextCode(luePreferredWarehouse),
             MinimumOrderQuantity = spnMinimumOrderQuantity.Value,
+            ActiveForImport = tglActiveForImport.IsOn,
+            SubjectToEvaluation = tglSubjectToEvaluation.IsOn,
+            AllowsUrgentPurchases = tglAllowsUrgentPurchases.IsOn,
+            AverageDeliveryDays = ToInt(spnAverageDeliveryDays.EditValue),
             LeadTimeDays = ToInt(spnLeadTimeDays.EditValue),
             DeliveryToleranceDays = ToInt(spnDeliveryToleranceDays.EditValue),
-            SubjectToEvaluation = tglSubjectToEvaluation.IsOn,
-            ActiveForImport = tglActiveForImport.IsOn,
+            RequiresPurchaseOrder = tglRequiresPurchaseOrder.IsOn,
             CreditStatus = tglHandlesCredit.IsOn ? "Normal" : "NoCredit",
             SapCardCode = NullIfEmpty(partner?.SapCardCode),
             SapCardType = "S",
@@ -287,7 +292,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
         SetEditValue(lueEconomicActivity, partner?.EconomicActivityId ?? (useDesignData ? lookups.EconomicActivities.FirstOrDefault()?.Id : null));
         SetEditValue(lueSupplierZone, partner?.ZoneId ?? (useDesignData ? lookups.Zones.FirstOrDefault()?.Id : null));
         SetEditValue(lueSupplyMethod, partner?.SupplyMethodId ?? (useDesignData ? lookups.SupplyMethods.FirstOrDefault()?.Id : null));
-        SetEditValue(lueCurrency, LookupValueByCode(lookups.Currencies, partner?.PreferredCurrencyCode) ?? lookups.Currencies.FirstOrDefault()?.Id);
+        SetEditValue(lueCurrency, LookupValueByCode(lookups.Currencies, partner?.PurchaseCurrencyCode ?? partner?.PreferredCurrencyCode) ?? lookups.Currencies.FirstOrDefault()?.Id);
         SetEditValue(lueCountry, LookupValueByCode(lookups.Countries, partner?.CountryCode) ?? lookups.Countries.FirstOrDefault()?.Id);
         luePersonType.EditValue = partner?.TaxpayerType ?? (useDesignData ? "Jurídica" : null);
         lueSupplierType.EditValue = partner?.PurchaseSupplierType ?? (useDesignData ? "Bienes" : null);
@@ -365,19 +370,19 @@ public sealed partial class SupplierEditForm : BaseEditForm
         luePurchasePaymentCondition.EditValue = LookupDisplayText(lookups.PaymentTerms, partner?.PaymentTermId) ?? (useDesignData ? "Crédito 30 días" : null);
         luePurchasePriceList.EditValue = LookupDisplayText(lookups.PriceLists, partner?.PriceListCode) ?? (useDesignData ? "Lista Compra Nacional" : null);
         spnDeliveryTermDays.Value = partner?.DeliveryDays > 0 ? partner.DeliveryDays : useDesignData ? 7m : 0m;
-        lueIncoterm.EditValue = partner?.IncotermCode ?? (useDesignData ? "EXW" : null);
+        lueIncoterm.EditValue = partner?.Incoterm ?? (useDesignData ? "EXW" : null);
         spnCommercialDiscountPercent.Value = partner?.CommercialDiscountPercent > 0 ? partner.CommercialDiscountPercent : useDesignData ? 5m : 0m;
         lueAssignedBuyer.EditValue = LookupDisplayText(lookups.PurchasingAgents, partner?.AssignedBuyerCode) ?? (useDesignData ? "Juan Pérez" : null);
         luePreferredWarehouse.EditValue = partner?.PreferredWarehouseCode ?? (useDesignData ? "Bodega Principal" : null);
-        spnAverageDeliveryDays.Value = partner?.AveragePaymentDays > 0 ? partner.AveragePaymentDays : useDesignData ? 6m : 0m;
+        spnAverageDeliveryDays.Value = partner?.AverageDeliveryDays > 0 ? partner.AverageDeliveryDays : useDesignData ? 6m : 0m;
         spnMinimumOrderAmount.Value = partner?.MinimumOrderAmount > 0 ? partner.MinimumOrderAmount : useDesignData ? 500m : 0m;
         spnMinimumOrderQuantity.Value = partner?.MinimumOrderQuantity > 0 ? partner.MinimumOrderQuantity : useDesignData ? 1m : 0m;
         spnLeadTimeDays.Value = partner?.LeadTimeDays > 0 ? partner.LeadTimeDays : useDesignData ? 5m : 0m;
         spnDeliveryToleranceDays.Value = partner?.DeliveryToleranceDays > 0 ? partner.DeliveryToleranceDays : useDesignData ? 2m : 0m;
-        tglRequiresPurchaseOrder.IsOn = partner?.RequiresProvision ?? false;
+        tglRequiresPurchaseOrder.IsOn = partner?.RequiresPurchaseOrder ?? false;
         tglSubjectToEvaluation.IsOn = partner?.SubjectToEvaluation ?? false;
         tglActiveForImport.IsOn = partner?.ActiveForImport ?? false;
-        tglAllowsUrgentPurchases.IsOn = partner?.AllowsBackorder ?? false;
+        tglAllowsUrgentPurchases.IsOn = partner?.AllowsUrgentPurchases ?? false;
         lblPurchasesLast12MonthsValue.Text = useDesignData ? "125,000.00 PEN" : "0.00";
         lblAveragePurchaseValue.Text = useDesignData ? "8,950.00 PEN" : "0.00";
         lblAverageDelivery12MonthsValue.Text = (partner?.DeliveryDays > 0 ? partner.DeliveryDays : useDesignData ? 6 : 0).ToString();
@@ -1420,6 +1425,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
         isValid &= ValidateRange(spnMinimumOrderAmount, 0m, decimal.MaxValue, "Pedido mínimo monto no puede ser negativo.");
         isValid &= ValidateRange(spnMinimumOrderQuantity, 0m, decimal.MaxValue, "Pedido mínimo cantidad no puede ser negativo.");
         isValid &= ValidateRange(spnDeliveryTermDays, 0m, decimal.MaxValue, "Días entrega no puede ser negativo.");
+        isValid &= ValidateRange(spnAverageDeliveryDays, 0m, decimal.MaxValue, "Días promedio entrega no puede ser negativo.");
         isValid &= ValidateRange(spnLeadTimeDays, 0m, decimal.MaxValue, "Lead time no puede ser negativo.");
         isValid &= ValidateRange(spnDeliveryToleranceDays, 0m, decimal.MaxValue, "Tolerancia entrega no puede ser negativa.");
         return isValid;
@@ -1584,15 +1590,20 @@ public sealed partial class SupplierEditForm : BaseEditForm
             PriceListCode: null,
             AssignedSellerCode: null,
             AssignedBuyerCode: null,
-            IncotermCode: null,
+            Incoterm: null,
             CommercialDiscountPercent: 0,
+            PurchaseCurrencyCode: null,
+            PreferredWarehouseId: null,
             PurchaseSupplierType: null,
             PreferredWarehouseCode: null,
             MinimumOrderQuantity: 0,
+            ActiveForImport: false,
+            SubjectToEvaluation: false,
+            AllowsUrgentPurchases: false,
+            AverageDeliveryDays: 0,
             LeadTimeDays: 0,
             DeliveryToleranceDays: 0,
-            SubjectToEvaluation: false,
-            ActiveForImport: false,
+            RequiresPurchaseOrder: false,
             CreditStatus: "Normal",
             SapCardCode: null,
             SapCardType: "S",

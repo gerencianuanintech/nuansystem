@@ -246,20 +246,37 @@ BEGIN
         PriceListCode nvarchar(50) NULL,
         AssignedSellerCode nvarchar(50) NULL,
         AssignedBuyerCode nvarchar(50) NULL,
-        IncotermCode nvarchar(30) NULL,
-        CommercialDiscountPercent decimal(9,4) NOT NULL CONSTRAINT DF_BusinessPartnerCreditSettings_CommercialDiscountPercent DEFAULT 0,
-        PurchaseSupplierType nvarchar(50) NULL,
-        PreferredWarehouseCode nvarchar(50) NULL,
-        MinimumOrderQuantity decimal(19,6) NOT NULL CONSTRAINT DF_BusinessPartnerCreditSettings_MinimumOrderQuantity DEFAULT 0,
-        LeadTimeDays int NOT NULL CONSTRAINT DF_BusinessPartnerCreditSettings_LeadTimeDays DEFAULT 0,
-        DeliveryToleranceDays int NOT NULL CONSTRAINT DF_BusinessPartnerCreditSettings_DeliveryToleranceDays DEFAULT 0,
-        SubjectToEvaluation bit NOT NULL CONSTRAINT DF_BusinessPartnerCreditSettings_SubjectToEvaluation DEFAULT 0,
-        ActiveForImport bit NOT NULL CONSTRAINT DF_BusinessPartnerCreditSettings_ActiveForImport DEFAULT 0,
         CreditStatus nvarchar(30) NOT NULL CONSTRAINT DF_BusinessPartnerCreditSettings_CreditStatus DEFAULT N'Normal',
         CONSTRAINT FK_BusinessPartnerCreditSettings_BusinessPartners FOREIGN KEY (BusinessPartnerId) REFERENCES dbo.BusinessPartners(Id),
         CONSTRAINT FK_BusinessPartnerCreditSettings_PaymentTerms FOREIGN KEY (PaymentTermId) REFERENCES dbo.BusinessPartnerPaymentTerms(Id),
-        CONSTRAINT CK_BusinessPartnerCreditSettings_Credit CHECK (CreditDays >= 0 AND CreditLimit >= 0),
-        CONSTRAINT CK_BusinessPartnerCreditSettings_PurchaseValues CHECK (DeliveryDays >= 0 AND MinimumOrderAmount >= 0 AND CommercialDiscountPercent >= 0 AND CommercialDiscountPercent <= 100 AND MinimumOrderQuantity >= 0 AND LeadTimeDays >= 0 AND DeliveryToleranceDays >= 0)
+        CONSTRAINT CK_BusinessPartnerCreditSettings_Credit CHECK (CreditDays >= 0 AND CreditLimit >= 0)
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.BusinessPartnerPurchaseSettings', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.BusinessPartnerPurchaseSettings
+    (
+        BusinessPartnerId int NOT NULL CONSTRAINT PK_BusinessPartnerPurchaseSettings PRIMARY KEY,
+        Incoterm nvarchar(20) NULL,
+        CommercialDiscountPercent decimal(9,4) NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_CommercialDiscountPercent DEFAULT 0,
+        PurchaseCurrencyCode nvarchar(3) NULL,
+        PreferredWarehouseId int NULL,
+        PreferredWarehouseCode nvarchar(50) NULL,
+        MinimumOrderQuantity decimal(19,6) NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_MinimumOrderQuantity DEFAULT 0,
+        PurchaseSupplierType nvarchar(80) NULL,
+        ActiveForImport bit NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_ActiveForImport DEFAULT 0,
+        SubjectToEvaluation bit NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_SubjectToEvaluation DEFAULT 0,
+        AllowsUrgentPurchases bit NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_AllowsUrgentPurchases DEFAULT 0,
+        AverageDeliveryDays int NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_AverageDeliveryDays DEFAULT 0,
+        LeadTimeDays int NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_LeadTimeDays DEFAULT 0,
+        DeliveryToleranceDays int NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_DeliveryToleranceDays DEFAULT 0,
+        RequiresPurchaseOrder bit NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_RequiresPurchaseOrder DEFAULT 0,
+        CreatedAt datetime2(0) NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_CreatedAt DEFAULT SYSUTCDATETIME(),
+        UpdatedAt datetime2(0) NULL,
+        CONSTRAINT FK_BusinessPartnerPurchaseSettings_BusinessPartners FOREIGN KEY (BusinessPartnerId) REFERENCES dbo.BusinessPartners(Id),
+        CONSTRAINT CK_BusinessPartnerPurchaseSettings_Values CHECK (CommercialDiscountPercent >= 0 AND CommercialDiscountPercent <= 100 AND MinimumOrderQuantity >= 0 AND AverageDeliveryDays >= 0 AND LeadTimeDays >= 0 AND DeliveryToleranceDays >= 0)
     );
 END;
 GO
@@ -372,26 +389,45 @@ BEGIN
         ALTER TABLE dbo.BusinessPartnerCreditSettings ADD AllowsBackorder bit NOT NULL CONSTRAINT DF_BusinessPartnerCreditSettings_AllowsBackorder DEFAULT 0;
     IF COL_LENGTH(N'dbo.BusinessPartnerCreditSettings', N'PreferredCurrencyCode') IS NULL
         ALTER TABLE dbo.BusinessPartnerCreditSettings ADD PreferredCurrencyCode nvarchar(3) NULL;
-    IF COL_LENGTH(N'dbo.BusinessPartnerCreditSettings', N'IncotermCode') IS NULL
-        ALTER TABLE dbo.BusinessPartnerCreditSettings ADD IncotermCode nvarchar(30) NULL;
-    IF COL_LENGTH(N'dbo.BusinessPartnerCreditSettings', N'CommercialDiscountPercent') IS NULL
-        ALTER TABLE dbo.BusinessPartnerCreditSettings ADD CommercialDiscountPercent decimal(9,4) NOT NULL CONSTRAINT DF_BusinessPartnerCreditSettings_CommercialDiscountPercent DEFAULT 0;
-    IF COL_LENGTH(N'dbo.BusinessPartnerCreditSettings', N'PurchaseSupplierType') IS NULL
-        ALTER TABLE dbo.BusinessPartnerCreditSettings ADD PurchaseSupplierType nvarchar(50) NULL;
-    IF COL_LENGTH(N'dbo.BusinessPartnerCreditSettings', N'PreferredWarehouseCode') IS NULL
-        ALTER TABLE dbo.BusinessPartnerCreditSettings ADD PreferredWarehouseCode nvarchar(50) NULL;
-    IF COL_LENGTH(N'dbo.BusinessPartnerCreditSettings', N'MinimumOrderQuantity') IS NULL
-        ALTER TABLE dbo.BusinessPartnerCreditSettings ADD MinimumOrderQuantity decimal(19,6) NOT NULL CONSTRAINT DF_BusinessPartnerCreditSettings_MinimumOrderQuantity DEFAULT 0;
-    IF COL_LENGTH(N'dbo.BusinessPartnerCreditSettings', N'LeadTimeDays') IS NULL
-        ALTER TABLE dbo.BusinessPartnerCreditSettings ADD LeadTimeDays int NOT NULL CONSTRAINT DF_BusinessPartnerCreditSettings_LeadTimeDays DEFAULT 0;
-    IF COL_LENGTH(N'dbo.BusinessPartnerCreditSettings', N'DeliveryToleranceDays') IS NULL
-        ALTER TABLE dbo.BusinessPartnerCreditSettings ADD DeliveryToleranceDays int NOT NULL CONSTRAINT DF_BusinessPartnerCreditSettings_DeliveryToleranceDays DEFAULT 0;
-    IF COL_LENGTH(N'dbo.BusinessPartnerCreditSettings', N'SubjectToEvaluation') IS NULL
-        ALTER TABLE dbo.BusinessPartnerCreditSettings ADD SubjectToEvaluation bit NOT NULL CONSTRAINT DF_BusinessPartnerCreditSettings_SubjectToEvaluation DEFAULT 0;
-    IF COL_LENGTH(N'dbo.BusinessPartnerCreditSettings', N'ActiveForImport') IS NULL
-        ALTER TABLE dbo.BusinessPartnerCreditSettings ADD ActiveForImport bit NOT NULL CONSTRAINT DF_BusinessPartnerCreditSettings_ActiveForImport DEFAULT 0;
-    IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_BusinessPartnerCreditSettings_PurchaseValues')
-        ALTER TABLE dbo.BusinessPartnerCreditSettings WITH CHECK ADD CONSTRAINT CK_BusinessPartnerCreditSettings_PurchaseValues CHECK (DeliveryDays >= 0 AND MinimumOrderAmount >= 0 AND CommercialDiscountPercent >= 0 AND CommercialDiscountPercent <= 100 AND MinimumOrderQuantity >= 0 AND LeadTimeDays >= 0 AND DeliveryToleranceDays >= 0);
+END;
+GO
+
+IF OBJECT_ID(N'dbo.BusinessPartnerPurchaseSettings', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'Incoterm') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD Incoterm nvarchar(20) NULL;
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'CommercialDiscountPercent') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD CommercialDiscountPercent decimal(9,4) NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_CommercialDiscountPercent DEFAULT 0;
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'PurchaseCurrencyCode') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD PurchaseCurrencyCode nvarchar(3) NULL;
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'PreferredWarehouseId') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD PreferredWarehouseId int NULL;
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'PreferredWarehouseCode') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD PreferredWarehouseCode nvarchar(50) NULL;
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'MinimumOrderQuantity') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD MinimumOrderQuantity decimal(19,6) NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_MinimumOrderQuantity DEFAULT 0;
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'PurchaseSupplierType') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD PurchaseSupplierType nvarchar(80) NULL;
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'ActiveForImport') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD ActiveForImport bit NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_ActiveForImport DEFAULT 0;
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'SubjectToEvaluation') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD SubjectToEvaluation bit NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_SubjectToEvaluation DEFAULT 0;
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'AllowsUrgentPurchases') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD AllowsUrgentPurchases bit NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_AllowsUrgentPurchases DEFAULT 0;
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'AverageDeliveryDays') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD AverageDeliveryDays int NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_AverageDeliveryDays DEFAULT 0;
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'LeadTimeDays') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD LeadTimeDays int NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_LeadTimeDays DEFAULT 0;
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'DeliveryToleranceDays') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD DeliveryToleranceDays int NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_DeliveryToleranceDays DEFAULT 0;
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'RequiresPurchaseOrder') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD RequiresPurchaseOrder bit NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_RequiresPurchaseOrder DEFAULT 0;
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'CreatedAt') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD CreatedAt datetime2(0) NOT NULL CONSTRAINT DF_BusinessPartnerPurchaseSettings_CreatedAt DEFAULT SYSUTCDATETIME();
+    IF COL_LENGTH(N'dbo.BusinessPartnerPurchaseSettings', N'UpdatedAt') IS NULL
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings ADD UpdatedAt datetime2(0) NULL;
+    IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_BusinessPartnerPurchaseSettings_Values')
+        ALTER TABLE dbo.BusinessPartnerPurchaseSettings WITH CHECK ADD CONSTRAINT CK_BusinessPartnerPurchaseSettings_Values CHECK (CommercialDiscountPercent >= 0 AND CommercialDiscountPercent <= 100 AND MinimumOrderQuantity >= 0 AND AverageDeliveryDays >= 0 AND LeadTimeDays >= 0 AND DeliveryToleranceDays >= 0);
 END;
 GO
 
@@ -482,8 +518,11 @@ BEGIN
         credit.PaymentTermId, terms.Code AS PaymentTermCode, terms.Name AS PaymentTermName,
         credit.CreditDays, credit.CreditLimit, credit.DeliveryDays, credit.MinimumOrderAmount,
         credit.AllowsBackorder, credit.PreferredCurrencyCode, credit.PriceListCode, credit.AssignedSellerCode, credit.AssignedBuyerCode,
-        credit.IncotermCode, credit.CommercialDiscountPercent, credit.PurchaseSupplierType, credit.PreferredWarehouseCode,
-        credit.MinimumOrderQuantity, credit.LeadTimeDays, credit.DeliveryToleranceDays, credit.SubjectToEvaluation, credit.ActiveForImport,
+        purchase.Incoterm, purchase.CommercialDiscountPercent, purchase.PurchaseCurrencyCode,
+        purchase.PreferredWarehouseId, purchase.PurchaseSupplierType, purchase.PreferredWarehouseCode,
+        purchase.MinimumOrderQuantity, purchase.ActiveForImport, purchase.SubjectToEvaluation,
+        purchase.AllowsUrgentPurchases, purchase.AverageDeliveryDays, purchase.LeadTimeDays,
+        purchase.DeliveryToleranceDays, purchase.RequiresPurchaseOrder,
         credit.CreditStatus,
         accounting.CustomerAccountId, customerAccount.Code AS CustomerAccountCode, customerAccount.Name AS CustomerAccountName,
         accounting.SupplierAccountId, supplierAccount.Code AS SupplierAccountCode, supplierAccount.Name AS SupplierAccountName,
@@ -505,6 +544,7 @@ BEGIN
     INNER JOIN dbo.BusinessPartnerIdentificationTypes idt ON idt.Id = bp.IdentificationTypeId
     LEFT JOIN dbo.BusinessPartnerFiscalData fiscal ON fiscal.BusinessPartnerId = bp.Id
     LEFT JOIN dbo.BusinessPartnerCreditSettings credit ON credit.BusinessPartnerId = bp.Id
+    LEFT JOIN dbo.BusinessPartnerPurchaseSettings purchase ON purchase.BusinessPartnerId = bp.Id
     LEFT JOIN dbo.BusinessPartnerPaymentTerms terms ON terms.Id = credit.PaymentTermId
     LEFT JOIN dbo.BusinessPartnerAccountingSettings accounting ON accounting.BusinessPartnerId = bp.Id
     LEFT JOIN dbo.ChartOfAccounts customerAccount ON customerAccount.Id = accounting.CustomerAccountId
@@ -531,8 +571,11 @@ BEGIN
         credit.PaymentTermId, terms.Code AS PaymentTermCode, terms.Name AS PaymentTermName,
         credit.CreditDays, credit.CreditLimit, credit.DeliveryDays, credit.MinimumOrderAmount,
         credit.AllowsBackorder, credit.PreferredCurrencyCode, credit.PriceListCode, credit.AssignedSellerCode, credit.AssignedBuyerCode,
-        credit.IncotermCode, credit.CommercialDiscountPercent, credit.PurchaseSupplierType, credit.PreferredWarehouseCode,
-        credit.MinimumOrderQuantity, credit.LeadTimeDays, credit.DeliveryToleranceDays, credit.SubjectToEvaluation, credit.ActiveForImport,
+        purchase.Incoterm, purchase.CommercialDiscountPercent, purchase.PurchaseCurrencyCode,
+        purchase.PreferredWarehouseId, purchase.PurchaseSupplierType, purchase.PreferredWarehouseCode,
+        purchase.MinimumOrderQuantity, purchase.ActiveForImport, purchase.SubjectToEvaluation,
+        purchase.AllowsUrgentPurchases, purchase.AverageDeliveryDays, purchase.LeadTimeDays,
+        purchase.DeliveryToleranceDays, purchase.RequiresPurchaseOrder,
         credit.CreditStatus,
         accounting.CustomerAccountId, customerAccount.Code AS CustomerAccountCode, customerAccount.Name AS CustomerAccountName,
         accounting.SupplierAccountId, supplierAccount.Code AS SupplierAccountCode, supplierAccount.Name AS SupplierAccountName,
@@ -554,6 +597,7 @@ BEGIN
     INNER JOIN dbo.BusinessPartnerIdentificationTypes idt ON idt.Id = bp.IdentificationTypeId
     LEFT JOIN dbo.BusinessPartnerFiscalData fiscal ON fiscal.BusinessPartnerId = bp.Id
     LEFT JOIN dbo.BusinessPartnerCreditSettings credit ON credit.BusinessPartnerId = bp.Id
+    LEFT JOIN dbo.BusinessPartnerPurchaseSettings purchase ON purchase.BusinessPartnerId = bp.Id
     LEFT JOIN dbo.BusinessPartnerPaymentTerms terms ON terms.Id = credit.PaymentTermId
     LEFT JOIN dbo.BusinessPartnerAccountingSettings accounting ON accounting.BusinessPartnerId = bp.Id
     LEFT JOIN dbo.ChartOfAccounts customerAccount ON customerAccount.Id = accounting.CustomerAccountId
@@ -684,15 +728,20 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_BUSINESSPARTNERS_CREAR
     @PriceListCode nvarchar(50) = NULL,
     @AssignedSellerCode nvarchar(50) = NULL,
     @AssignedBuyerCode nvarchar(50) = NULL,
-    @IncotermCode nvarchar(30) = NULL,
+    @Incoterm nvarchar(20) = NULL,
     @CommercialDiscountPercent decimal(9,4) = 0,
-    @PurchaseSupplierType nvarchar(50) = NULL,
+    @PurchaseCurrencyCode nvarchar(3) = NULL,
+    @PreferredWarehouseId int = NULL,
+    @PurchaseSupplierType nvarchar(80) = NULL,
     @PreferredWarehouseCode nvarchar(50) = NULL,
     @MinimumOrderQuantity decimal(19,6) = 0,
+    @ActiveForImport bit = 0,
+    @SubjectToEvaluation bit = 0,
+    @AllowsUrgentPurchases bit = 0,
+    @AverageDeliveryDays int = 0,
     @LeadTimeDays int = 0,
     @DeliveryToleranceDays int = 0,
-    @SubjectToEvaluation bit = 0,
-    @ActiveForImport bit = 0,
+    @RequiresPurchaseOrder bit = 0,
     @CreditStatus nvarchar(30) = N'Normal',
     @SapCardCode nvarchar(50) = NULL,
     @SapCardType nvarchar(1) = NULL,
@@ -743,14 +792,21 @@ BEGIN
 
     INSERT INTO dbo.BusinessPartnerCreditSettings
         (BusinessPartnerId, PaymentTermId, CreditDays, CreditLimit, DeliveryDays, MinimumOrderAmount,
-         AllowsBackorder, PreferredCurrencyCode, PriceListCode, AssignedSellerCode, AssignedBuyerCode,
-         IncotermCode, CommercialDiscountPercent, PurchaseSupplierType, PreferredWarehouseCode,
-         MinimumOrderQuantity, LeadTimeDays, DeliveryToleranceDays, SubjectToEvaluation, ActiveForImport, CreditStatus)
+         AllowsBackorder, PreferredCurrencyCode, PriceListCode, AssignedSellerCode, AssignedBuyerCode, CreditStatus)
     VALUES
         (@Id, @PaymentTermId, @CreditDays, @CreditLimit, @DeliveryDays, @MinimumOrderAmount,
-         @AllowsBackorder, @PreferredCurrencyCode, @PriceListCode, @AssignedSellerCode, @AssignedBuyerCode,
-         @IncotermCode, @CommercialDiscountPercent, @PurchaseSupplierType, @PreferredWarehouseCode,
-         @MinimumOrderQuantity, @LeadTimeDays, @DeliveryToleranceDays, @SubjectToEvaluation, @ActiveForImport, @CreditStatus);
+         @AllowsBackorder, @PreferredCurrencyCode, @PriceListCode, @AssignedSellerCode, @AssignedBuyerCode, @CreditStatus);
+
+    INSERT INTO dbo.BusinessPartnerPurchaseSettings
+        (BusinessPartnerId, Incoterm, CommercialDiscountPercent, PurchaseCurrencyCode, PreferredWarehouseId,
+         PreferredWarehouseCode, MinimumOrderQuantity, PurchaseSupplierType, ActiveForImport,
+         SubjectToEvaluation, AllowsUrgentPurchases, AverageDeliveryDays, LeadTimeDays,
+         DeliveryToleranceDays, RequiresPurchaseOrder)
+    VALUES
+        (@Id, @Incoterm, @CommercialDiscountPercent, @PurchaseCurrencyCode, @PreferredWarehouseId,
+         @PreferredWarehouseCode, @MinimumOrderQuantity, @PurchaseSupplierType, @ActiveForImport,
+         @SubjectToEvaluation, @AllowsUrgentPurchases, @AverageDeliveryDays, @LeadTimeDays,
+         @DeliveryToleranceDays, @RequiresPurchaseOrder);
 
     INSERT INTO dbo.BusinessPartnerSapMapping
         (BusinessPartnerId, SapCardCode, SapCardType, SapSyncStatus, SapLastSyncAt, SapLastError,
@@ -842,15 +898,20 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_PUT_BUSINESSPARTNERS_ACTUALIZAR
     @PriceListCode nvarchar(50) = NULL,
     @AssignedSellerCode nvarchar(50) = NULL,
     @AssignedBuyerCode nvarchar(50) = NULL,
-    @IncotermCode nvarchar(30) = NULL,
+    @Incoterm nvarchar(20) = NULL,
     @CommercialDiscountPercent decimal(9,4) = 0,
-    @PurchaseSupplierType nvarchar(50) = NULL,
+    @PurchaseCurrencyCode nvarchar(3) = NULL,
+    @PreferredWarehouseId int = NULL,
+    @PurchaseSupplierType nvarchar(80) = NULL,
     @PreferredWarehouseCode nvarchar(50) = NULL,
     @MinimumOrderQuantity decimal(19,6) = 0,
+    @ActiveForImport bit = 0,
+    @SubjectToEvaluation bit = 0,
+    @AllowsUrgentPurchases bit = 0,
+    @AverageDeliveryDays int = 0,
     @LeadTimeDays int = 0,
     @DeliveryToleranceDays int = 0,
-    @SubjectToEvaluation bit = 0,
-    @ActiveForImport bit = 0,
+    @RequiresPurchaseOrder bit = 0,
     @CreditStatus nvarchar(30) = N'Normal',
     @SapCardCode nvarchar(50) = NULL,
     @SapCardType nvarchar(1) = NULL,
@@ -932,13 +993,43 @@ BEGIN
     SET PaymentTermId = @PaymentTermId, CreditDays = @CreditDays, CreditLimit = @CreditLimit,
         DeliveryDays = @DeliveryDays, MinimumOrderAmount = @MinimumOrderAmount,
         AllowsBackorder = @AllowsBackorder, PreferredCurrencyCode = @PreferredCurrencyCode, PriceListCode = @PriceListCode, AssignedSellerCode = @AssignedSellerCode,
-        AssignedBuyerCode = @AssignedBuyerCode, IncotermCode = @IncotermCode,
-        CommercialDiscountPercent = @CommercialDiscountPercent, PurchaseSupplierType = @PurchaseSupplierType,
-        PreferredWarehouseCode = @PreferredWarehouseCode, MinimumOrderQuantity = @MinimumOrderQuantity,
-        LeadTimeDays = @LeadTimeDays, DeliveryToleranceDays = @DeliveryToleranceDays,
-        SubjectToEvaluation = @SubjectToEvaluation, ActiveForImport = @ActiveForImport,
+        AssignedBuyerCode = @AssignedBuyerCode,
         CreditStatus = @CreditStatus
     WHERE BusinessPartnerId = @Id;
+
+    IF EXISTS (SELECT 1 FROM dbo.BusinessPartnerPurchaseSettings WHERE BusinessPartnerId = @Id)
+    BEGIN
+        UPDATE dbo.BusinessPartnerPurchaseSettings
+        SET Incoterm = @Incoterm,
+            CommercialDiscountPercent = @CommercialDiscountPercent,
+            PurchaseCurrencyCode = @PurchaseCurrencyCode,
+            PreferredWarehouseId = @PreferredWarehouseId,
+            PreferredWarehouseCode = @PreferredWarehouseCode,
+            MinimumOrderQuantity = @MinimumOrderQuantity,
+            PurchaseSupplierType = @PurchaseSupplierType,
+            ActiveForImport = @ActiveForImport,
+            SubjectToEvaluation = @SubjectToEvaluation,
+            AllowsUrgentPurchases = @AllowsUrgentPurchases,
+            AverageDeliveryDays = @AverageDeliveryDays,
+            LeadTimeDays = @LeadTimeDays,
+            DeliveryToleranceDays = @DeliveryToleranceDays,
+            RequiresPurchaseOrder = @RequiresPurchaseOrder,
+            UpdatedAt = SYSUTCDATETIME()
+        WHERE BusinessPartnerId = @Id;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO dbo.BusinessPartnerPurchaseSettings
+            (BusinessPartnerId, Incoterm, CommercialDiscountPercent, PurchaseCurrencyCode, PreferredWarehouseId,
+             PreferredWarehouseCode, MinimumOrderQuantity, PurchaseSupplierType, ActiveForImport,
+             SubjectToEvaluation, AllowsUrgentPurchases, AverageDeliveryDays, LeadTimeDays,
+             DeliveryToleranceDays, RequiresPurchaseOrder)
+        VALUES
+            (@Id, @Incoterm, @CommercialDiscountPercent, @PurchaseCurrencyCode, @PreferredWarehouseId,
+             @PreferredWarehouseCode, @MinimumOrderQuantity, @PurchaseSupplierType, @ActiveForImport,
+             @SubjectToEvaluation, @AllowsUrgentPurchases, @AverageDeliveryDays, @LeadTimeDays,
+             @DeliveryToleranceDays, @RequiresPurchaseOrder);
+    END;
 
     UPDATE dbo.BusinessPartnerSapMapping
     SET SapCardCode = @SapCardCode, SapCardType = @SapCardType, SapSyncStatus = @SapSyncStatus,
