@@ -43,6 +43,15 @@ public sealed class BusinessPartnerItem
     public string? PriceListCode { get; set; }
     public string? AssignedSellerCode { get; set; }
     public string? AssignedBuyerCode { get; set; }
+    public string? IncotermCode { get; set; }
+    public decimal CommercialDiscountPercent { get; set; }
+    public string? PurchaseSupplierType { get; set; }
+    public string? PreferredWarehouseCode { get; set; }
+    public decimal MinimumOrderQuantity { get; set; }
+    public int LeadTimeDays { get; set; }
+    public int DeliveryToleranceDays { get; set; }
+    public bool SubjectToEvaluation { get; set; }
+    public bool ActiveForImport { get; set; }
     public string CreditStatus { get; set; } = "Normal";
     public int? CustomerAccountId { get; set; }
     public string? CustomerAccountCode { get; set; }
@@ -387,7 +396,16 @@ public sealed record SaveBusinessPartnerRequest(
     IReadOnlyCollection<SaveBusinessPartnerRetentionSettingRequest> RetentionSettings,
     SaveBusinessPartnerNotesRequest? Notes,
     IReadOnlyCollection<SaveBusinessPartnerSapFieldMappingRequest> SapFieldMappings,
-    IReadOnlyCollection<SaveBusinessPartnerAttachmentRequest>? Attachments = null);
+    IReadOnlyCollection<SaveBusinessPartnerAttachmentRequest>? Attachments = null,
+    string? IncotermCode = null,
+    decimal CommercialDiscountPercent = 0,
+    string? PurchaseSupplierType = null,
+    string? PreferredWarehouseCode = null,
+    decimal MinimumOrderQuantity = 0,
+    int LeadTimeDays = 0,
+    int DeliveryToleranceDays = 0,
+    bool SubjectToEvaluation = false,
+    bool ActiveForImport = false);
 
 public sealed record BusinessPartnerLookupOption(int Id, string Code, string Name, bool IsActive = true);
 public sealed record BusinessPartnerGeoLookupOption(int Id, string Code, string Name, bool IsActive = true, int? CountryId = null, int? ProvinceId = null, string? PostalCode = null);

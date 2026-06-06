@@ -130,6 +130,11 @@ public sealed partial class SupplierEditForm : BaseEditForm
             isValid = false;
         }
 
+        if (!ValidatePurchaseRanges())
+        {
+            isValid = false;
+        }
+
         return isValid;
     }
 
@@ -189,6 +194,15 @@ public sealed partial class SupplierEditForm : BaseEditForm
             PreferredCurrencyCode = LookupCode(lueCurrency),
             PriceListCode = LookupTextCode(luePurchasePriceList),
             AssignedBuyerCode = LookupTextCode(lueAssignedBuyer),
+            IncotermCode = LookupTextCode(lueIncoterm),
+            CommercialDiscountPercent = spnCommercialDiscountPercent.Value,
+            PurchaseSupplierType = NullIfEmpty(Convert.ToString(lueSupplierType.EditValue)),
+            PreferredWarehouseCode = LookupTextCode(luePreferredWarehouse),
+            MinimumOrderQuantity = spnMinimumOrderQuantity.Value,
+            LeadTimeDays = ToInt(spnLeadTimeDays.EditValue),
+            DeliveryToleranceDays = ToInt(spnDeliveryToleranceDays.EditValue),
+            SubjectToEvaluation = tglSubjectToEvaluation.IsOn,
+            ActiveForImport = tglActiveForImport.IsOn,
             CreditStatus = tglHandlesCredit.IsOn ? "Normal" : "NoCredit",
             SapCardCode = NullIfEmpty(partner?.SapCardCode),
             SapCardType = "S",
@@ -276,7 +290,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
         SetEditValue(lueCurrency, LookupValueByCode(lookups.Currencies, partner?.PreferredCurrencyCode) ?? lookups.Currencies.FirstOrDefault()?.Id);
         SetEditValue(lueCountry, LookupValueByCode(lookups.Countries, partner?.CountryCode) ?? lookups.Countries.FirstOrDefault()?.Id);
         luePersonType.EditValue = partner?.TaxpayerType ?? (useDesignData ? "Jurídica" : null);
-        lueSupplierType.EditValue = useDesignData ? "Bienes" : null;
+        lueSupplierType.EditValue = partner?.PurchaseSupplierType ?? (useDesignData ? "Bienes" : null);
         lueInternalClassification.EditValue = useDesignData ? "PROV. NACIONALES" : null;
         lueSupplierSegment.EditValue = useDesignData ? "A - Proveedores Estratégicos" : null;
     }
@@ -351,18 +365,18 @@ public sealed partial class SupplierEditForm : BaseEditForm
         luePurchasePaymentCondition.EditValue = LookupDisplayText(lookups.PaymentTerms, partner?.PaymentTermId) ?? (useDesignData ? "Crédito 30 días" : null);
         luePurchasePriceList.EditValue = LookupDisplayText(lookups.PriceLists, partner?.PriceListCode) ?? (useDesignData ? "Lista Compra Nacional" : null);
         spnDeliveryTermDays.Value = partner?.DeliveryDays > 0 ? partner.DeliveryDays : useDesignData ? 7m : 0m;
-        lueIncoterm.EditValue = "EXW";
-        spnCommercialDiscountPercent.Value = useDesignData ? 5m : 0m;
+        lueIncoterm.EditValue = partner?.IncotermCode ?? (useDesignData ? "EXW" : null);
+        spnCommercialDiscountPercent.Value = partner?.CommercialDiscountPercent > 0 ? partner.CommercialDiscountPercent : useDesignData ? 5m : 0m;
         lueAssignedBuyer.EditValue = LookupDisplayText(lookups.PurchasingAgents, partner?.AssignedBuyerCode) ?? (useDesignData ? "Juan Pérez" : null);
-        luePreferredWarehouse.EditValue = useDesignData ? "Bodega Principal" : null;
+        luePreferredWarehouse.EditValue = partner?.PreferredWarehouseCode ?? (useDesignData ? "Bodega Principal" : null);
         spnAverageDeliveryDays.Value = partner?.AveragePaymentDays > 0 ? partner.AveragePaymentDays : useDesignData ? 6m : 0m;
         spnMinimumOrderAmount.Value = partner?.MinimumOrderAmount > 0 ? partner.MinimumOrderAmount : useDesignData ? 500m : 0m;
-        spnMinimumOrderQuantity.Value = 1m;
-        spnLeadTimeDays.Value = partner?.DeliveryDays > 0 ? partner.DeliveryDays : useDesignData ? 5m : 0m;
-        spnDeliveryToleranceDays.Value = partner?.PaymentTolerancePercent > 0 ? partner.PaymentTolerancePercent : useDesignData ? 2m : 0m;
+        spnMinimumOrderQuantity.Value = partner?.MinimumOrderQuantity > 0 ? partner.MinimumOrderQuantity : useDesignData ? 1m : 0m;
+        spnLeadTimeDays.Value = partner?.LeadTimeDays > 0 ? partner.LeadTimeDays : useDesignData ? 5m : 0m;
+        spnDeliveryToleranceDays.Value = partner?.DeliveryToleranceDays > 0 ? partner.DeliveryToleranceDays : useDesignData ? 2m : 0m;
         tglRequiresPurchaseOrder.IsOn = partner?.RequiresProvision ?? false;
-        tglSubjectToEvaluation.IsOn = partner?.RequiresApprovalBeforeSapSync ?? false;
-        tglActiveForImport.IsOn = false;
+        tglSubjectToEvaluation.IsOn = partner?.SubjectToEvaluation ?? false;
+        tglActiveForImport.IsOn = partner?.ActiveForImport ?? false;
         tglAllowsUrgentPurchases.IsOn = partner?.AllowsBackorder ?? false;
         lblPurchasesLast12MonthsValue.Text = useDesignData ? "125,000.00 PEN" : "0.00";
         lblAveragePurchaseValue.Text = useDesignData ? "8,950.00 PEN" : "0.00";
@@ -1399,6 +1413,30 @@ public sealed partial class SupplierEditForm : BaseEditForm
         return false;
     }
 
+    private bool ValidatePurchaseRanges()
+    {
+        var isValid = true;
+        isValid &= ValidateRange(spnCommercialDiscountPercent, 0m, 100m, "Descuento comercial debe estar entre 0 y 100.");
+        isValid &= ValidateRange(spnMinimumOrderAmount, 0m, decimal.MaxValue, "Pedido mínimo monto no puede ser negativo.");
+        isValid &= ValidateRange(spnMinimumOrderQuantity, 0m, decimal.MaxValue, "Pedido mínimo cantidad no puede ser negativo.");
+        isValid &= ValidateRange(spnDeliveryTermDays, 0m, decimal.MaxValue, "Días entrega no puede ser negativo.");
+        isValid &= ValidateRange(spnLeadTimeDays, 0m, decimal.MaxValue, "Lead time no puede ser negativo.");
+        isValid &= ValidateRange(spnDeliveryToleranceDays, 0m, decimal.MaxValue, "Tolerancia entrega no puede ser negativa.");
+        return isValid;
+    }
+
+    private bool ValidateRange(BaseEdit control, decimal minValue, decimal maxValue, string message)
+    {
+        var value = Convert.ToDecimal(control.EditValue ?? 0m);
+        if (value >= minValue && value <= maxValue)
+        {
+            return true;
+        }
+
+        Validator.SetError(control, message);
+        return false;
+    }
+
     private static void BindLookup(LookUpEdit lookup, IReadOnlyCollection<BusinessPartnerLookupOption> options)
     {
         lookup.Properties.DataSource = options.Where(x => x.IsActive).ToList();
@@ -1546,6 +1584,15 @@ public sealed partial class SupplierEditForm : BaseEditForm
             PriceListCode: null,
             AssignedSellerCode: null,
             AssignedBuyerCode: null,
+            IncotermCode: null,
+            CommercialDiscountPercent: 0,
+            PurchaseSupplierType: null,
+            PreferredWarehouseCode: null,
+            MinimumOrderQuantity: 0,
+            LeadTimeDays: 0,
+            DeliveryToleranceDays: 0,
+            SubjectToEvaluation: false,
+            ActiveForImport: false,
             CreditStatus: "Normal",
             SapCardCode: null,
             SapCardType: "S",

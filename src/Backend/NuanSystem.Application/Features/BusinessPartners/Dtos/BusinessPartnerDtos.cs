@@ -43,6 +43,15 @@ public sealed class BusinessPartnerDto
     public string? PriceListCode { get; set; }
     public string? AssignedSellerCode { get; set; }
     public string? AssignedBuyerCode { get; set; }
+    public string? IncotermCode { get; set; }
+    public decimal CommercialDiscountPercent { get; set; }
+    public string? PurchaseSupplierType { get; set; }
+    public string? PreferredWarehouseCode { get; set; }
+    public decimal MinimumOrderQuantity { get; set; }
+    public int LeadTimeDays { get; set; }
+    public int DeliveryToleranceDays { get; set; }
+    public bool SubjectToEvaluation { get; set; }
+    public bool ActiveForImport { get; set; }
     public string CreditStatus { get; set; } = "Normal";
     public int? CustomerAccountId { get; set; }
     public string? CustomerAccountCode { get; set; }
@@ -442,6 +451,15 @@ public sealed record CreateBusinessPartnerData(
     string? PriceListCode,
     string? AssignedSellerCode,
     string? AssignedBuyerCode,
+    string? IncotermCode,
+    decimal CommercialDiscountPercent,
+    string? PurchaseSupplierType,
+    string? PreferredWarehouseCode,
+    decimal MinimumOrderQuantity,
+    int LeadTimeDays,
+    int DeliveryToleranceDays,
+    bool SubjectToEvaluation,
+    bool ActiveForImport,
     string CreditStatus,
     string? SapCardCode,
     string? SapCardType,
@@ -538,6 +556,15 @@ public sealed record UpdateBusinessPartnerData(
     string? PriceListCode,
     string? AssignedSellerCode,
     string? AssignedBuyerCode,
+    string? IncotermCode,
+    decimal CommercialDiscountPercent,
+    string? PurchaseSupplierType,
+    string? PreferredWarehouseCode,
+    decimal MinimumOrderQuantity,
+    int LeadTimeDays,
+    int DeliveryToleranceDays,
+    bool SubjectToEvaluation,
+    bool ActiveForImport,
     string CreditStatus,
     string? SapCardCode,
     string? SapCardType,

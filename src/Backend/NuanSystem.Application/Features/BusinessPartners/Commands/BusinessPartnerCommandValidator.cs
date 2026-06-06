@@ -55,7 +55,14 @@ internal sealed class BusinessPartnerCommandRules<T> : AbstractValidator<T>
         RuleFor(command => GetDecimal(command, nameof(CreateBusinessPartnerCommand.CreditLimit))).GreaterThanOrEqualTo(0);
         RuleFor(command => GetInt(command, nameof(CreateBusinessPartnerCommand.DeliveryDays))).GreaterThanOrEqualTo(0);
         RuleFor(command => GetDecimal(command, nameof(CreateBusinessPartnerCommand.MinimumOrderAmount))).GreaterThanOrEqualTo(0);
+        RuleFor(command => GetDecimal(command, nameof(CreateBusinessPartnerCommand.CommercialDiscountPercent))).InclusiveBetween(0, 100);
+        RuleFor(command => GetDecimal(command, nameof(CreateBusinessPartnerCommand.MinimumOrderQuantity))).GreaterThanOrEqualTo(0);
+        RuleFor(command => GetInt(command, nameof(CreateBusinessPartnerCommand.LeadTimeDays))).GreaterThanOrEqualTo(0);
+        RuleFor(command => GetInt(command, nameof(CreateBusinessPartnerCommand.DeliveryToleranceDays))).GreaterThanOrEqualTo(0);
         RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.PreferredCurrencyCode))).MaximumLength(3);
+        RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.IncotermCode))).MaximumLength(30);
+        RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.PurchaseSupplierType))).MaximumLength(50);
+        RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.PreferredWarehouseCode))).MaximumLength(50);
         RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.CreditStatus))).MaximumLength(30);
         RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.SapCardCode))).MaximumLength(50);
         RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.SapCardType))).MaximumLength(1);
