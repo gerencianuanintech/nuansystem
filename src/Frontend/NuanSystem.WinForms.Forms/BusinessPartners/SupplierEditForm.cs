@@ -94,7 +94,6 @@ public sealed partial class SupplierEditForm : BaseEditForm
             Phone = NullIfEmpty(txtPhone.Text),
             Remarks = NullIfEmpty(memShortObservation.Text),
             IsActive = tglSupplierActive.IsOn,
-            PaymentTermId = ToNullableInt(luePaymentCondition.EditValue),
             PreferredCurrencyCode = LookupCode(lueCurrency)
         };
     }
@@ -105,10 +104,8 @@ public sealed partial class SupplierEditForm : BaseEditForm
         BindLookup(luePersonType, "Jurídica", "Natural");
         BindLookup(lueSupplierType, "Bienes", "Servicios", "Bienes y Servicios");
         BindLookup(lueCurrency, lookups.Currencies);
-        BindLookup(luePaymentCondition, lookups.PaymentTerms.Select(x => new BusinessPartnerLookupOption(x.Id, x.Code, x.Name)).ToList());
         BindLookup(lueSupplierCategory, lookups.SupplierGroups);
         BindLookup(lueCountry, lookups.Countries);
-        BindLookup(lueAlternateCurrency, lookups.Currencies);
         BindLookup(lueInternalClassification, "PROV. NACIONALES", "PROV. EXTRANJEROS", "PROV. SERVICIOS");
         BindLookup(lueSupplierSegment, "A - Proveedores Estratégicos", "B - Proveedores Regulares", "C - Proveedores Eventuales");
         grdContacts.DataSource = contacts;
@@ -148,10 +145,8 @@ public sealed partial class SupplierEditForm : BaseEditForm
 
         SetEditValue(lueDocumentType, partner?.IdentificationTypeId ?? lookups.IdentificationTypes.FirstOrDefault()?.Id);
         SetEditValue(lueSupplierCategory, partner?.SupplierGroupId ?? lookups.SupplierGroups.FirstOrDefault()?.Id);
-        SetEditValue(luePaymentCondition, partner?.PaymentTermId ?? lookups.PaymentTerms.FirstOrDefault()?.Id);
         SetEditValue(lueCurrency, LookupValueByCode(lookups.Currencies, partner?.PreferredCurrencyCode) ?? lookups.Currencies.FirstOrDefault()?.Id);
         SetEditValue(lueCountry, LookupValueByCode(lookups.Countries, partner?.CountryCode) ?? lookups.Countries.FirstOrDefault()?.Id);
-        SetEditValue(lueAlternateCurrency, LookupValueByCode(lookups.Currencies, "USD") ?? lookups.Currencies.Skip(1).FirstOrDefault()?.Id);
         luePersonType.EditValue = "Jurídica";
         lueSupplierType.EditValue = "Bienes";
         lueInternalClassification.EditValue = "PROV. NACIONALES";
@@ -253,21 +248,15 @@ public sealed partial class SupplierEditForm : BaseEditForm
         BindLookup(luePurchasePaymentCondition, "Crédito 30 días", "Contado", "Crédito 15 días");
         BindLookup(luePurchasePriceList, "Lista Compra Nacional", "Lista Compra Importación", "LP-COMP-ACME-01");
         BindLookup(lueIncoterm, "EXW", "CIP - Carriage and Insurance Paid To", "FOB", "CIF");
-        BindLookup(luePurchaseCurrency, "PEN - Sol Peruano", "USD - Dólar Americano");
-        BindLookup(luePurchaseSupplierType, "Proveedor Nacional", "Proveedor Extranjero");
         BindLookup(lueAssignedBuyer, "Juan Pérez", "CP01 - Juan Carlos Pérez");
-        BindLookup(lueSuggestedCostCenter, "CC-ADM-001", "CC-IND-001 - Producción");
         BindLookup(luePreferredWarehouse, "Bodega Principal", "B01 - Almacén Principal");
 
         luePurchasePaymentCondition.EditValue = "Crédito 30 días";
         luePurchasePriceList.EditValue = "Lista Compra Nacional";
         spnDeliveryTermDays.Value = 7m;
         lueIncoterm.EditValue = "EXW";
-        luePurchaseCurrency.EditValue = "PEN - Sol Peruano";
         spnCommercialDiscountPercent.Value = 5m;
-        luePurchaseSupplierType.EditValue = "Proveedor Nacional";
         lueAssignedBuyer.EditValue = "Juan Pérez";
-        lueSuggestedCostCenter.EditValue = "CC-ADM-001";
         luePreferredWarehouse.EditValue = "Bodega Principal";
         spnAverageDeliveryDays.Value = 6m;
         spnMinimumOrderAmount.Value = 500m;
@@ -424,8 +413,6 @@ public sealed partial class SupplierEditForm : BaseEditForm
 
         tglWithholdingAgent.IsOn = true;
         lueGeneralWithholdingType.EditValue = "Renta e IVA";
-        spnBaseWithholdingPercent.Value = 1.75m;
-        dteWithholdingEffectiveDate.EditValue = new DateTime(2024, 1, 1);
         txtWithholdingResolutionNumber.Text = "NAC-DGERCGC24-000001";
         tglWithholdsVat.IsOn = true;
         tglWithholdsIncomeTax.IsOn = true;
@@ -838,9 +825,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
         txtAttachmentCategory.Text = attachment?.Category ?? string.Empty;
         txtAttachmentExpirationDate.Text = attachment?.ExpirationDate?.ToString("dd/MM/yyyy") ?? string.Empty;
         memAttachmentDescription.Text = attachment?.Description ?? string.Empty;
-        lblAttachmentPreview.Text = attachment is null
-            ? "Vista previa no disponible.\r\nSeleccione un documento."
-            : $"Vista previa no disponible.\r\n{attachment.FileName}";
+        
     }
 
     private static string FormatFileSize(long bytes)
