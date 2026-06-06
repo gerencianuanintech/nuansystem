@@ -69,6 +69,14 @@ partial class SupplierEditForm
         lblPhone = new LabelControl();
         lblEmail = new LabelControl();
         txtPhone = new TextEdit();
+        lblSupplierClass = new LabelControl();
+        lueSupplierClass = new LookUpEdit();
+        lblEconomicActivity = new LabelControl();
+        lueEconomicActivity = new LookUpEdit();
+        lblSupplierZone = new LabelControl();
+        lueSupplierZone = new LookUpEdit();
+        lblSupplyMethod = new LabelControl();
+        lueSupplyMethod = new LookUpEdit();
         tabContacts = new XtraTabPage();
         pnlContactsContent = new PanelControl();
         grdContacts = new GridControl();
@@ -329,6 +337,10 @@ partial class SupplierEditForm
         ((System.ComponentModel.ISupportInitialize)txtMainContact.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtEmail.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtPhone.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueSupplierClass.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueEconomicActivity.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueSupplierZone.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueSupplyMethod.Properties).BeginInit();
         tabContacts.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)pnlContactsContent).BeginInit();
         pnlContactsContent.SuspendLayout();
@@ -615,6 +627,14 @@ partial class SupplierEditForm
         pnlGeneralContent.Controls.Add(lblPhone);
         pnlGeneralContent.Controls.Add(lblEmail);
         pnlGeneralContent.Controls.Add(txtPhone);
+        pnlGeneralContent.Controls.Add(lblSupplierClass);
+        pnlGeneralContent.Controls.Add(lueSupplierClass);
+        pnlGeneralContent.Controls.Add(lblEconomicActivity);
+        pnlGeneralContent.Controls.Add(lueEconomicActivity);
+        pnlGeneralContent.Controls.Add(lblSupplierZone);
+        pnlGeneralContent.Controls.Add(lueSupplierZone);
+        pnlGeneralContent.Controls.Add(lblSupplyMethod);
+        pnlGeneralContent.Controls.Add(lueSupplyMethod);
         pnlGeneralContent.Dock = DockStyle.Fill;
         pnlGeneralContent.Location = new Point(0, 0);
         pnlGeneralContent.Name = "pnlGeneralContent";
@@ -915,6 +935,90 @@ partial class SupplierEditForm
         txtPhone.Properties.Appearance.Options.UseFont = true;
         txtPhone.Size = new Size(170, 22);
         txtPhone.TabIndex = 20;
+        // 
+        // lblSupplierClass
+        // 
+        lblSupplierClass.Appearance.Font = new Font("Segoe UI", 9F);
+        lblSupplierClass.Appearance.Options.UseFont = true;
+        lblSupplierClass.Location = new Point(855, 131);
+        lblSupplierClass.Name = "lblSupplierClass";
+        lblSupplierClass.Size = new Size(86, 15);
+        lblSupplierClass.TabIndex = 31;
+        lblSupplierClass.Text = "Clase proveedor:";
+        // 
+        // lueSupplierClass
+        // 
+        lueSupplierClass.Location = new Point(1017, 128);
+        lueSupplierClass.Name = "lueSupplierClass";
+        lueSupplierClass.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        lueSupplierClass.Properties.Appearance.Options.UseFont = true;
+        lueSupplierClass.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        lueSupplierClass.Properties.NullText = "";
+        lueSupplierClass.Size = new Size(250, 22);
+        lueSupplierClass.TabIndex = 32;
+        // 
+        // lblEconomicActivity
+        // 
+        lblEconomicActivity.Appearance.Font = new Font("Segoe UI", 9F);
+        lblEconomicActivity.Appearance.Options.UseFont = true;
+        lblEconomicActivity.Location = new Point(855, 159);
+        lblEconomicActivity.Name = "lblEconomicActivity";
+        lblEconomicActivity.Size = new Size(100, 15);
+        lblEconomicActivity.TabIndex = 33;
+        lblEconomicActivity.Text = "Actividad económica:";
+        // 
+        // lueEconomicActivity
+        // 
+        lueEconomicActivity.Location = new Point(1017, 156);
+        lueEconomicActivity.Name = "lueEconomicActivity";
+        lueEconomicActivity.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        lueEconomicActivity.Properties.Appearance.Options.UseFont = true;
+        lueEconomicActivity.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        lueEconomicActivity.Properties.NullText = "";
+        lueEconomicActivity.Size = new Size(250, 22);
+        lueEconomicActivity.TabIndex = 34;
+        // 
+        // lblSupplierZone
+        // 
+        lblSupplierZone.Appearance.Font = new Font("Segoe UI", 9F);
+        lblSupplierZone.Appearance.Options.UseFont = true;
+        lblSupplierZone.Location = new Point(855, 187);
+        lblSupplierZone.Name = "lblSupplierZone";
+        lblSupplierZone.Size = new Size(31, 15);
+        lblSupplierZone.TabIndex = 35;
+        lblSupplierZone.Text = "Zona:";
+        // 
+        // lueSupplierZone
+        // 
+        lueSupplierZone.Location = new Point(1017, 184);
+        lueSupplierZone.Name = "lueSupplierZone";
+        lueSupplierZone.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        lueSupplierZone.Properties.Appearance.Options.UseFont = true;
+        lueSupplierZone.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        lueSupplierZone.Properties.NullText = "";
+        lueSupplierZone.Size = new Size(250, 22);
+        lueSupplierZone.TabIndex = 36;
+        // 
+        // lblSupplyMethod
+        // 
+        lblSupplyMethod.Appearance.Font = new Font("Segoe UI", 9F);
+        lblSupplyMethod.Appearance.Options.UseFont = true;
+        lblSupplyMethod.Location = new Point(855, 215);
+        lblSupplyMethod.Name = "lblSupplyMethod";
+        lblSupplyMethod.Size = new Size(134, 15);
+        lblSupplyMethod.TabIndex = 37;
+        lblSupplyMethod.Text = "Método abastecimiento:";
+        // 
+        // lueSupplyMethod
+        // 
+        lueSupplyMethod.Location = new Point(1017, 212);
+        lueSupplyMethod.Name = "lueSupplyMethod";
+        lueSupplyMethod.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        lueSupplyMethod.Properties.Appearance.Options.UseFont = true;
+        lueSupplyMethod.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        lueSupplyMethod.Properties.NullText = "";
+        lueSupplyMethod.Size = new Size(250, 22);
+        lueSupplyMethod.TabIndex = 38;
         // 
         // tabContacts
         // 
@@ -3431,6 +3535,10 @@ partial class SupplierEditForm
         ((System.ComponentModel.ISupportInitialize)txtMainContact.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtEmail.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtPhone.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueSupplierClass.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueEconomicActivity.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueSupplierZone.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueSupplyMethod.Properties).EndInit();
         tabContacts.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)pnlContactsContent).EndInit();
         pnlContactsContent.ResumeLayout(false);
@@ -3586,6 +3694,14 @@ partial class SupplierEditForm
     private LabelControl lblPhone;
     private LabelControl lblEmail;
     private TextEdit txtPhone;
+    private LabelControl lblSupplierClass;
+    private LookUpEdit lueSupplierClass;
+    private LabelControl lblEconomicActivity;
+    private LookUpEdit lueEconomicActivity;
+    private LabelControl lblSupplierZone;
+    private LookUpEdit lueSupplierZone;
+    private LabelControl lblSupplyMethod;
+    private LookUpEdit lueSupplyMethod;
     private XtraTabPage tabContacts;
     private PanelControl pnlContactsContent;
     private GridControl grdContacts;

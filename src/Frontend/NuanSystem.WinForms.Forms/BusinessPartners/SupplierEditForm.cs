@@ -104,6 +104,26 @@ public sealed partial class SupplierEditForm : BaseEditForm
             isValid = false;
         }
 
+        if (!ValidateOptionalLookup(lueSupplierClass, lookups.SupplierClasses, "Clase proveedor no es válida."))
+        {
+            isValid = false;
+        }
+
+        if (!ValidateOptionalLookup(lueEconomicActivity, lookups.EconomicActivities, "Actividad económica no es válida."))
+        {
+            isValid = false;
+        }
+
+        if (!ValidateOptionalLookup(lueSupplierZone, lookups.Zones, "Zona no es válida."))
+        {
+            isValid = false;
+        }
+
+        if (!ValidateOptionalLookup(lueSupplyMethod, lookups.SupplyMethods, "Método de abastecimiento no es válido."))
+        {
+            isValid = false;
+        }
+
         if (withholdings.Any(item => item.IncomeTaxWithholdingPercent is < 0 or > 100 || item.VatWithholdingPercent is < 0 or > 100))
         {
             XtraMessageBox.Show(this, "Los porcentajes de retención deben estar entre 0 y 100.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -125,10 +145,10 @@ public sealed partial class SupplierEditForm : BaseEditForm
             IdentificationTypeId = ToInt(lueDocumentType.EditValue),
             IdentificationNumber = txtDocumentNumber.Text.Trim(),
             SupplierGroupId = ToNullableInt(lueSupplierCategory.EditValue),
-            SupplierClassId = partner?.SupplierClassId,
-            EconomicActivityId = partner?.EconomicActivityId,
-            ZoneId = partner?.ZoneId,
-            SupplyMethodId = partner?.SupplyMethodId,
+            SupplierClassId = ToNullableInt(lueSupplierClass.EditValue),
+            EconomicActivityId = ToNullableInt(lueEconomicActivity.EditValue),
+            ZoneId = ToNullableInt(lueSupplierZone.EditValue),
+            SupplyMethodId = ToNullableInt(lueSupplyMethod.EditValue),
             Email = NullIfEmpty(txtEmail.Text),
             Phone = NullIfEmpty(txtPhone.Text),
             Website = NullIfEmpty(txtWebsite.Text),
@@ -205,6 +225,10 @@ public sealed partial class SupplierEditForm : BaseEditForm
         BindLookup(lueSupplierType, "Bienes", "Servicios", "Bienes y Servicios");
         BindLookup(lueCurrency, lookups.Currencies);
         BindLookup(lueSupplierCategory, lookups.SupplierGroups);
+        BindLookup(lueSupplierClass, lookups.SupplierClasses);
+        BindLookup(lueEconomicActivity, lookups.EconomicActivities);
+        BindLookup(lueSupplierZone, lookups.Zones);
+        BindLookup(lueSupplyMethod, lookups.SupplyMethods);
         BindLookup(lueCountry, lookups.Countries);
         BindLookup(lueInternalClassification, "PROV. NACIONALES", "PROV. EXTRANJEROS", "PROV. SERVICIOS");
         BindLookup(lueSupplierSegment, "A - Proveedores Estratégicos", "B - Proveedores Regulares", "C - Proveedores Eventuales");
@@ -245,6 +269,10 @@ public sealed partial class SupplierEditForm : BaseEditForm
 
         SetEditValue(lueDocumentType, partner?.IdentificationTypeId ?? lookups.IdentificationTypes.FirstOrDefault()?.Id);
         SetEditValue(lueSupplierCategory, partner?.SupplierGroupId ?? lookups.SupplierGroups.FirstOrDefault()?.Id);
+        SetEditValue(lueSupplierClass, partner?.SupplierClassId ?? (useDesignData ? lookups.SupplierClasses.FirstOrDefault()?.Id : null));
+        SetEditValue(lueEconomicActivity, partner?.EconomicActivityId ?? (useDesignData ? lookups.EconomicActivities.FirstOrDefault()?.Id : null));
+        SetEditValue(lueSupplierZone, partner?.ZoneId ?? (useDesignData ? lookups.Zones.FirstOrDefault()?.Id : null));
+        SetEditValue(lueSupplyMethod, partner?.SupplyMethodId ?? (useDesignData ? lookups.SupplyMethods.FirstOrDefault()?.Id : null));
         SetEditValue(lueCurrency, LookupValueByCode(lookups.Currencies, partner?.PreferredCurrencyCode) ?? lookups.Currencies.FirstOrDefault()?.Id);
         SetEditValue(lueCountry, LookupValueByCode(lookups.Countries, partner?.CountryCode) ?? lookups.Countries.FirstOrDefault()?.Id);
         luePersonType.EditValue = partner?.TaxpayerType ?? (useDesignData ? "Jurídica" : null);
@@ -1354,6 +1382,21 @@ public sealed partial class SupplierEditForm : BaseEditForm
         }
 
         return true;
+    }
+
+    private bool ValidateOptionalLookup(
+        BaseEdit control,
+        IReadOnlyCollection<BusinessPartnerLookupOption> options,
+        string message)
+    {
+        var selectedId = ToNullableInt(control.EditValue);
+        if (!selectedId.HasValue || options.Any(option => option.Id == selectedId.Value))
+        {
+            return true;
+        }
+
+        Validator.SetError(control, message);
+        return false;
     }
 
     private static void BindLookup(LookUpEdit lookup, IReadOnlyCollection<BusinessPartnerLookupOption> options)
