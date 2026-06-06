@@ -1130,11 +1130,11 @@ public sealed partial class SupplierEditForm : BaseEditForm
 
     private static void BindLookup(LookUpEdit lookup, params string[] values)
     {
-        lookup.Properties.DataSource = values.Select(value => new TextOption(value, value)).ToList();
-        lookup.Properties.DisplayMember = nameof(TextOption.Name);
-        lookup.Properties.ValueMember = nameof(TextOption.Code);
+        lookup.Properties.DataSource = values.Select(value => new SupplierTextOptionViewModel(value, value)).ToList();
+        lookup.Properties.DisplayMember = nameof(SupplierTextOptionViewModel.Name);
+        lookup.Properties.ValueMember = nameof(SupplierTextOptionViewModel.Code);
         lookup.Properties.Columns.Clear();
-        lookup.Properties.Columns.Add(new DevExpress.XtraEditors.Controls.LookUpColumnInfo(nameof(TextOption.Name), "Nombre", 180));
+        lookup.Properties.Columns.Add(new DevExpress.XtraEditors.Controls.LookUpColumnInfo(nameof(SupplierTextOptionViewModel.Name), "Nombre", 180));
     }
 
     private static void SetEditValue(BaseEdit control, object? value)
@@ -1326,6 +1326,4 @@ public sealed partial class SupplierEditForm : BaseEditForm
             new[] { new BusinessPartnerLookupOption(1, "CC-ADM-001", "Administración general") },
             new[] { new BusinessPartnerLookupOption(1, "PRY001", "Operación General") });
     }
-
-    private sealed record TextOption(string Code, string Name);
 }

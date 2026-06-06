@@ -41,15 +41,15 @@ public sealed partial class SupplierContactEditDialog : XtraForm
     {
         lueContactTreatment.Properties.DataSource = new[]
         {
-            new TextOption("Sr.", "Sr."),
-            new TextOption("Sra.", "Sra."),
-            new TextOption("Ing.", "Ing."),
-            new TextOption("Lic.", "Lic.")
+            new SupplierTextOptionViewModel("Sr.", "Sr."),
+            new SupplierTextOptionViewModel("Sra.", "Sra."),
+            new SupplierTextOptionViewModel("Ing.", "Ing."),
+            new SupplierTextOptionViewModel("Lic.", "Lic.")
         };
-        lueContactTreatment.Properties.DisplayMember = nameof(TextOption.Name);
-        lueContactTreatment.Properties.ValueMember = nameof(TextOption.Code);
+        lueContactTreatment.Properties.DisplayMember = nameof(SupplierTextOptionViewModel.Name);
+        lueContactTreatment.Properties.ValueMember = nameof(SupplierTextOptionViewModel.Code);
         lueContactTreatment.Properties.Columns.Clear();
-        lueContactTreatment.Properties.Columns.Add(new DevExpress.XtraEditors.Controls.LookUpColumnInfo(nameof(TextOption.Name), "Tratamiento", 120));
+        lueContactTreatment.Properties.Columns.Add(new DevExpress.XtraEditors.Controls.LookUpColumnInfo(nameof(SupplierTextOptionViewModel.Name), "Tratamiento", 120));
     }
 
     private void LoadContact()
@@ -125,6 +125,4 @@ public sealed partial class SupplierContactEditDialog : XtraForm
     {
         XtraMessageBox.Show(this, message, Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
     }
-
-    private sealed record TextOption(string Code, string Name);
 }

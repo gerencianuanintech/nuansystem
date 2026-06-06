@@ -1,5 +1,4 @@
 using NuanSystem.WinForms.Forms.Common;
-using NuanSystem.WinForms.Forms.GeneralSupplier.Catalogs;
 using NuanSystem.WinForms.Services.GeneralSupplier.Catalogs.Models;
 using NuanSystem.WinForms.Services.GridColumnSettings;
 using NuanSystem.WinForms.Services.Session;
@@ -162,7 +161,7 @@ public sealed partial class SupplierGroupsForm : BaseGridCrudListForm
 
         if (session is not null)
         {
-            ConfigureCrudPermissions(session, Descriptor.Permissions);
+            ConfigureCrudPermissions(session, new CrudOperationPermissions(Descriptor.ReadPermission, Descriptor.CreatePermission, Descriptor.UpdatePermission, Descriptor.DeletePermission));
         }
     }
 }

@@ -59,11 +59,11 @@ public sealed partial class SupplierBankAccountEditDialog : XtraForm
 
     private static void BindLookup(LookUpEdit lookup, params string[] values)
     {
-        lookup.Properties.DataSource = values.Select(value => new TextOption(value, value)).ToList();
-        lookup.Properties.DisplayMember = nameof(TextOption.Name);
-        lookup.Properties.ValueMember = nameof(TextOption.Code);
+        lookup.Properties.DataSource = values.Select(value => new SupplierTextOptionViewModel(value, value)).ToList();
+        lookup.Properties.DisplayMember = nameof(SupplierTextOptionViewModel.Name);
+        lookup.Properties.ValueMember = nameof(SupplierTextOptionViewModel.Code);
         lookup.Properties.Columns.Clear();
-        lookup.Properties.Columns.Add(new DevExpress.XtraEditors.Controls.LookUpColumnInfo(nameof(TextOption.Name), "Nombre", 220));
+        lookup.Properties.Columns.Add(new DevExpress.XtraEditors.Controls.LookUpColumnInfo(nameof(SupplierTextOptionViewModel.Name), "Nombre", 220));
     }
 
     private void LoadBankAccount()
@@ -162,6 +162,4 @@ public sealed partial class SupplierBankAccountEditDialog : XtraForm
         control.Focus();
         return false;
     }
-
-    private sealed record TextOption(string Code, string Name);
 }

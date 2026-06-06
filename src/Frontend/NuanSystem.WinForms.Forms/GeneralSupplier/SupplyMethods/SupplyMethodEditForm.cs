@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using NuanSystem.WinForms.Forms.Common;
-using NuanSystem.WinForms.Forms.GeneralSupplier.Catalogs;
+using NuanSystem.WinForms.ViewModels.GeneralSupplier.Catalogs;
 using NuanSystem.WinForms.Services.GeneralSupplier.Catalogs.Models;
 
 namespace NuanSystem.WinForms.Forms.GeneralSupplier.SupplyMethods;

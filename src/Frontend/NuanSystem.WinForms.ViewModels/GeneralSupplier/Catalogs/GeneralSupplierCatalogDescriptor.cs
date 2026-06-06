@@ -1,6 +1,4 @@
-using NuanSystem.WinForms.Forms.Common;
-
-namespace NuanSystem.WinForms.Forms.GeneralSupplier.Catalogs;
+namespace NuanSystem.WinForms.ViewModels.GeneralSupplier.Catalogs;
 
 public sealed record GeneralSupplierCatalogDescriptor(
     string Route,
@@ -9,5 +7,7 @@ public sealed record GeneralSupplierCatalogDescriptor(
     string SingularTitle,
     string CodeLabel,
     string NameLabel,
-    CrudOperationPermissions Permissions);
-
+    string ReadPermission,
+    string CreatePermission,
+    string UpdatePermission,
+    string DeletePermission);

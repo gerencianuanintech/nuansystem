@@ -19,7 +19,6 @@ using NuanSystem.WinForms.Forms.ConfigurationSettings;
 using NuanSystem.WinForms.Forms.Shell;
 using NuanSystem.WinForms.Forms.SecurityUsers;
 using NuanSystem.WinForms.Forms.Common;
-using NuanSystem.WinForms.Forms.GeneralSupplier.Catalogs;
 using NuanSystem.WinForms.Forms.GeneralSupplier.ContactChannels;
 using NuanSystem.WinForms.Forms.GeneralSupplier.ContactTypes;
 using NuanSystem.WinForms.Forms.GeneralSupplier.EconomicActivities;
