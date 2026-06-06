@@ -579,7 +579,7 @@ partial class SupplierEditForm
         // 
         tabGeneral.Controls.Add(pnlGeneralContent);
         tabGeneral.Name = "tabGeneral";
-        tabGeneral.Size = new Size(1528, 329);
+        tabGeneral.Size = new Size(1528, 356);
         tabGeneral.Text = "General";
         // 
         // pnlGeneralContent
@@ -618,7 +618,7 @@ partial class SupplierEditForm
         pnlGeneralContent.Dock = DockStyle.Fill;
         pnlGeneralContent.Location = new Point(0, 0);
         pnlGeneralContent.Name = "pnlGeneralContent";
-        pnlGeneralContent.Size = new Size(1528, 329);
+        pnlGeneralContent.Size = new Size(1528, 356);
         pnlGeneralContent.TabIndex = 0;
         // 
         // lblWebsite
@@ -920,7 +920,7 @@ partial class SupplierEditForm
         // 
         tabContacts.Controls.Add(pnlContactsContent);
         tabContacts.Name = "tabContacts";
-        tabContacts.Size = new Size(1528, 329);
+        tabContacts.Size = new Size(1528, 356);
         tabContacts.Text = "Contactos";
         // 
         // pnlContactsContent
@@ -934,7 +934,7 @@ partial class SupplierEditForm
         pnlContactsContent.Dock = DockStyle.Fill;
         pnlContactsContent.Location = new Point(0, 0);
         pnlContactsContent.Name = "pnlContactsContent";
-        pnlContactsContent.Size = new Size(1528, 329);
+        pnlContactsContent.Size = new Size(1528, 356);
         pnlContactsContent.TabIndex = 0;
         // 
         // grdContacts
@@ -1049,7 +1049,7 @@ partial class SupplierEditForm
         // 
         tabAddresses.Controls.Add(pnlAddressesContent);
         tabAddresses.Name = "tabAddresses";
-        tabAddresses.Size = new Size(1528, 329);
+        tabAddresses.Size = new Size(1528, 356);
         tabAddresses.Text = "Direcciones";
         // 
         // pnlAddressesContent
@@ -1064,7 +1064,7 @@ partial class SupplierEditForm
         pnlAddressesContent.Dock = DockStyle.Fill;
         pnlAddressesContent.Location = new Point(0, 0);
         pnlAddressesContent.Name = "pnlAddressesContent";
-        pnlAddressesContent.Size = new Size(1528, 329);
+        pnlAddressesContent.Size = new Size(1528, 356);
         pnlAddressesContent.TabIndex = 0;
         // 
         // btnAddAddress
@@ -1216,7 +1216,7 @@ partial class SupplierEditForm
         // 
         tabPurchases.Controls.Add(pnlPurchasesContent);
         tabPurchases.Name = "tabPurchases";
-        tabPurchases.Size = new Size(1528, 329);
+        tabPurchases.Size = new Size(1528, 356);
         tabPurchases.Text = "Compras";
         // 
         // pnlPurchasesContent
@@ -1265,7 +1265,7 @@ partial class SupplierEditForm
         pnlPurchasesContent.Dock = DockStyle.Fill;
         pnlPurchasesContent.Location = new Point(0, 0);
         pnlPurchasesContent.Name = "pnlPurchasesContent";
-        pnlPurchasesContent.Size = new Size(1528, 329);
+        pnlPurchasesContent.Size = new Size(1528, 356);
         pnlPurchasesContent.TabIndex = 0;
         // 
         // lblPurchasePaymentCondition
@@ -1855,7 +1855,7 @@ partial class SupplierEditForm
         // 
         tabBanks.Controls.Add(pnlBanksContent);
         tabBanks.Name = "tabBanks";
-        tabBanks.Size = new Size(1528, 329);
+        tabBanks.Size = new Size(1528, 356);
         tabBanks.Text = "Bancos";
         // 
         // pnlBanksContent
@@ -1870,7 +1870,7 @@ partial class SupplierEditForm
         pnlBanksContent.Dock = DockStyle.Fill;
         pnlBanksContent.Location = new Point(0, 0);
         pnlBanksContent.Name = "pnlBanksContent";
-        pnlBanksContent.Size = new Size(1528, 329);
+        pnlBanksContent.Size = new Size(1528, 356);
         pnlBanksContent.TabIndex = 0;
         // 
         // btnAddBankAccount
@@ -1899,7 +1899,7 @@ partial class SupplierEditForm
         grdBankAccounts.Location = new Point(11, 50);
         grdBankAccounts.MainView = gvBankAccounts;
         grdBankAccounts.Name = "grdBankAccounts";
-        grdBankAccounts.Size = new Size(2830, 636);
+        grdBankAccounts.Size = new Size(2830, 663);
         grdBankAccounts.TabIndex = 1;
         grdBankAccounts.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gvBankAccounts });
         // 
@@ -2002,7 +2002,7 @@ partial class SupplierEditForm
         lblBankAccountsTotal.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         lblBankAccountsTotal.Appearance.Font = new Font("Segoe UI", 9F);
         lblBankAccountsTotal.Appearance.Options.UseFont = true;
-        lblBankAccountsTotal.Location = new Point(14, 704);
+        lblBankAccountsTotal.Location = new Point(14, 731);
         lblBankAccountsTotal.Name = "lblBankAccountsTotal";
         lblBankAccountsTotal.Size = new Size(103, 15);
         lblBankAccountsTotal.TabIndex = 2;
@@ -2032,7 +2032,7 @@ partial class SupplierEditForm
         // 
         tabWithholdings.Controls.Add(pnlWithholdingsContent);
         tabWithholdings.Name = "tabWithholdings";
-        tabWithholdings.Size = new Size(1528, 329);
+        tabWithholdings.Size = new Size(1528, 356);
         tabWithholdings.Text = "Retenciones";
         // 
         // pnlWithholdingsContent
@@ -2060,7 +2060,7 @@ partial class SupplierEditForm
         pnlWithholdingsContent.Dock = DockStyle.Fill;
         pnlWithholdingsContent.Location = new Point(0, 0);
         pnlWithholdingsContent.Name = "pnlWithholdingsContent";
-        pnlWithholdingsContent.Size = new Size(1528, 329);
+        pnlWithholdingsContent.Size = new Size(1528, 356);
         pnlWithholdingsContent.TabIndex = 0;
         // 
         // lblWithholdingAgent
@@ -2139,7 +2139,7 @@ partial class SupplierEditForm
         grdWithholdings.Location = new Point(11, 158);
         grdWithholdings.MainView = gvWithholdings;
         grdWithholdings.Name = "grdWithholdings";
-        grdWithholdings.Size = new Size(2828, 392);
+        grdWithholdings.Size = new Size(2828, 419);
         grdWithholdings.TabIndex = 2;
         grdWithholdings.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gvWithholdings });
         // 
@@ -2310,7 +2310,7 @@ partial class SupplierEditForm
         // 
         tabAccounting.Controls.Add(pnlAccountingContent);
         tabAccounting.Name = "tabAccounting";
-        tabAccounting.Size = new Size(1528, 329);
+        tabAccounting.Size = new Size(1528, 356);
         tabAccounting.Text = "Contabilidad";
         // 
         // pnlAccountingContent
@@ -2342,7 +2342,7 @@ partial class SupplierEditForm
         pnlAccountingContent.Dock = DockStyle.Fill;
         pnlAccountingContent.Location = new Point(0, 0);
         pnlAccountingContent.Name = "pnlAccountingContent";
-        pnlAccountingContent.Size = new Size(1528, 329);
+        pnlAccountingContent.Size = new Size(1528, 356);
         pnlAccountingContent.TabIndex = 0;
         // 
         // btnAddAccountingAccount
@@ -2412,7 +2412,7 @@ partial class SupplierEditForm
         grdAccountingAccounts.Location = new Point(14, 146);
         grdAccountingAccounts.MainView = gvAccountingAccounts;
         grdAccountingAccounts.Name = "grdAccountingAccounts";
-        grdAccountingAccounts.Size = new Size(2828, 471);
+        grdAccountingAccounts.Size = new Size(2828, 498);
         grdAccountingAccounts.TabIndex = 2;
         grdAccountingAccounts.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gvAccountingAccounts });
         // 
@@ -2672,7 +2672,7 @@ partial class SupplierEditForm
         // 
         tabSap.Controls.Add(pnlSapContent);
         tabSap.Name = "tabSap";
-        tabSap.Size = new Size(1528, 329);
+        tabSap.Size = new Size(1528, 356);
         tabSap.Text = "SAP";
         // 
         // pnlSapContent
@@ -2703,7 +2703,7 @@ partial class SupplierEditForm
         pnlSapContent.Dock = DockStyle.Fill;
         pnlSapContent.Location = new Point(0, 0);
         pnlSapContent.Name = "pnlSapContent";
-        pnlSapContent.Size = new Size(1528, 329);
+        pnlSapContent.Size = new Size(1528, 356);
         pnlSapContent.TabIndex = 0;
         // 
         // lblSapSynchronized
@@ -2752,7 +2752,7 @@ partial class SupplierEditForm
         grdSapAudit.Location = new Point(7, 129);
         grdSapAudit.MainView = gvSapAudit;
         grdSapAudit.Name = "grdSapAudit";
-        grdSapAudit.Size = new Size(2630, 442);
+        grdSapAudit.Size = new Size(2630, 469);
         grdSapAudit.TabIndex = 1;
         grdSapAudit.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gvSapAudit });
         // 
