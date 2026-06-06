@@ -1,5 +1,6 @@
 using DevExpress.XtraEditors;
 using System.ComponentModel;
+using NuanSystem.WinForms.ViewModels.BusinessPartners.Suppliers;
 
 namespace NuanSystem.WinForms.Forms.BusinessPartners;
 

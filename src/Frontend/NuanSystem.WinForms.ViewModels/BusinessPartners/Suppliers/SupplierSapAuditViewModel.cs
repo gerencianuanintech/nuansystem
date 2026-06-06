@@ -1,6 +1,6 @@
-namespace NuanSystem.WinForms.Forms.BusinessPartners;
+namespace NuanSystem.WinForms.ViewModels.BusinessPartners.Suppliers;
 
-internal sealed class SupplierSapAuditViewModel
+public sealed class SupplierSapAuditViewModel
 {
     public SupplierSapAuditViewModel(DateTime date, string action, string result, string user, string message)
     {

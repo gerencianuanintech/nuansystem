@@ -1,9 +1,9 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace NuanSystem.WinForms.Forms.BusinessPartners;
+namespace NuanSystem.WinForms.ViewModels.BusinessPartners.Suppliers;
 
-internal sealed class SupplierBankAccountViewModel : INotifyPropertyChanged
+public sealed class SupplierBankAccountViewModel : INotifyPropertyChanged
 {
     private bool isDefault;
     private bool isActive = true;

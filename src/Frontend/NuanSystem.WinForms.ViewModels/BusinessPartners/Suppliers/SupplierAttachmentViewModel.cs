@@ -1,6 +1,6 @@
-namespace NuanSystem.WinForms.Forms.BusinessPartners;
+namespace NuanSystem.WinForms.ViewModels.BusinessPartners.Suppliers;
 
-internal sealed class SupplierAttachmentViewModel
+public sealed class SupplierAttachmentViewModel
 {
     public Guid Id { get; init; } = Guid.NewGuid();
 
