@@ -152,6 +152,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
             PaymentPriorityId = partner?.PaymentPriorityId,
             ApprovalFlowId = partner?.ApprovalFlowId,
             PaymentDocumentTypeId = partner?.PaymentDocumentTypeId,
+            ProjectId = LookupOptionId(lueDefaultProject, lookups.Projects) ?? partner?.ProjectId,
             AccountingPaymentMethod = NullIfEmpty(partner?.AccountingPaymentMethod),
             PaymentPriority = NullIfEmpty(partner?.PaymentPriority),
             RequiredPaymentDay = NullIfEmpty(partner?.RequiredPaymentDay),
@@ -159,7 +160,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
             PaymentDocumentType = NullIfEmpty(partner?.PaymentDocumentType),
             AveragePaymentDays = ToInt(spnAverageDeliveryDays.EditValue),
             PaymentTolerancePercent = spnDeliveryToleranceDays.Value,
-            PaymentTermId = partner?.PaymentTermId,
+            PaymentTermId = LookupPaymentTermId(luePurchasePaymentCondition) ?? partner?.PaymentTermId,
             CreditDays = ToInt(spnPaymentTermDays.EditValue),
             CreditLimit = spnCreditLimit.Value,
             DeliveryDays = ToInt(spnDeliveryTermDays.EditValue),
@@ -1288,6 +1289,32 @@ public sealed partial class SupplierEditForm : BaseEditForm
 
         var separator = value.IndexOf(" - ", StringComparison.Ordinal);
         return separator > 0 ? value[..separator].Trim() : value.Trim();
+    }
+
+    private static int? LookupOptionId(LookUpEdit lookup, IReadOnlyCollection<BusinessPartnerLookupOption> options)
+    {
+        var codeOrName = LookupTextCode(lookup);
+        if (codeOrName is null)
+        {
+            return null;
+        }
+
+        return options.FirstOrDefault(option =>
+            string.Equals(option.Code, codeOrName, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(option.Name, codeOrName, StringComparison.OrdinalIgnoreCase))?.Id;
+    }
+
+    private int? LookupPaymentTermId(LookUpEdit lookup)
+    {
+        var codeOrName = LookupTextCode(lookup);
+        if (codeOrName is null)
+        {
+            return null;
+        }
+
+        return lookups.PaymentTerms.FirstOrDefault(option =>
+            string.Equals(option.Code, codeOrName, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(option.Name, codeOrName, StringComparison.OrdinalIgnoreCase))?.Id;
     }
 
     private string SapStatusFromUi()

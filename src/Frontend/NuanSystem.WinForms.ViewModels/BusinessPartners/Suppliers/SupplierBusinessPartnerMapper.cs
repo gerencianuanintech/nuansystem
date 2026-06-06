@@ -320,30 +320,40 @@ public static class SupplierBusinessPartnerMapper
 
     public static int? LookupId(IReadOnlyCollection<BusinessPartnerLookupOption> options, string? value)
     {
-        if (string.IsNullOrWhiteSpace(value))
+        var normalized = NormalizeLookupValue(value);
+        if (normalized is null)
         {
             return null;
         }
 
         return options.FirstOrDefault(option =>
-            string.Equals(option.Code, value, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(option.Name, value, StringComparison.OrdinalIgnoreCase)
-            || value.Contains(option.Code, StringComparison.OrdinalIgnoreCase)
-            || value.Contains(option.Name, StringComparison.OrdinalIgnoreCase))?.Id;
+            string.Equals(option.Code, normalized, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(option.Name, normalized, StringComparison.OrdinalIgnoreCase))?.Id;
     }
 
     public static string? LookupCode(IReadOnlyCollection<BusinessPartnerLookupOption> options, string? value)
     {
-        if (string.IsNullOrWhiteSpace(value))
+        var normalized = NormalizeLookupValue(value);
+        if (normalized is null)
         {
             return null;
         }
 
         return options.FirstOrDefault(option =>
-            string.Equals(option.Code, value, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(option.Name, value, StringComparison.OrdinalIgnoreCase)
-            || value.Contains(option.Code, StringComparison.OrdinalIgnoreCase)
-            || value.Contains(option.Name, StringComparison.OrdinalIgnoreCase))?.Code;
+            string.Equals(option.Code, normalized, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(option.Name, normalized, StringComparison.OrdinalIgnoreCase))?.Code;
+    }
+
+    private static string? NormalizeLookupValue(string? value)
+    {
+        var normalized = TrimOrNull(value);
+        if (normalized is null)
+        {
+            return null;
+        }
+
+        var separator = normalized.IndexOf(" - ", StringComparison.Ordinal);
+        return separator > 0 ? normalized[..separator].Trim() : normalized;
     }
 
     private static int? LookupGeoId(IReadOnlyCollection<BusinessPartnerGeoLookupOption> options, string? value)
