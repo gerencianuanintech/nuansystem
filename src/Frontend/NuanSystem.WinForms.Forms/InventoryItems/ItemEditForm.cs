@@ -3,6 +3,7 @@ using System.Data;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraGrid.Views.Grid;
+using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Services.GeneralInventory.Catalogs.Models;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemFamilies.Models;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemGroups.Models;
@@ -11,7 +12,7 @@ using NuanSystem.WinForms.ViewModels.InventoryItems;
 
 namespace NuanSystem.WinForms.Forms.InventoryItems;
 
-public sealed partial class ItemEditForm : XtraForm
+public sealed partial class ItemEditForm : BaseEditForm
 {
     private ItemLookups? lookups;
     private ItemItem? currentItem;
@@ -89,16 +90,15 @@ public sealed partial class ItemEditForm : XtraForm
 
         btnSave.DialogResult = DialogResult.None;
         btnCancel.DialogResult = DialogResult.Cancel;
-        btnSave.Click -= SaveButtonClick;
-        btnSave.Click += SaveButtonClick;
-        btnAddPurchasePresentation.Click -= AddPurchasePresentationClick;
-        btnAddPurchasePresentation.Click += AddPurchasePresentationClick;
-        btnUpdatePurchasePresentation.Click -= UpdatePurchasePresentationClick;
-        btnUpdatePurchasePresentation.Click += UpdatePurchasePresentationClick;
-        btnRemovePurchasePresentation.Click -= RemovePurchasePresentationClick;
-        btnRemovePurchasePresentation.Click += RemovePurchasePresentationClick;
-        btnSetMainPurchasePresentation.Click -= SetMainPurchasePresentationClick;
-        btnSetMainPurchasePresentation.Click += SetMainPurchasePresentationClick;
+        btnSave.Click += (_, _) => Save();
+        btnAddItemPresentation.Click -= AddItemPresentationClick;
+        btnAddItemPresentation.Click += AddItemPresentationClick;
+        btnUpdateItemPresentation.Click -= UpdateItemPresentationClick;
+        btnUpdateItemPresentation.Click += UpdateItemPresentationClick;
+        btnRemoveItemPresentation.Click -= RemoveItemPresentationClick;
+        btnRemoveItemPresentation.Click += RemoveItemPresentationClick;
+        btnSetMainItemPresentation.Click -= SetMainItemPresentationClick;
+        btnSetMainItemPresentation.Click += SetMainItemPresentationClick;
         btnAddBarcode.Click -= AddBarcodeClick;
         btnAddBarcode.Click += AddBarcodeClick;
         btnUpdateBarcode.Click -= UpdateBarcodeClick;
@@ -150,7 +150,7 @@ public sealed partial class ItemEditForm : XtraForm
         RegisterRelatedLookup(lueBrand, ItemBrandsFormKey);
         RegisterRelatedLookup(lueBaseUnit, UnitMeasuresFormKey);
         RegisterRelatedLookup(lueInventoryUnit, UnitMeasuresFormKey);
-        RegisterRelatedLookup(lookUpEdit1, UnitMeasuresFormKey);
+        RegisterRelatedLookup(luePurchaseUnit, UnitMeasuresFormKey);
         RegisterRelatedLookup(lueSalesUnit, UnitMeasuresFormKey);
         RegisterRelatedLookup(lueWeightUnit, UnitMeasuresFormKey);
         RegisterRelatedLookup(lueVolumeUnit, UnitMeasuresFormKey);
@@ -288,7 +288,7 @@ public sealed partial class ItemEditForm : XtraForm
         BindCatalogLookup(lueReplenishmentMethod, source.ReplenishmentMethods);
         BindLookup(lueBaseUnit, source.UnitOfMeasures, "DisplayText", "Id");
         BindLookup(lueInventoryUnit, source.UnitOfMeasures, "DisplayText", "Id");
-        BindLookup(lookUpEdit1, source.UnitOfMeasures, "DisplayText", "Id");
+        BindLookup(luePurchaseUnit, source.UnitOfMeasures, "DisplayText", "Id");
         BindLookup(lueSalesUnit, source.UnitOfMeasures, "DisplayText", "Id");
         BindLookup(lueWeightUnit, source.UnitOfMeasures, "DisplayText", "Code");
         BindLookup(lueVolumeUnit, source.UnitOfMeasures, "DisplayText", "Code");
@@ -410,7 +410,7 @@ public sealed partial class ItemEditForm : XtraForm
         lueItemFamily.EditValue = sourceItem?.ItemFamilyId;
         lueBaseUnit.EditValue = sourceItem?.InventoryUnitOfMeasureId;
         lueInventoryUnit.EditValue = sourceItem?.InventoryUnitOfMeasureId;
-        lookUpEdit1.EditValue = sourceItem?.PurchaseUnitOfMeasureId;
+        luePurchaseUnit.EditValue = sourceItem?.PurchaseUnitOfMeasureId;
         lueSalesUnit.EditValue = sourceItem?.SalesUnitOfMeasureId;
         luePurchaseVat.EditValue = sourceItem?.PurchaseTaxId;
         lueTaxesSalesVat.EditValue = sourceItem?.SalesTaxId;
@@ -428,7 +428,7 @@ public sealed partial class ItemEditForm : XtraForm
         spnLastCost.Value = sourceItem?.ReferenceCost ?? 0;
         memGeneralNotes.Text = sourceItem?.Remarks ?? string.Empty;
 
-        purchasePresentationsTable.Clear();
+        itemPresentationsTable.Clear();
         warehouseStockTable.Clear();
 
         if (copyMode && sourceItem is not null)
@@ -438,7 +438,7 @@ public sealed partial class ItemEditForm : XtraForm
         }
 
         SetActiveBadge(true);
-        Request = BuildRequest();
+        BuildRequest();
     }
 
     private void LoadItem(ItemItem item)
@@ -451,7 +451,7 @@ public sealed partial class ItemEditForm : XtraForm
         lueItemFamily.EditValue = item.ItemFamilyId;
         lueBaseUnit.EditValue = item.InventoryUnitOfMeasureId;
         lueInventoryUnit.EditValue = item.InventoryUnitOfMeasureId;
-        lookUpEdit1.EditValue = item.PurchaseUnitOfMeasureId;
+        luePurchaseUnit.EditValue = item.PurchaseUnitOfMeasureId;
         lueSalesUnit.EditValue = item.SalesUnitOfMeasureId;
         luePurchaseVat.EditValue = item.PurchaseTaxId;
         lueTaxesSalesVat.EditValue = item.SalesTaxId;
@@ -475,17 +475,17 @@ public sealed partial class ItemEditForm : XtraForm
         LoadWarehouses(item.Warehouses);
         ApplyMasterData(item.MasterData);
         SetActiveBadge(item.IsActive);
-        Request = BuildRequest();
+        BuildRequest();
     }
 
     private void LoadBarcodes(IReadOnlyCollection<ItemBarcodeItem> barcodes)
     {
-        purchasePresentationsTable.Clear();
+        itemPresentationsTable.Clear();
 
         foreach (var barcode in barcodes.OrderByDescending(x => x.IsMain).ThenBy(x => x.Id))
         {
             var unitCode = ResolveUnitCode(barcode.UnitOfMeasureId);
-            purchasePresentationsTable.Rows.Add(
+            itemPresentationsTable.Rows.Add(
                 unitCode is null ? "Presentacion" : $"{unitCode} ({barcode.ConversionFactor:0.##})",
                 unitCode ?? string.Empty,
                 barcode.ConversionFactor,
@@ -529,20 +529,7 @@ public sealed partial class ItemEditForm : XtraForm
         }
     }
 
-    private void SaveButtonClick(object? sender, EventArgs e)
-    {
-        if (!ValidateBeforeSave())
-        {
-            return;
-        }
-
-        EditState = BuildEditState();
-        Request = BuildRequest();
-        DialogResult = DialogResult.OK;
-        Close();
-    }
-
-    private void AddPurchasePresentationClick(object? sender, EventArgs e)
+    private void AddItemPresentationClick(object? sender, EventArgs e)
     {
         if (!TryGetUnits(out var unitLookups))
         {
@@ -568,7 +555,7 @@ public sealed partial class ItemEditForm : XtraForm
         AddPresentationRow(dialog.Row);
     }
 
-    private void UpdatePurchasePresentationClick(object? sender, EventArgs e)
+    private void UpdateItemPresentationClick(object? sender, EventArgs e)
     {
         if (!TryGetUnits(out var unitLookups))
         {
@@ -602,7 +589,7 @@ public sealed partial class ItemEditForm : XtraForm
         ApplyPresentationRow(dataRow, dialog.Row);
     }
 
-    private void RemovePurchasePresentationClick(object? sender, EventArgs e)
+    private void RemoveItemPresentationClick(object? sender, EventArgs e)
     {
         var dataRow = GetFocusedPresentationDataRow();
         if (dataRow is null)
@@ -623,10 +610,10 @@ public sealed partial class ItemEditForm : XtraForm
             return;
         }
 
-        purchasePresentationsTable.Rows.Remove(dataRow);
+        itemPresentationsTable.Rows.Remove(dataRow);
     }
 
-    private void SetMainPurchasePresentationClick(object? sender, EventArgs e)
+    private void SetMainItemPresentationClick(object? sender, EventArgs e)
     {
         var dataRow = GetFocusedPresentationDataRow();
         if (dataRow is null)
@@ -834,44 +821,42 @@ public sealed partial class ItemEditForm : XtraForm
         slueMainWarehouse.EditValue = ToInt(dataRow["WarehouseId"]);
     }
 
-    private bool ValidateBeforeSave()
+    protected override bool ValidateForm()
     {
+        var isValid = true;
+
         if (string.IsNullOrWhiteSpace(txtItemCode.Text))
         {
-            ShowValidationMessage("Ingrese el codigo del articulo.");
-            txtItemCode.Focus();
-            return false;
+            Validator.SetError(txtItemCode, "Ingrese el código del artículo.");
+            isValid = false;
         }
 
         if (string.IsNullOrWhiteSpace(txtDescription.Text))
         {
-            ShowValidationMessage("Ingrese la descripcion del articulo.");
-            txtDescription.Focus();
-            return false;
+            Validator.SetError(txtDescription, "Ingrese la descripción del artículo.");
+            isValid = false;
         }
 
         if (lueItemType.EditValue is null)
         {
-            ShowValidationMessage("Seleccione el tipo de item.");
-            lueItemType.Focus();
-            return false;
+            Validator.SetError(lueItemType, "Seleccione el tipo de item.");
+            isValid = false;
         }
 
         if (lueBaseUnit.EditValue is null && tglAffectsInventory.IsOn)
         {
-            ShowValidationMessage("Seleccione la unidad base del articulo.");
-            lueBaseUnit.Focus();
-            return false;
+            Validator.SetError(lueBaseUnit, "Seleccione la unidad base del artículo.");
+            isValid = false;
         }
 
-        return true;
+        return isValid;
     }
 
     private bool ValidatePresentationRow(ItemPresentationRow row, string? originalBarcode = null)
     {
         if (!string.IsNullOrWhiteSpace(row.Barcode))
         {
-            var exists = purchasePresentationsTable
+            var exists = itemPresentationsTable
                 .AsEnumerable()
                 .Any(dataRow =>
                     !string.Equals(Convert.ToString(dataRow["CodigoBarras"]), originalBarcode, StringComparison.OrdinalIgnoreCase) &&
@@ -899,7 +884,7 @@ public sealed partial class ItemEditForm : XtraForm
             .Any(dataRow =>
                 !string.Equals(Convert.ToString(dataRow["CodigoBarras"]), originalBarcode, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(Convert.ToString(dataRow["CodigoBarras"]), row.Barcode, StringComparison.OrdinalIgnoreCase)) ||
-            purchasePresentationsTable
+            itemPresentationsTable
                 .AsEnumerable()
                 .Any(dataRow =>
                     !string.Equals(Convert.ToString(dataRow["CodigoBarras"]), originalBarcode, StringComparison.OrdinalIgnoreCase) &&
@@ -1102,16 +1087,17 @@ public sealed partial class ItemEditForm : XtraForm
         XtraMessageBox.Show(this, message, "Validacion", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
-    private SaveItemRequest BuildRequest()
+    protected override void BuildRequest()
     {
         var inventoryUnitId = GetLookupInt(lueInventoryUnit) ?? GetLookupInt(lueBaseUnit);
-        var purchaseUnitId = GetLookupInt(lookUpEdit1) ?? inventoryUnitId;
+        var purchaseUnitId = GetLookupInt(luePurchaseUnit) ?? inventoryUnitId;
         var salesUnitId = GetLookupInt(lueSalesUnit) ?? inventoryUnitId;
         var price = spnBaseSalesPrice.Value > 0 ? spnBaseSalesPrice.Value : spnAnalysisBasePrice.Value;
         var cost = spnAverageCost.Value > 0 ? spnAverageCost.Value : spnLastCost.Value;
         var mainFactor = GetMainPresentationFactor();
+        EditState = BuildEditState();
 
-        return new SaveItemRequest(
+        Request = new SaveItemRequest(
             txtItemCode.Text.Trim(),
             txtDescription.Text.Trim(),
             NullIfWhiteSpace(txtCommercialName.Text),
@@ -1141,13 +1127,13 @@ public sealed partial class ItemEditForm : XtraForm
             currentItem?.IsActive ?? true,
             BuildBarcodeRequests(),
             BuildWarehouseRequests(),
-            ToMasterData(BuildEditState()));
+            ToMasterData(EditState));
     }
 
     private ItemEditState BuildEditState()
     {
         var inventoryUnitId = GetLookupInt(lueInventoryUnit) ?? GetLookupInt(lueBaseUnit);
-        var purchaseUnitId = GetLookupInt(lookUpEdit1) ?? inventoryUnitId;
+        var purchaseUnitId = GetLookupInt(luePurchaseUnit) ?? inventoryUnitId;
         var salesUnitId = GetLookupInt(lueSalesUnit) ?? inventoryUnitId;
 
         var state = new ItemEditState
@@ -1755,7 +1741,7 @@ public sealed partial class ItemEditForm : XtraForm
         }
 
         lueInventoryUnit.EditValue = data.InventoryUnitOfMeasureId;
-        lookUpEdit1.EditValue = data.PurchaseUnitOfMeasureId;
+        luePurchaseUnit.EditValue = data.PurchaseUnitOfMeasureId;
         lueSalesUnit.EditValue = data.SalesUnitOfMeasureId;
         lueBaseUnit.EditValue = data.InventoryUnitOfMeasureId;
         spnNetWeight.Value = data.NetWeight;
@@ -1764,10 +1750,10 @@ public sealed partial class ItemEditForm : XtraForm
         SetLookupValue(lueWeightUnit, data.WeightUnit);
         SetLookupValue(lueVolumeUnit, data.VolumeUnit);
 
-        purchasePresentationsTable.Clear();
+        itemPresentationsTable.Clear();
         foreach (var row in data.Presentations)
         {
-            purchasePresentationsTable.Rows.Add(
+            itemPresentationsTable.Rows.Add(
                 row.Presentation,
                 ResolveUnitCode(row.UnitOfMeasureId) ?? row.UnitCode,
                 row.InventoryFactor,
@@ -1853,7 +1839,7 @@ public sealed partial class ItemEditForm : XtraForm
 
         tglPurchaseActive.IsOn = data.PurchaseEnabled;
         slueSupplierSku.Text = data.MainSupplierCode ?? slueSupplierSku.Text;
-        lookUpEdit1.EditValue = data.PurchaseUnitOfMeasureId ?? lookUpEdit1.EditValue;
+        luePurchaseUnit.EditValue = data.PurchaseUnitOfMeasureId ?? luePurchaseUnit.EditValue;
         spnSuggestedPurchaseQty.Value = data.MinimumOrderQuantity;
         spnLeadTimeDays.Value = data.LeadTimeDays;
         tglSupplierBackorderAllowed.IsOn = data.AllowBackorder;
@@ -2063,7 +2049,7 @@ public sealed partial class ItemEditForm : XtraForm
         var barcodes = new List<SaveItemBarcodeRequest>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (DataRow row in purchasePresentationsTable.Rows)
+        foreach (DataRow row in itemPresentationsTable.Rows)
         {
             var barcode = Convert.ToString(row["CodigoBarras"])?.Trim();
             if (string.IsNullOrWhiteSpace(barcode))
@@ -2122,9 +2108,9 @@ public sealed partial class ItemEditForm : XtraForm
 
     private DataRow? GetFocusedPresentationDataRow()
     {
-        gvPurchasePresentations.PostEditor();
-        gvPurchasePresentations.UpdateCurrentRow();
-        return gvPurchasePresentations.GetFocusedDataRow();
+        gvItemPresentations.PostEditor();
+        gvItemPresentations.UpdateCurrentRow();
+        return gvItemPresentations.GetFocusedDataRow();
     }
 
     private DataRow? GetFocusedBarcodeDataRow()
@@ -2176,7 +2162,7 @@ public sealed partial class ItemEditForm : XtraForm
 
     private void AddPresentationRow(ItemPresentationRow row)
     {
-        purchasePresentationsTable.Rows.Add(
+        itemPresentationsTable.Rows.Add(
             row.Presentation,
             row.UnitCode,
             row.Factor,
@@ -2223,7 +2209,7 @@ public sealed partial class ItemEditForm : XtraForm
 
     private void ClearMainPresentation(DataRow? exceptRow = null)
     {
-        foreach (DataRow row in purchasePresentationsTable.Rows)
+        foreach (DataRow row in itemPresentationsTable.Rows)
         {
             if (ReferenceEquals(row, exceptRow))
             {
@@ -2536,7 +2522,7 @@ public sealed partial class ItemEditForm : XtraForm
 
     private decimal GetMainPresentationFactor()
     {
-        foreach (DataRow row in purchasePresentationsTable.Rows)
+        foreach (DataRow row in itemPresentationsTable.Rows)
         {
             if (ToBool(row["Principal"]))
             {
@@ -2616,7 +2602,7 @@ public sealed partial class ItemEditForm : XtraForm
 
     private void AddPresentationStates(ICollection<ItemPresentationState> presentations)
     {
-        foreach (DataRow row in purchasePresentationsTable.Rows)
+        foreach (DataRow row in itemPresentationsTable.Rows)
         {
             var unitCode = Convert.ToString(row["Unidad"]) ?? string.Empty;
 
@@ -2739,15 +2725,15 @@ public sealed partial class ItemEditForm : XtraForm
 
     private void EnsurePresentationColumns()
     {
-        EnsureColumn(purchasePresentationsTable, "Presentacion", typeof(string));
-        EnsureColumn(purchasePresentationsTable, "Unidad", typeof(string));
-        EnsureColumn(purchasePresentationsTable, "FactorInventario", typeof(decimal));
-        EnsureColumn(purchasePresentationsTable, "CodigoBarras", typeof(string));
-        EnsureColumn(purchasePresentationsTable, "AplicaCompra", typeof(bool));
-        EnsureColumn(purchasePresentationsTable, "AplicaVenta", typeof(bool));
-        EnsureColumn(purchasePresentationsTable, "AplicaInventario", typeof(bool));
-        EnsureColumn(purchasePresentationsTable, "Principal", typeof(bool));
-        EnsureColumn(purchasePresentationsTable, "Activa", typeof(bool));
+        EnsureColumn(itemPresentationsTable, "Presentacion", typeof(string));
+        EnsureColumn(itemPresentationsTable, "Unidad", typeof(string));
+        EnsureColumn(itemPresentationsTable, "FactorInventario", typeof(decimal));
+        EnsureColumn(itemPresentationsTable, "CodigoBarras", typeof(string));
+        EnsureColumn(itemPresentationsTable, "AplicaCompra", typeof(bool));
+        EnsureColumn(itemPresentationsTable, "AplicaVenta", typeof(bool));
+        EnsureColumn(itemPresentationsTable, "AplicaInventario", typeof(bool));
+        EnsureColumn(itemPresentationsTable, "Principal", typeof(bool));
+        EnsureColumn(itemPresentationsTable, "Activa", typeof(bool));
     }
 
     private void EnsurePresentationBarcodeColumns()

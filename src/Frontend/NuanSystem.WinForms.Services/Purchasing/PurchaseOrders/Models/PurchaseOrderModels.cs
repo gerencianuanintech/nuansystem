@@ -197,6 +197,14 @@ public sealed record PurchaseOrderLookups(
     IReadOnlyCollection<PurchaseOrderLookupOption> PurchaseTypes,
     IReadOnlyCollection<PurchaseOrderLookupOption> DocumentSeries);
 
+public sealed record PurchaseOrderFieldAccess(
+    string FieldKey,
+    string ControlType,
+    bool IsVisible,
+    bool IsEditable,
+    bool IsRequired,
+    bool IsReadOnly);
+
 public sealed record PurchaseOrderLookupOption(int Id, string Code, string Name, bool IsActive = true)
 {
     public string DisplayText => string.IsNullOrWhiteSpace(Code) ? Name : $"{Code} - {Name}";

@@ -11,6 +11,8 @@ using NuanSystem.WinForms.Forms.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.Forms.BusinessPartners;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Forms.ConfigurationCompanies;
+using NuanSystem.WinForms.Forms.Documents.SecurityDocumentSeries;
+using NuanSystem.WinForms.Forms.OperationalCatalogs;
 using NuanSystem.WinForms.Forms.GeneralSupplier.ContactChannels;
 using NuanSystem.WinForms.Forms.GeneralSupplier.ContactTypes;
 using NuanSystem.WinForms.Forms.GeneralSupplier.EconomicActivities;
@@ -76,7 +78,10 @@ public sealed class MainForm : RibbonForm
     private readonly Func<MenusForm> menusFormFactory;
     private readonly Func<FormsForm> formsFormFactory;
     private readonly Func<FieldsForm> fieldsFormFactory;
-    private readonly Func<RoleAccessForm> roleAccessFormFactory;
+    private readonly Func<SecurityMaintenanceFormAccessForm> securityMaintenanceFormAccessFormFactory;
+    private readonly Func<SecurityTransactionalFormAccessForm> securityTransactionalFormAccessFormFactory;
+    private readonly Func<SecurityMaintenanceFieldAccessForm> securityMaintenanceFieldAccessFormFactory;
+    private readonly Func<SecurityTransactionalFieldAccessForm> securityTransactionalFieldAccessFormFactory;
     private readonly Func<BusinessPartnersForm> customersFormFactory;
     private readonly Func<BusinessPartnersForm> suppliersFormFactory;
     private readonly Func<ChartOfAccountsForm> chartOfAccountsFormFactory;
@@ -111,6 +116,8 @@ public sealed class MainForm : RibbonForm
     private readonly Func<CitiesForm> citiesFormFactory;
     private readonly Func<string, Form?> generalInventoryCatalogFormFactory;
     private readonly Func<ItemGroupsForm> itemGroupsFormFactory;
+    private readonly Func<SecurityDocumentSeriesForm> securityDocumentSeriesFormFactory;
+    private readonly Func<OperationalCatalogsForm> operationalCatalogsFormFactory;
     private readonly Func<ItemFamiliesForm> itemFamiliesFormFactory;
     private readonly Func<ItemsForm> itemsFormFactory;
     private readonly Func<PurchaseOrdersForm> purchaseOrdersFormFactory;
@@ -155,7 +162,10 @@ public sealed class MainForm : RibbonForm
         menusFormFactory = null!;
         formsFormFactory = null!;
         fieldsFormFactory = null!;
-        roleAccessFormFactory = null!;
+        securityMaintenanceFormAccessFormFactory = null!;
+        securityTransactionalFormAccessFormFactory = null!;
+        securityMaintenanceFieldAccessFormFactory = null!;
+        securityTransactionalFieldAccessFormFactory = null!;
         customersFormFactory = null!;
         suppliersFormFactory = null!;
         chartOfAccountsFormFactory = null!;
@@ -190,6 +200,8 @@ public sealed class MainForm : RibbonForm
         citiesFormFactory = null!;
         generalInventoryCatalogFormFactory = null!;
         itemGroupsFormFactory = null!;
+        securityDocumentSeriesFormFactory = null!;
+        operationalCatalogsFormFactory = null!;
         itemFamiliesFormFactory = null!;
         itemsFormFactory = null!;
         purchaseOrdersFormFactory = null!;
@@ -208,7 +220,10 @@ public sealed class MainForm : RibbonForm
         Func<MenusForm> menusFormFactory,
         Func<FormsForm> formsFormFactory,
         Func<FieldsForm> fieldsFormFactory,
-        Func<RoleAccessForm> roleAccessFormFactory,
+        Func<SecurityMaintenanceFormAccessForm> securityMaintenanceFormAccessFormFactory,
+        Func<SecurityTransactionalFormAccessForm> securityTransactionalFormAccessFormFactory,
+        Func<SecurityMaintenanceFieldAccessForm> securityMaintenanceFieldAccessFormFactory,
+        Func<SecurityTransactionalFieldAccessForm> securityTransactionalFieldAccessFormFactory,
         Func<BusinessPartnersForm> customersFormFactory,
         Func<BusinessPartnersForm> suppliersFormFactory,
         Func<ChartOfAccountsForm> chartOfAccountsFormFactory,
@@ -243,6 +258,8 @@ public sealed class MainForm : RibbonForm
         Func<CitiesForm> citiesFormFactory,
         Func<string, Form?> generalInventoryCatalogFormFactory,
         Func<ItemGroupsForm> itemGroupsFormFactory,
+        Func<SecurityDocumentSeriesForm> securityDocumentSeriesFormFactory,
+        Func<OperationalCatalogsForm> operationalCatalogsFormFactory,
         Func<ItemFamiliesForm> itemFamiliesFormFactory,
         Func<ItemsForm> itemsFormFactory,
         Func<PurchaseOrdersForm> purchaseOrdersFormFactory,
@@ -258,7 +275,10 @@ public sealed class MainForm : RibbonForm
         this.menusFormFactory = menusFormFactory;
         this.formsFormFactory = formsFormFactory;
         this.fieldsFormFactory = fieldsFormFactory;
-        this.roleAccessFormFactory = roleAccessFormFactory;
+        this.securityMaintenanceFormAccessFormFactory = securityMaintenanceFormAccessFormFactory;
+        this.securityTransactionalFormAccessFormFactory = securityTransactionalFormAccessFormFactory;
+        this.securityMaintenanceFieldAccessFormFactory = securityMaintenanceFieldAccessFormFactory;
+        this.securityTransactionalFieldAccessFormFactory = securityTransactionalFieldAccessFormFactory;
         this.customersFormFactory = customersFormFactory;
         this.suppliersFormFactory = suppliersFormFactory;
         this.chartOfAccountsFormFactory = chartOfAccountsFormFactory;
@@ -293,6 +313,8 @@ public sealed class MainForm : RibbonForm
         this.citiesFormFactory = citiesFormFactory;
         this.generalInventoryCatalogFormFactory = generalInventoryCatalogFormFactory;
         this.itemGroupsFormFactory = itemGroupsFormFactory;
+        this.securityDocumentSeriesFormFactory = securityDocumentSeriesFormFactory;
+        this.operationalCatalogsFormFactory = operationalCatalogsFormFactory;
         this.itemFamiliesFormFactory = itemFamiliesFormFactory;
         this.itemsFormFactory = itemsFormFactory;
         this.purchaseOrdersFormFactory = purchaseOrdersFormFactory;
@@ -1452,7 +1474,10 @@ public sealed class MainForm : RibbonForm
             "security-menus" => menusFormFactory(),
             "security-forms" => formsFormFactory(),
             "security-fields" => fieldsFormFactory(),
-            "security-access" => roleAccessFormFactory(),
+            "security-access" => securityMaintenanceFormAccessFormFactory(),
+            "security-form-access-transactional" => securityTransactionalFormAccessFormFactory(),
+            "security-field-access-maintenance" => securityMaintenanceFieldAccessFormFactory(),
+            "security-field-access-transactional" => securityTransactionalFieldAccessFormFactory(),
             "customers" => customersFormFactory(),
             "suppliers" => suppliersFormFactory(),
             "chart-of-accounts" => chartOfAccountsFormFactory(),
@@ -1501,6 +1526,8 @@ public sealed class MainForm : RibbonForm
             "inventory-attachment-document-types" => generalInventoryCatalogFormFactory(module.Key),
             "inventory-attachment-categories" => generalInventoryCatalogFormFactory(module.Key),
             "item-groups" => itemGroupsFormFactory(),
+            "security-document-series" => securityDocumentSeriesFormFactory(),
+            "operational-catalogs" => operationalCatalogsFormFactory(),
             "item-families" => itemFamiliesFormFactory(),
             "items" => itemsFormFactory(),
             "purchase-orders" => purchaseOrdersFormFactory(),

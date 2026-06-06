@@ -10,6 +10,8 @@ public sealed record UpdateSecurityFormCommand(
     string? Description,
     string FormKey,
     int FormType,
+    bool HasListView,
+    bool HasEditView,
     bool IsVisible,
     bool IsActive,
     int? AuditUserId = null,

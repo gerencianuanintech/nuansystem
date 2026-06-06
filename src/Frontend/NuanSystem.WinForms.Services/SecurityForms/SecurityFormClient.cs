@@ -25,6 +25,8 @@ public sealed class SecurityFormClient(INuanApiClient apiClient) : ISecurityForm
             request.Description,
             request.FormKey,
             request.FormType,
+            request.HasListView,
+            request.HasEditView,
             request.IsVisible,
             request.IsActive
         };

@@ -1,19 +1,60 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
+using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders.Dtos;
 
 namespace NuanSystem.Application.Features.Purchasing.PurchaseOrders.Commands;
 
-public sealed class CreatePurchaseOrderCommandHandler(IPurchaseOrderRepository repository)
+public sealed class CreatePurchaseOrderCommandHandler(
+    IPurchaseOrderRepository repository,
+    ISecurityDocumentSeriesRepository seriesRepository,
+    ISecurityDocumentNumberingService numberingService,
+    ISecurityDocumentSeriesAccessRepository seriesAccessRepository,
+    ICompanyContext companyContext)
     : ICommandHandler<CreatePurchaseOrderCommand, PurchaseOrderDto>
 {
     public async Task<Result<PurchaseOrderDto>> Handle(CreatePurchaseOrderCommand request, CancellationToken cancellationToken)
     {
+        var seriesValidation = await PurchaseOrderSecurityGuard.ValidateSeriesOperationAsync(
+            seriesAccessRepository,
+            companyContext,
+            request.AuditUserId,
+            request.DocumentSeriesId,
+            PurchaseOrderSecurity.ActionCreate,
+            cancellationToken);
+        if (!seriesValidation.IsSuccess)
+        {
+            return Result<PurchaseOrderDto>.Failure(seriesValidation.Message);
+        }
+
+        var series = await seriesRepository.GetByIdAsync(request.DocumentSeriesId!.Value, cancellationToken);
+        if (series is null || !series.IsActive || series.DocumentType != PurchaseOrderSecurity.DocumentType)
+        {
+            return Result<PurchaseOrderDto>.Failure("La serie seleccionada no existe, no esta activa o no corresponde a Orden de Compra.");
+        }
+
+        var reservation = await numberingService.ReserveNumberAsync(
+            series.Id,
+            request.AuditUserId,
+            request.AuditUserName,
+            cancellationToken);
+        if (!reservation.Success || string.IsNullOrWhiteSpace(reservation.FormattedNumber))
+        {
+            return Result<PurchaseOrderDto>.Failure(reservation.Message);
+        }
+
+        var saveRequest = request.ToRequest() with
+        {
+            DocumentSeriesId = series.Id,
+            SeriesCode = series.Code,
+            DocumentNumber = reservation.FormattedNumber
+        };
+
         var data = PurchaseOrderCalculator.BuildPersistData(
             null,
-            request.ToRequest(),
+            saveRequest,
             PurchaseOrderStatuses.Draft,
             request.AuditUserId,
             request.AuditUserName);
@@ -27,7 +68,10 @@ public sealed class CreatePurchaseOrderCommandHandler(IPurchaseOrderRepository r
     }
 }
 
-public sealed class UpdatePurchaseOrderCommandHandler(IPurchaseOrderRepository repository)
+public sealed class UpdatePurchaseOrderCommandHandler(
+    IPurchaseOrderRepository repository,
+    ISecurityDocumentSeriesAccessRepository seriesAccessRepository,
+    ICompanyContext companyContext)
     : ICommandHandler<UpdatePurchaseOrderCommand, PurchaseOrderDto>
 {
     public async Task<Result<PurchaseOrderDto>> Handle(UpdatePurchaseOrderCommand request, CancellationToken cancellationToken)
@@ -44,9 +88,28 @@ public sealed class UpdatePurchaseOrderCommandHandler(IPurchaseOrderRepository r
             return Result<PurchaseOrderDto>.Failure(validation.Message);
         }
 
+        var seriesValidation = await PurchaseOrderSecurityGuard.ValidateSeriesOperationAsync(
+            seriesAccessRepository,
+            companyContext,
+            request.AuditUserId,
+            current.DocumentSeriesId,
+            PurchaseOrderSecurity.ActionUpdate,
+            cancellationToken);
+        if (!seriesValidation.IsSuccess)
+        {
+            return Result<PurchaseOrderDto>.Failure(seriesValidation.Message);
+        }
+
+        var saveRequest = request.ToRequest() with
+        {
+            DocumentSeriesId = current.DocumentSeriesId,
+            SeriesCode = current.SeriesCode,
+            DocumentNumber = current.DocumentNumber
+        };
+
         var data = PurchaseOrderCalculator.BuildPersistData(
             request.Id,
-            request.ToRequest(),
+            saveRequest,
             current.Status,
             request.AuditUserId,
             request.AuditUserName,
@@ -68,7 +131,10 @@ public sealed class UpdatePurchaseOrderCommandHandler(IPurchaseOrderRepository r
     }
 }
 
-public sealed class DeletePurchaseOrderCommandHandler(IPurchaseOrderRepository repository)
+public sealed class DeletePurchaseOrderCommandHandler(
+    IPurchaseOrderRepository repository,
+    ISecurityDocumentSeriesAccessRepository seriesAccessRepository,
+    ICompanyContext companyContext)
     : ICommandHandler<DeletePurchaseOrderCommand, bool>
 {
     public async Task<Result<bool>> Handle(DeletePurchaseOrderCommand request, CancellationToken cancellationToken)
@@ -85,6 +151,18 @@ public sealed class DeletePurchaseOrderCommandHandler(IPurchaseOrderRepository r
             return Result<bool>.Failure(validation.Message);
         }
 
+        var seriesValidation = await PurchaseOrderSecurityGuard.ValidateSeriesOperationAsync(
+            seriesAccessRepository,
+            companyContext,
+            request.AuditUserId,
+            current.DocumentSeriesId,
+            PurchaseOrderSecurity.ActionDelete,
+            cancellationToken);
+        if (!seriesValidation.IsSuccess)
+        {
+            return Result<bool>.Failure(seriesValidation.Message);
+        }
+
         var deleted = await repository.DeleteIfCurrentAsync(
             request.Id,
             [PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected],
@@ -97,61 +175,82 @@ public sealed class DeletePurchaseOrderCommandHandler(IPurchaseOrderRepository r
     }
 }
 
-public sealed class SendPurchaseOrderToApprovalCommandHandler(IPurchaseOrderRepository repository)
+public sealed class SendPurchaseOrderToApprovalCommandHandler(
+    IPurchaseOrderRepository repository,
+    ISecurityDocumentSeriesAccessRepository seriesAccessRepository,
+    ICompanyContext companyContext)
     : ICommandHandler<SendPurchaseOrderToApprovalCommand, PurchaseOrderDto>
 {
-    public Task<Result<PurchaseOrderDto>> Handle(SendPurchaseOrderToApprovalCommand request, CancellationToken cancellationToken)
+    public async Task<Result<PurchaseOrderDto>> Handle(SendPurchaseOrderToApprovalCommand request, CancellationToken cancellationToken)
     {
-        return PurchaseOrderWorkflow.ChangeStatusAsync(
+        return await PurchaseOrderWorkflow.ChangeStatusAsync(
             repository,
+            seriesAccessRepository,
+            companyContext,
             request.Id,
             PurchaseOrderStatuses.PendingApproval,
             "Orden enviada a aprobacion.",
             [PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected],
             PurchaseOrderWorkflowPolicy.EnsureCanSendToApproval,
+            PurchaseOrderSecurity.ActionApprove,
             request.AuditUserId,
             request.AuditUserName,
             cancellationToken);
     }
 }
 
-public sealed class ApprovePurchaseOrderCommandHandler(IPurchaseOrderRepository repository)
+public sealed class ApprovePurchaseOrderCommandHandler(
+    IPurchaseOrderRepository repository,
+    ISecurityDocumentSeriesAccessRepository seriesAccessRepository,
+    ICompanyContext companyContext)
     : ICommandHandler<ApprovePurchaseOrderCommand, PurchaseOrderDto>
 {
-    public Task<Result<PurchaseOrderDto>> Handle(ApprovePurchaseOrderCommand request, CancellationToken cancellationToken)
+    public async Task<Result<PurchaseOrderDto>> Handle(ApprovePurchaseOrderCommand request, CancellationToken cancellationToken)
     {
-        return PurchaseOrderWorkflow.ChangeStatusAsync(
+        return await PurchaseOrderWorkflow.ChangeStatusAsync(
             repository,
+            seriesAccessRepository,
+            companyContext,
             request.Id,
             PurchaseOrderStatuses.Approved,
             "Orden aprobada correctamente.",
             [PurchaseOrderStatuses.PendingApproval],
             PurchaseOrderWorkflowPolicy.EnsureCanApprove,
+            PurchaseOrderSecurity.ActionApprove,
             request.AuditUserId,
             request.AuditUserName,
             cancellationToken);
     }
 }
 
-public sealed class RejectPurchaseOrderCommandHandler(IPurchaseOrderRepository repository)
+public sealed class RejectPurchaseOrderCommandHandler(
+    IPurchaseOrderRepository repository,
+    ISecurityDocumentSeriesAccessRepository seriesAccessRepository,
+    ICompanyContext companyContext)
     : ICommandHandler<RejectPurchaseOrderCommand, PurchaseOrderDto>
 {
-    public Task<Result<PurchaseOrderDto>> Handle(RejectPurchaseOrderCommand request, CancellationToken cancellationToken)
+    public async Task<Result<PurchaseOrderDto>> Handle(RejectPurchaseOrderCommand request, CancellationToken cancellationToken)
     {
-        return PurchaseOrderWorkflow.ChangeStatusAsync(
+        return await PurchaseOrderWorkflow.ChangeStatusAsync(
             repository,
+            seriesAccessRepository,
+            companyContext,
             request.Id,
             PurchaseOrderStatuses.Rejected,
             "Orden rechazada.",
             [PurchaseOrderStatuses.PendingApproval],
             PurchaseOrderWorkflowPolicy.EnsureCanReject,
+            PurchaseOrderSecurity.ActionReject,
             request.AuditUserId,
             request.AuditUserName,
             cancellationToken);
     }
 }
 
-public sealed class SyncPurchaseOrderSapCommandHandler(IPurchaseOrderRepository repository)
+public sealed class SyncPurchaseOrderSapCommandHandler(
+    IPurchaseOrderRepository repository,
+    ISecurityDocumentSeriesAccessRepository seriesAccessRepository,
+    ICompanyContext companyContext)
     : ICommandHandler<SyncPurchaseOrderSapCommand, PurchaseOrderDto>
 {
     public async Task<Result<PurchaseOrderDto>> Handle(SyncPurchaseOrderSapCommand request, CancellationToken cancellationToken)
@@ -172,6 +271,19 @@ public sealed class SyncPurchaseOrderSapCommandHandler(IPurchaseOrderRepository 
         if (current.SapStatus == PurchaseOrderSapStatuses.Synced)
         {
             return Result<PurchaseOrderDto>.Failure("La orden ya fue sincronizada con SAP.");
+        }
+
+        var seriesValidation = await PurchaseOrderSecurityGuard.ValidateSeriesOperationAsync(
+            seriesAccessRepository,
+            companyContext,
+            request.AuditUserId,
+            current.DocumentSeriesId,
+            PurchaseOrderSecurity.ActionSyncSap,
+            cancellationToken);
+        if (!seriesValidation.IsSuccess)
+        {
+            await repository.AddSapLogAsync(request.Id, "PurchaseOrderSync", "Skipped", seriesValidation.Message, request.AuditUserId, request.AuditUserName, cancellationToken);
+            return Result<PurchaseOrderDto>.Failure(seriesValidation.Message);
         }
 
         await repository.AddSapLogAsync(request.Id, "PurchaseOrderSync", "Pending", "Pendiente de envio a SAP Business One. ObjectType 22.", request.AuditUserId, request.AuditUserName, cancellationToken);
@@ -282,11 +394,14 @@ internal static class PurchaseOrderWorkflow
 {
     public static async Task<Result<PurchaseOrderDto>> ChangeStatusAsync(
         IPurchaseOrderRepository repository,
+        ISecurityDocumentSeriesAccessRepository seriesAccessRepository,
+        ICompanyContext companyContext,
         int id,
         string status,
         string message,
         IReadOnlyCollection<string> expectedCurrentStatuses,
         Func<string, Result<bool>> validateCurrentStatus,
+        string actionKey,
         int? userId,
         string? userName,
         CancellationToken cancellationToken)
@@ -303,6 +418,18 @@ internal static class PurchaseOrderWorkflow
             return Result<PurchaseOrderDto>.Failure(validation.Message);
         }
 
+        var seriesValidation = await PurchaseOrderSecurityGuard.ValidateSeriesOperationAsync(
+            seriesAccessRepository,
+            companyContext,
+            userId,
+            current.DocumentSeriesId,
+            actionKey,
+            cancellationToken);
+        if (!seriesValidation.IsSuccess)
+        {
+            return Result<PurchaseOrderDto>.Failure(seriesValidation.Message);
+        }
+
         // TODO: Persistir aprobador, fecha, observacion y nivel de aprobacion.
         var updated = await repository.UpdateStatusIfCurrentAsync(id, status, expectedCurrentStatuses, userId, userName, cancellationToken);
         if (!updated)
@@ -314,6 +441,46 @@ internal static class PurchaseOrderWorkflow
         return order is null
             ? Result<PurchaseOrderDto>.Failure("No se pudo recuperar la orden de compra.")
             : Result<PurchaseOrderDto>.Success(order, message);
+    }
+}
+
+internal static class PurchaseOrderSecurityGuard
+{
+    public static async Task<Result<bool>> ValidateSeriesOperationAsync(
+        ISecurityDocumentSeriesAccessRepository seriesAccessRepository,
+        ICompanyContext companyContext,
+        int? userId,
+        int? securityDocumentSeriesId,
+        string actionKey,
+        CancellationToken cancellationToken)
+    {
+        if (userId is null or <= 0)
+        {
+            return Result<bool>.Failure("No se pudo identificar el usuario autenticado.");
+        }
+
+        if (companyContext.CurrentCompany is null)
+        {
+            return Result<bool>.Failure("Debe seleccionar una empresa.");
+        }
+
+        if (securityDocumentSeriesId is null or <= 0)
+        {
+            return Result<bool>.Failure("Debe seleccionar una serie de documento autorizada.");
+        }
+
+        var isAllowed = await seriesAccessRepository.ValidateUserOperationAsync(
+            userId.Value,
+            companyContext.CurrentCompany.CompanyCode,
+            PurchaseOrderSecurity.FormKeyEdit,
+            PurchaseOrderSecurity.DocumentType,
+            securityDocumentSeriesId.Value,
+            actionKey,
+            cancellationToken);
+
+        return isAllowed
+            ? Result<bool>.Success(true)
+            : Result<bool>.Failure("No tienes permiso para ejecutar esta operacion con la serie seleccionada.");
     }
 }
 

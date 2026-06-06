@@ -8,6 +8,8 @@ public sealed record SecurityFormItem(
     string FormKey,
     int FormType,
     string FormTypeName,
+    bool HasListView,
+    bool HasEditView,
     bool IsVisible,
     bool IsActive,
     int? CreatedByUserId,

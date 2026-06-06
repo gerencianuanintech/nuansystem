@@ -14,9 +14,14 @@ public sealed class PurchaseOrdersViewModel(IPurchaseOrderClient client)
         return LoadItemsAsync(client.GetAsync, cancellationToken);
     }
 
-    public async Task LoadLookupsAsync(CancellationToken cancellationToken = default)
+    public async Task LoadLookupsAsync(string actionKey, CancellationToken cancellationToken = default)
     {
-        Lookups = await client.GetLookupsAsync(cancellationToken);
+        Lookups = await client.GetLookupsAsync(actionKey, cancellationToken);
+    }
+
+    public Task<IReadOnlyCollection<PurchaseOrderFieldAccess>> GetFieldAccessAsync(int seriesId, CancellationToken cancellationToken = default)
+    {
+        return client.GetFieldAccessAsync(seriesId, cancellationToken);
     }
 
     public Task<PurchaseOrderDetail> GetByIdAsync(int id, CancellationToken cancellationToken = default)

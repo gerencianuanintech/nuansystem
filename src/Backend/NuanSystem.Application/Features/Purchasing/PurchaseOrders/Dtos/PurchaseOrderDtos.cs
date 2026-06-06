@@ -268,6 +268,14 @@ public sealed record PurchaseOrderLookupsDto(
     IReadOnlyCollection<PurchaseOrderLookupOptionDto> PurchaseTypes,
     IReadOnlyCollection<PurchaseOrderLookupOptionDto> DocumentSeries);
 
+public sealed record PurchaseOrderFieldAccessDto(
+    string FieldKey,
+    string ControlType,
+    bool IsVisible,
+    bool IsEditable,
+    bool IsRequired,
+    bool IsReadOnly);
+
 public sealed record PurchaseOrderLookupOptionDto(
     int Id,
     string Code,

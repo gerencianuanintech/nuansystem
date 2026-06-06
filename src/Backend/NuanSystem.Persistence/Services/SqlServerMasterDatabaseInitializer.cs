@@ -776,6 +776,24 @@ END;
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
         }
 
+        scriptPath = FindDatabaseScriptPath("019_master_inventory_items_security.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("042_master_inventory_items_granular_permissions.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("045_master_general_inventory_auxiliary_security.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
         scriptPath = FindDatabaseScriptPath("011_master_configuration_companies.sql");
         if (scriptPath is not null)
         {
@@ -789,6 +807,18 @@ END;
         }
 
         scriptPath = FindDatabaseScriptPath("049_master_sap_sync_worker.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("052_master_security_document_series.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("054_master_operational_catalog_security.sql");
         if (scriptPath is not null)
         {
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);

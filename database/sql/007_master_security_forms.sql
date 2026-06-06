@@ -8,6 +8,8 @@ BEGIN
         Description nvarchar(300) NULL,
         FormKey nvarchar(120) NOT NULL,
         FormType tinyint NOT NULL,
+        HasListView bit NOT NULL CONSTRAINT DF_SecurityForms_HasListView DEFAULT 1,
+        HasEditView bit NOT NULL CONSTRAINT DF_SecurityForms_HasEditView DEFAULT 1,
         IsVisible bit NOT NULL CONSTRAINT DF_SecurityForms_IsVisible DEFAULT 1,
         IsActive bit NOT NULL CONSTRAINT DF_SecurityForms_IsActive DEFAULT 1,
         CreatedByUserId int NULL,
@@ -56,13 +58,15 @@ BEGIN
     SELECT
         Id, Code, Name, Description, FormKey, CAST(FormType AS int) AS FormType,
         CASE FormType
-            WHEN 1 THEN N'Listado'
-            WHEN 2 THEN N'Edicion'
+            WHEN 1 THEN N'Mantenimiento'
+            WHEN 2 THEN N'Transaccional'
             WHEN 3 THEN N'Reporte'
             WHEN 4 THEN N'Dialogo'
             WHEN 5 THEN N'Proceso'
             ELSE N'Desconocido'
         END AS FormTypeName,
+        HasListView,
+        HasEditView,
         IsVisible, IsActive,
         CreatedByUserId, CreatedByUserName, CreatedAt,
         UpdatedByUserId, UpdatedByUserName, UpdatedAt,
@@ -80,13 +84,15 @@ BEGIN
     SELECT
         Id, Code, Name, Description, FormKey, CAST(FormType AS int) AS FormType,
         CASE FormType
-            WHEN 1 THEN N'Listado'
-            WHEN 2 THEN N'Edicion'
+            WHEN 1 THEN N'Mantenimiento'
+            WHEN 2 THEN N'Transaccional'
             WHEN 3 THEN N'Reporte'
             WHEN 4 THEN N'Dialogo'
             WHEN 5 THEN N'Proceso'
             ELSE N'Desconocido'
         END AS FormTypeName,
+        HasListView,
+        HasEditView,
         IsVisible, IsActive,
         CreatedByUserId, CreatedByUserName, CreatedAt,
         UpdatedByUserId, UpdatedByUserName, UpdatedAt,
@@ -128,6 +134,8 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_FORMULARIOSEGURIDADCREAR
     @Description nvarchar(300) = NULL,
     @FormKey nvarchar(120),
     @FormType int,
+    @HasListView bit = 1,
+    @HasEditView bit = 1,
     @IsVisible bit = 1,
     @IsActive bit = 1,
     @CreatedByUserId int = NULL,
@@ -136,12 +144,12 @@ AS
 BEGIN
     INSERT INTO dbo.SecurityForms
     (
-        Code, Name, Description, FormKey, FormType, IsVisible, IsActive,
+        Code, Name, Description, FormKey, FormType, HasListView, HasEditView, IsVisible, IsActive,
         CreatedByUserId, CreatedByUserName, CreatedAt
     )
     VALUES
     (
-        @Code, @Name, @Description, @FormKey, @FormType, @IsVisible, @IsActive,
+        @Code, @Name, @Description, @FormKey, @FormType, @HasListView, @HasEditView, @IsVisible, @IsActive,
         @CreatedByUserId, @CreatedByUserName, SYSUTCDATETIME()
     );
 
@@ -157,6 +165,8 @@ BEGIN
             (N'Description', CONVERT(nvarchar(max), @Description)),
             (N'FormKey', CONVERT(nvarchar(max), @FormKey)),
             (N'FormType', CONVERT(nvarchar(max), @FormType)),
+            (N'HasListView', CONVERT(nvarchar(max), CONVERT(int, @HasListView))),
+            (N'HasEditView', CONVERT(nvarchar(max), CONVERT(int, @HasEditView))),
             (N'IsVisible', CONVERT(nvarchar(max), CONVERT(int, @IsVisible))),
             (N'IsActive', CONVERT(nvarchar(max), CONVERT(int, @IsActive)))
     ) AS Changes(FieldName, NewValue)
@@ -173,6 +183,8 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_PUT_FORMULARIOSEGURIDADACTUALIZAR
     @Description nvarchar(300) = NULL,
     @FormKey nvarchar(120),
     @FormType int,
+    @HasListView bit = 1,
+    @HasEditView bit = 1,
     @IsVisible bit = 1,
     @IsActive bit = 1,
     @UpdatedByUserId int = NULL,
@@ -185,6 +197,8 @@ BEGIN
         @OldDescription nvarchar(300),
         @OldFormKey nvarchar(120),
         @OldFormType int,
+        @OldHasListView bit,
+        @OldHasEditView bit,
         @OldIsVisible bit,
         @OldIsActive bit;
 
@@ -194,6 +208,8 @@ BEGIN
         @OldDescription = Description,
         @OldFormKey = FormKey,
         @OldFormType = FormType,
+        @OldHasListView = HasListView,
+        @OldHasEditView = HasEditView,
         @OldIsVisible = IsVisible,
         @OldIsActive = IsActive
     FROM dbo.SecurityForms
@@ -212,6 +228,8 @@ BEGIN
         Description = @Description,
         FormKey = @FormKey,
         FormType = @FormType,
+        HasListView = @HasListView,
+        HasEditView = @HasEditView,
         IsVisible = @IsVisible,
         IsActive = @IsActive,
         UpdatedByUserId = @UpdatedByUserId,
@@ -231,6 +249,8 @@ BEGIN
             (N'Description', CONVERT(nvarchar(max), @OldDescription), CONVERT(nvarchar(max), @Description)),
             (N'FormKey', CONVERT(nvarchar(max), @OldFormKey), CONVERT(nvarchar(max), @FormKey)),
             (N'FormType', CONVERT(nvarchar(max), @OldFormType), CONVERT(nvarchar(max), @FormType)),
+            (N'HasListView', CONVERT(nvarchar(max), CONVERT(int, @OldHasListView)), CONVERT(nvarchar(max), CONVERT(int, @HasListView))),
+            (N'HasEditView', CONVERT(nvarchar(max), CONVERT(int, @OldHasEditView)), CONVERT(nvarchar(max), CONVERT(int, @HasEditView))),
             (N'IsVisible', CONVERT(nvarchar(max), CONVERT(int, @OldIsVisible)), CONVERT(nvarchar(max), CONVERT(int, @IsVisible))),
             (N'IsActive', CONVERT(nvarchar(max), CONVERT(int, @OldIsActive)), CONVERT(nvarchar(max), CONVERT(int, @IsActive)))
     ) AS Changes(FieldName, OldValue, NewValue)

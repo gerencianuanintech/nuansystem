@@ -82,7 +82,7 @@ partial class ItemEditForm
         pnlFooter = new PanelControl();
         btnSave = new SimpleButton();
         btnCancel = new SimpleButton();
-        purchasePresentationsTable = new System.Data.DataTable();
+        itemPresentationsTable = new System.Data.DataTable();
         warehouseStockTable = new System.Data.DataTable();
         purchaseHistoryTable = new System.Data.DataTable();
         salesPriceListsTable = new System.Data.DataTable();
@@ -125,7 +125,7 @@ partial class ItemEditForm
         btnUpdateOperationalAlert = new SimpleButton();
         btnAddOperationalAlert = new SimpleButton();
         grdOperationalAlerts = new GridControl();
-        gridView1 = new GridView();
+        gvOperationalAlertsAux = new GridView();
         repoOperationalAlertCheck = new RepositoryItemCheckEdit();
         gvOperationalAlerts = new GridView();
         colOperationalAlertType = new GridColumn();
@@ -328,7 +328,7 @@ partial class ItemEditForm
         lblAnalysisBasePrice = new LabelControl();
         lblPricesMarginsTitle = new LabelControl();
         grdCostPriceHistory = new GridControl();
-        gridView8 = new GridView();
+        gvCostPriceHistoryAux = new GridView();
         gvCostPriceHistory = new GridView();
         colCostHistoryDate = new GridColumn();
         colCostHistoryMovement = new GridColumn();
@@ -379,7 +379,7 @@ partial class ItemEditForm
         lblSalesKpi30dCaption = new LabelControl();
         lblSalesConfigurationTitle = new LabelControl();
         grdSalesPriceLists = new GridControl();
-        gridView9 = new GridView();
+        gvSalesPriceListsAux = new GridView();
         repoSalesPriceListActive = new RepositoryItemCheckEdit();
         gvSalesPriceLists = new GridView();
         colSalesPriceListName = new GridColumn();
@@ -411,7 +411,7 @@ partial class ItemEditForm
         lblPurchaseKpiLastCaption = new LabelControl();
         lblPurchasesConfigurationTitle = new LabelControl();
         grdPurchaseHistory = new GridControl();
-        gridView10 = new GridView();
+        gvPurchaseHistoryAux = new GridView();
         gvPurchaseHistory = new GridView();
         colPurchaseHistoryDate = new GridColumn();
         colPurchaseHistoryDocument = new GridColumn();
@@ -427,8 +427,8 @@ partial class ItemEditForm
         pnlPurchaseKpiCompliance = new PanelControl();
         lblPurchaseKpiComplianceValue = new LabelControl();
         lblPurchaseKpiComplianceCaption = new LabelControl();
-        lookUpEdit1 = new LookUpEdit();
-        labelControl1 = new LabelControl();
+        luePurchaseUnit = new LookUpEdit();
+        lblPurchaseUnit = new LabelControl();
         tabInventory = new XtraTabPage();
         memInventoryBlockReason = new MemoEdit();
         lblInventoryBlockReason = new LabelControl();
@@ -474,7 +474,7 @@ partial class ItemEditForm
         spnCoverageDays = new SpinEdit();
         lblCoverageDays = new LabelControl();
         grdWarehouseStock = new GridControl();
-        gridView11 = new GridView();
+        gvWarehouseStockAux = new GridView();
         gvWarehouseStock = new GridView();
         colWarehouseCode = new GridColumn();
         colWarehouseName = new GridColumn();
@@ -513,26 +513,26 @@ partial class ItemEditForm
         lblNetWeight = new LabelControl();
         txtTariffCode = new TextEdit();
         lblTariffCode = new LabelControl();
-        btnSetMainPurchasePresentation = new SimpleButton();
+        btnSetMainItemPresentation = new SimpleButton();
         txtUnspscCode = new TextEdit();
         lblUnspscCode = new LabelControl();
-        btnRemovePurchasePresentation = new SimpleButton();
+        btnRemoveItemPresentation = new SimpleButton();
         txtManufacturerReference = new TextEdit();
         lueInventoryUnit = new LookUpEdit();
         lblManufacturerReference = new LabelControl();
-        btnUpdatePurchasePresentation = new SimpleButton();
+        btnUpdateItemPresentation = new SimpleButton();
         txtPreviousInternalCode = new TextEdit();
         lblInventoryUnit = new LabelControl();
         lblPreviousInternalCode = new LabelControl();
-        btnAddPurchasePresentation = new SimpleButton();
+        btnAddItemPresentation = new SimpleButton();
         txtPlu = new TextEdit();
         lblInventoryUnitTitle = new LabelControl();
         lblPlu = new LabelControl();
-        grdPurchasePresentations = new GridControl();
-        gridView12 = new GridView();
+        grdItemPresentations = new GridControl();
+        gvItemPresentationsAux = new GridView();
         repoPurchasePrincipal = new RepositoryItemCheckEdit();
         repoPurchaseActive = new RepositoryItemCheckEdit();
-        gvPurchasePresentations = new GridView();
+        gvItemPresentations = new GridView();
         colPurchasePresentation = new GridColumn();
         colPurchaseUnit = new GridColumn();
         colPurchaseFactor = new GridColumn();
@@ -734,7 +734,7 @@ partial class ItemEditForm
         ((System.ComponentModel.ISupportInitialize)lueBaseUnit.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)pnlFooter).BeginInit();
         pnlFooter.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)purchasePresentationsTable).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)itemPresentationsTable).BeginInit();
         ((System.ComponentModel.ISupportInitialize)warehouseStockTable).BeginInit();
         ((System.ComponentModel.ISupportInitialize)purchaseHistoryTable).BeginInit();
         ((System.ComponentModel.ISupportInitialize)salesPriceListsTable).BeginInit();
@@ -763,7 +763,7 @@ partial class ItemEditForm
         ((System.ComponentModel.ISupportInitialize)pnlNotesAlerts).BeginInit();
         pnlNotesAlerts.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)grdOperationalAlerts).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)gridView1).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)gvOperationalAlertsAux).BeginInit();
         ((System.ComponentModel.ISupportInitialize)repoOperationalAlertCheck).BeginInit();
         ((System.ComponentModel.ISupportInitialize)gvOperationalAlerts).BeginInit();
         ((System.ComponentModel.ISupportInitialize)pnlNotesProcess).BeginInit();
@@ -877,7 +877,7 @@ partial class ItemEditForm
         ((System.ComponentModel.ISupportInitialize)lueCostCurrency.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)spnAnalysisBasePrice.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)grdCostPriceHistory).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)gridView8).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)gvCostPriceHistoryAux).BeginInit();
         ((System.ComponentModel.ISupportInitialize)gvCostPriceHistory).BeginInit();
         tabSales.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)spnSalesCommission.Properties).BeginInit();
@@ -900,7 +900,7 @@ partial class ItemEditForm
         ((System.ComponentModel.ISupportInitialize)pnlSalesKpi30d).BeginInit();
         pnlSalesKpi30d.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)grdSalesPriceLists).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)gridView9).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)gvSalesPriceListsAux).BeginInit();
         ((System.ComponentModel.ISupportInitialize)repoSalesPriceListActive).BeginInit();
         ((System.ComponentModel.ISupportInitialize)gvSalesPriceLists).BeginInit();
         tabPurchases.SuspendLayout();
@@ -916,11 +916,11 @@ partial class ItemEditForm
         ((System.ComponentModel.ISupportInitialize)pnlPurchaseKpiLast).BeginInit();
         pnlPurchaseKpiLast.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)grdPurchaseHistory).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)gridView10).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)gvPurchaseHistoryAux).BeginInit();
         ((System.ComponentModel.ISupportInitialize)gvPurchaseHistory).BeginInit();
         ((System.ComponentModel.ISupportInitialize)pnlPurchaseKpiCompliance).BeginInit();
         pnlPurchaseKpiCompliance.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)lookUpEdit1.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)luePurchaseUnit.Properties).BeginInit();
         tabInventory.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)memInventoryBlockReason.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)lueInventoryControlType.Properties).BeginInit();
@@ -944,7 +944,7 @@ partial class ItemEditForm
         ((System.ComponentModel.ISupportInitialize)spnLeadTimeDays.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)spnCoverageDays.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)grdWarehouseStock).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)gridView11).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)gvWarehouseStockAux).BeginInit();
         ((System.ComponentModel.ISupportInitialize)gvWarehouseStock).BeginInit();
         ((System.ComponentModel.ISupportInitialize)slueDefaultBinLocation.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)gvDefaultBinLocation).BeginInit();
@@ -961,11 +961,11 @@ partial class ItemEditForm
         ((System.ComponentModel.ISupportInitialize)lueInventoryUnit.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtPreviousInternalCode.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtPlu.Properties).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)grdPurchasePresentations).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)gridView12).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)grdItemPresentations).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)gvItemPresentationsAux).BeginInit();
         ((System.ComponentModel.ISupportInitialize)repoPurchasePrincipal).BeginInit();
         ((System.ComponentModel.ISupportInitialize)repoPurchaseActive).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)gvPurchasePresentations).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)gvItemPresentations).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtQrCode.Properties).BeginInit();
         tabGeneral.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)tglPurchaseActive.Properties).BeginInit();
@@ -1226,7 +1226,6 @@ partial class ItemEditForm
         // 
         // txtItemCode
         // 
-        txtItemCode.EditValue = "ARZ-001";
         txtItemCode.Location = new Point(325, 24);
         txtItemCode.Name = "txtItemCode";
         txtItemCode.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1246,7 +1245,6 @@ partial class ItemEditForm
         // 
         // txtDescription
         // 
-        txtDescription.EditValue = "Arroz blanco premium 1kg";
         txtDescription.Location = new Point(325, 52);
         txtDescription.Name = "txtDescription";
         txtDescription.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1266,7 +1264,6 @@ partial class ItemEditForm
         // 
         // txtCommercialName
         // 
-        txtCommercialName.EditValue = "Arroz NuanFood Premium 1kg";
         txtCommercialName.Location = new Point(325, 80);
         txtCommercialName.Name = "txtCommercialName";
         txtCommercialName.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1688,10 +1685,10 @@ partial class ItemEditForm
         grdOperationalAlerts.TabIndex = 1;
         grdOperationalAlerts.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gvOperationalAlerts });
         // 
-        // gridView1
+        // gvOperationalAlertsAux
         // 
-        gridView1.GridControl = grdOperationalAlerts;
-        gridView1.Name = "gridView1";
+        gvOperationalAlertsAux.GridControl = grdOperationalAlerts;
+        gvOperationalAlertsAux.Name = "gvOperationalAlertsAux";
         // 
         // repoOperationalAlertCheck
         // 
@@ -4136,10 +4133,10 @@ partial class ItemEditForm
         grdCostPriceHistory.TabIndex = 1;
         grdCostPriceHistory.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gvCostPriceHistory });
         // 
-        // gridView8
+        // gvCostPriceHistoryAux
         // 
-        gridView8.GridControl = grdCostPriceHistory;
-        gridView8.Name = "gridView8";
+        gvCostPriceHistoryAux.GridControl = grdCostPriceHistory;
+        gvCostPriceHistoryAux.Name = "gvCostPriceHistoryAux";
         // 
         // gvCostPriceHistory
         // 
@@ -4714,10 +4711,10 @@ partial class ItemEditForm
         grdSalesPriceLists.TabIndex = 1;
         grdSalesPriceLists.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gvSalesPriceLists });
         // 
-        // gridView9
+        // gvSalesPriceListsAux
         // 
-        gridView9.GridControl = grdSalesPriceLists;
-        gridView9.Name = "gridView9";
+        gvSalesPriceListsAux.GridControl = grdSalesPriceLists;
+        gvSalesPriceListsAux.Name = "gvSalesPriceListsAux";
         // 
         // repoSalesPriceListActive
         // 
@@ -4806,8 +4803,8 @@ partial class ItemEditForm
         // 
         // tabPurchases
         // 
-        tabPurchases.Controls.Add(labelControl1);
-        tabPurchases.Controls.Add(lookUpEdit1);
+        tabPurchases.Controls.Add(lblPurchaseUnit);
+        tabPurchases.Controls.Add(luePurchaseUnit);
         tabPurchases.Controls.Add(pnlPurchaseKpiCompliance);
         tabPurchases.Controls.Add(lblPurchasesHistoryTitle);
         tabPurchases.Controls.Add(grdPurchaseHistory);
@@ -5045,10 +5042,10 @@ partial class ItemEditForm
         grdPurchaseHistory.TabIndex = 1;
         grdPurchaseHistory.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gvPurchaseHistory });
         // 
-        // gridView10
+        // gvPurchaseHistoryAux
         // 
-        gridView10.GridControl = grdPurchaseHistory;
-        gridView10.Name = "gridView10";
+        gvPurchaseHistoryAux.GridControl = grdPurchaseHistory;
+        gvPurchaseHistoryAux.Name = "gvPurchaseHistoryAux";
         // 
         // gvPurchaseHistory
         // 
@@ -5187,26 +5184,26 @@ partial class ItemEditForm
         lblPurchaseKpiComplianceCaption.TabIndex = 0;
         lblPurchaseKpiComplianceCaption.Text = "Cumplimiento proveedor";
         // 
-        // lookUpEdit1
+        // luePurchaseUnit
         // 
-        lookUpEdit1.Location = new Point(137, 47);
-        lookUpEdit1.Name = "lookUpEdit1";
-        lookUpEdit1.Properties.Appearance.Font = new Font("Segoe UI", 9F);
-        lookUpEdit1.Properties.Appearance.Options.UseFont = true;
-        lookUpEdit1.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
-        lookUpEdit1.Properties.NullText = "UND - Unidad";
-        lookUpEdit1.Size = new Size(204, 22);
-        lookUpEdit1.TabIndex = 20;
+        luePurchaseUnit.Location = new Point(137, 47);
+        luePurchaseUnit.Name = "luePurchaseUnit";
+        luePurchaseUnit.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        luePurchaseUnit.Properties.Appearance.Options.UseFont = true;
+        luePurchaseUnit.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        luePurchaseUnit.Properties.NullText = "UND - Unidad";
+        luePurchaseUnit.Size = new Size(204, 22);
+        luePurchaseUnit.TabIndex = 20;
         // 
-        // labelControl1
+        // lblPurchaseUnit
         // 
-        labelControl1.Appearance.Font = new Font("Segoe UI", 9F);
-        labelControl1.Appearance.Options.UseFont = true;
-        labelControl1.Location = new Point(18, 50);
-        labelControl1.Name = "labelControl1";
-        labelControl1.Size = new Size(101, 15);
-        labelControl1.TabIndex = 19;
-        labelControl1.Text = "Unidad de compra:";
+        lblPurchaseUnit.Appearance.Font = new Font("Segoe UI", 9F);
+        lblPurchaseUnit.Appearance.Options.UseFont = true;
+        lblPurchaseUnit.Location = new Point(18, 50);
+        lblPurchaseUnit.Name = "lblPurchaseUnit";
+        lblPurchaseUnit.Size = new Size(101, 15);
+        lblPurchaseUnit.TabIndex = 19;
+        lblPurchaseUnit.Text = "Unidad de compra:";
         // 
         // tabInventory
         // 
@@ -5693,10 +5690,10 @@ partial class ItemEditForm
         grdWarehouseStock.TabIndex = 1;
         grdWarehouseStock.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gvWarehouseStock });
         // 
-        // gridView11
+        // gvWarehouseStockAux
         // 
-        gridView11.GridControl = grdWarehouseStock;
-        gridView11.Name = "gridView11";
+        gvWarehouseStockAux.GridControl = grdWarehouseStock;
+        gvWarehouseStockAux.Name = "gvWarehouseStockAux";
         // 
         // gvWarehouseStock
         // 
@@ -5894,22 +5891,22 @@ partial class ItemEditForm
         tabUnits.Controls.Add(lblQrCode);
         tabUnits.Controls.Add(lblPurchasePresentationsTitle);
         tabUnits.Controls.Add(txtQrCode);
-        tabUnits.Controls.Add(grdPurchasePresentations);
+        tabUnits.Controls.Add(grdItemPresentations);
         tabUnits.Controls.Add(lblPlu);
         tabUnits.Controls.Add(lblInventoryUnitTitle);
         tabUnits.Controls.Add(txtPlu);
-        tabUnits.Controls.Add(btnAddPurchasePresentation);
+        tabUnits.Controls.Add(btnAddItemPresentation);
         tabUnits.Controls.Add(lblPreviousInternalCode);
         tabUnits.Controls.Add(lblInventoryUnit);
         tabUnits.Controls.Add(txtPreviousInternalCode);
-        tabUnits.Controls.Add(btnUpdatePurchasePresentation);
+        tabUnits.Controls.Add(btnUpdateItemPresentation);
         tabUnits.Controls.Add(lblManufacturerReference);
         tabUnits.Controls.Add(lueInventoryUnit);
         tabUnits.Controls.Add(txtManufacturerReference);
-        tabUnits.Controls.Add(btnRemovePurchasePresentation);
+        tabUnits.Controls.Add(btnRemoveItemPresentation);
         tabUnits.Controls.Add(lblUnspscCode);
         tabUnits.Controls.Add(txtUnspscCode);
-        tabUnits.Controls.Add(btnSetMainPurchasePresentation);
+        tabUnits.Controls.Add(btnSetMainItemPresentation);
         tabUnits.Controls.Add(lblTariffCode);
         tabUnits.Controls.Add(txtTariffCode);
         tabUnits.Controls.Add(lblNetWeight);
@@ -6077,7 +6074,6 @@ partial class ItemEditForm
         // 
         // txtTariffCode
         // 
-        txtTariffCode.EditValue = "1006.30";
         txtTariffCode.Location = new Point(127, 371);
         txtTariffCode.Name = "txtTariffCode";
         txtTariffCode.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -6093,19 +6089,18 @@ partial class ItemEditForm
         lblTariffCode.TabIndex = 11;
         lblTariffCode.Text = "Arancelario:";
         // 
-        // btnSetMainPurchasePresentation
+        // btnSetMainItemPresentation
         // 
-        btnSetMainPurchasePresentation.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
-        btnSetMainPurchasePresentation.Appearance.Options.UseFont = true;
-        btnSetMainPurchasePresentation.Location = new Point(718, 367);
-        btnSetMainPurchasePresentation.Name = "btnSetMainPurchasePresentation";
-        btnSetMainPurchasePresentation.Size = new Size(130, 26);
-        btnSetMainPurchasePresentation.TabIndex = 5;
-        btnSetMainPurchasePresentation.Text = "Marcar principal";
+        btnSetMainItemPresentation.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        btnSetMainItemPresentation.Appearance.Options.UseFont = true;
+        btnSetMainItemPresentation.Location = new Point(718, 367);
+        btnSetMainItemPresentation.Name = "btnSetMainItemPresentation";
+        btnSetMainItemPresentation.Size = new Size(130, 26);
+        btnSetMainItemPresentation.TabIndex = 5;
+        btnSetMainItemPresentation.Text = "Marcar principal";
         // 
         // txtUnspscCode
         // 
-        txtUnspscCode.EditValue = "50221101";
         txtUnspscCode.Location = new Point(127, 343);
         txtUnspscCode.Name = "txtUnspscCode";
         txtUnspscCode.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -6121,19 +6116,18 @@ partial class ItemEditForm
         lblUnspscCode.TabIndex = 9;
         lblUnspscCode.Text = "SAT/UNSPSC:";
         // 
-        // btnRemovePurchasePresentation
+        // btnRemoveItemPresentation
         // 
-        btnRemovePurchasePresentation.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
-        btnRemovePurchasePresentation.Appearance.Options.UseFont = true;
-        btnRemovePurchasePresentation.Location = new Point(640, 367);
-        btnRemovePurchasePresentation.Name = "btnRemovePurchasePresentation";
-        btnRemovePurchasePresentation.Size = new Size(72, 26);
-        btnRemovePurchasePresentation.TabIndex = 4;
-        btnRemovePurchasePresentation.Text = "Quitar";
+        btnRemoveItemPresentation.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        btnRemoveItemPresentation.Appearance.Options.UseFont = true;
+        btnRemoveItemPresentation.Location = new Point(640, 367);
+        btnRemoveItemPresentation.Name = "btnRemoveItemPresentation";
+        btnRemoveItemPresentation.Size = new Size(72, 26);
+        btnRemoveItemPresentation.TabIndex = 4;
+        btnRemoveItemPresentation.Text = "Quitar";
         // 
         // txtManufacturerReference
         // 
-        txtManufacturerReference.EditValue = "NF-ARZ-1KG";
         txtManufacturerReference.Location = new Point(127, 315);
         txtManufacturerReference.Name = "txtManufacturerReference";
         txtManufacturerReference.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -6160,19 +6154,18 @@ partial class ItemEditForm
         lblManufacturerReference.TabIndex = 7;
         lblManufacturerReference.Text = "Ref. fabricante:";
         // 
-        // btnUpdatePurchasePresentation
+        // btnUpdateItemPresentation
         // 
-        btnUpdatePurchasePresentation.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
-        btnUpdatePurchasePresentation.Appearance.Options.UseFont = true;
-        btnUpdatePurchasePresentation.Location = new Point(548, 367);
-        btnUpdatePurchasePresentation.Name = "btnUpdatePurchasePresentation";
-        btnUpdatePurchasePresentation.Size = new Size(86, 26);
-        btnUpdatePurchasePresentation.TabIndex = 3;
-        btnUpdatePurchasePresentation.Text = "Actualizar";
+        btnUpdateItemPresentation.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        btnUpdateItemPresentation.Appearance.Options.UseFont = true;
+        btnUpdateItemPresentation.Location = new Point(548, 367);
+        btnUpdateItemPresentation.Name = "btnUpdateItemPresentation";
+        btnUpdateItemPresentation.Size = new Size(86, 26);
+        btnUpdateItemPresentation.TabIndex = 3;
+        btnUpdateItemPresentation.Text = "Actualizar";
         // 
         // txtPreviousInternalCode
         // 
-        txtPreviousInternalCode.EditValue = "ARZ-BL-001";
         txtPreviousInternalCode.Location = new Point(127, 287);
         txtPreviousInternalCode.Name = "txtPreviousInternalCode";
         txtPreviousInternalCode.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -6196,19 +6189,18 @@ partial class ItemEditForm
         lblPreviousInternalCode.TabIndex = 5;
         lblPreviousInternalCode.Text = "Código anterior:";
         // 
-        // btnAddPurchasePresentation
+        // btnAddItemPresentation
         // 
-        btnAddPurchasePresentation.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
-        btnAddPurchasePresentation.Appearance.Options.UseFont = true;
-        btnAddPurchasePresentation.Location = new Point(464, 367);
-        btnAddPurchasePresentation.Name = "btnAddPurchasePresentation";
-        btnAddPurchasePresentation.Size = new Size(78, 26);
-        btnAddPurchasePresentation.TabIndex = 2;
-        btnAddPurchasePresentation.Text = "Agregar";
+        btnAddItemPresentation.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        btnAddItemPresentation.Appearance.Options.UseFont = true;
+        btnAddItemPresentation.Location = new Point(464, 367);
+        btnAddItemPresentation.Name = "btnAddItemPresentation";
+        btnAddItemPresentation.Size = new Size(78, 26);
+        btnAddItemPresentation.TabIndex = 2;
+        btnAddItemPresentation.Text = "Agregar";
         // 
         // txtPlu
         // 
-        txtPlu.EditValue = "1001";
         txtPlu.Location = new Point(127, 259);
         txtPlu.Name = "txtPlu";
         txtPlu.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -6236,21 +6228,21 @@ partial class ItemEditForm
         lblPlu.TabIndex = 3;
         lblPlu.Text = "PLU:";
         // 
-        // grdPurchasePresentations
+        // grdItemPresentations
         // 
-        grdPurchasePresentations.DataSource = purchasePresentationsTable;
-        grdPurchasePresentations.Location = new Point(464, 46);
-        grdPurchasePresentations.MainView = gvPurchasePresentations;
-        grdPurchasePresentations.Name = "grdPurchasePresentations";
-        grdPurchasePresentations.RepositoryItems.AddRange(new RepositoryItem[] { repoPurchasePrincipal, repoPurchaseActive });
-        grdPurchasePresentations.Size = new Size(922, 312);
-        grdPurchasePresentations.TabIndex = 1;
-        grdPurchasePresentations.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gvPurchasePresentations });
+        grdItemPresentations.DataSource = itemPresentationsTable;
+        grdItemPresentations.Location = new Point(464, 46);
+        grdItemPresentations.MainView = gvItemPresentations;
+        grdItemPresentations.Name = "grdItemPresentations";
+        grdItemPresentations.RepositoryItems.AddRange(new RepositoryItem[] { repoPurchasePrincipal, repoPurchaseActive });
+        grdItemPresentations.Size = new Size(922, 312);
+        grdItemPresentations.TabIndex = 1;
+        grdItemPresentations.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gvItemPresentations });
         // 
-        // gridView12
+        // gvItemPresentationsAux
         // 
-        gridView12.GridControl = grdPurchasePresentations;
-        gridView12.Name = "gridView12";
+        gvItemPresentationsAux.GridControl = grdItemPresentations;
+        gvItemPresentationsAux.Name = "gvItemPresentationsAux";
         // 
         // repoPurchasePrincipal
         // 
@@ -6262,16 +6254,16 @@ partial class ItemEditForm
         repoPurchaseActive.AutoHeight = false;
         repoPurchaseActive.Name = "repoPurchaseActive";
         // 
-        // gvPurchasePresentations
+        // gvItemPresentations
         // 
-        gvPurchasePresentations.Appearance.HeaderPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
-        gvPurchasePresentations.Appearance.HeaderPanel.Options.UseFont = true;
-        gvPurchasePresentations.Appearance.Row.Font = new Font("Segoe UI", 9F);
-        gvPurchasePresentations.Appearance.Row.Options.UseFont = true;
-        gvPurchasePresentations.Columns.AddRange(new GridColumn[] { colPurchasePresentation, colPurchaseUnit, colPurchaseFactor, colPurchaseBarcode, colPurchaseEnabled, colSalesEnabled, colPurchasePrincipal, colSalesPrincipal, colPurchaseActive });
-        gvPurchasePresentations.GridControl = grdPurchasePresentations;
-        gvPurchasePresentations.Name = "gvPurchasePresentations";
-        gvPurchasePresentations.OptionsView.ShowGroupPanel = false;
+        gvItemPresentations.Appearance.HeaderPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        gvItemPresentations.Appearance.HeaderPanel.Options.UseFont = true;
+        gvItemPresentations.Appearance.Row.Font = new Font("Segoe UI", 9F);
+        gvItemPresentations.Appearance.Row.Options.UseFont = true;
+        gvItemPresentations.Columns.AddRange(new GridColumn[] { colPurchasePresentation, colPurchaseUnit, colPurchaseFactor, colPurchaseBarcode, colPurchaseEnabled, colSalesEnabled, colPurchasePrincipal, colSalesPrincipal, colPurchaseActive });
+        gvItemPresentations.GridControl = grdItemPresentations;
+        gvItemPresentations.Name = "gvItemPresentations";
+        gvItemPresentations.OptionsView.ShowGroupPanel = false;
         // 
         // colPurchasePresentation
         // 
@@ -6646,7 +6638,6 @@ partial class ItemEditForm
         // 
         // slueSupplierSku
         // 
-        slueSupplierSku.EditValue = "PRV-ARZ-001";
         slueSupplierSku.Location = new Point(164, 77);
         slueSupplierSku.Name = "slueSupplierSku";
         slueSupplierSku.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -8327,7 +8318,7 @@ partial class ItemEditForm
         ((System.ComponentModel.ISupportInitialize)lueBaseUnit.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)pnlFooter).EndInit();
         pnlFooter.ResumeLayout(false);
-        ((System.ComponentModel.ISupportInitialize)purchasePresentationsTable).EndInit();
+        ((System.ComponentModel.ISupportInitialize)itemPresentationsTable).EndInit();
         ((System.ComponentModel.ISupportInitialize)warehouseStockTable).EndInit();
         ((System.ComponentModel.ISupportInitialize)purchaseHistoryTable).EndInit();
         ((System.ComponentModel.ISupportInitialize)salesPriceListsTable).EndInit();
@@ -8358,7 +8349,7 @@ partial class ItemEditForm
         pnlNotesAlerts.ResumeLayout(false);
         pnlNotesAlerts.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)grdOperationalAlerts).EndInit();
-        ((System.ComponentModel.ISupportInitialize)gridView1).EndInit();
+        ((System.ComponentModel.ISupportInitialize)gvOperationalAlertsAux).EndInit();
         ((System.ComponentModel.ISupportInitialize)repoOperationalAlertCheck).EndInit();
         ((System.ComponentModel.ISupportInitialize)gvOperationalAlerts).EndInit();
         ((System.ComponentModel.ISupportInitialize)pnlNotesProcess).EndInit();
@@ -8485,7 +8476,7 @@ partial class ItemEditForm
         ((System.ComponentModel.ISupportInitialize)lueCostCurrency.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)spnAnalysisBasePrice.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)grdCostPriceHistory).EndInit();
-        ((System.ComponentModel.ISupportInitialize)gridView8).EndInit();
+        ((System.ComponentModel.ISupportInitialize)gvCostPriceHistoryAux).EndInit();
         ((System.ComponentModel.ISupportInitialize)gvCostPriceHistory).EndInit();
         tabSales.ResumeLayout(false);
         tabSales.PerformLayout();
@@ -8513,7 +8504,7 @@ partial class ItemEditForm
         pnlSalesKpi30d.ResumeLayout(false);
         pnlSalesKpi30d.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)grdSalesPriceLists).EndInit();
-        ((System.ComponentModel.ISupportInitialize)gridView9).EndInit();
+        ((System.ComponentModel.ISupportInitialize)gvSalesPriceListsAux).EndInit();
         ((System.ComponentModel.ISupportInitialize)repoSalesPriceListActive).EndInit();
         ((System.ComponentModel.ISupportInitialize)gvSalesPriceLists).EndInit();
         tabPurchases.ResumeLayout(false);
@@ -8533,12 +8524,12 @@ partial class ItemEditForm
         pnlPurchaseKpiLast.ResumeLayout(false);
         pnlPurchaseKpiLast.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)grdPurchaseHistory).EndInit();
-        ((System.ComponentModel.ISupportInitialize)gridView10).EndInit();
+        ((System.ComponentModel.ISupportInitialize)gvPurchaseHistoryAux).EndInit();
         ((System.ComponentModel.ISupportInitialize)gvPurchaseHistory).EndInit();
         ((System.ComponentModel.ISupportInitialize)pnlPurchaseKpiCompliance).EndInit();
         pnlPurchaseKpiCompliance.ResumeLayout(false);
         pnlPurchaseKpiCompliance.PerformLayout();
-        ((System.ComponentModel.ISupportInitialize)lookUpEdit1.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)luePurchaseUnit.Properties).EndInit();
         tabInventory.ResumeLayout(false);
         tabInventory.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)memInventoryBlockReason.Properties).EndInit();
@@ -8563,7 +8554,7 @@ partial class ItemEditForm
         ((System.ComponentModel.ISupportInitialize)spnLeadTimeDays.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)spnCoverageDays.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)grdWarehouseStock).EndInit();
-        ((System.ComponentModel.ISupportInitialize)gridView11).EndInit();
+        ((System.ComponentModel.ISupportInitialize)gvWarehouseStockAux).EndInit();
         ((System.ComponentModel.ISupportInitialize)gvWarehouseStock).EndInit();
         ((System.ComponentModel.ISupportInitialize)slueDefaultBinLocation.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)gvDefaultBinLocation).EndInit();
@@ -8581,11 +8572,11 @@ partial class ItemEditForm
         ((System.ComponentModel.ISupportInitialize)lueInventoryUnit.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtPreviousInternalCode.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtPlu.Properties).EndInit();
-        ((System.ComponentModel.ISupportInitialize)grdPurchasePresentations).EndInit();
-        ((System.ComponentModel.ISupportInitialize)gridView12).EndInit();
+        ((System.ComponentModel.ISupportInitialize)grdItemPresentations).EndInit();
+        ((System.ComponentModel.ISupportInitialize)gvItemPresentationsAux).EndInit();
         ((System.ComponentModel.ISupportInitialize)repoPurchasePrincipal).EndInit();
         ((System.ComponentModel.ISupportInitialize)repoPurchaseActive).EndInit();
-        ((System.ComponentModel.ISupportInitialize)gvPurchasePresentations).EndInit();
+        ((System.ComponentModel.ISupportInitialize)gvItemPresentations).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtQrCode.Properties).EndInit();
         tabGeneral.ResumeLayout(false);
         tabGeneral.PerformLayout();
@@ -8698,7 +8689,7 @@ partial class ItemEditForm
     private SimpleButton btnUpdateBarcode;
     private SimpleButton btnRemoveBarcode;
     private SimpleButton btnSetMainBarcode;
-    private System.Data.DataTable purchasePresentationsTable;
+    private System.Data.DataTable itemPresentationsTable;
     private System.Data.DataTable warehouseStockTable;
     private System.Data.DataTable allowedLocationsTable;
     private System.Data.DataTable purchasesPresentationsTable;
@@ -8753,7 +8744,7 @@ partial class ItemEditForm
     private SimpleButton btnUpdateOperationalAlert;
     private SimpleButton btnRemoveOperationalAlert;
     private SimpleButton btnClearOperationalAlert;
-    private GridView gridView1;
+    private GridView gvOperationalAlertsAux;
     private XtraTabPage tabAttachments;
     private GridView gridView2;
     private XtraTabPage tabSap;
@@ -8939,7 +8930,7 @@ partial class ItemEditForm
     private SpinEdit spnSimulatorMargin;
     private LabelControl lblSimulatorPrice;
     private LabelControl lblSimulatorEquals;
-    private GridView gridView8;
+    private GridView gvCostPriceHistoryAux;
     private XtraTabPage tabSales;
     private LabelControl lblSalesPricePerformanceTitle;
     private GridControl grdSalesPriceLists;
@@ -8987,10 +8978,10 @@ partial class ItemEditForm
     private LabelControl lblSalesMultipleUnit;
     private LabelControl lblSalesCommission;
     private SpinEdit spnSalesCommission;
-    private GridView gridView9;
+    private GridView gvSalesPriceListsAux;
     private XtraTabPage tabPurchases;
-    private LabelControl labelControl1;
-    private LookUpEdit lookUpEdit1;
+    private LabelControl lblPurchaseUnit;
+    private LookUpEdit luePurchaseUnit;
     private PanelControl pnlPurchaseKpiCompliance;
     private LabelControl lblPurchaseKpiComplianceCaption;
     private LabelControl lblPurchaseKpiComplianceValue;
@@ -9027,7 +9018,7 @@ partial class ItemEditForm
     private ToggleSwitch tglPurchaseOnDemand;
     private MemoEdit memPurchasePolicy;
     private LabelControl lblPurchasePolicy;
-    private GridView gridView10;
+    private GridView gvPurchaseHistoryAux;
     private XtraTabPage tabInventory;
     private SimpleButton btnAddWarehouseStock;
     private SimpleButton btnUpdateWarehouseStock;
@@ -9093,14 +9084,14 @@ partial class ItemEditForm
     private LookUpEdit lueInventoryControlType;
     private LabelControl lblInventoryBlockReason;
     private MemoEdit memInventoryBlockReason;
-    private GridView gridView11;
+    private GridView gvWarehouseStockAux;
     private XtraTabPage tabUnits;
     private LabelControl lblCodesIdentifiersTitle;
     private LabelControl lblQrCode;
     private LabelControl lblPurchasePresentationsTitle;
     private TextEdit txtQrCode;
-    private GridControl grdPurchasePresentations;
-    private GridView gvPurchasePresentations;
+    private GridControl grdItemPresentations;
+    private GridView gvItemPresentations;
     private GridColumn colPurchasePresentation;
     private GridColumn colPurchaseUnit;
     private GridColumn colPurchaseFactor;
@@ -9115,18 +9106,18 @@ partial class ItemEditForm
     private LabelControl lblPlu;
     private LabelControl lblInventoryUnitTitle;
     private TextEdit txtPlu;
-    private SimpleButton btnAddPurchasePresentation;
+    private SimpleButton btnAddItemPresentation;
     private LabelControl lblPreviousInternalCode;
     private LabelControl lblInventoryUnit;
     private TextEdit txtPreviousInternalCode;
-    private SimpleButton btnUpdatePurchasePresentation;
+    private SimpleButton btnUpdateItemPresentation;
     private LabelControl lblManufacturerReference;
     private LookUpEdit lueInventoryUnit;
     private TextEdit txtManufacturerReference;
-    private SimpleButton btnRemovePurchasePresentation;
+    private SimpleButton btnRemoveItemPresentation;
     private LabelControl lblUnspscCode;
     private TextEdit txtUnspscCode;
-    private SimpleButton btnSetMainPurchasePresentation;
+    private SimpleButton btnSetMainItemPresentation;
     private LabelControl lblTariffCode;
     private TextEdit txtTariffCode;
     private LabelControl lblNetWeight;
@@ -9144,7 +9135,7 @@ partial class ItemEditForm
     private LookUpEdit lueWeightUnit;
     private LabelControl lblVolumeUnit;
     private LookUpEdit lueVolumeUnit;
-    private GridView gridView12;
+    private GridView gvItemPresentationsAux;
     private XtraTabPage tabGeneral;
     private LabelControl lblBlockedEcommerce;
     private ToggleSwitch tglBlockedEcommerce;

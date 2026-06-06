@@ -583,6 +583,7 @@ partial class FrmPurchaseOrderEdit
         lblStatus = new LabelControl();
         lblNumberValue = new LabelControl();
         lblNumberCaption = new LabelControl();
+        lueDocumentSeries = new LookUpEdit();
         lblSeriesValue = new LabelControl();
         lblSeriesCaption = new LabelControl();
         lblDocumentNumber = new LabelControl();
@@ -714,6 +715,7 @@ partial class FrmPurchaseOrderEdit
         pnlFooter.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)pnlHeader).BeginInit();
         pnlHeader.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)lueDocumentSeries.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)picLogo.Properties).BeginInit();
         SuspendLayout();
         // 
@@ -3586,6 +3588,7 @@ partial class FrmPurchaseOrderEdit
         pnlHeader.Controls.Add(lblTitle);
         pnlHeader.Controls.Add(lblDocumentNumber);
         pnlHeader.Controls.Add(lblSeriesCaption);
+        pnlHeader.Controls.Add(lueDocumentSeries);
         pnlHeader.Controls.Add(lblSeriesValue);
         pnlHeader.Controls.Add(lblNumberCaption);
         pnlHeader.Controls.Add(lblNumberValue);
@@ -3635,6 +3638,20 @@ partial class FrmPurchaseOrderEdit
         lblNumberCaption.Size = new Size(21, 13);
         lblNumberCaption.TabIndex = 5;
         lblNumberCaption.Text = "No.:";
+        // 
+        // lueDocumentSeries
+        // 
+        lueDocumentSeries.Location = new Point(1070, 44);
+        lueDocumentSeries.Name = "lueDocumentSeries";
+        lueDocumentSeries.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        lueDocumentSeries.Properties.Appearance.Options.UseFont = true;
+        lueDocumentSeries.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        lueDocumentSeries.Properties.DisplayMember = "DisplayText";
+        lueDocumentSeries.Properties.NullText = "";
+        lueDocumentSeries.Properties.ValueMember = "Id";
+        lueDocumentSeries.Size = new Size(135, 22);
+        lueDocumentSeries.TabIndex = 8;
+        lueDocumentSeries.Visible = false;
         // 
         // lblSeriesValue
         // 
@@ -3850,6 +3867,7 @@ partial class FrmPurchaseOrderEdit
         ((System.ComponentModel.ISupportInitialize)pnlHeader).EndInit();
         pnlHeader.ResumeLayout(false);
         pnlHeader.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)lueDocumentSeries.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)picLogo.Properties).EndInit();
         ResumeLayout(false);
     }
@@ -3858,6 +3876,7 @@ partial class FrmPurchaseOrderEdit
     private LabelControl lblTitle;
     private LabelControl lblDocumentNumber;
     private LabelControl lblSeriesCaption;
+    private LookUpEdit lueDocumentSeries;
     private LabelControl lblSeriesValue;
     private LabelControl lblNumberCaption;
     private LabelControl lblNumberValue;

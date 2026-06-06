@@ -20,12 +20,16 @@ public sealed partial class FormEditForm : BaseEditForm
             descriptionMemoEdit.Text = securityForm.Description;
             formKeyTextEdit.Text = copyMode ? string.Empty : securityForm.FormKey;
             formTypeComboBoxEdit.SelectedIndex = Math.Max(0, securityForm.FormType - 1);
+            hasListViewCheckEdit.Checked = securityForm.HasListView;
+            hasEditViewCheckEdit.Checked = securityForm.HasEditView;
             visibleCheckEdit.Checked = securityForm.IsVisible;
             activeCheckEdit.Checked = securityForm.IsActive;
         }
         else
         {
             formTypeComboBoxEdit.SelectedIndex = 0;
+            hasListViewCheckEdit.Checked = true;
+            hasEditViewCheckEdit.Checked = true;
             visibleCheckEdit.Checked = true;
             activeCheckEdit.Checked = true;
         }
@@ -39,6 +43,8 @@ public sealed partial class FormEditForm : BaseEditForm
         null,
         string.Empty,
         1,
+        true,
+        true,
         true,
         true);
 
@@ -57,6 +63,8 @@ public sealed partial class FormEditForm : BaseEditForm
             string.IsNullOrWhiteSpace(descriptionMemoEdit.Text) ? null : descriptionMemoEdit.Text.Trim(),
             formKeyTextEdit.Text.Trim(),
             formTypeComboBoxEdit.SelectedIndex + 1,
+            hasListViewCheckEdit.Checked,
+            hasEditViewCheckEdit.Checked,
             visibleCheckEdit.Checked,
             activeCheckEdit.Checked);
     }

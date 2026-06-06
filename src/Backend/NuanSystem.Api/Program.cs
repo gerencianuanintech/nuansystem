@@ -82,6 +82,9 @@ try
     app.MapSecurityFormEndpoints();
     app.MapSecurityFieldEndpoints();
     app.MapSecurityAccessEndpoints();
+    app.MapSecurityRoleFormAccessEndpoints();
+    app.MapSecurityRoleFormFieldAccessEndpoints();
+    app.MapSecurityDocumentSeriesAccessEndpoints();
     app.MapGridColumnSettingsEndpoints();
     app.MapAuditEndpoints();
 
@@ -91,7 +94,9 @@ try
     app.MapGeneralSupplierEndpoints();
     app.MapGeographyEndpoints();
     app.MapInventoryCatalogEndpoints();
+    app.MapOperationalCatalogEndpoints();
     app.MapPurchaseOrderEndpoints();
+    app.MapSecurityDocumentSeriesEndpoints();
     app.MapTaxCatalogEndpoints();
 
     app.Run();

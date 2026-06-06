@@ -86,7 +86,7 @@ public sealed class NuanApiClient : INuanApiClient
             }
 
             throw new ApiClientException(
-                ResolveEmptyErrorMessage(response),
+                AppendRequestPath(ResolveEmptyErrorMessage(response), response),
                 (int)response.StatusCode);
         }
 
@@ -98,10 +98,23 @@ public sealed class NuanApiClient : INuanApiClient
 
         if (!response.IsSuccessStatusCode || !apiResponse.Success)
         {
-            throw new ApiClientException(apiResponse.Message, (int)response.StatusCode);
+            throw new ApiClientException(AppendRequestPath(apiResponse.Message, response), (int)response.StatusCode);
         }
 
         return apiResponse.Data!;
+    }
+
+    private static string AppendRequestPath(string message, HttpResponseMessage response)
+    {
+        if (response.StatusCode is not (System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden))
+        {
+            return message;
+        }
+
+        var path = response.RequestMessage?.RequestUri?.PathAndQuery;
+        return string.IsNullOrWhiteSpace(path)
+            ? message
+            : $"{message} Ruta: {path}";
     }
 
     private static string ResolveEmptyErrorMessage(HttpResponseMessage response)

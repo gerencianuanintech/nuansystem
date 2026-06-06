@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using DevExpress.XtraEditors;
+using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Grid;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Services.Purchasing.PurchaseOrders.Models;
@@ -10,7 +11,9 @@ public sealed partial class FrmPurchaseOrderEdit : BaseEditForm
 {
     private readonly PurchaseOrderDetail? order;
     private readonly PurchaseOrderLookups lookups;
+    private readonly Func<int, CancellationToken, Task<IReadOnlyCollection<PurchaseOrderFieldAccess>>>? fieldAccessLoader;
     private readonly bool useReferencePreviewData;
+    private IReadOnlyCollection<PurchaseOrderFieldAccess> fieldAccess;
     private readonly BindingList<PurchaseOrderLineItem> lines = new();
     private readonly BindingList<PurchaseOrderApprovalItem> approvals = new();
     private readonly BindingList<PurchaseOrderApprovalFlowItem> approvalFlow = new();
@@ -19,24 +22,41 @@ public sealed partial class FrmPurchaseOrderEdit : BaseEditForm
     private readonly BindingList<PurchaseOrderSapSyncLogItem> sapLogs = new();
 
     public FrmPurchaseOrderEdit()
-        : this(null, CreateDesignLookups(), true)
+        : this(null, CreateDesignLookups(), [], null, true)
     {
     }
 
     public FrmPurchaseOrderEdit(PurchaseOrderDetail? order, PurchaseOrderLookups lookups)
-        : this(order, lookups, false)
+        : this(order, lookups, [], null, false)
     {
     }
 
-    private FrmPurchaseOrderEdit(PurchaseOrderDetail? order, PurchaseOrderLookups lookups, bool useReferencePreviewData)
+    public FrmPurchaseOrderEdit(
+        PurchaseOrderDetail? order,
+        PurchaseOrderLookups lookups,
+        IReadOnlyCollection<PurchaseOrderFieldAccess> fieldAccess,
+        Func<int, CancellationToken, Task<IReadOnlyCollection<PurchaseOrderFieldAccess>>>? fieldAccessLoader)
+        : this(order, lookups, fieldAccess, fieldAccessLoader, false)
+    {
+    }
+
+    private FrmPurchaseOrderEdit(
+        PurchaseOrderDetail? order,
+        PurchaseOrderLookups lookups,
+        IReadOnlyCollection<PurchaseOrderFieldAccess> fieldAccess,
+        Func<int, CancellationToken, Task<IReadOnlyCollection<PurchaseOrderFieldAccess>>>? fieldAccessLoader,
+        bool useReferencePreviewData)
     {
         this.order = order;
         this.lookups = lookups;
+        this.fieldAccess = fieldAccess;
+        this.fieldAccessLoader = fieldAccessLoader;
         this.useReferencePreviewData = useReferencePreviewData;
         InitializeComponent();
         BindData();
         WireEvents();
         LoadOrder();
+        ApplyFieldAccess();
         RefreshAttachmentPreview();
         RefreshTotals();
     }
@@ -47,25 +67,25 @@ public sealed partial class FrmPurchaseOrderEdit : BaseEditForm
 
     protected override bool ValidateForm()
     {
-        return Validator.RequireText(slueSupplier, "Proveedor es obligatorio.")
-            & RequireValue(lueCurrency, "Moneda es obligatoria.")
-            & RequireValue(luePaymentTerm, "Condición de pago es obligatoria.")
-            & RequireValue(lueBuyer, "Comprador es obligatorio.")
-            & RequireValue(lueMainWarehouse, "Bodega principal es obligatoria.")
+        return RequireConfiguredValue("slueSupplier", slueSupplier, "Proveedor es obligatorio.", true)
+            & RequireConfiguredValue("lueCurrency", lueCurrency, "Moneda es obligatoria.", true)
+            & RequireConfiguredValue("luePaymentTerm", luePaymentTerm, "Condicion de pago es obligatoria.", true)
+            & RequireConfiguredValue("lueBuyer", lueBuyer, "Comprador es obligatorio.", true)
+            & RequireConfiguredValue("lueMainWarehouse", lueMainWarehouse, "Bodega principal es obligatoria.", true)
             & ValidateLines();
     }
-
     protected override void BuildRequest()
     {
         CommitLines();
         RefreshTotals();
         var supplier = FindLookup(lookups.Suppliers, ToNullableInt(slueSupplier.EditValue));
+        var selectedSeries = SelectedSeries();
 
         Request = new SavePurchaseOrderRequest(
             null,
-            ToNullableInt(FirstActive(lookups.DocumentSeries)?.Id),
-            FirstActive(lookups.DocumentSeries)?.Code ?? lblSeriesValue.Text,
-            lblNumberValue.Text,
+            order?.DocumentSeriesId ?? selectedSeries?.Id,
+            order?.SeriesCode ?? selectedSeries?.Code ?? lblSeriesValue.Text,
+            order?.DocumentNumber ?? string.Empty,
             ToNullableInt(slueSupplier.EditValue) ?? 0,
             supplier?.Code ?? string.Empty,
             supplier?.Name ?? slueSupplier.Text,
@@ -103,6 +123,7 @@ public sealed partial class FrmPurchaseOrderEdit : BaseEditForm
         lueProject.Properties.DataSource = lookups.Projects;
         lueCostCenter.Properties.DataSource = lookups.CostCenters;
         luePurchaseType.Properties.DataSource = lookups.PurchaseTypes;
+        lueDocumentSeries.Properties.DataSource = lookups.DocumentSeries;
         lueDeliveryAddress.Properties.DataSource = Array.Empty<PurchaseOrderLookupOption>();
         lueBillingAddress.Properties.DataSource = Array.Empty<PurchaseOrderLookupOption>();
         repoItem.DataSource = lookups.Items;
@@ -123,6 +144,7 @@ public sealed partial class FrmPurchaseOrderEdit : BaseEditForm
     {
         btnSave.Click += (_, _) => Save();
         btnCancel.Click += (_, _) => Close();
+        lueDocumentSeries.EditValueChanged += async (_, _) => await ApplySelectedSeriesAsync();
         slueSupplier.EditValueChanged += (_, _) => ApplySupplierDefaults();
         spnGlobalDiscountPercent.EditValueChanged += (_, _) => RefreshTotals();
         viewLines.CellValueChanged += (_, _) => RefreshCurrentLine();
@@ -151,8 +173,9 @@ public sealed partial class FrmPurchaseOrderEdit : BaseEditForm
     {
         deDocumentDate.DateTime = order?.DocumentDate == default ? DateTime.Today : order?.DocumentDate ?? DateTime.Today;
         deDeliveryDate.DateTime = order?.DeliveryDate == default ? DateTime.Today : order?.DeliveryDate ?? DateTime.Today;
-        lblSeriesValue.Text = order?.SeriesCode ?? FirstActive(lookups.DocumentSeries)?.Code ?? "OC-2026";
-        lblNumberValue.Text = order?.DocumentNumber ?? "OC-000001";
+        ConfigureDocumentSeriesSelector();
+        lblSeriesValue.Text = order?.SeriesCode ?? SelectedSeries()?.Code ?? string.Empty;
+        lblNumberValue.Text = order?.DocumentNumber ?? "Pendiente";
         lblDocumentNumber.Text = lblNumberValue.Text;
         lblStatus.Text = DisplayStatus(order?.Status ?? "Draft").ToUpperInvariant();
         txtSapStatus.Text = DisplaySapStatus(order?.SapStatus ?? "Pending");
@@ -247,6 +270,120 @@ public sealed partial class FrmPurchaseOrderEdit : BaseEditForm
         lueProject.EditValue = FirstActive(lookups.Projects)?.Id;
         lueCostCenter.EditValue = FirstActive(lookups.CostCenters)?.Id;
         luePurchaseType.EditValue = FirstActive(lookups.PurchaseTypes)?.Id;
+        lueDocumentSeries.EditValue = FirstActive(lookups.DocumentSeries)?.Id;
+        ApplySelectedSeries();
+    }
+
+    private void ConfigureDocumentSeriesSelector()
+    {
+        lueDocumentSeries.Properties.DataSource = lookups.DocumentSeries;
+
+        if (order is not null)
+        {
+            lueDocumentSeries.EditValue = order.DocumentSeriesId ?? lookups.DocumentSeries.FirstOrDefault(item => item.Code == order.SeriesCode)?.Id;
+            lueDocumentSeries.Visible = false;
+            lblSeriesValue.Visible = true;
+            return;
+        }
+
+        if (lookups.DocumentSeries.Count > 1)
+        {
+            lueDocumentSeries.Visible = true;
+            lblSeriesValue.Visible = false;
+            lueDocumentSeries.EditValue = FirstActive(lookups.DocumentSeries)?.Id;
+        }
+        else
+        {
+            lueDocumentSeries.Visible = false;
+            lblSeriesValue.Visible = true;
+            lueDocumentSeries.EditValue = FirstActive(lookups.DocumentSeries)?.Id;
+        }
+
+        ApplySelectedSeries();
+    }
+
+    private void ApplySelectedSeries()
+    {
+        if (SelectedSeries() is not { } series)
+        {
+            lblSeriesValue.Text = string.Empty;
+            return;
+        }
+
+        lblSeriesValue.Text = series.Code;
+    }
+
+    private async Task ApplySelectedSeriesAsync()
+    {
+        ApplySelectedSeries();
+
+        if (fieldAccessLoader is null || SelectedSeries() is not { } series)
+        {
+            return;
+        }
+
+        try
+        {
+            fieldAccess = await fieldAccessLoader(series.Id, CancellationToken.None);
+            ApplyFieldAccess();
+        }
+        catch (Exception ex)
+        {
+            XtraMessageBox.Show(this, ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+
+    private void ApplyFieldAccess()
+    {
+        foreach (var access in fieldAccess)
+        {
+            ApplyFieldAccess(access);
+        }
+    }
+
+    private void ApplyFieldAccess(PurchaseOrderFieldAccess access)
+    {
+        if (string.IsNullOrWhiteSpace(access.FieldKey))
+        {
+            return;
+        }
+
+        if (Controls.Find(access.FieldKey, true).FirstOrDefault() is Control control)
+        {
+            control.Visible = access.IsVisible;
+            control.Enabled = access.IsVisible && access.IsEditable && !access.IsReadOnly;
+
+            if (control is BaseEdit editor)
+            {
+                editor.Properties.ReadOnly = !access.IsEditable || access.IsReadOnly;
+            }
+
+            return;
+        }
+
+        if (GetType().GetField(access.FieldKey, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.GetValue(this) is GridColumn column)
+        {
+            column.Visible = access.IsVisible;
+            column.OptionsColumn.AllowEdit = access.IsEditable && !access.IsReadOnly;
+            column.OptionsColumn.ReadOnly = !access.IsEditable || access.IsReadOnly;
+        }
+    }
+
+    private bool RequireConfiguredValue(string fieldKey, BaseEdit control, string message, bool defaultRequired)
+    {
+        var access = fieldAccess.FirstOrDefault(item => item.FieldKey == fieldKey);
+        var isRequired = access?.IsRequired ?? defaultRequired;
+        var isVisible = access?.IsVisible ?? control.Visible;
+
+        return !isRequired || !isVisible || RequireValue(control, message);
+    }
+
+    private PurchaseOrderLookupOption? SelectedSeries()
+    {
+        var selectedId = ToNullableInt(lueDocumentSeries.EditValue);
+        return selectedId.HasValue
+            ? lookups.DocumentSeries.FirstOrDefault(item => item.Id == selectedId.Value)
+            : FirstActive(lookups.DocumentSeries);
     }
 
     private void LoadReferencePreviewData()

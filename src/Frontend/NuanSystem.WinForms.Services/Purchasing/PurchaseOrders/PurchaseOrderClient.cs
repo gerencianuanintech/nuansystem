@@ -17,9 +17,14 @@ public sealed class PurchaseOrderClient(INuanApiClient apiClient) : IPurchaseOrd
         return apiClient.GetAsync<PurchaseOrderDetail>($"{BasePath}/{id}", cancellationToken);
     }
 
-    public Task<PurchaseOrderLookups> GetLookupsAsync(CancellationToken cancellationToken = default)
+    public Task<PurchaseOrderLookups> GetLookupsAsync(string actionKey, CancellationToken cancellationToken = default)
     {
-        return apiClient.GetAsync<PurchaseOrderLookups>($"{BasePath}/lookups", cancellationToken);
+        return apiClient.GetAsync<PurchaseOrderLookups>($"{BasePath}/lookups?actionKey={Uri.EscapeDataString(actionKey)}", cancellationToken);
+    }
+
+    public Task<IReadOnlyCollection<PurchaseOrderFieldAccess>> GetFieldAccessAsync(int seriesId, CancellationToken cancellationToken = default)
+    {
+        return apiClient.GetAsync<IReadOnlyCollection<PurchaseOrderFieldAccess>>($"{BasePath}/field-access?seriesId={seriesId}", cancellationToken);
     }
 
     public Task<PurchaseOrderDetail> CreateAsync(SavePurchaseOrderRequest request, CancellationToken cancellationToken = default)

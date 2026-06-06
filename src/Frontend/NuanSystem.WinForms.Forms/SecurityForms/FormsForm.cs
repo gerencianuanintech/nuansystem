@@ -154,8 +154,10 @@ public sealed partial class FormsForm : BaseGridCrudListForm
         ConfigureColumn(nameof(SecurityFormItem.Description), "Descripcion", 3, 240);
         ConfigureColumn(nameof(SecurityFormItem.FormKey), "Clave", 4, 160);
         ConfigureColumn(nameof(SecurityFormItem.FormTypeName), "Tipo", 5, 110);
-        ConfigureColumn(nameof(SecurityFormItem.IsVisible), "Visible", 6, 70);
-        ConfigureColumn(nameof(SecurityFormItem.IsActive), "Activo", 7, 70);
+        ConfigureColumn(nameof(SecurityFormItem.HasListView), "Listado", 6, 70);
+        ConfigureColumn(nameof(SecurityFormItem.HasEditView), "Edicion", 7, 70);
+        ConfigureColumn(nameof(SecurityFormItem.IsVisible), "Visible", 8, 70);
+        ConfigureColumn(nameof(SecurityFormItem.IsActive), "Activo", 9, 70);
     }
 
     private SecurityFormItem? SelectedItem()

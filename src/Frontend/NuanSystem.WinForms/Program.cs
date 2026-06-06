@@ -3,6 +3,8 @@ using NuanSystem.WinForms.Forms.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.Forms.Auth;
 using NuanSystem.WinForms.Forms.BusinessPartners;
 using NuanSystem.WinForms.Forms.ConfigurationCompanies;
+using NuanSystem.WinForms.Forms.Documents.SecurityDocumentSeries;
+using NuanSystem.WinForms.Forms.OperationalCatalogs;
 using NuanSystem.WinForms.Forms.InventoryItems;
 using NuanSystem.WinForms.Forms.Purchasing.PurchaseOrders;
 using NuanSystem.WinForms.Forms.Roles;
@@ -74,6 +76,8 @@ using NuanSystem.WinForms.Services.Companies;
 using NuanSystem.WinForms.Services.ConfigurationCompanies;
 using NuanSystem.WinForms.Services.ConfigurationSettings;
 using NuanSystem.WinForms.Services.Configuration;
+using NuanSystem.WinForms.Services.Documents.SecurityDocumentSeries;
+using NuanSystem.WinForms.Services.OperationalCatalogs;
 using NuanSystem.WinForms.Services.BusinessPartners;
 using NuanSystem.WinForms.Services.Http;
 using NuanSystem.WinForms.Services.GridColumnSettings;
@@ -104,6 +108,8 @@ using NuanSystem.WinForms.ViewModels.BusinessPartners;
 using NuanSystem.WinForms.ViewModels.Companies;
 using NuanSystem.WinForms.ViewModels.ConfigurationCompanies;
 using NuanSystem.WinForms.ViewModels.ConfigurationSettings;
+using NuanSystem.WinForms.ViewModels.Documents.SecurityDocumentSeries;
+using NuanSystem.WinForms.ViewModels.OperationalCatalogs;
 using NuanSystem.WinForms.ViewModels.FinancialCatalogs.Catalogs;
 using NuanSystem.WinForms.ViewModels.TaxCatalogs.Catalogs;
 using NuanSystem.WinForms.ViewModels.Geography;
@@ -229,6 +235,8 @@ internal sealed class FrontendComposition : IDisposable
     private readonly GeneralSupplierCatalogClient generalSupplierCatalogClient;
     private readonly GeneralInventoryCatalogClient generalInventoryCatalogClient;
     private readonly ItemGroupClient itemGroupClient;
+    private readonly SecurityDocumentSeriesClient securityDocumentSeriesClient;
+    private readonly OperationalCatalogClient operationalCatalogClient;
     private readonly ItemFamilyClient itemFamilyClient;
     private readonly ItemClient itemClient;
     private readonly PurchaseOrderClient purchaseOrderClient;
@@ -243,6 +251,11 @@ internal sealed class FrontendComposition : IDisposable
     private readonly SecurityFormClient securityFormClient;
     private readonly SecurityFieldClient securityFieldClient;
     private readonly SecurityAccessClient securityAccessClient;
+    private readonly SecurityRoleFormAccessClient securityRoleFormAccessClient;
+    private readonly SecurityTransactionalFormAccessClient securityTransactionalFormAccessClient;
+    private readonly SecurityDocumentSeriesAccessClient securityDocumentSeriesAccessClient;
+    private readonly SecurityRoleFormFieldAccessClient securityMaintenanceFieldAccessClient;
+    private readonly SecurityRoleFormFieldAccessClient securityTransactionalFieldAccessClient;
     private readonly GridColumnSettingsClient gridColumnSettingsClient;
 
     public FrontendComposition(ApiClientOptions options)
@@ -266,6 +279,8 @@ internal sealed class FrontendComposition : IDisposable
         generalSupplierCatalogClient = new GeneralSupplierCatalogClient(apiClient);
         generalInventoryCatalogClient = new GeneralInventoryCatalogClient(apiClient);
         itemGroupClient = new ItemGroupClient(apiClient);
+        securityDocumentSeriesClient = new SecurityDocumentSeriesClient(apiClient);
+        operationalCatalogClient = new OperationalCatalogClient(apiClient);
         itemFamilyClient = new ItemFamilyClient(apiClient);
         itemClient = new ItemClient(apiClient);
         purchaseOrderClient = new PurchaseOrderClient(apiClient);
@@ -280,6 +295,11 @@ internal sealed class FrontendComposition : IDisposable
         securityFormClient = new SecurityFormClient(apiClient);
         securityFieldClient = new SecurityFieldClient(apiClient);
         securityAccessClient = new SecurityAccessClient(apiClient);
+        securityRoleFormAccessClient = new SecurityRoleFormAccessClient(apiClient);
+        securityTransactionalFormAccessClient = new SecurityTransactionalFormAccessClient(apiClient);
+        securityDocumentSeriesAccessClient = new SecurityDocumentSeriesAccessClient(apiClient);
+        securityMaintenanceFieldAccessClient = new SecurityRoleFormFieldAccessClient(apiClient, "/api/security/maintenance-field-access");
+        securityTransactionalFieldAccessClient = new SecurityRoleFormFieldAccessClient(apiClient, "/api/security/transactional-field-access");
         gridColumnSettingsClient = new GridColumnSettingsClient(apiClient);
     }
 
@@ -311,7 +331,10 @@ internal sealed class FrontendComposition : IDisposable
             CreateMenusForm,
             CreateFormsForm,
             CreateFieldsForm,
-            CreateRoleAccessForm,
+            CreateSecurityMaintenanceFormAccessForm,
+            CreateSecurityTransactionalFormAccessForm,
+            CreateSecurityMaintenanceFieldAccessForm,
+            CreateSecurityTransactionalFieldAccessForm,
             CreateCustomersForm,
             CreateSuppliersForm,
             CreateChartOfAccountsForm,
@@ -346,6 +369,8 @@ internal sealed class FrontendComposition : IDisposable
             CreateCitiesForm,
             CreateGeneralInventoryCatalogForm,
             CreateItemGroupsForm,
+            CreateSecurityDocumentSeriesForm,
+            CreateOperationalCatalogsForm,
             CreateItemFamiliesForm,
             CreateItemsForm,
             CreatePurchaseOrdersForm,
@@ -769,6 +794,23 @@ internal sealed class FrontendComposition : IDisposable
         return new ItemGroupsForm(new ItemGroupsViewModel(itemGroupClient, chartOfAccountClient), session, auditClient, gridColumnSettingsClient);
     }
 
+    public SecurityDocumentSeriesForm CreateSecurityDocumentSeriesForm()
+    {
+        return new SecurityDocumentSeriesForm(
+            new SecurityDocumentSeriesViewModel(securityDocumentSeriesClient, operationalCatalogClient),
+            session,
+            auditClient,
+            gridColumnSettingsClient);
+    }
+
+    public OperationalCatalogsForm CreateOperationalCatalogsForm()
+    {
+        return new OperationalCatalogsForm(
+            new OperationalCatalogsViewModel(operationalCatalogClient),
+            session,
+            gridColumnSettingsClient);
+    }
+
     public ItemFamiliesForm CreateItemFamiliesForm()
     {
         return new ItemFamiliesForm(new ItemFamiliesViewModel(itemFamilyClient, itemClient), session, auditClient, gridColumnSettingsClient);
@@ -809,9 +851,39 @@ internal sealed class FrontendComposition : IDisposable
         return new FieldsForm(new FieldsViewModel(securityFieldClient, securityFormClient), session, auditClient, gridColumnSettingsClient);
     }
 
-    public RoleAccessForm CreateRoleAccessForm()
+    public SecurityMaintenanceFormAccessForm CreateSecurityMaintenanceFormAccessForm()
     {
-        return new RoleAccessForm(new RoleAccessViewModel(roleClient, securityAccessClient));
+        return new SecurityMaintenanceFormAccessForm(
+            new SecurityMaintenanceFormAccessViewModel(roleClient, securityRoleFormAccessClient));
+    }
+
+    public SecurityTransactionalFormAccessForm CreateSecurityTransactionalFormAccessForm()
+    {
+        return new SecurityTransactionalFormAccessForm(
+            new SecurityTransactionalFormAccessViewModel(
+                roleClient,
+                securityTransactionalFormAccessClient,
+                securityDocumentSeriesAccessClient));
+    }
+
+    public SecurityMaintenanceFieldAccessForm CreateSecurityMaintenanceFieldAccessForm()
+    {
+        return new SecurityMaintenanceFieldAccessForm(
+            new SecurityFormFieldAccessViewModel(
+                roleClient,
+                securityRoleFormAccessClient,
+                securityMaintenanceFieldAccessClient,
+                1));
+    }
+
+    public SecurityTransactionalFieldAccessForm CreateSecurityTransactionalFieldAccessForm()
+    {
+        return new SecurityTransactionalFieldAccessForm(
+            new SecurityTransactionalFieldAccessViewModel(
+                roleClient,
+                securityRoleFormAccessClient,
+                securityDocumentSeriesAccessClient,
+                securityTransactionalFieldAccessClient));
     }
 
     public ItemsForm CreateItemsForm()

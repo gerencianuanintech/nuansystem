@@ -9,6 +9,9 @@ namespace NuanSystem.WinForms.Forms.Purchasing.PurchaseOrders;
 
 public sealed class PurchaseOrdersForm : BaseGridCrudListForm
 {
+    private const string ActionCreate = "create";
+    private const string ActionUpdate = "update";
+    private const string ActionConsult = "consult";
     private readonly PurchaseOrdersViewModel viewModel;
     private readonly ApiSession session;
 
@@ -45,8 +48,15 @@ public sealed class PurchaseOrdersForm : BaseGridCrudListForm
 
     protected override async Task CreateAsync()
     {
-        await viewModel.LoadLookupsAsync();
-        using var form = new FrmPurchaseOrderEdit(null, viewModel.Lookups);
+        await viewModel.LoadLookupsAsync(ActionCreate);
+        if (viewModel.Lookups.DocumentSeries.Count == 0)
+        {
+            ShowWarning("No tienes series autorizadas para crear ordenes de compra.");
+            return;
+        }
+
+        var fieldAccess = await LoadFieldAccessAsync(FirstActiveSeriesId(viewModel.Lookups));
+        using var form = new FrmPurchaseOrderEdit(null, viewModel.Lookups, fieldAccess, viewModel.GetFieldAccessAsync);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -64,9 +74,16 @@ public sealed class PurchaseOrdersForm : BaseGridCrudListForm
             return;
         }
 
-        await viewModel.LoadLookupsAsync();
+        await viewModel.LoadLookupsAsync(ActionUpdate);
+        if (viewModel.Lookups.DocumentSeries.Count == 0)
+        {
+            ShowWarning("No tienes series autorizadas para editar ordenes de compra.");
+            return;
+        }
+
         var detail = await viewModel.GetByIdAsync(item.Id);
-        using var form = new FrmPurchaseOrderEdit(detail, viewModel.Lookups);
+        var fieldAccess = await LoadFieldAccessAsync(detail.DocumentSeriesId ?? FirstActiveSeriesId(viewModel.Lookups));
+        using var form = new FrmPurchaseOrderEdit(detail, viewModel.Lookups, fieldAccess, viewModel.GetFieldAccessAsync);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -84,10 +101,11 @@ public sealed class PurchaseOrdersForm : BaseGridCrudListForm
             return;
         }
 
-        await viewModel.LoadLookupsAsync();
+        await viewModel.LoadLookupsAsync(ActionConsult);
         var detail = await viewModel.GetByIdAsync(item.Id);
+        var fieldAccess = await LoadFieldAccessAsync(detail.DocumentSeriesId ?? FirstActiveSeriesId(viewModel.Lookups));
         using (BaseEditForm.BeginReadOnlyMode())
-        using (var form = new FrmPurchaseOrderEdit(detail, viewModel.Lookups))
+        using (var form = new FrmPurchaseOrderEdit(detail, viewModel.Lookups, fieldAccess, viewModel.GetFieldAccessAsync))
         {
             form.ShowDialog(this);
         }
@@ -151,6 +169,18 @@ public sealed class PurchaseOrdersForm : BaseGridCrudListForm
     private PurchaseOrderItem? SelectedItem()
     {
         return SelectedGridItem<PurchaseOrderItem>();
+    }
+
+    private async Task<IReadOnlyCollection<PurchaseOrderFieldAccess>> LoadFieldAccessAsync(int? seriesId)
+    {
+        return seriesId is > 0
+            ? await viewModel.GetFieldAccessAsync(seriesId.Value)
+            : [];
+    }
+
+    private static int? FirstActiveSeriesId(PurchaseOrderLookups lookups)
+    {
+        return lookups.DocumentSeries.FirstOrDefault(item => item.IsActive)?.Id;
     }
 
     private void ConfigureColumn(string fieldName, string caption, int visibleIndex, int width)

@@ -18,6 +18,8 @@ partial class FormEditForm
         formKeyTextEdit = new TextEdit();
         lblTipo = new LabelControl();
         formTypeComboBoxEdit = new ComboBoxEdit();
+        hasListViewCheckEdit = new CheckEdit();
+        hasEditViewCheckEdit = new CheckEdit();
         visibleCheckEdit = new CheckEdit();
         activeCheckEdit = new CheckEdit();
         btnGuardar = new SimpleButton();
@@ -27,6 +29,8 @@ partial class FormEditForm
         ((System.ComponentModel.ISupportInitialize)descriptionMemoEdit.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)formKeyTextEdit.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)formTypeComboBoxEdit.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)hasListViewCheckEdit.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)hasEditViewCheckEdit.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)visibleCheckEdit.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)activeCheckEdit.Properties).BeginInit();
         SuspendLayout();
@@ -81,18 +85,30 @@ partial class FormEditForm
         formTypeComboBoxEdit.Location = new Point(140, 162);
         formTypeComboBoxEdit.Size = new Size(160, 20);
         formTypeComboBoxEdit.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
-        formTypeComboBoxEdit.Properties.Items.AddRange(new object[] { "Listado", "Edicion", "Reporte", "Dialogo", "Proceso" });
+        formTypeComboBoxEdit.Properties.Items.AddRange(new object[] { "Mantenimiento", "Transaccional", "Reporte", "Dialogo", "Proceso" });
         formTypeComboBoxEdit.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
+        // 
+        // hasListViewCheckEdit
+        // 
+        hasListViewCheckEdit.Location = new Point(306, 162);
+        hasListViewCheckEdit.Properties.Caption = "Listado";
+        hasListViewCheckEdit.Size = new Size(75, 20);
+        // 
+        // hasEditViewCheckEdit
+        // 
+        hasEditViewCheckEdit.Location = new Point(386, 162);
+        hasEditViewCheckEdit.Properties.Caption = "Edicion";
+        hasEditViewCheckEdit.Size = new Size(75, 20);
         // 
         // visibleCheckEdit
         // 
-        visibleCheckEdit.Location = new Point(306, 162);
+        visibleCheckEdit.Location = new Point(140, 188);
         visibleCheckEdit.Properties.Caption = "Visible";
         visibleCheckEdit.Size = new Size(75, 20);
         // 
         // activeCheckEdit
         // 
-        activeCheckEdit.Location = new Point(386, 162);
+        activeCheckEdit.Location = new Point(220, 188);
         activeCheckEdit.Properties.Caption = "Activo";
         activeCheckEdit.Size = new Size(75, 20);
         // 
@@ -106,7 +122,8 @@ partial class FormEditForm
         btnGuardar.AppearanceHovered.ForeColor = Color.White;
         btnGuardar.AppearanceHovered.Options.UseBackColor = true;
         btnGuardar.AppearanceHovered.Options.UseForeColor = true;
-        btnGuardar.ImageOptions.SvgImageSize = new Size(32, 32);        btnGuardar.Location = new Point(294, 205);
+        btnGuardar.ImageOptions.SvgImageSize = new Size(32, 32);
+        btnGuardar.Location = new Point(294, 218);
         btnGuardar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         btnGuardar.LookAndFeel.UseDefaultLookAndFeel = false;
         btnGuardar.Size = new Size(100, 36);
@@ -124,8 +141,9 @@ partial class FormEditForm
         btnCancelar.AppearanceHovered.Options.UseForeColor = true;
         btnCancelar.ImageOptions.SvgImageSize = new Size(32, 32);
         btnCancelar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
-        btnCancelar.LookAndFeel.UseDefaultLookAndFeel = false;        btnCancelar.DialogResult = DialogResult.Cancel;
-        btnCancelar.Location = new Point(400, 205);
+        btnCancelar.LookAndFeel.UseDefaultLookAndFeel = false;
+        btnCancelar.DialogResult = DialogResult.Cancel;
+        btnCancelar.Location = new Point(400, 218);
         btnCancelar.Size = new Size(100, 36);
         btnCancelar.Text = "Cancelar";
         lblCodigo.Appearance.Font = new Font("Segoe UI", 9F);
@@ -155,8 +173,8 @@ partial class FormEditForm
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = btnCancelar;
-        ClientSize = new Size(540, 260);
-        Controls.AddRange(new Control[] { lblCodigo, codeTextEdit, lblNombre, nameTextEdit, lblDescripcion, descriptionMemoEdit, lblFormKey, formKeyTextEdit, lblTipo, formTypeComboBoxEdit, visibleCheckEdit, activeCheckEdit, btnGuardar, btnCancelar });
+        ClientSize = new Size(540, 274);
+        Controls.AddRange(new Control[] { lblCodigo, codeTextEdit, lblNombre, nameTextEdit, lblDescripcion, descriptionMemoEdit, lblFormKey, formKeyTextEdit, lblTipo, formTypeComboBoxEdit, hasListViewCheckEdit, hasEditViewCheckEdit, visibleCheckEdit, activeCheckEdit, btnGuardar, btnCancelar });
         Font = new Font("Segoe UI", 9F);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -168,6 +186,8 @@ partial class FormEditForm
         ((System.ComponentModel.ISupportInitialize)descriptionMemoEdit.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)formKeyTextEdit.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)formTypeComboBoxEdit.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)hasListViewCheckEdit.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)hasEditViewCheckEdit.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)visibleCheckEdit.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)activeCheckEdit.Properties).EndInit();
         ResumeLayout(false);
@@ -194,6 +214,8 @@ partial class FormEditForm
     private TextEdit formKeyTextEdit;
     private LabelControl lblTipo;
     private ComboBoxEdit formTypeComboBoxEdit;
+    private CheckEdit hasListViewCheckEdit;
+    private CheckEdit hasEditViewCheckEdit;
     private CheckEdit visibleCheckEdit;
     private CheckEdit activeCheckEdit;
     private SimpleButton btnGuardar;

@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
+using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
+using NuanSystem.Application.Features.Purchasing.PurchaseOrders;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders.Commands;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders.Dtos;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders.Queries;
@@ -22,13 +24,53 @@ public static class PurchaseOrderEndpoints
         .RequireFormOperation("purchase-orders", "refresh");
 
         app.MapGet("/api/purchase-orders/lookups", async (
+            string? actionKey,
+            ClaimsPrincipal user,
+            ICompanyContext companyContext,
             ISender sender,
             CancellationToken cancellationToken) =>
         {
-            var result = await sender.Send(new GetPurchaseOrderLookupsQuery(), cancellationToken);
+            if (companyContext.CurrentCompany is null)
+            {
+                return Results.BadRequest("Debe seleccionar una empresa.");
+            }
+
+            var auditUser = user.GetAuditUser();
+            var result = await sender.Send(
+                new GetPurchaseOrderLookupsQuery(
+                    auditUser.UserId ?? 0,
+                    companyContext.CurrentCompany.CompanyCode,
+                    PurchaseOrderSecurity.FormKeyEdit,
+                    PurchaseOrderSecurity.DocumentType,
+                    string.IsNullOrWhiteSpace(actionKey) ? PurchaseOrderSecurity.ActionCreate : actionKey),
+                cancellationToken);
             return result.ToHttpResult();
         })
         .RequireFormOperation("purchase-orders", "refresh");
+
+        app.MapGet("/api/purchase-orders/field-access", async (
+            int seriesId,
+            ClaimsPrincipal user,
+            ICompanyContext companyContext,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            if (companyContext.CurrentCompany is null)
+            {
+                return Results.BadRequest("Debe seleccionar una empresa.");
+            }
+
+            var auditUser = user.GetAuditUser();
+            var result = await sender.Send(
+                new GetPurchaseOrderFieldAccessQuery(
+                    auditUser.UserId ?? 0,
+                    companyContext.CurrentCompany.CompanyCode,
+                    seriesId),
+                cancellationToken);
+
+            return result.ToHttpResult();
+        })
+        .RequireFormOperation("purchase-orders", "consult");
 
         app.MapGet("/api/purchase-orders/{id:int}", async (
             int id,

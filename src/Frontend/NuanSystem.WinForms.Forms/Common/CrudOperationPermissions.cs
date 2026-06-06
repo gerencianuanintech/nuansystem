@@ -32,6 +32,18 @@ public sealed record CrudOperationPermissions(
         PermissionCodes.PurchaseOrdersManage,
         PermissionCodes.PurchaseOrdersManage);
 
+    public static CrudOperationPermissions SecurityDocumentSeries { get; } = new(
+        PermissionCodes.DocumentsSeriesRead,
+        PermissionCodes.DocumentsSeriesCreate,
+        PermissionCodes.DocumentsSeriesUpdate,
+        PermissionCodes.DocumentsSeriesDelete);
+
+    public static CrudOperationPermissions OperationalCatalogs { get; } = new(
+        PermissionCodes.OperationalCatalogsRead,
+        PermissionCodes.OperationalCatalogsManage,
+        PermissionCodes.OperationalCatalogsManage,
+        PermissionCodes.OperationalCatalogsManage);
+
     public static CrudOperationPermissions ItemGroups { get; } = new(
         PermissionCodes.ItemsRead,
         PermissionCodes.ItemsManage,

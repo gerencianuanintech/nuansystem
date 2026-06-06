@@ -1,0 +1,403 @@
+using System.Drawing;
+using DevExpress.XtraEditors;
+using DevExpress.XtraEditors.Controls;
+
+namespace NuanSystem.WinForms.Forms.BusinessPartners;
+
+partial class SupplierBankAccountEditDialog
+{
+    private System.ComponentModel.IContainer components = null;
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && (components != null))
+        {
+            components.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    private void InitializeComponent()
+    {
+        pnlMain = new PanelControl();
+        lblBank = new LabelControl();
+        lueBank = new LookUpEdit();
+        lblBankBranch = new LabelControl();
+        txtBankBranch = new TextEdit();
+        lblBankAccountType = new LabelControl();
+        lueBankAccountType = new LookUpEdit();
+        lblBankAccountNumber = new LabelControl();
+        txtBankAccountNumber = new TextEdit();
+        lblBankCurrency = new LabelControl();
+        lueBankCurrency = new LookUpEdit();
+        lblBankAccountHolder = new LabelControl();
+        txtBankAccountHolder = new TextEdit();
+        lblBankHolderIdentification = new LabelControl();
+        txtBankHolderIdentification = new TextEdit();
+        lblSwiftBic = new LabelControl();
+        txtSwiftBic = new TextEdit();
+        lblCciIban = new LabelControl();
+        txtCciIban = new TextEdit();
+        lblBankCountry = new LabelControl();
+        lueBankCountry = new LookUpEdit();
+        lblBankNotificationEmail = new LabelControl();
+        txtBankNotificationEmail = new TextEdit();
+        lblBankNotes = new LabelControl();
+        memBankNotes = new MemoEdit();
+        lblBankDefault = new LabelControl();
+        tglBankDefault = new ToggleSwitch();
+        lblBankDefaultValue = new LabelControl();
+        lblBankActive = new LabelControl();
+        tglBankActive = new ToggleSwitch();
+        lblBankActiveValue = new LabelControl();
+        pnlFooter = new PanelControl();
+        btnSaveBankAccount = new SimpleButton();
+        btnCancelBankAccount = new SimpleButton();
+        ((System.ComponentModel.ISupportInitialize)pnlMain).BeginInit();
+        pnlMain.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)lueBank.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)txtBankBranch.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueBankAccountType.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)txtBankAccountNumber.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueBankCurrency.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)txtBankAccountHolder.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)txtBankHolderIdentification.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)txtSwiftBic.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)txtCciIban.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueBankCountry.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)txtBankNotificationEmail.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)memBankNotes.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)tglBankDefault.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)tglBankActive.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)pnlFooter).BeginInit();
+        pnlFooter.SuspendLayout();
+        SuspendLayout();
+        // 
+        // pnlMain
+        // 
+        pnlMain.BorderStyle = BorderStyles.NoBorder;
+        pnlMain.Controls.Add(lblBank);
+        pnlMain.Controls.Add(lueBank);
+        pnlMain.Controls.Add(lblBankBranch);
+        pnlMain.Controls.Add(txtBankBranch);
+        pnlMain.Controls.Add(lblBankAccountType);
+        pnlMain.Controls.Add(lueBankAccountType);
+        pnlMain.Controls.Add(lblBankAccountNumber);
+        pnlMain.Controls.Add(txtBankAccountNumber);
+        pnlMain.Controls.Add(lblBankCurrency);
+        pnlMain.Controls.Add(lueBankCurrency);
+        pnlMain.Controls.Add(lblBankAccountHolder);
+        pnlMain.Controls.Add(txtBankAccountHolder);
+        pnlMain.Controls.Add(lblBankHolderIdentification);
+        pnlMain.Controls.Add(txtBankHolderIdentification);
+        pnlMain.Controls.Add(lblSwiftBic);
+        pnlMain.Controls.Add(txtSwiftBic);
+        pnlMain.Controls.Add(lblCciIban);
+        pnlMain.Controls.Add(txtCciIban);
+        pnlMain.Controls.Add(lblBankCountry);
+        pnlMain.Controls.Add(lueBankCountry);
+        pnlMain.Controls.Add(lblBankNotificationEmail);
+        pnlMain.Controls.Add(txtBankNotificationEmail);
+        pnlMain.Controls.Add(lblBankNotes);
+        pnlMain.Controls.Add(memBankNotes);
+        pnlMain.Controls.Add(lblBankDefault);
+        pnlMain.Controls.Add(tglBankDefault);
+        pnlMain.Controls.Add(lblBankDefaultValue);
+        pnlMain.Controls.Add(lblBankActive);
+        pnlMain.Controls.Add(tglBankActive);
+        pnlMain.Controls.Add(lblBankActiveValue);
+        pnlMain.Dock = DockStyle.Fill;
+        pnlMain.Location = new Point(0, 0);
+        pnlMain.Name = "pnlMain";
+        pnlMain.Size = new Size(620, 356);
+        pnlMain.TabIndex = 0;
+        // 
+        // left column
+        // 
+        lblBank.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblBank.Appearance.Options.UseFont = true;
+        lblBank.Location = new Point(22, 26);
+        lblBank.Name = "lblBank";
+        lblBank.Text = "Banco:";
+        lueBank.Location = new Point(150, 23);
+        lueBank.Name = "lueBank";
+        lueBank.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lueBank.Properties.Appearance.Options.UseFont = true;
+        lueBank.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        lueBank.Properties.NullText = string.Empty;
+        lueBank.Size = new Size(224, 22);
+        lueBank.TabIndex = 1;
+        lblBankBranch.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblBankBranch.Appearance.Options.UseFont = true;
+        lblBankBranch.Location = new Point(22, 56);
+        lblBankBranch.Name = "lblBankBranch";
+        lblBankBranch.Text = "Sucursal:";
+        txtBankBranch.Location = new Point(150, 53);
+        txtBankBranch.Name = "txtBankBranch";
+        txtBankBranch.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        txtBankBranch.Properties.Appearance.Options.UseFont = true;
+        txtBankBranch.Size = new Size(224, 22);
+        txtBankBranch.TabIndex = 3;
+        lblBankAccountType.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblBankAccountType.Appearance.Options.UseFont = true;
+        lblBankAccountType.Location = new Point(22, 86);
+        lblBankAccountType.Name = "lblBankAccountType";
+        lblBankAccountType.Text = "Tipo de Cuenta:";
+        lueBankAccountType.Location = new Point(150, 83);
+        lueBankAccountType.Name = "lueBankAccountType";
+        lueBankAccountType.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lueBankAccountType.Properties.Appearance.Options.UseFont = true;
+        lueBankAccountType.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        lueBankAccountType.Properties.NullText = string.Empty;
+        lueBankAccountType.Size = new Size(224, 22);
+        lueBankAccountType.TabIndex = 5;
+        lblBankAccountNumber.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblBankAccountNumber.Appearance.Options.UseFont = true;
+        lblBankAccountNumber.Location = new Point(22, 116);
+        lblBankAccountNumber.Name = "lblBankAccountNumber";
+        lblBankAccountNumber.Text = "N° de Cuenta:";
+        txtBankAccountNumber.Location = new Point(150, 113);
+        txtBankAccountNumber.Name = "txtBankAccountNumber";
+        txtBankAccountNumber.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        txtBankAccountNumber.Properties.Appearance.Options.UseFont = true;
+        txtBankAccountNumber.Size = new Size(224, 22);
+        txtBankAccountNumber.TabIndex = 7;
+        lblBankCurrency.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblBankCurrency.Appearance.Options.UseFont = true;
+        lblBankCurrency.Location = new Point(22, 146);
+        lblBankCurrency.Name = "lblBankCurrency";
+        lblBankCurrency.Text = "Moneda:";
+        lueBankCurrency.Location = new Point(150, 143);
+        lueBankCurrency.Name = "lueBankCurrency";
+        lueBankCurrency.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lueBankCurrency.Properties.Appearance.Options.UseFont = true;
+        lueBankCurrency.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        lueBankCurrency.Properties.NullText = string.Empty;
+        lueBankCurrency.Size = new Size(224, 22);
+        lueBankCurrency.TabIndex = 9;
+        lblBankAccountHolder.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblBankAccountHolder.Appearance.Options.UseFont = true;
+        lblBankAccountHolder.Location = new Point(22, 176);
+        lblBankAccountHolder.Name = "lblBankAccountHolder";
+        lblBankAccountHolder.Text = "Titular:";
+        txtBankAccountHolder.Location = new Point(150, 173);
+        txtBankAccountHolder.Name = "txtBankAccountHolder";
+        txtBankAccountHolder.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        txtBankAccountHolder.Properties.Appearance.Options.UseFont = true;
+        txtBankAccountHolder.Size = new Size(224, 22);
+        txtBankAccountHolder.TabIndex = 11;
+        lblBankHolderIdentification.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblBankHolderIdentification.Appearance.Options.UseFont = true;
+        lblBankHolderIdentification.Location = new Point(22, 206);
+        lblBankHolderIdentification.Name = "lblBankHolderIdentification";
+        lblBankHolderIdentification.Text = "Identificación:";
+        txtBankHolderIdentification.Location = new Point(150, 203);
+        txtBankHolderIdentification.Name = "txtBankHolderIdentification";
+        txtBankHolderIdentification.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        txtBankHolderIdentification.Properties.Appearance.Options.UseFont = true;
+        txtBankHolderIdentification.Size = new Size(224, 22);
+        txtBankHolderIdentification.TabIndex = 13;
+        lblSwiftBic.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblSwiftBic.Appearance.Options.UseFont = true;
+        lblSwiftBic.Location = new Point(22, 236);
+        lblSwiftBic.Name = "lblSwiftBic";
+        lblSwiftBic.Text = "SWIFT / BIC:";
+        txtSwiftBic.Location = new Point(150, 233);
+        txtSwiftBic.Name = "txtSwiftBic";
+        txtSwiftBic.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        txtSwiftBic.Properties.Appearance.Options.UseFont = true;
+        txtSwiftBic.Size = new Size(224, 22);
+        txtSwiftBic.TabIndex = 15;
+        // 
+        // right column
+        // 
+        lblCciIban.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblCciIban.Appearance.Options.UseFont = true;
+        lblCciIban.Location = new Point(398, 26);
+        lblCciIban.Name = "lblCciIban";
+        lblCciIban.Text = "CCI / IBAN:";
+        txtCciIban.Location = new Point(472, 23);
+        txtCciIban.Name = "txtCciIban";
+        txtCciIban.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        txtCciIban.Properties.Appearance.Options.UseFont = true;
+        txtCciIban.Size = new Size(126, 22);
+        txtCciIban.TabIndex = 17;
+        lblBankCountry.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblBankCountry.Appearance.Options.UseFont = true;
+        lblBankCountry.Location = new Point(398, 56);
+        lblBankCountry.Name = "lblBankCountry";
+        lblBankCountry.Text = "País:";
+        lueBankCountry.Location = new Point(472, 53);
+        lueBankCountry.Name = "lueBankCountry";
+        lueBankCountry.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lueBankCountry.Properties.Appearance.Options.UseFont = true;
+        lueBankCountry.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        lueBankCountry.Properties.NullText = string.Empty;
+        lueBankCountry.Size = new Size(126, 22);
+        lueBankCountry.TabIndex = 19;
+        lblBankNotificationEmail.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblBankNotificationEmail.Appearance.Options.UseFont = true;
+        lblBankNotificationEmail.Location = new Point(398, 86);
+        lblBankNotificationEmail.Name = "lblBankNotificationEmail";
+        lblBankNotificationEmail.Text = "Correo:";
+        txtBankNotificationEmail.Location = new Point(472, 83);
+        txtBankNotificationEmail.Name = "txtBankNotificationEmail";
+        txtBankNotificationEmail.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        txtBankNotificationEmail.Properties.Appearance.Options.UseFont = true;
+        txtBankNotificationEmail.Size = new Size(126, 22);
+        txtBankNotificationEmail.TabIndex = 21;
+        lblBankNotes.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblBankNotes.Appearance.Options.UseFont = true;
+        lblBankNotes.Location = new Point(398, 116);
+        lblBankNotes.Name = "lblBankNotes";
+        lblBankNotes.Text = "Observaciones:";
+        memBankNotes.Location = new Point(398, 137);
+        memBankNotes.Name = "memBankNotes";
+        memBankNotes.Properties.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        memBankNotes.Properties.Appearance.Options.UseFont = true;
+        memBankNotes.Size = new Size(200, 84);
+        memBankNotes.TabIndex = 23;
+        lblBankDefault.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblBankDefault.Appearance.Options.UseFont = true;
+        lblBankDefault.Location = new Point(398, 236);
+        lblBankDefault.Name = "lblBankDefault";
+        lblBankDefault.Text = "Predeterminada:";
+        tglBankDefault.Location = new Point(502, 231);
+        tglBankDefault.Name = "tglBankDefault";
+        tglBankDefault.Properties.OffText = string.Empty;
+        tglBankDefault.Properties.OnText = string.Empty;
+        tglBankDefault.Size = new Size(48, 24);
+        tglBankDefault.TabIndex = 25;
+        lblBankDefaultValue.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblBankDefaultValue.Appearance.Options.UseFont = true;
+        lblBankDefaultValue.Location = new Point(558, 236);
+        lblBankDefaultValue.Name = "lblBankDefaultValue";
+        lblBankDefaultValue.Text = "Sí";
+        lblBankActive.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblBankActive.Appearance.Options.UseFont = true;
+        lblBankActive.Location = new Point(398, 266);
+        lblBankActive.Name = "lblBankActive";
+        lblBankActive.Text = "Activa:";
+        tglBankActive.Location = new Point(502, 261);
+        tglBankActive.Name = "tglBankActive";
+        tglBankActive.Properties.OffText = string.Empty;
+        tglBankActive.Properties.OnText = string.Empty;
+        tglBankActive.Size = new Size(48, 24);
+        tglBankActive.TabIndex = 28;
+        lblBankActiveValue.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lblBankActiveValue.Appearance.Options.UseFont = true;
+        lblBankActiveValue.Location = new Point(558, 266);
+        lblBankActiveValue.Name = "lblBankActiveValue";
+        lblBankActiveValue.Text = "Sí";
+        // 
+        // pnlFooter
+        // 
+        pnlFooter.BorderStyle = BorderStyles.NoBorder;
+        pnlFooter.Controls.Add(btnSaveBankAccount);
+        pnlFooter.Controls.Add(btnCancelBankAccount);
+        pnlFooter.Dock = DockStyle.Bottom;
+        pnlFooter.Location = new Point(0, 356);
+        pnlFooter.Name = "pnlFooter";
+        pnlFooter.Size = new Size(620, 58);
+        pnlFooter.TabIndex = 1;
+        // 
+        // btnSaveBankAccount
+        // 
+        btnSaveBankAccount.Appearance.BackColor = Color.FromArgb(0, 102, 204);
+        btnSaveBankAccount.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point);
+        btnSaveBankAccount.Appearance.ForeColor = Color.White;
+        btnSaveBankAccount.Appearance.Options.UseBackColor = true;
+        btnSaveBankAccount.Appearance.Options.UseFont = true;
+        btnSaveBankAccount.Appearance.Options.UseForeColor = true;
+        btnSaveBankAccount.Location = new Point(264, 12);
+        btnSaveBankAccount.Name = "btnSaveBankAccount";
+        btnSaveBankAccount.Size = new Size(108, 32);
+        btnSaveBankAccount.TabIndex = 0;
+        btnSaveBankAccount.Text = "Guardar";
+        // 
+        // btnCancelBankAccount
+        // 
+        btnCancelBankAccount.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point);
+        btnCancelBankAccount.Appearance.Options.UseFont = true;
+        btnCancelBankAccount.DialogResult = DialogResult.Cancel;
+        btnCancelBankAccount.Location = new Point(386, 12);
+        btnCancelBankAccount.Name = "btnCancelBankAccount";
+        btnCancelBankAccount.Size = new Size(108, 32);
+        btnCancelBankAccount.TabIndex = 1;
+        btnCancelBankAccount.Text = "Cancelar";
+        // 
+        // SupplierBankAccountEditDialog
+        // 
+        AcceptButton = btnSaveBankAccount;
+        AutoScaleDimensions = new SizeF(7F, 15F);
+        AutoScaleMode = AutoScaleMode.Font;
+        CancelButton = btnCancelBankAccount;
+        ClientSize = new Size(620, 414);
+        Controls.Add(pnlMain);
+        Controls.Add(pnlFooter);
+        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        FormBorderStyle = FormBorderStyle.FixedDialog;
+        MaximizeBox = false;
+        MinimizeBox = false;
+        Name = "SupplierBankAccountEditDialog";
+        ShowInTaskbar = false;
+        StartPosition = FormStartPosition.CenterParent;
+        Text = "Nueva Cuenta Bancaria";
+        ((System.ComponentModel.ISupportInitialize)pnlMain).EndInit();
+        pnlMain.ResumeLayout(false);
+        pnlMain.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)lueBank.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)txtBankBranch.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueBankAccountType.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)txtBankAccountNumber.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueBankCurrency.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)txtBankAccountHolder.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)txtBankHolderIdentification.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)txtSwiftBic.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)txtCciIban.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueBankCountry.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)txtBankNotificationEmail.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)memBankNotes.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)tglBankDefault.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)tglBankActive.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)pnlFooter).EndInit();
+        pnlFooter.ResumeLayout(false);
+        ResumeLayout(false);
+    }
+
+    private PanelControl pnlMain;
+    private LabelControl lblBank;
+    private LookUpEdit lueBank;
+    private LabelControl lblBankBranch;
+    private TextEdit txtBankBranch;
+    private LabelControl lblBankAccountType;
+    private LookUpEdit lueBankAccountType;
+    private LabelControl lblBankAccountNumber;
+    private TextEdit txtBankAccountNumber;
+    private LabelControl lblBankCurrency;
+    private LookUpEdit lueBankCurrency;
+    private LabelControl lblBankAccountHolder;
+    private TextEdit txtBankAccountHolder;
+    private LabelControl lblBankHolderIdentification;
+    private TextEdit txtBankHolderIdentification;
+    private LabelControl lblSwiftBic;
+    private TextEdit txtSwiftBic;
+    private LabelControl lblCciIban;
+    private TextEdit txtCciIban;
+    private LabelControl lblBankCountry;
+    private LookUpEdit lueBankCountry;
+    private LabelControl lblBankNotificationEmail;
+    private TextEdit txtBankNotificationEmail;
+    private LabelControl lblBankNotes;
+    private MemoEdit memBankNotes;
+    private LabelControl lblBankDefault;
+    private ToggleSwitch tglBankDefault;
+    private LabelControl lblBankDefaultValue;
+    private LabelControl lblBankActive;
+    private ToggleSwitch tglBankActive;
+    private LabelControl lblBankActiveValue;
+    private PanelControl pnlFooter;
+    private SimpleButton btnSaveBankAccount;
+    private SimpleButton btnCancelBankAccount;
+}

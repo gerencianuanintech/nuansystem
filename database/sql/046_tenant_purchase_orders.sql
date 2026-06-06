@@ -28,34 +28,6 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_PurchaseTypes_Code_Ac
 IF NOT EXISTS (SELECT 1 FROM dbo.PurchaseTypes WHERE Code = N'LOCAL' AND IsDeleted = 0)
     INSERT INTO dbo.PurchaseTypes (Code, Name, Description, CreatedByUserName) VALUES (N'LOCAL', N'Compra local', N'Orden de compra local.', N'Sistema');
 
-IF OBJECT_ID(N'dbo.DocumentSeries', N'U') IS NULL
-BEGIN
-    CREATE TABLE dbo.DocumentSeries
-    (
-        Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_DocumentSeries PRIMARY KEY,
-        DocumentType nvarchar(50) NOT NULL,
-        Code nvarchar(50) NOT NULL,
-        Name nvarchar(200) NOT NULL,
-        Prefix nvarchar(20) NULL,
-        CurrentNumber int NOT NULL CONSTRAINT DF_DocumentSeries_CurrentNumber DEFAULT 0,
-        IsDefault bit NOT NULL CONSTRAINT DF_DocumentSeries_IsDefault DEFAULT 0,
-        IsActive bit NOT NULL CONSTRAINT DF_DocumentSeries_IsActive DEFAULT 1,
-        IsDeleted bit NOT NULL CONSTRAINT DF_DocumentSeries_IsDeleted DEFAULT 0,
-        CreatedByUserId int NULL,
-        CreatedByUserName nvarchar(256) NULL,
-        CreatedAt datetime2(0) NOT NULL CONSTRAINT DF_DocumentSeries_CreatedAt DEFAULT SYSUTCDATETIME(),
-        UpdatedByUserId int NULL,
-        UpdatedByUserName nvarchar(256) NULL,
-        UpdatedAt datetime2(0) NULL
-    );
-END;
-
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_DocumentSeries_Type_Code_Active' AND object_id = OBJECT_ID(N'dbo.DocumentSeries'))
-    CREATE UNIQUE INDEX UX_DocumentSeries_Type_Code_Active ON dbo.DocumentSeries (DocumentType, Code) WHERE IsDeleted = 0;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.DocumentSeries WHERE DocumentType = N'PurchaseOrder' AND Code = N'OC-2026' AND IsDeleted = 0)
-    INSERT INTO dbo.DocumentSeries (DocumentType, Code, Name, Prefix, IsDefault, CreatedByUserName) VALUES (N'PurchaseOrder', N'OC-2026', N'Ordenes de compra 2026', N'OC', 1, N'Sistema');
-
 IF OBJECT_ID(N'dbo.PurchaseOrderHeaders', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.PurchaseOrderHeaders
@@ -302,17 +274,17 @@ BEGIN
 
     SELECT Id, Code, Name, IsActive FROM dbo.BusinessPartners WHERE IsDeleted = 0 AND IsActive = 1 AND PartnerType IN (N'Supplier', N'Both') ORDER BY Name;
     SELECT Id, Code, Name, IsActive FROM dbo.Items WHERE IsDeleted = 0 AND IsActive = 1 AND IsPurchaseItem = 1 ORDER BY Name;
-    SELECT Id, Code, Name, IsActive FROM dbo.UnitMeasures WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
+    SELECT Id, Code, Name, IsActive FROM dbo.UnitOfMeasures WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
     SELECT Id, Code, Name, IsActive FROM dbo.Warehouses WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
     SELECT Id, Code, Name, Rate, IsActive FROM dbo.Taxes WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
-    SELECT Id, Code, Name, IsActive FROM dbo.Currencies WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
-    SELECT Id, Code, Name, IsActive FROM dbo.PaymentTerms WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
-    SELECT Id, Code, Name, IsActive FROM dbo.PriceLists WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
-    SELECT Id, Code, Name, IsActive FROM dbo.PurchasingAgents WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
-    SELECT Id, Code, Name, IsActive FROM dbo.CostCenters WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
-    SELECT Id, Code, Name, IsActive FROM dbo.Projects WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
+    SELECT CurrencyId AS Id, Code, Name, IsActive FROM dbo.Currencies WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
+    SELECT Id, Code, Name, IsActive FROM dbo.BusinessPartnerPaymentTerms WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
+    SELECT PriceListId AS Id, Code, Name, IsActive FROM dbo.PriceLists WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
+    SELECT PurchasingAgentId AS Id, Code, Name, IsActive FROM dbo.PurchasingAgents WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
+    SELECT CostCenterId AS Id, Code, Name, IsActive FROM dbo.CostCenters WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
+    SELECT ProjectId AS Id, Code, Name, IsActive FROM dbo.Projects WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
     SELECT Id, Code, Name, IsActive FROM dbo.PurchaseTypes WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY Name;
-    SELECT Id, Code, Name, IsActive FROM dbo.DocumentSeries WHERE IsDeleted = 0 AND IsActive = 1 AND DocumentType = N'PurchaseOrder' ORDER BY IsDefault DESC, Name;
+    SELECT Id, Code, Name, IsActive FROM dbo.SecurityDocumentSeries WHERE IsDeleted = 0 AND IsActive = 1 AND DocumentType = N'PURCHASE_ORDER' ORDER BY IsDefault DESC, Name;
 END;
 GO
 

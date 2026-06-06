@@ -39,9 +39,12 @@ public sealed class SqlServerTenantDatabaseInitializer(
                       "018_inventory_items_master.sql",
                       "021_inventory_item_families_master.sql",
                       "043_inventory_item_master_profile.sql",
+                      "044_inventory_auxiliary_catalogs.sql",
                       "048_tenant_sap_supplier_import.sql",
-                      "050_tenant_sap_sync_worker.sql"
-                  })
+                      "050_tenant_sap_sync_worker.sql",
+                      "051_tenant_security_document_series.sql",
+                      "053_tenant_operational_catalog.sql"
+                   })
         {
             var scriptPath = FindDatabaseScriptPath(fileName);
             if (scriptPath is null)

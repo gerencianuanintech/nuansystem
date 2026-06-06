@@ -6,6 +6,8 @@ public sealed record CreateSecurityFormData(
     string? Description,
     string FormKey,
     int FormType,
+    bool HasListView,
+    bool HasEditView,
     bool IsVisible,
     bool IsActive,
     int? CreatedByUserId,

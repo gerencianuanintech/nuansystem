@@ -41,6 +41,8 @@ public sealed class UpdateSecurityFormCommandHandler(ISecurityFormRepository for
             request.Description?.Trim(),
             formKey,
             request.FormType,
+            request.HasListView,
+            request.HasEditView,
             request.IsVisible,
             request.IsActive,
             request.AuditUserId,

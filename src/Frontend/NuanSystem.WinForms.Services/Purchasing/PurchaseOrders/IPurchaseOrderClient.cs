@@ -8,7 +8,9 @@ public interface IPurchaseOrderClient
 
     Task<PurchaseOrderDetail> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
-    Task<PurchaseOrderLookups> GetLookupsAsync(CancellationToken cancellationToken = default);
+    Task<PurchaseOrderLookups> GetLookupsAsync(string actionKey, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<PurchaseOrderFieldAccess>> GetFieldAccessAsync(int seriesId, CancellationToken cancellationToken = default);
 
     Task<PurchaseOrderDetail> CreateAsync(SavePurchaseOrderRequest request, CancellationToken cancellationToken = default);
 

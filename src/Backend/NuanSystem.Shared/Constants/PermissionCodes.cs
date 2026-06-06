@@ -6,6 +6,11 @@ public static class PermissionCodes
     public const string UsersManage = "SECURITY.USERS.MANAGE";
     public const string RolesManage = "SECURITY.ROLES.MANAGE";
     public const string SecurityAccessBypass = "SECURITY.ACCESS.BYPASS";
+    public const string SecurityFormAccessMaintenanceManage = "SECURITY.FORMACCESS.MAINTENANCE.MANAGE";
+    public const string SecurityFormAccessTransactionalManage = "SECURITY.FORMACCESS.TRANSACTIONAL.MANAGE";
+    public const string SecurityDocumentSeriesAccessManage = "SECURITY.DOCUMENTSERIESACCESS.MANAGE";
+    public const string SecurityFieldAccessMaintenanceManage = "SECURITY.FIELDACCESS.MAINTENANCE.MANAGE";
+    public const string SecurityFieldAccessTransactionalManage = "SECURITY.FIELDACCESS.TRANSACTIONAL.MANAGE";
     public const string AuditRead = "SECURITY.AUDIT.READ";
     public const string BusinessPartnersRead = "CATALOG.BUSINESSPARTNERS.READ";
     public const string BusinessPartnersManage = "CATALOG.BUSINESSPARTNERS.MANAGE";
@@ -120,6 +125,13 @@ public static class PermissionCodes
     public const string PurchaseOrdersManage = "PURCHASING.PURCHASEORDERS.MANAGE";
     public const string PurchaseOrdersApprove = "PURCHASING.PURCHASEORDERS.APPROVE";
     public const string PurchaseOrdersSyncSap = "PURCHASING.PURCHASEORDERS.SYNC_SAP";
+    public const string DocumentsSeriesRead = "DOCUMENTS.SERIES.READ";
+    public const string DocumentsSeriesCreate = "DOCUMENTS.SERIES.CREATE";
+    public const string DocumentsSeriesUpdate = "DOCUMENTS.SERIES.UPDATE";
+    public const string DocumentsSeriesDelete = "DOCUMENTS.SERIES.DELETE";
+    public const string DocumentsSeriesManage = "DOCUMENTS.SERIES.MANAGE";
+    public const string OperationalCatalogsRead = "OPERATIONALCATALOGS.READ";
+    public const string OperationalCatalogsManage = "OPERATIONALCATALOGS.MANAGE";
     public const string AccountingRead = "ACCOUNTING.CHARTOFACCOUNTS.READ";
     public const string AccountingManage = "ACCOUNTING.CHARTOFACCOUNTS.MANAGE";
     public const string SapRead = "SAP.SYNC.READ";
@@ -132,6 +144,11 @@ public static class PermissionCodes
         UsersManage,
         RolesManage,
         SecurityAccessBypass,
+        SecurityFormAccessMaintenanceManage,
+        SecurityFormAccessTransactionalManage,
+        SecurityDocumentSeriesAccessManage,
+        SecurityFieldAccessMaintenanceManage,
+        SecurityFieldAccessTransactionalManage,
         AuditRead,
         BusinessPartnersRead,
         BusinessPartnersManage,
@@ -242,6 +259,13 @@ public static class PermissionCodes
         PurchaseOrdersManage,
         PurchaseOrdersApprove,
         PurchaseOrdersSyncSap,
+        DocumentsSeriesRead,
+        DocumentsSeriesCreate,
+        DocumentsSeriesUpdate,
+        DocumentsSeriesDelete,
+        DocumentsSeriesManage,
+        OperationalCatalogsRead,
+        OperationalCatalogsManage,
         AccountingRead,
         AccountingManage,
         SapRead,
