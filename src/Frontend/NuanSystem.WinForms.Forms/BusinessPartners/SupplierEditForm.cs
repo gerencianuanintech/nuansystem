@@ -14,6 +14,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
 {
     private BusinessPartnerLookups lookups;
     private readonly BusinessPartnerItem? partner;
+    private readonly bool useDesignData;
     private readonly BindingList<SupplierContactViewModel> contacts = new();
     private readonly BindingList<SupplierAddressViewModel> addresses = new();
     private readonly BindingList<SupplierPurchaseHistoryViewModel> purchaseHistory = new();
@@ -24,7 +25,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
     private readonly BindingList<SupplierAttachmentViewModel> attachments = new();
 
     public SupplierEditForm()
-        : this(null, CreateDesignLookups())
+        : this(null, CreateDesignLookups(), useDesignData: true)
     {
     }
 
@@ -35,10 +36,12 @@ public sealed partial class SupplierEditForm : BaseEditForm
         ApiSession? session = null,
         Func<string, Form?>? relatedMaintenanceFormFactory = null,
         Func<CancellationToken, Task<BusinessPartnerLookups>>? reloadLookupsAsync = null,
-        IGeographyClient? geographyClient = null)
+        IGeographyClient? geographyClient = null,
+        bool useDesignData = false)
     {
         this.partner = partner;
         this.lookups = lookups;
+        this.useDesignData = useDesignData;
 
         InitializeComponent();
 
@@ -75,28 +78,123 @@ public sealed partial class SupplierEditForm : BaseEditForm
 
     protected override bool ValidateForm()
     {
-        return Validator.RequireText(txtSupplierCode, "Código es requerido.")
+        var isValid = Validator.RequireText(txtSupplierCode, "Código es requerido.")
             & Validator.RequireText(txtBusinessName, "Razón social es requerida.")
             & Validator.RequireText(txtDocumentNumber, "RUC / Identificación es requerido.")
             & RequireLookup(lueDocumentType, "Tipo de documento es requerido.");
+
+        if (!ValidateSingleActivePrimary(contacts, contact => contact.IsPrimary && contact.IsActive, "Solo puede existir un contacto principal activo."))
+        {
+            isValid = false;
+        }
+
+        if (!ValidateSingleActivePrimary(addresses, address => address.IsPrimary && address.IsActive, "Solo puede existir una dirección principal activa."))
+        {
+            isValid = false;
+        }
+
+        if (!ValidateSingleActivePrimary(bankAccounts, account => account.IsDefault && account.IsActive, "Solo puede existir una cuenta bancaria principal activa."))
+        {
+            isValid = false;
+        }
+
+        if (LookupSelectedCode(lueDocumentType, lookups.IdentificationTypes) == "RUC" && !IsValidRuc(txtDocumentNumber.Text))
+        {
+            Validator.SetError(txtDocumentNumber, "RUC debe tener 11 o 13 dígitos según el país configurado.");
+            isValid = false;
+        }
+
+        if (withholdings.Any(item => item.IncomeTaxWithholdingPercent is < 0 or > 100 || item.VatWithholdingPercent is < 0 or > 100))
+        {
+            XtraMessageBox.Show(this, "Los porcentajes de retención deben estar entre 0 y 100.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            isValid = false;
+        }
+
+        return isValid;
     }
 
     protected override void BuildRequest()
     {
-        Request = EmptyRequest() with
+        var (province, city) = SplitProvinceCity(txtProvinceCity.Text);
+        var request = EmptyRequest() with
         {
             Code = txtSupplierCode.Text.Trim(),
             Name = txtBusinessName.Text.Trim(),
             CommercialName = NullIfEmpty(txtTradeName.Text),
+            PartnerType = "Supplier",
             IdentificationTypeId = ToInt(lueDocumentType.EditValue),
             IdentificationNumber = txtDocumentNumber.Text.Trim(),
             SupplierGroupId = ToNullableInt(lueSupplierCategory.EditValue),
+            SupplierClassId = partner?.SupplierClassId,
+            EconomicActivityId = partner?.EconomicActivityId,
+            ZoneId = partner?.ZoneId,
+            SupplyMethodId = partner?.SupplyMethodId,
             Email = NullIfEmpty(txtEmail.Text),
             Phone = NullIfEmpty(txtPhone.Text),
+            Website = NullIfEmpty(txtWebsite.Text),
             Remarks = NullIfEmpty(memShortObservation.Text),
             IsActive = tglSupplierActive.IsOn,
-            PreferredCurrencyCode = LookupCode(lueCurrency)
+            TaxpayerType = NullIfEmpty(Convert.ToString(luePersonType.EditValue)),
+            IsAccountingRequired = tglAutomaticAccounting.IsOn,
+            AppliesRetention = tglSubjectToWithholding.IsOn || tglWithholdingAgent.IsOn,
+            FiscalRegime = NullIfEmpty(Convert.ToString(lueFiscalCondition.EditValue)),
+            CountryCode = LookupCode(lueCountry),
+            Province = province,
+            City = city,
+            AccountingBySupplier = tglAutomaticAccounting.IsOn,
+            RequiresProvision = tglRequiresPurchaseOrder.IsOn,
+            AllowsAdvance = tglHandlesAdvances.IsOn,
+            AllowsPartialPayments = true,
+            IsPaymentBlocked = tglBlocked.IsOn || tglAccountingBlocked.IsOn,
+            UsesWithholdingBase = tglWithholdingAgent.IsOn,
+            ConciliationRequired = tglRequiresReconciliation.IsOn,
+            AccountingPaymentMethodId = partner?.AccountingPaymentMethodId,
+            PaymentPriorityId = partner?.PaymentPriorityId,
+            ApprovalFlowId = partner?.ApprovalFlowId,
+            PaymentDocumentTypeId = partner?.PaymentDocumentTypeId,
+            AccountingPaymentMethod = NullIfEmpty(partner?.AccountingPaymentMethod),
+            PaymentPriority = NullIfEmpty(partner?.PaymentPriority),
+            RequiredPaymentDay = NullIfEmpty(partner?.RequiredPaymentDay),
+            ApprovalFlow = NullIfEmpty(partner?.ApprovalFlow),
+            PaymentDocumentType = NullIfEmpty(partner?.PaymentDocumentType),
+            AveragePaymentDays = ToInt(spnAverageDeliveryDays.EditValue),
+            PaymentTolerancePercent = spnDeliveryToleranceDays.Value,
+            PaymentTermId = partner?.PaymentTermId,
+            CreditDays = ToInt(spnPaymentTermDays.EditValue),
+            CreditLimit = spnCreditLimit.Value,
+            DeliveryDays = ToInt(spnDeliveryTermDays.EditValue),
+            MinimumOrderAmount = spnMinimumOrderAmount.Value,
+            AllowsBackorder = tglAllowsUrgentPurchases.IsOn,
+            PreferredCurrencyCode = LookupCode(lueCurrency),
+            PriceListCode = LookupTextCode(luePurchasePriceList),
+            AssignedBuyerCode = LookupTextCode(lueAssignedBuyer),
+            CreditStatus = tglHandlesCredit.IsOn ? "Normal" : "NoCredit",
+            SapCardCode = NullIfEmpty(partner?.SapCardCode),
+            SapCardType = "S",
+            SapSyncStatus = SapStatusFromUi(),
+            SapLastSyncAt = partner?.SapLastSyncAt,
+            SapLastError = NullIfEmpty(partner?.SapLastError),
+            SapEnabled = tglSapAutoUpdate.IsOn || tglSapSynchronized.IsOn,
+            SapMode = NullIfEmpty(txtSapDataOrigin.Text),
+            SapCompanyCode = NullIfEmpty(partner?.SapCompanyCode),
+            SapRetryCount = partner?.SapRetryCount ?? 0,
+            SyncAsSupplier = true,
+            AllowManualSapRetry = !tglSapErrorBlocked.IsOn,
+            RequiresApprovalBeforeSapSync = !tglSapIntegrationValid.IsOn,
+            Addresses = SupplierBusinessPartnerMapper.ToAddressRequests(addresses, lookups),
+            Contacts = SupplierBusinessPartnerMapper.ToContactRequests(contacts),
+            BankAccounts = SupplierBusinessPartnerMapper.ToBankAccountRequests(bankAccounts, lookups),
+            RetentionSettings = SupplierBusinessPartnerMapper.ToRetentionRequests(withholdings, lookups),
+            Notes = new SaveBusinessPartnerNotesRequest(
+                InternalNotes: NullIfEmpty(memGeneralComments.Text),
+                PurchasingNotes: NullIfEmpty(memSupplierObservations.Text),
+                PaymentNotes: NullIfEmpty(memShortObservation.Text),
+                OperationalAlert: tglBlocked.IsOn ? "Proveedor bloqueado" : null),
+            SapFieldMappings = SupplierBusinessPartnerMapper.ToSapFieldMappingRequests(partner),
+            Attachments = SupplierBusinessPartnerMapper.ToAttachmentRequests(attachments)
         };
+
+        Request = SupplierBusinessPartnerMapper.ApplyAccountingFields(request, accountingAccounts, lookups);
     }
 
     private void BindLookups()
@@ -122,62 +220,49 @@ public sealed partial class SupplierEditForm : BaseEditForm
     private void LoadPartner()
     {
         Text = "Mantenimiento de Proveedores";
-        txtSupplierCode.Text = partner?.Code ?? "P001";
-        txtBusinessName.Text = partner?.Name ?? "ACME S.A.C.";
-        txtTradeName.Text = partner?.CommercialName ?? "ACME";
-        txtDocumentNumber.Text = partner?.IdentificationNumber ?? "20123456789";
-        txtMainContact.Text = partner?.Contacts?.FirstOrDefault(x => x.IsPrimary)?.Name ?? "Carlos Alberto Ramírez Flores";
-        txtPhone.Text = partner?.Phone ?? "(01) 123-4567";
-        txtEmail.Text = partner?.Email ?? "ventas@acme.com.pe";
-        memShortObservation.Text = partner?.Remarks ?? "Proveedor de repuestos y suministros industriales.";
+        txtSupplierCode.Text = partner?.Code ?? (useDesignData ? "P001" : string.Empty);
+        txtBusinessName.Text = partner?.Name ?? (useDesignData ? "ACME S.A.C." : string.Empty);
+        txtTradeName.Text = partner?.CommercialName ?? (useDesignData ? "ACME" : string.Empty);
+        txtDocumentNumber.Text = partner?.IdentificationNumber ?? (useDesignData ? "20123456789" : string.Empty);
+        txtMainContact.Text = partner?.Contacts?.FirstOrDefault(x => x.IsPrimary)?.Name ?? (useDesignData ? "Carlos Alberto Ramírez Flores" : string.Empty);
+        txtPhone.Text = partner?.Phone ?? (useDesignData ? "(01) 123-4567" : string.Empty);
+        txtEmail.Text = partner?.Email ?? (useDesignData ? "ventas@acme.com.pe" : string.Empty);
+        memShortObservation.Text = partner?.Remarks ?? (useDesignData ? "Proveedor de repuestos y suministros industriales." : string.Empty);
         tglSupplierActive.IsOn = partner?.IsActive ?? true;
         txtProvinceCity.Text = string.IsNullOrWhiteSpace(partner?.Province) && string.IsNullOrWhiteSpace(partner?.City)
-            ? "Lima / Lima"
+            ? useDesignData ? "Lima / Lima" : string.Empty
             : $"{partner?.Province} / {partner?.City}".Trim(' ', '/');
-        txtWebsite.Text = partner?.Website ?? "www.acme.com.pe";
-        dteRegistrationDate.EditValue = partner?.CreatedAt == default ? new DateTime(2022, 3, 15) : partner?.CreatedAt;
-        spnCreditLimit.Value = partner?.CreditLimit > 0 ? partner.CreditLimit : 50000m;
-        spnPaymentTermDays.Value = partner?.CreditDays > 0 ? partner.CreditDays : 30m;
-        tglActiveForPurchases.IsOn = true;
-        tglSubjectToWithholding.IsOn = partner?.AppliesRetention ?? true;
-        tglHandlesCredit.IsOn = true;
-        tglBlocked.IsOn = false;
-        memGeneralComments.Text = "Proveedor estratégico para compras recurrentes de repuestos, suministros industriales y materiales operativos.";
+        txtWebsite.Text = partner?.Website ?? (useDesignData ? "www.acme.com.pe" : string.Empty);
+        dteRegistrationDate.EditValue = partner?.CreatedAt == default ? useDesignData ? new DateTime(2022, 3, 15) : null : partner?.CreatedAt;
+        spnCreditLimit.Value = partner?.CreditLimit > 0 ? partner.CreditLimit : useDesignData ? 50000m : 0m;
+        spnPaymentTermDays.Value = partner?.CreditDays > 0 ? partner.CreditDays : useDesignData ? 30m : 0m;
+        tglActiveForPurchases.IsOn = partner?.IsActive ?? true;
+        tglSubjectToWithholding.IsOn = partner?.AppliesRetention ?? false;
+        tglHandlesCredit.IsOn = partner?.CreditLimit > 0 || useDesignData;
+        tglBlocked.IsOn = partner?.IsPaymentBlocked ?? false;
+        memGeneralComments.Text = partner?.Notes?.InternalNotes ?? (useDesignData ? "Proveedor estratégico para compras recurrentes de repuestos, suministros industriales y materiales operativos." : string.Empty);
 
         SetEditValue(lueDocumentType, partner?.IdentificationTypeId ?? lookups.IdentificationTypes.FirstOrDefault()?.Id);
         SetEditValue(lueSupplierCategory, partner?.SupplierGroupId ?? lookups.SupplierGroups.FirstOrDefault()?.Id);
         SetEditValue(lueCurrency, LookupValueByCode(lookups.Currencies, partner?.PreferredCurrencyCode) ?? lookups.Currencies.FirstOrDefault()?.Id);
         SetEditValue(lueCountry, LookupValueByCode(lookups.Countries, partner?.CountryCode) ?? lookups.Countries.FirstOrDefault()?.Id);
-        luePersonType.EditValue = "Jurídica";
-        lueSupplierType.EditValue = "Bienes";
-        lueInternalClassification.EditValue = "PROV. NACIONALES";
-        lueSupplierSegment.EditValue = "A - Proveedores Estratégicos";
+        luePersonType.EditValue = partner?.TaxpayerType ?? (useDesignData ? "Jurídica" : null);
+        lueSupplierType.EditValue = useDesignData ? "Bienes" : null;
+        lueInternalClassification.EditValue = useDesignData ? "PROV. NACIONALES" : null;
+        lueSupplierSegment.EditValue = useDesignData ? "A - Proveedores Estratégicos" : null;
     }
 
     private void LoadContacts()
     {
         contacts.Clear();
 
-        if (partner?.Contacts?.Count > 0)
+        foreach (var contact in SupplierBusinessPartnerMapper.ToContactViewModels(partner))
         {
-            foreach (var contact in partner.Contacts)
-            {
-                var names = SplitContactName(contact.Name);
-                contacts.Add(new SupplierContactViewModel
-                {
-                    FirstName = names.FirstName,
-                    LastName = names.LastName,
-                    Position = contact.Position ?? string.Empty,
-                    Department = contact.Department ?? string.Empty,
-                    Phone = contact.Phone ?? string.Empty,
-                    Mobile = contact.Mobile ?? string.Empty,
-                    Email = contact.Email ?? string.Empty,
-                    IsPrimary = contact.IsPrimary,
-                    IsActive = contact.IsActive,
-                    Notes = contact.Notes ?? string.Empty
-                });
-            }
+            contacts.Add(contact);
+        }
 
+        if (contacts.Count > 0 || !useDesignData)
+        {
             return;
         }
 
@@ -201,31 +286,13 @@ public sealed partial class SupplierEditForm : BaseEditForm
     {
         addresses.Clear();
 
-        if (partner?.Addresses?.Count > 0)
+        foreach (var address in SupplierBusinessPartnerMapper.ToAddressViewModels(partner))
         {
-            var index = 1;
-            foreach (var address in partner.Addresses)
-            {
-                addresses.Add(new SupplierAddressViewModel
-                {
-                    AddressType = address.AddressType,
-                    Code = $"DIR-{index:000}",
-                    MainStreet = address.Line1,
-                    SecondaryStreet = address.Line2 ?? string.Empty,
-                    Province = address.Province ?? string.Empty,
-                    City = address.City ?? string.Empty,
-                    Country = address.CountryCode ?? string.Empty,
-                    PostalCode = address.PostalCode ?? string.Empty,
-                    Latitude = address.Latitude,
-                    Longitude = address.Longitude,
-                    Reference = address.Line2 ?? string.Empty,
-                    IsPrimary = address.IsPrimary,
-                    IsDefaultDelivery = address.IsPrimary,
-                    IsActive = address.IsActive
-                });
-                index++;
-            }
+            addresses.Add(address);
+        }
 
+        if (addresses.Count > 0 || !useDesignData)
+        {
             return;
         }
 
@@ -246,37 +313,42 @@ public sealed partial class SupplierEditForm : BaseEditForm
 
     private void LoadPurchaseSettings()
     {
-        BindLookup(luePurchasePaymentCondition, "Crédito 30 días", "Contado", "Crédito 15 días");
-        BindLookup(luePurchasePriceList, "Lista Compra Nacional", "Lista Compra Importación", "LP-COMP-ACME-01");
+        BindLookup(luePurchasePaymentCondition, lookups.PaymentTerms.Select(x => $"{x.Code} - {x.Name}").DefaultIfEmpty("Contado").ToArray());
+        BindLookup(luePurchasePriceList, lookups.PriceLists.Select(x => $"{x.Code} - {x.Name}").DefaultIfEmpty("Lista Compra Nacional").ToArray());
         BindLookup(lueIncoterm, "EXW", "CIP - Carriage and Insurance Paid To", "FOB", "CIF");
-        BindLookup(lueAssignedBuyer, "Juan Pérez", "CP01 - Juan Carlos Pérez");
+        BindLookup(lueAssignedBuyer, lookups.PurchasingAgents.Select(x => $"{x.Code} - {x.Name}").DefaultIfEmpty("Sin comprador asignado").ToArray());
         BindLookup(luePreferredWarehouse, "Bodega Principal", "B01 - Almacén Principal");
 
-        luePurchasePaymentCondition.EditValue = "Crédito 30 días";
-        luePurchasePriceList.EditValue = "Lista Compra Nacional";
-        spnDeliveryTermDays.Value = 7m;
+        luePurchasePaymentCondition.EditValue = LookupDisplayText(lookups.PaymentTerms, partner?.PaymentTermId) ?? (useDesignData ? "Crédito 30 días" : null);
+        luePurchasePriceList.EditValue = LookupDisplayText(lookups.PriceLists, partner?.PriceListCode) ?? (useDesignData ? "Lista Compra Nacional" : null);
+        spnDeliveryTermDays.Value = partner?.DeliveryDays > 0 ? partner.DeliveryDays : useDesignData ? 7m : 0m;
         lueIncoterm.EditValue = "EXW";
-        spnCommercialDiscountPercent.Value = 5m;
-        lueAssignedBuyer.EditValue = "Juan Pérez";
-        luePreferredWarehouse.EditValue = "Bodega Principal";
-        spnAverageDeliveryDays.Value = 6m;
-        spnMinimumOrderAmount.Value = 500m;
+        spnCommercialDiscountPercent.Value = useDesignData ? 5m : 0m;
+        lueAssignedBuyer.EditValue = LookupDisplayText(lookups.PurchasingAgents, partner?.AssignedBuyerCode) ?? (useDesignData ? "Juan Pérez" : null);
+        luePreferredWarehouse.EditValue = useDesignData ? "Bodega Principal" : null;
+        spnAverageDeliveryDays.Value = partner?.AveragePaymentDays > 0 ? partner.AveragePaymentDays : useDesignData ? 6m : 0m;
+        spnMinimumOrderAmount.Value = partner?.MinimumOrderAmount > 0 ? partner.MinimumOrderAmount : useDesignData ? 500m : 0m;
         spnMinimumOrderQuantity.Value = 1m;
-        spnLeadTimeDays.Value = 5m;
-        spnDeliveryToleranceDays.Value = 2m;
-        tglRequiresPurchaseOrder.IsOn = true;
-        tglSubjectToEvaluation.IsOn = true;
+        spnLeadTimeDays.Value = partner?.DeliveryDays > 0 ? partner.DeliveryDays : useDesignData ? 5m : 0m;
+        spnDeliveryToleranceDays.Value = partner?.PaymentTolerancePercent > 0 ? partner.PaymentTolerancePercent : useDesignData ? 2m : 0m;
+        tglRequiresPurchaseOrder.IsOn = partner?.RequiresProvision ?? false;
+        tglSubjectToEvaluation.IsOn = partner?.RequiresApprovalBeforeSapSync ?? false;
         tglActiveForImport.IsOn = false;
-        tglAllowsUrgentPurchases.IsOn = true;
-        lblPurchasesLast12MonthsValue.Text = "125,000.00 PEN";
-        lblAveragePurchaseValue.Text = "8,950.00 PEN";
-        lblAverageDelivery12MonthsValue.Text = "6";
-        lblPurchaseOrdersLast12MonthsValue.Text = "14";
+        tglAllowsUrgentPurchases.IsOn = partner?.AllowsBackorder ?? false;
+        lblPurchasesLast12MonthsValue.Text = useDesignData ? "125,000.00 PEN" : "0.00";
+        lblAveragePurchaseValue.Text = useDesignData ? "8,950.00 PEN" : "0.00";
+        lblAverageDelivery12MonthsValue.Text = (partner?.DeliveryDays > 0 ? partner.DeliveryDays : useDesignData ? 6 : 0).ToString();
+        lblPurchaseOrdersLast12MonthsValue.Text = useDesignData ? "14" : "0";
     }
 
     private void LoadPurchaseHistory()
     {
         purchaseHistory.Clear();
+        if (!useDesignData)
+        {
+            return;
+        }
+
         purchaseHistory.Add(new SupplierPurchaseHistoryViewModel { PurchaseDate = new DateTime(2024, 5, 10), DocumentNumber = "OC-000145", Amount = 8500m, Currency = "PEN", AverageDeliveryDays = 5 });
         purchaseHistory.Add(new SupplierPurchaseHistoryViewModel { PurchaseDate = new DateTime(2024, 4, 22), DocumentNumber = "OC-000132", Amount = 12300m, Currency = "PEN", AverageDeliveryDays = 6 });
         purchaseHistory.Add(new SupplierPurchaseHistoryViewModel { PurchaseDate = new DateTime(2024, 4, 5), DocumentNumber = "OC-000119", Amount = 4750m, Currency = "PEN", AverageDeliveryDays = 7 });
@@ -288,6 +360,17 @@ public sealed partial class SupplierEditForm : BaseEditForm
     private void LoadBankAccounts()
     {
         bankAccounts.Clear();
+        foreach (var account in SupplierBusinessPartnerMapper.ToBankAccountViewModels(partner))
+        {
+            bankAccounts.Add(account);
+        }
+
+        if (bankAccounts.Count > 0 || !useDesignData)
+        {
+            lblBankAccountsTotal.Text = $"Total de registros: {bankAccounts.Count}";
+            return;
+        }
+
         bankAccounts.Add(new SupplierBankAccountViewModel { BankName = "BCP - Banco de Crédito del Perú", Branch = "San Isidro", AccountType = "Cuenta Corriente", AccountNumber = "193-2212345-0-72", Currency = "PEN", AccountHolder = "ACME S.A.C.", HolderIdentification = "RUC 20123456789", SwiftBic = "BCPLPEPL", CciIban = "00219300221234507217", Country = "Perú", NotificationEmail = "tesoreria@acme.com.pe", Notes = "Cuenta principal para pagos en moneda nacional.", IsDefault = true, IsActive = true });
         bankAccounts.Add(new SupplierBankAccountViewModel { BankName = "BBVA Perú", Branch = "Miraflores", AccountType = "Cuenta de Ahorros", AccountNumber = "0011-0325-01-02012345", Currency = "USD", AccountHolder = "ACME S.A.C.", HolderIdentification = "RUC 20123456789", SwiftBic = "BCONPEPL", CciIban = "01132500010201234559", Country = "Perú", NotificationEmail = "tesoreria@acme.com.pe", IsActive = true });
         bankAccounts.Add(new SupplierBankAccountViewModel { BankName = "Interbank", Branch = "San Borja", AccountType = "Cuenta Corriente", AccountNumber = "200-3004005001", Currency = "PEN", AccountHolder = "ACME S.A.C.", HolderIdentification = "RUC 20123456789", SwiftBic = "BINPPEPL", CciIban = "00320000300400500188", Country = "Perú", NotificationEmail = "tesoreria@acme.com.pe", IsActive = true });
@@ -410,20 +493,31 @@ public sealed partial class SupplierEditForm : BaseEditForm
 
     private void LoadWithholdingSettings()
     {
-        BindLookup(lueGeneralWithholdingType, "Renta e IVA", "Renta", "IVA", "Especial");
+        BindLookup(lueGeneralWithholdingType, lookups.RetentionTypes.Select(x => x.Name).DefaultIfEmpty("Renta e IVA").ToArray());
 
-        tglWithholdingAgent.IsOn = true;
-        lueGeneralWithholdingType.EditValue = "Renta e IVA";
-        txtWithholdingResolutionNumber.Text = "NAC-DGERCGC24-000001";
-        tglWithholdsVat.IsOn = true;
-        tglWithholdsIncomeTax.IsOn = true;
-        tglIssuesElectronicReceipts.IsOn = true;
+        tglWithholdingAgent.IsOn = partner?.AppliesRetention ?? false;
+        lueGeneralWithholdingType.EditValue = partner?.RetentionSettings.FirstOrDefault()?.RetentionType ?? (useDesignData ? "Renta e IVA" : null);
+        txtWithholdingResolutionNumber.Text = partner?.RetentionSettings.FirstOrDefault()?.SriCode ?? (useDesignData ? "NAC-DGERCGC24-000001" : string.Empty);
+        tglWithholdsVat.IsOn = partner?.RetentionSettings.Any(x => x.AppliesIva) ?? false;
+        tglWithholdsIncomeTax.IsOn = partner?.RetentionSettings.Any(x => x.AppliesIncome) ?? false;
+        tglIssuesElectronicReceipts.IsOn = partner is not null || useDesignData;
         tglSubjectToPerception.IsOn = false;
     }
 
     private void LoadWithholdings()
     {
         withholdings.Clear();
+        foreach (var withholding in SupplierBusinessPartnerMapper.ToWithholdingViewModels(partner))
+        {
+            withholdings.Add(withholding);
+        }
+
+        if (withholdings.Count > 0 || !useDesignData)
+        {
+            RefreshWithholdings();
+            return;
+        }
+
         withholdings.Add(new SupplierWithholdingViewModel { Document = "RUC 20123456789", Type = "Renta", IncomeTaxWithholdingPercent = 1.75m, VatWithholdingPercent = 30m, TaxSupport = "Compra de bienes", FiscalRegime = "Régimen General", IsRequiredAccounting = true, ValidityFrom = new DateTime(2024, 1, 1), ValidityTo = new DateTime(2024, 12, 31), IsDefault = true, IsActive = true, Notes = "Configuración de retención aplicable para compras nacionales." });
         withholdings.Add(new SupplierWithholdingViewModel { Document = "Certificado IVA 2024", Type = "IVA", VatWithholdingPercent = 30m, TaxSupport = "Compra de bienes", FiscalRegime = "Régimen General", IsRequiredAccounting = true, ValidityFrom = new DateTime(2024, 1, 1), ValidityTo = new DateTime(2024, 12, 31), IsActive = true });
         withholdings.Add(new SupplierWithholdingViewModel { Document = "Régimen Especial", Type = "Especial", IncomeTaxWithholdingPercent = 1m, TaxSupport = "Servicio", FiscalRegime = "Régimen Especial", ValidityFrom = new DateTime(2024, 3, 1), ValidityTo = new DateTime(2024, 12, 31), IsActive = true });
@@ -545,22 +639,35 @@ public sealed partial class SupplierEditForm : BaseEditForm
 
     private void LoadAccountingSettings()
     {
-        BindLookup(lueDefaultProject, "PRY-OPERACIONES", "PRY001 - Operación General");
-        BindLookup(lueFiscalCondition, "Régimen General", "Habido", "No Habido");
+        BindLookup(lueDefaultProject, lookups.Projects.Select(x => $"{x.Code} - {x.Name}").DefaultIfEmpty("PRY001 - Operación General").ToArray());
+        BindLookup(lueFiscalCondition, lookups.TaxRegimes.Select(x => x.Name).DefaultIfEmpty("Régimen General").ToArray());
         BindLookup(lueThirdPartyType, "Proveedor Nacional", "Proveedor Extranjero");
 
-        lueDefaultProject.EditValue = "PRY-OPERACIONES";
-        lueFiscalCondition.EditValue = "Régimen General";
-        lueThirdPartyType.EditValue = "Proveedor Nacional";
-        tglAutomaticAccounting.IsOn = true;
-        tglRequiresReconciliation.IsOn = true;
-        tglHandlesAdvances.IsOn = true;
-        tglAccountingBlocked.IsOn = false;
+        lueDefaultProject.EditValue = LookupDisplayText(lookups.Projects, partner?.ProjectId) ?? (useDesignData ? "PRY-OPERACIONES" : null);
+        lueFiscalCondition.EditValue = partner?.FiscalRegime ?? (useDesignData ? "Régimen General" : null);
+        lueThirdPartyType.EditValue = string.Equals(partner?.CountryCode, "EC", StringComparison.OrdinalIgnoreCase) || string.Equals(partner?.CountryCode, "PE", StringComparison.OrdinalIgnoreCase)
+            ? "Proveedor Nacional"
+            : partner is null && !useDesignData ? null : "Proveedor Extranjero";
+        tglAutomaticAccounting.IsOn = partner?.AccountingBySupplier ?? useDesignData;
+        tglRequiresReconciliation.IsOn = partner?.ConciliationRequired ?? useDesignData;
+        tglHandlesAdvances.IsOn = partner?.AllowsAdvance ?? useDesignData;
+        tglAccountingBlocked.IsOn = partner?.IsPaymentBlocked ?? false;
     }
 
     private void LoadAccountingAccounts()
     {
         accountingAccounts.Clear();
+        foreach (var account in SupplierBusinessPartnerMapper.ToAccountingAccountViewModels(partner))
+        {
+            accountingAccounts.Add(account);
+        }
+
+        if (accountingAccounts.Count > 0 || !useDesignData)
+        {
+            RefreshAccountingAccounts();
+            return;
+        }
+
         accountingAccounts.Add(new SupplierAccountingAccountViewModel { AccountType = "Cuenta por Pagar", AccountCode = "421101", AccountName = "Proveedores Nacionales", Dimension1 = "ADM", Dimension2 = "COM", Dimension3 = "LOG", IsDefault = true, IsActive = true, Notes = "Cuenta contable principal para facturas de proveedor nacional." });
         accountingAccounts.Add(new SupplierAccountingAccountViewModel { AccountType = "Anticipo Proveedor", AccountCode = "422101", AccountName = "Anticipos a Proveedores", Dimension1 = "ADM", Dimension2 = "FIN", IsActive = true });
         accountingAccounts.Add(new SupplierAccountingAccountViewModel { AccountType = "Gasto", AccountCode = "601101", AccountName = "Compras Nacionales", Dimension1 = "COM", Dimension2 = "LOG", IsActive = true });
@@ -684,19 +791,31 @@ public sealed partial class SupplierEditForm : BaseEditForm
 
     private void LoadSapSyncData()
     {
-        tglSapSynchronized.IsOn = true;
-        tglSapIntegrationValid.IsOn = true;
-        tglSapErrorBlocked.IsOn = false;
-        tglSapAutoUpdate.IsOn = true;
-        txtSapLastSync.Text = "15/03/2024 09:18";
-        txtSapLastSyncUser.Text = "ADMIN";
-        txtSapDataOrigin.Text = "NuanSystem";
-        txtSapIntegrationStatus.Text = "Sincronizado";
+        tglSapSynchronized.IsOn = string.Equals(partner?.SapSyncStatus, "Synced", StringComparison.OrdinalIgnoreCase) || useDesignData;
+        tglSapIntegrationValid.IsOn = !string.Equals(partner?.SapSyncStatus, "Error", StringComparison.OrdinalIgnoreCase);
+        tglSapErrorBlocked.IsOn = !string.IsNullOrWhiteSpace(partner?.SapLastError);
+        tglSapAutoUpdate.IsOn = partner?.SapEnabled ?? false;
+        txtSapLastSync.Text = partner?.SapLastSyncAt?.ToString("dd/MM/yyyy HH:mm") ?? (useDesignData ? "15/03/2024 09:18" : string.Empty);
+        txtSapLastSyncUser.Text = useDesignData ? "ADMIN" : string.Empty;
+        txtSapDataOrigin.Text = partner?.SapMode ?? (useDesignData ? "NuanSystem" : string.Empty);
+        txtSapIntegrationStatus.Text = partner?.SapSyncStatus ?? (useDesignData ? "Sincronizado" : "Pending");
     }
 
     private void LoadSapAudit()
     {
         sapAudit.Clear();
+        foreach (var audit in SupplierBusinessPartnerMapper.ToSapAuditViewModels(partner))
+        {
+            sapAudit.Add(audit);
+        }
+
+        if (sapAudit.Count > 0 || !useDesignData)
+        {
+            grdSapAudit.RefreshDataSource();
+            gvSapAudit.RefreshData();
+            return;
+        }
+
         sapAudit.Add(new SupplierSapAuditViewModel(new DateTime(2024, 3, 15, 9, 18, 0), "Sincronización", "Éxito", "ADMIN", "Proveedor sincronizado correctamente."));
         sapAudit.Add(new SupplierSapAuditViewModel(new DateTime(2024, 3, 12, 16, 41, 0), "Actualización", "Éxito", "ADMIN", "Actualización de datos básica."));
         sapAudit.Add(new SupplierSapAuditViewModel(new DateTime(2024, 3, 5, 10, 22, 0), "Creación", "Éxito", "ADMIN", "Proveedor creado en SAP Business One."));
@@ -708,8 +827,20 @@ public sealed partial class SupplierEditForm : BaseEditForm
 
     private void LoadAttachments()
     {
-        memSupplierObservations.Text = "Proveedor estratégico para compras recurrentes de repuestos, suministros industriales y materiales operativos. Mantiene buen historial de entrega y condiciones comerciales preferenciales. Revisar periódicamente documentación tributaria y vigencia de certificados.";
+        memSupplierObservations.Text = partner?.Notes?.PurchasingNotes ?? (useDesignData ? "Proveedor estratégico para compras recurrentes de repuestos, suministros industriales y materiales operativos. Mantiene buen historial de entrega y condiciones comerciales preferenciales. Revisar periódicamente documentación tributaria y vigencia de certificados." : string.Empty);
         attachments.Clear();
+        foreach (var attachment in SupplierBusinessPartnerMapper.ToAttachmentViewModels(partner))
+        {
+            attachments.Add(attachment);
+        }
+
+        if (attachments.Count > 0 || !useDesignData)
+        {
+            RefreshAttachments();
+            UpdateSelectedAttachmentInfo();
+            return;
+        }
+
         attachments.Add(new SupplierAttachmentViewModel { DocumentType = "RUC", FileName = "ruc_acme.pdf", UploadDate = new DateTime(2024, 3, 15, 9, 15, 0), User = "ADMIN", FileSize = "245 KB", Status = "Vigente", FilePath = @"\\servidor\documentos\proveedores\ACME\ruc_acme.pdf", Category = "Tributario", ExpirationDate = new DateTime(2024, 12, 31), Description = "Documento tributario del proveedor para validación administrativa." });
         attachments.Add(new SupplierAttachmentViewModel { DocumentType = "Certificado Bancario", FileName = "certificado_bcp.pdf", UploadDate = new DateTime(2024, 3, 12, 10, 0, 0), User = "ADMIN", FileSize = "180 KB", Status = "Vigente", FilePath = @"\\servidor\documentos\proveedores\ACME\certificado_bcp.pdf", Category = "Bancario", ExpirationDate = new DateTime(2024, 12, 31), Description = "Certificado bancario vigente para validación de pagos." });
         attachments.Add(new SupplierAttachmentViewModel { DocumentType = "Contrato", FileName = "contrato_suministro_2024.pdf", UploadDate = new DateTime(2024, 3, 5, 14, 20, 0), User = "ADMIN", FileSize = "1.2 MB", Status = "Vigente", FilePath = @"\\servidor\documentos\proveedores\ACME\contrato_suministro_2024.pdf", Category = "Legal", ExpirationDate = new DateTime(2024, 12, 31), Description = "Contrato de suministro vigente para compras recurrentes." });
@@ -1105,6 +1236,86 @@ public sealed partial class SupplierEditForm : BaseEditForm
         }
 
         return (string.Join(' ', parts.Take(2)), string.Join(' ', parts.Skip(2)));
+    }
+
+    private bool ValidateSingleActivePrimary<T>(IEnumerable<T> items, Func<T, bool> isPrimary, string message)
+        where T : class
+    {
+        if (items.Count(isPrimary) <= 1)
+        {
+            return true;
+        }
+
+        XtraMessageBox.Show(this, message, Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        return false;
+    }
+
+    private static bool IsValidRuc(string value)
+    {
+        var digits = new string(value.Where(char.IsDigit).ToArray());
+        return digits.Length is 11 or 13;
+    }
+
+    private static (string? Province, string? City) SplitProvinceCity(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return (null, null);
+        }
+
+        var parts = value.Split('/', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length switch
+        {
+            0 => (null, null),
+            1 => (parts[0], null),
+            _ => (parts[0], parts[1])
+        };
+    }
+
+    private static string? LookupSelectedCode(LookUpEdit lookup, IReadOnlyCollection<BusinessPartnerIdentificationTypeLookup> options)
+    {
+        var selectedId = ToNullableInt(lookup.EditValue);
+        return options.FirstOrDefault(option => selectedId.HasValue && option.Id == selectedId.Value)?.Code;
+    }
+
+    private static string? LookupTextCode(LookUpEdit lookup)
+    {
+        var value = Convert.ToString(lookup.EditValue);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var separator = value.IndexOf(" - ", StringComparison.Ordinal);
+        return separator > 0 ? value[..separator].Trim() : value.Trim();
+    }
+
+    private string SapStatusFromUi()
+    {
+        if (tglSapErrorBlocked.IsOn)
+        {
+            return "Error";
+        }
+
+        return tglSapSynchronized.IsOn ? "Synced" : "Pending";
+    }
+
+    private static string? LookupDisplayText(IReadOnlyCollection<BusinessPartnerLookupOption> options, int? id)
+    {
+        var option = options.FirstOrDefault(item => id.HasValue && item.Id == id.Value);
+        return option is null ? null : $"{option.Code} - {option.Name}";
+    }
+
+    private static string? LookupDisplayText(IReadOnlyCollection<BusinessPartnerLookupOption> options, string? code)
+    {
+        var option = options.FirstOrDefault(item => string.Equals(item.Code, code, StringComparison.OrdinalIgnoreCase));
+        return option is null ? null : $"{option.Code} - {option.Name}";
+    }
+
+    private static string? LookupDisplayText(IReadOnlyCollection<BusinessPartnerPaymentTermLookup> options, int? id)
+    {
+        var option = options.FirstOrDefault(item => id.HasValue && item.Id == id.Value);
+        return option is null ? null : $"{option.Code} - {option.Name}";
     }
 
     private bool RequireLookup(BaseEdit control, string message)

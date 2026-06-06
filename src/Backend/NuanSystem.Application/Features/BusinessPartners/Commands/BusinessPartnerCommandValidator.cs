@@ -60,6 +60,11 @@ internal sealed class BusinessPartnerCommandRules<T> : AbstractValidator<T>
         RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.SapCardCode))).MaximumLength(50);
         RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.SapCardType))).MaximumLength(1);
         RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.SapSyncStatus))).Must(value => string.IsNullOrWhiteSpace(value) || SapStatuses.Contains(value));
+        RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.SapCardType)))
+            .Must((command, value) => !string.Equals(GetString(command, nameof(CreateBusinessPartnerCommand.PartnerType)), "Supplier", StringComparison.OrdinalIgnoreCase)
+                || string.IsNullOrWhiteSpace(value)
+                || string.Equals(value, "S", StringComparison.OrdinalIgnoreCase))
+            .WithMessage("SAP CardType debe ser S para proveedores.");
 
         RuleFor(command => GetAddresses(command))
             .Must(items => items.Count(item => item.IsPrimary && item.IsActive) <= 1)
@@ -68,6 +73,15 @@ internal sealed class BusinessPartnerCommandRules<T> : AbstractValidator<T>
         RuleFor(command => GetContacts(command))
             .Must(items => items.Count(item => item.IsPrimary && item.IsActive) <= 1)
             .WithMessage("Solo puede existir un contacto principal activo.");
+
+        RuleFor(command => GetBankAccounts(command))
+            .Must(items => items.Count(item => item.IsPrimary && item.IsActive) <= 1)
+            .WithMessage("Solo puede existir una cuenta bancaria principal activa.");
+
+        RuleForEach(command => GetRetentionSettings(command)).ChildRules(setting =>
+        {
+            setting.RuleFor(item => item.Percent).InclusiveBetween(0m, 100m);
+        });
 
         RuleForEach(command => GetAddresses(command)).ChildRules(address =>
         {
@@ -95,4 +109,6 @@ internal sealed class BusinessPartnerCommandRules<T> : AbstractValidator<T>
     private static decimal GetDecimal(T command, string name) => command?.GetType().GetProperty(name)?.GetValue(command) as decimal? ?? 0;
     private static IReadOnlyCollection<SaveBusinessPartnerAddressData> GetAddresses(T command) => command?.GetType().GetProperty("Addresses")?.GetValue(command) as IReadOnlyCollection<SaveBusinessPartnerAddressData> ?? [];
     private static IReadOnlyCollection<SaveBusinessPartnerContactData> GetContacts(T command) => command?.GetType().GetProperty("Contacts")?.GetValue(command) as IReadOnlyCollection<SaveBusinessPartnerContactData> ?? [];
+    private static IReadOnlyCollection<SaveBusinessPartnerBankAccountData> GetBankAccounts(T command) => command?.GetType().GetProperty("BankAccounts")?.GetValue(command) as IReadOnlyCollection<SaveBusinessPartnerBankAccountData> ?? [];
+    private static IReadOnlyCollection<SaveBusinessPartnerRetentionSettingData> GetRetentionSettings(T command) => command?.GetType().GetProperty("RetentionSettings")?.GetValue(command) as IReadOnlyCollection<SaveBusinessPartnerRetentionSettingData> ?? [];
 }
