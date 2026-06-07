@@ -167,7 +167,8 @@ public sealed partial class SupplierEditForm : BaseEditForm
             Province = province,
             City = city,
             AccountingBySupplier = tglAutomaticAccounting.IsOn,
-            RequiresProvision = false,
+            // RequiresProvision is accounting provisioning; purchase order obligation maps to RequiresPurchaseOrder.
+            RequiresProvision = partner?.RequiresProvision ?? false,
             AllowsAdvance = tglHandlesAdvances.IsOn,
             AllowsPartialPayments = true,
             IsPaymentBlocked = tglBlocked.IsOn || tglAccountingBlocked.IsOn,
@@ -190,14 +191,18 @@ public sealed partial class SupplierEditForm : BaseEditForm
             CreditLimit = spnCreditLimit.Value,
             DeliveryDays = ToInt(spnDeliveryTermDays.EditValue),
             MinimumOrderAmount = spnMinimumOrderAmount.Value,
+            // No dedicated backorder control exists in SupplierEditForm; preserve the current value.
             AllowsBackorder = partner?.AllowsBackorder ?? false,
             PreferredCurrencyCode = LookupCode(lueCurrency),
             PriceListCode = LookupTextCode(luePurchasePriceList),
             AssignedBuyerCode = LookupTextCode(lueAssignedBuyer),
             Incoterm = LookupTextCode(lueIncoterm),
             CommercialDiscountPercent = spnCommercialDiscountPercent.Value,
-            PurchaseCurrencyCode = LookupCode(lueCurrency),
+            // No luePurchaseCurrency control exists yet; preserve purchase currency and fall back to lueCurrency for new suppliers.
+            PurchaseCurrencyCode = partner?.PurchaseCurrencyCode ?? LookupCode(lueCurrency),
+            // No warehouse lookup with Id exists yet; persist PreferredWarehouseCode until a warehouse catalog is available.
             PreferredWarehouseId = null,
+            // No luePurchaseSupplierType control exists yet; reuse lueSupplierType until the purchase-specific editor is added.
             PurchaseSupplierType = NullIfEmpty(Convert.ToString(lueSupplierType.EditValue)),
             PreferredWarehouseCode = LookupTextCode(luePreferredWarehouse),
             MinimumOrderQuantity = spnMinimumOrderQuantity.Value,
@@ -265,18 +270,18 @@ public sealed partial class SupplierEditForm : BaseEditForm
     {
         Text = "Mantenimiento de Proveedores";
         txtSupplierCode.Text = partner?.Code ?? (useDesignData ? "P001" : string.Empty);
-        txtBusinessName.Text = partner?.Name ?? (useDesignData ? "ACME S.A.C." : string.Empty);
+        txtBusinessName.Text = partner?.Name ?? (useDesignData ? "ACME Ecuador S.A." : string.Empty);
         txtTradeName.Text = partner?.CommercialName ?? (useDesignData ? "ACME" : string.Empty);
-        txtDocumentNumber.Text = partner?.IdentificationNumber ?? (useDesignData ? "20123456789" : string.Empty);
+        txtDocumentNumber.Text = partner?.IdentificationNumber ?? (useDesignData ? "1790012345001" : string.Empty);
         txtMainContact.Text = partner?.Contacts?.FirstOrDefault(x => x.IsPrimary)?.Name ?? (useDesignData ? "Carlos Alberto Ramírez Flores" : string.Empty);
-        txtPhone.Text = partner?.Phone ?? (useDesignData ? "(01) 123-4567" : string.Empty);
-        txtEmail.Text = partner?.Email ?? (useDesignData ? "ventas@acme.com.pe" : string.Empty);
+        txtPhone.Text = partner?.Phone ?? (useDesignData ? "(02) 399-4567" : string.Empty);
+        txtEmail.Text = partner?.Email ?? (useDesignData ? "ventas@acme.com.ec" : string.Empty);
         memShortObservation.Text = partner?.Remarks ?? (useDesignData ? "Proveedor de repuestos y suministros industriales." : string.Empty);
         tglSupplierActive.IsOn = partner?.IsActive ?? true;
         txtProvinceCity.Text = string.IsNullOrWhiteSpace(partner?.Province) && string.IsNullOrWhiteSpace(partner?.City)
-            ? useDesignData ? "Lima / Lima" : string.Empty
+            ? useDesignData ? "Pichincha / Quito" : string.Empty
             : $"{partner?.Province} / {partner?.City}".Trim(' ', '/');
-        txtWebsite.Text = partner?.Website ?? (useDesignData ? "www.acme.com.pe" : string.Empty);
+        txtWebsite.Text = partner?.Website ?? (useDesignData ? "www.acme.com.ec" : string.Empty);
         dteRegistrationDate.EditValue = partner?.CreatedAt == default ? useDesignData ? new DateTime(2022, 3, 15) : null : partner?.CreatedAt;
         spnCreditLimit.Value = partner?.CreditLimit > 0 ? partner.CreditLimit : useDesignData ? 50000m : 0m;
         spnPaymentTermDays.Value = partner?.CreditDays > 0 ? partner.CreditDays : useDesignData ? 30m : 0m;
@@ -292,7 +297,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
         SetEditValue(lueEconomicActivity, partner?.EconomicActivityId ?? (useDesignData ? lookups.EconomicActivities.FirstOrDefault()?.Id : null));
         SetEditValue(lueSupplierZone, partner?.ZoneId ?? (useDesignData ? lookups.Zones.FirstOrDefault()?.Id : null));
         SetEditValue(lueSupplyMethod, partner?.SupplyMethodId ?? (useDesignData ? lookups.SupplyMethods.FirstOrDefault()?.Id : null));
-        SetEditValue(lueCurrency, LookupValueByCode(lookups.Currencies, partner?.PurchaseCurrencyCode ?? partner?.PreferredCurrencyCode) ?? lookups.Currencies.FirstOrDefault()?.Id);
+        SetEditValue(lueCurrency, LookupValueByCode(lookups.Currencies, partner?.PreferredCurrencyCode) ?? lookups.Currencies.FirstOrDefault()?.Id);
         SetEditValue(lueCountry, LookupValueByCode(lookups.Countries, partner?.CountryCode) ?? lookups.Countries.FirstOrDefault()?.Id);
         luePersonType.EditValue = partner?.TaxpayerType ?? (useDesignData ? "Jurídica" : null);
         lueSupplierType.EditValue = partner?.PurchaseSupplierType ?? (useDesignData ? "Bienes" : null);
@@ -314,11 +319,11 @@ public sealed partial class SupplierEditForm : BaseEditForm
             return;
         }
 
-        contacts.Add(new SupplierContactViewModel { FirstName = "Carlos Alberto", LastName = "Ramírez Flores", Position = "Gerente Comercial", Department = "Comercial", Phone = "(01) 123-4567", Email = "ventas@acme.com.pe", IsPrimary = true, IsActive = true });
-        contacts.Add(new SupplierContactViewModel { FirstName = "María Fernanda", LastName = "López Díaz", Position = "Jefa de Ventas", Department = "Ventas", Phone = "(01) 123-4570", Email = "mlopez@acme.com.pe", IsActive = true });
-        contacts.Add(new SupplierContactViewModel { FirstName = "José Luis", LastName = "Torres Silva", Position = "Ejecutivo de Cuentas", Department = "Ventas", Phone = "(01) 123-4571", Email = "jtorres@acme.com.pe", IsActive = true });
-        contacts.Add(new SupplierContactViewModel { FirstName = "Ana Lucía", LastName = "Vega Paredes", Position = "Coordinadora de Logística", Department = "Logística", Phone = "(01) 123-4572", Email = "avega@acme.com.pe", IsActive = true });
-        contacts.Add(new SupplierContactViewModel { FirstName = "Luis Enrique", LastName = "Mendoza Ramos", Position = "Jefe de Compras", Department = "Compras", Phone = "(01) 123-4573", Email = "lmendoza@acme.com.pe", IsActive = true });
+        contacts.Add(new SupplierContactViewModel { FirstName = "Carlos Alberto", LastName = "Ramírez Flores", Position = "Gerente Comercial", Department = "Comercial", Phone = "(02) 399-4567", Email = "ventas@acme.com.ec", IsPrimary = true, IsActive = true });
+        contacts.Add(new SupplierContactViewModel { FirstName = "María Fernanda", LastName = "López Díaz", Position = "Jefa de Ventas", Department = "Ventas", Phone = "(02) 399-4570", Email = "mlopez@acme.com.ec", IsActive = true });
+        contacts.Add(new SupplierContactViewModel { FirstName = "José Luis", LastName = "Torres Silva", Position = "Ejecutivo de Cuentas", Department = "Ventas", Phone = "(02) 399-4571", Email = "jtorres@acme.com.ec", IsActive = true });
+        contacts.Add(new SupplierContactViewModel { FirstName = "Ana Lucía", LastName = "Vega Paredes", Position = "Coordinadora de Logística", Department = "Logística", Phone = "(02) 399-4572", Email = "avega@acme.com.ec", IsActive = true });
+        contacts.Add(new SupplierContactViewModel { FirstName = "Luis Enrique", LastName = "Mendoza Ramos", Position = "Jefe de Compras", Department = "Compras", Phone = "(02) 399-4573", Email = "lmendoza@acme.com.ec", IsActive = true });
     }
 
     private void WireContactEvents()
@@ -344,9 +349,9 @@ public sealed partial class SupplierEditForm : BaseEditForm
             return;
         }
 
-        addresses.Add(new SupplierAddressViewModel { AddressType = "Entrega", Code = "DIR-001", AddressName = "Almacén Norte", MainStreet = "Av. De las Américas", AddressNumber = "450", Reference = "Junto al centro logístico", Neighborhood = "Parque Industrial", Province = "Lima", City = "San Martín de Porres", Country = "Perú", PostalCode = "15108", Latitude = -12.0464m, Longitude = -77.0428m, IsDefaultDelivery = true, IsPrimary = true, IsActive = true, Notes = "Dirección principal de entrega para recepción de mercadería." });
-        addresses.Add(new SupplierAddressViewModel { AddressType = "Facturación", Code = "DIR-002", AddressName = "Oficina administrativa", MainStreet = "Av. Javier Prado Este", AddressNumber = "1200", Reference = "Oficina administrativa", Province = "Lima", City = "San Isidro", Country = "Perú", IsDefaultBilling = true, IsActive = true });
-        addresses.Add(new SupplierAddressViewModel { AddressType = "Entrega", Code = "DIR-003", AddressName = "Almacén secundario", MainStreet = "Calle Los Pinos", AddressNumber = "785", Reference = "Almacén secundario", Province = "Lima", City = "Ate", Country = "Perú", IsActive = true });
+        addresses.Add(new SupplierAddressViewModel { AddressType = "Entrega", Code = "DIR-001", AddressName = "Bodega Norte", MainStreet = "Av. De los Granados", AddressNumber = "450", Reference = "Junto al centro logístico", Neighborhood = "Parque Industrial", Province = "Pichincha", City = "Quito", Country = "Ecuador", PostalCode = "170503", Latitude = -0.1807m, Longitude = -78.4678m, IsDefaultDelivery = true, IsPrimary = true, IsActive = true, Notes = "Dirección principal de entrega para recepción de mercadería." });
+        addresses.Add(new SupplierAddressViewModel { AddressType = "Facturación", Code = "DIR-002", AddressName = "Oficina administrativa", MainStreet = "Av. República de El Salvador", AddressNumber = "1200", Reference = "Oficina administrativa", Province = "Pichincha", City = "Quito", Country = "Ecuador", IsDefaultBilling = true, IsActive = true });
+        addresses.Add(new SupplierAddressViewModel { AddressType = "Entrega", Code = "DIR-003", AddressName = "Bodega secundaria", MainStreet = "Vía a Daule", AddressNumber = "785", Reference = "Bodega secundaria", Province = "Guayas", City = "Guayaquil", Country = "Ecuador", IsActive = true });
     }
 
     private void WireAddressEvents()
@@ -383,8 +388,8 @@ public sealed partial class SupplierEditForm : BaseEditForm
         tglSubjectToEvaluation.IsOn = partner?.SubjectToEvaluation ?? false;
         tglActiveForImport.IsOn = partner?.ActiveForImport ?? false;
         tglAllowsUrgentPurchases.IsOn = partner?.AllowsUrgentPurchases ?? false;
-        lblPurchasesLast12MonthsValue.Text = useDesignData ? "125,000.00 PEN" : "0.00";
-        lblAveragePurchaseValue.Text = useDesignData ? "8,950.00 PEN" : "0.00";
+        lblPurchasesLast12MonthsValue.Text = useDesignData ? "125,000.00 USD" : "0.00";
+        lblAveragePurchaseValue.Text = useDesignData ? "8,950.00 USD" : "0.00";
         lblAverageDelivery12MonthsValue.Text = (partner?.DeliveryDays > 0 ? partner.DeliveryDays : useDesignData ? 6 : 0).ToString();
         lblPurchaseOrdersLast12MonthsValue.Text = useDesignData ? "14" : "0";
     }
@@ -392,17 +397,18 @@ public sealed partial class SupplierEditForm : BaseEditForm
     private void LoadPurchaseHistory()
     {
         purchaseHistory.Clear();
+        // Purchase history and purchase metrics remain design/read-only data until the supplier purchase history endpoint exists.
         if (!useDesignData)
         {
             return;
         }
 
-        purchaseHistory.Add(new SupplierPurchaseHistoryViewModel { PurchaseDate = new DateTime(2024, 5, 10), DocumentNumber = "OC-000145", Amount = 8500m, Currency = "PEN", AverageDeliveryDays = 5 });
-        purchaseHistory.Add(new SupplierPurchaseHistoryViewModel { PurchaseDate = new DateTime(2024, 4, 22), DocumentNumber = "OC-000132", Amount = 12300m, Currency = "PEN", AverageDeliveryDays = 6 });
-        purchaseHistory.Add(new SupplierPurchaseHistoryViewModel { PurchaseDate = new DateTime(2024, 4, 5), DocumentNumber = "OC-000119", Amount = 4750m, Currency = "PEN", AverageDeliveryDays = 7 });
-        purchaseHistory.Add(new SupplierPurchaseHistoryViewModel { PurchaseDate = new DateTime(2024, 3, 18), DocumentNumber = "OC-000101", Amount = 15900m, Currency = "PEN", AverageDeliveryDays = 6 });
-        purchaseHistory.Add(new SupplierPurchaseHistoryViewModel { PurchaseDate = new DateTime(2024, 2, 27), DocumentNumber = "OC-000087", Amount = 6200m, Currency = "PEN", AverageDeliveryDays = 8 });
-        purchaseHistory.Add(new SupplierPurchaseHistoryViewModel { PurchaseDate = new DateTime(2024, 2, 12), DocumentNumber = "OC-000073", Amount = 9450m, Currency = "PEN", AverageDeliveryDays = 5 });
+        purchaseHistory.Add(new SupplierPurchaseHistoryViewModel { PurchaseDate = new DateTime(2024, 5, 10), DocumentNumber = "OC-000145", Amount = 8500m, Currency = "USD", AverageDeliveryDays = 5 });
+        purchaseHistory.Add(new SupplierPurchaseHistoryViewModel { PurchaseDate = new DateTime(2024, 4, 22), DocumentNumber = "OC-000132", Amount = 12300m, Currency = "USD", AverageDeliveryDays = 6 });
+        purchaseHistory.Add(new SupplierPurchaseHistoryViewModel { PurchaseDate = new DateTime(2024, 4, 5), DocumentNumber = "OC-000119", Amount = 4750m, Currency = "USD", AverageDeliveryDays = 7 });
+        purchaseHistory.Add(new SupplierPurchaseHistoryViewModel { PurchaseDate = new DateTime(2024, 3, 18), DocumentNumber = "OC-000101", Amount = 15900m, Currency = "USD", AverageDeliveryDays = 6 });
+        purchaseHistory.Add(new SupplierPurchaseHistoryViewModel { PurchaseDate = new DateTime(2024, 2, 27), DocumentNumber = "OC-000087", Amount = 6200m, Currency = "USD", AverageDeliveryDays = 8 });
+        purchaseHistory.Add(new SupplierPurchaseHistoryViewModel { PurchaseDate = new DateTime(2024, 2, 12), DocumentNumber = "OC-000073", Amount = 9450m, Currency = "USD", AverageDeliveryDays = 5 });
     }
 
     private void LoadBankAccounts()
@@ -419,9 +425,9 @@ public sealed partial class SupplierEditForm : BaseEditForm
             return;
         }
 
-        bankAccounts.Add(new SupplierBankAccountViewModel { BankName = "BCP - Banco de Crédito del Perú", Branch = "San Isidro", AccountType = "Cuenta Corriente", AccountNumber = "193-2212345-0-72", Currency = "PEN", AccountHolder = "ACME S.A.C.", HolderIdentification = "RUC 20123456789", SwiftBic = "BCPLPEPL", CciIban = "00219300221234507217", Country = "Perú", NotificationEmail = "tesoreria@acme.com.pe", Notes = "Cuenta principal para pagos en moneda nacional.", IsDefault = true, IsActive = true });
-        bankAccounts.Add(new SupplierBankAccountViewModel { BankName = "BBVA Perú", Branch = "Miraflores", AccountType = "Cuenta de Ahorros", AccountNumber = "0011-0325-01-02012345", Currency = "USD", AccountHolder = "ACME S.A.C.", HolderIdentification = "RUC 20123456789", SwiftBic = "BCONPEPL", CciIban = "01132500010201234559", Country = "Perú", NotificationEmail = "tesoreria@acme.com.pe", IsActive = true });
-        bankAccounts.Add(new SupplierBankAccountViewModel { BankName = "Interbank", Branch = "San Borja", AccountType = "Cuenta Corriente", AccountNumber = "200-3004005001", Currency = "PEN", AccountHolder = "ACME S.A.C.", HolderIdentification = "RUC 20123456789", SwiftBic = "BINPPEPL", CciIban = "00320000300400500188", Country = "Perú", NotificationEmail = "tesoreria@acme.com.pe", IsActive = true });
+        bankAccounts.Add(new SupplierBankAccountViewModel { BankName = "Banco Pichincha", Branch = "Quito Norte", AccountType = "Cuenta Corriente", AccountNumber = "2200123456", Currency = "USD", AccountHolder = "ACME Ecuador S.A.", HolderIdentification = "RUC 1790012345001", SwiftBic = "PICHECEQ", CciIban = "EC00000000000000000001", Country = "Ecuador", NotificationEmail = "tesoreria@acme.com.ec", Notes = "Cuenta principal para pagos en moneda local.", IsDefault = true, IsActive = true });
+        bankAccounts.Add(new SupplierBankAccountViewModel { BankName = "Banco Guayaquil", Branch = "Guayaquil Centro", AccountType = "Cuenta de Ahorros", AccountNumber = "1100201234", Currency = "USD", AccountHolder = "ACME Ecuador S.A.", HolderIdentification = "RUC 1790012345001", SwiftBic = "GUAYECEG", CciIban = "EC00000000000000000002", Country = "Ecuador", NotificationEmail = "tesoreria@acme.com.ec", IsActive = true });
+        bankAccounts.Add(new SupplierBankAccountViewModel { BankName = "Produbanco", Branch = "Quito Centro", AccountType = "Cuenta Corriente", AccountNumber = "3004005001", Currency = "USD", AccountHolder = "ACME Ecuador S.A.", HolderIdentification = "RUC 1790012345001", SwiftBic = "PRODECEQ", CciIban = "EC00000000000000000003", Country = "Ecuador", NotificationEmail = "tesoreria@acme.com.ec", IsActive = true });
         lblBankAccountsTotal.Text = $"Total de registros: {bankAccounts.Count}";
     }
 
@@ -566,7 +572,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
             return;
         }
 
-        withholdings.Add(new SupplierWithholdingViewModel { Document = "RUC 20123456789", Type = "Renta", IncomeTaxWithholdingPercent = 1.75m, VatWithholdingPercent = 30m, TaxSupport = "Compra de bienes", FiscalRegime = "Régimen General", IsRequiredAccounting = true, ValidityFrom = new DateTime(2024, 1, 1), ValidityTo = new DateTime(2024, 12, 31), IsDefault = true, IsActive = true, Notes = "Configuración de retención aplicable para compras nacionales." });
+        withholdings.Add(new SupplierWithholdingViewModel { Document = "RUC 1790012345001", Type = "Renta", IncomeTaxWithholdingPercent = 1.75m, VatWithholdingPercent = 30m, TaxSupport = "Compra de bienes", FiscalRegime = "Régimen General", IsRequiredAccounting = true, ValidityFrom = new DateTime(2024, 1, 1), ValidityTo = new DateTime(2024, 12, 31), IsDefault = true, IsActive = true, Notes = "Configuración de retención aplicable para compras nacionales." });
         withholdings.Add(new SupplierWithholdingViewModel { Document = "Certificado IVA 2024", Type = "IVA", VatWithholdingPercent = 30m, TaxSupport = "Compra de bienes", FiscalRegime = "Régimen General", IsRequiredAccounting = true, ValidityFrom = new DateTime(2024, 1, 1), ValidityTo = new DateTime(2024, 12, 31), IsActive = true });
         withholdings.Add(new SupplierWithholdingViewModel { Document = "Régimen Especial", Type = "Especial", IncomeTaxWithholdingPercent = 1m, TaxSupport = "Servicio", FiscalRegime = "Régimen Especial", ValidityFrom = new DateTime(2024, 3, 1), ValidityTo = new DateTime(2024, 12, 31), IsActive = true });
         RefreshWithholdings();
@@ -1629,7 +1635,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
     private static BusinessPartnerLookups CreateDesignLookups()
     {
         return new BusinessPartnerLookups(
-            new[] { new BusinessPartnerIdentificationTypeLookup(1, "RUC", "RUC", "PE") },
+            new[] { new BusinessPartnerIdentificationTypeLookup(1, "RUC", "RUC", "EC") },
             new[] { new BusinessPartnerPaymentTermLookup(1, "CRED", "Crédito", 30, true) },
             new[] { new BusinessPartnerLookupOption(1, "42.01.01", "Proveedores Nacionales") },
             new[] { new BusinessPartnerCodeNameLookup("Supplier", "Proveedor") },
@@ -1638,16 +1644,16 @@ public sealed partial class SupplierEditForm : BaseEditForm
             new[] { new BusinessPartnerLookupOption(1, "SUM", "Suministros Industriales") },
             new[] { new BusinessPartnerLookupOption(1, "A", "Proveedores Estratégicos") },
             new[] { new BusinessPartnerLookupOption(1, "COM", "Comercio al por mayor") },
-            new[] { new BusinessPartnerLookupOption(1, "LIM", "Lima") },
+            new[] { new BusinessPartnerLookupOption(1, "UIO", "Quito") },
             new[] { new BusinessPartnerLookupOption(1, "LOCAL", "Compra local") },
             new[] { new BusinessPartnerLookupOption(1, "COM", "Comercial") },
             new[] { new BusinessPartnerLookupOption(1, "EMAIL", "Correo electrónico") },
-            new[] { new BusinessPartnerLookupOption(1, "PE", "Perú") },
-            new[] { new BusinessPartnerGeoLookupOption(1, "LIM", "Lima", true, 1) },
-            new[] { new BusinessPartnerGeoLookupOption(1, "LIM", "Lima", true, 1, 1, "15001") },
-            new[] { new BusinessPartnerLookupOption(1, "BCP", "BCP - Banco de Crédito del Perú") },
+            new[] { new BusinessPartnerLookupOption(1, "EC", "Ecuador") },
+            new[] { new BusinessPartnerGeoLookupOption(1, "PIC", "Pichincha", true, 1) },
+            new[] { new BusinessPartnerGeoLookupOption(1, "UIO", "Quito", true, 1, 1, "170503") },
+            new[] { new BusinessPartnerLookupOption(1, "PICHINCHA", "Banco Pichincha") },
             new[] { new BusinessPartnerLookupOption(1, "CORRIENTE", "Cuenta Corriente") },
-            new[] { new BusinessPartnerLookupOption(1, "PEN", "PEN - Sol Peruano"), new BusinessPartnerLookupOption(2, "USD", "USD - Dólar Americano") },
+            new[] { new BusinessPartnerLookupOption(1, "USD", "USD - Dólar Americano") },
             new[] { new BusinessPartnerLookupOption(1, "LP-COMP", "Lista compra estándar") },
             new[] { new BusinessPartnerLookupOption(1, "CP01", "Juan Carlos Pérez") },
             new[] { new BusinessPartnerLookupOption(1, "GENERAL", "Régimen General") },
