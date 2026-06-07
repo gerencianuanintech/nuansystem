@@ -23,6 +23,13 @@ public sealed partial class SupplierEditForm : BaseEditForm
     private readonly BindingList<SupplierAccountingAccountViewModel> accountingAccounts = new();
     private readonly BindingList<SupplierSapAuditViewModel> sapAudit = new();
     private readonly BindingList<SupplierAttachmentViewModel> attachments = new();
+    private static readonly string[] PurchaseSupplierTypeOptions =
+    {
+        "Proveedor Nacional",
+        "Proveedor Extranjero",
+        "Proveedor Servicios",
+        "Proveedor Mixto"
+    };
 
     public SupplierEditForm()
         : this(null, CreateDesignLookups(), useDesignData: true)
@@ -124,6 +131,16 @@ public sealed partial class SupplierEditForm : BaseEditForm
             isValid = false;
         }
 
+        if (!ValidateOptionalLookup(luePurchaseCurrency, lookups.Currencies, "Moneda compra no es válida."))
+        {
+            isValid = false;
+        }
+
+        if (!ValidatePurchaseSupplierType())
+        {
+            isValid = false;
+        }
+
         if (withholdings.Any(item => item.IncomeTaxWithholdingPercent is < 0 or > 100 || item.VatWithholdingPercent is < 0 or > 100))
         {
             XtraMessageBox.Show(this, "Los porcentajes de retención deben estar entre 0 y 100.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -198,12 +215,10 @@ public sealed partial class SupplierEditForm : BaseEditForm
             AssignedBuyerCode = LookupTextCode(lueAssignedBuyer),
             Incoterm = LookupTextCode(lueIncoterm),
             CommercialDiscountPercent = spnCommercialDiscountPercent.Value,
-            // No luePurchaseCurrency control exists yet; preserve purchase currency and fall back to lueCurrency for new suppliers.
-            PurchaseCurrencyCode = partner?.PurchaseCurrencyCode ?? LookupCode(lueCurrency),
+            PurchaseCurrencyCode = LookupCode(luePurchaseCurrency),
             // No warehouse lookup with Id exists yet; persist PreferredWarehouseCode until a warehouse catalog is available.
             PreferredWarehouseId = null,
-            // No luePurchaseSupplierType control exists yet; reuse lueSupplierType until the purchase-specific editor is added.
-            PurchaseSupplierType = NullIfEmpty(Convert.ToString(lueSupplierType.EditValue)),
+            PurchaseSupplierType = NullIfEmpty(Convert.ToString(luePurchaseSupplierType.EditValue)),
             PreferredWarehouseCode = LookupTextCode(luePreferredWarehouse),
             MinimumOrderQuantity = spnMinimumOrderQuantity.Value,
             ActiveForImport = tglActiveForImport.IsOn,
@@ -300,7 +315,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
         SetEditValue(lueCurrency, LookupValueByCode(lookups.Currencies, partner?.PreferredCurrencyCode) ?? lookups.Currencies.FirstOrDefault()?.Id);
         SetEditValue(lueCountry, LookupValueByCode(lookups.Countries, partner?.CountryCode) ?? lookups.Countries.FirstOrDefault()?.Id);
         luePersonType.EditValue = partner?.TaxpayerType ?? (useDesignData ? "Jurídica" : null);
-        lueSupplierType.EditValue = partner?.PurchaseSupplierType ?? (useDesignData ? "Bienes" : null);
+        lueSupplierType.EditValue = useDesignData ? "Bienes" : null;
         lueInternalClassification.EditValue = useDesignData ? "PROV. NACIONALES" : null;
         lueSupplierSegment.EditValue = useDesignData ? "A - Proveedores Estratégicos" : null;
     }
@@ -371,6 +386,8 @@ public sealed partial class SupplierEditForm : BaseEditForm
         BindLookup(lueIncoterm, "EXW", "CIP - Carriage and Insurance Paid To", "FOB", "CIF");
         BindLookup(lueAssignedBuyer, lookups.PurchasingAgents.Select(x => $"{x.Code} - {x.Name}").DefaultIfEmpty("Sin comprador asignado").ToArray());
         BindLookup(luePreferredWarehouse, "Bodega Principal", "B01 - Almacén Principal");
+        BindLookup(luePurchaseCurrency, lookups.Currencies);
+        BindLookup(luePurchaseSupplierType, PurchaseSupplierTypeOptions);
 
         luePurchasePaymentCondition.EditValue = LookupDisplayText(lookups.PaymentTerms, partner?.PaymentTermId) ?? (useDesignData ? "Crédito 30 días" : null);
         luePurchasePriceList.EditValue = LookupDisplayText(lookups.PriceLists, partner?.PriceListCode) ?? (useDesignData ? "Lista Compra Nacional" : null);
@@ -379,6 +396,8 @@ public sealed partial class SupplierEditForm : BaseEditForm
         spnCommercialDiscountPercent.Value = partner?.CommercialDiscountPercent > 0 ? partner.CommercialDiscountPercent : useDesignData ? 5m : 0m;
         lueAssignedBuyer.EditValue = LookupDisplayText(lookups.PurchasingAgents, partner?.AssignedBuyerCode) ?? (useDesignData ? "Juan Pérez" : null);
         luePreferredWarehouse.EditValue = partner?.PreferredWarehouseCode ?? (useDesignData ? "Bodega Principal" : null);
+        SetEditValue(luePurchaseCurrency, LookupValueByCode(lookups.Currencies, partner?.PurchaseCurrencyCode) ?? (useDesignData ? LookupValueByCode(lookups.Currencies, "USD") : null));
+        luePurchaseSupplierType.EditValue = partner?.PurchaseSupplierType ?? (useDesignData ? "Proveedor Nacional" : null);
         spnAverageDeliveryDays.Value = partner?.AverageDeliveryDays > 0 ? partner.AverageDeliveryDays : useDesignData ? 6m : 0m;
         spnMinimumOrderAmount.Value = partner?.MinimumOrderAmount > 0 ? partner.MinimumOrderAmount : useDesignData ? 500m : 0m;
         spnMinimumOrderQuantity.Value = partner?.MinimumOrderQuantity > 0 ? partner.MinimumOrderQuantity : useDesignData ? 1m : 0m;
@@ -1421,6 +1440,18 @@ public sealed partial class SupplierEditForm : BaseEditForm
         }
 
         Validator.SetError(control, message);
+        return false;
+    }
+
+    private bool ValidatePurchaseSupplierType()
+    {
+        var selectedType = Convert.ToString(luePurchaseSupplierType.EditValue);
+        if (string.IsNullOrWhiteSpace(selectedType) || PurchaseSupplierTypeOptions.Contains(selectedType))
+        {
+            return true;
+        }
+
+        Validator.SetError(luePurchaseSupplierType, "Tipo proveedor compra no es válido.");
         return false;
     }
 

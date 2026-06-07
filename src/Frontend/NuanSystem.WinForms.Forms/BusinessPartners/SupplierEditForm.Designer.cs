@@ -125,6 +125,10 @@ partial class SupplierEditForm
         lueAssignedBuyer = new LookUpEdit();
         lblPreferredWarehouse = new LabelControl();
         luePreferredWarehouse = new LookUpEdit();
+        lblPurchaseCurrency = new LabelControl();
+        luePurchaseCurrency = new LookUpEdit();
+        lblPurchaseSupplierType = new LabelControl();
+        luePurchaseSupplierType = new LookUpEdit();
         lblAverageDeliveryDays = new LabelControl();
         spnAverageDeliveryDays = new SpinEdit();
         lblMinimumOrderAmount = new LabelControl();
@@ -362,6 +366,8 @@ partial class SupplierEditForm
         ((System.ComponentModel.ISupportInitialize)spnCommercialDiscountPercent.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)lueAssignedBuyer.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)luePreferredWarehouse.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)luePurchaseCurrency.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)luePurchaseSupplierType.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)spnAverageDeliveryDays.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)spnMinimumOrderAmount.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)spnMinimumOrderQuantity.Properties).BeginInit();
@@ -1342,6 +1348,10 @@ partial class SupplierEditForm
         pnlPurchasesContent.Controls.Add(lueAssignedBuyer);
         pnlPurchasesContent.Controls.Add(lblPreferredWarehouse);
         pnlPurchasesContent.Controls.Add(luePreferredWarehouse);
+        pnlPurchasesContent.Controls.Add(lblPurchaseCurrency);
+        pnlPurchasesContent.Controls.Add(luePurchaseCurrency);
+        pnlPurchasesContent.Controls.Add(lblPurchaseSupplierType);
+        pnlPurchasesContent.Controls.Add(luePurchaseSupplierType);
         pnlPurchasesContent.Controls.Add(lblAverageDeliveryDays);
         pnlPurchasesContent.Controls.Add(spnAverageDeliveryDays);
         pnlPurchasesContent.Controls.Add(lblMinimumOrderAmount);
@@ -1555,6 +1565,48 @@ partial class SupplierEditForm
         luePreferredWarehouse.Properties.NullText = "";
         luePreferredWarehouse.Size = new Size(210, 22);
         luePreferredWarehouse.TabIndex = 19;
+        // 
+        // lblPurchaseCurrency
+        // 
+        lblPurchaseCurrency.Appearance.Font = new Font("Segoe UI", 9F);
+        lblPurchaseCurrency.Appearance.Options.UseFont = true;
+        lblPurchaseCurrency.Location = new Point(11, 243);
+        lblPurchaseCurrency.Name = "lblPurchaseCurrency";
+        lblPurchaseCurrency.Size = new Size(89, 15);
+        lblPurchaseCurrency.TabIndex = 40;
+        lblPurchaseCurrency.Text = "Moneda compra:";
+        // 
+        // luePurchaseCurrency
+        // 
+        luePurchaseCurrency.Location = new Point(175, 240);
+        luePurchaseCurrency.Name = "luePurchaseCurrency";
+        luePurchaseCurrency.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        luePurchaseCurrency.Properties.Appearance.Options.UseFont = true;
+        luePurchaseCurrency.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        luePurchaseCurrency.Properties.NullText = "";
+        luePurchaseCurrency.Size = new Size(210, 22);
+        luePurchaseCurrency.TabIndex = 41;
+        // 
+        // lblPurchaseSupplierType
+        // 
+        lblPurchaseSupplierType.Appearance.Font = new Font("Segoe UI", 9F);
+        lblPurchaseSupplierType.Appearance.Options.UseFont = true;
+        lblPurchaseSupplierType.Location = new Point(11, 271);
+        lblPurchaseSupplierType.Name = "lblPurchaseSupplierType";
+        lblPurchaseSupplierType.Size = new Size(120, 15);
+        lblPurchaseSupplierType.TabIndex = 42;
+        lblPurchaseSupplierType.Text = "Tipo proveedor compra:";
+        // 
+        // luePurchaseSupplierType
+        // 
+        luePurchaseSupplierType.Location = new Point(175, 268);
+        luePurchaseSupplierType.Name = "luePurchaseSupplierType";
+        luePurchaseSupplierType.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        luePurchaseSupplierType.Properties.Appearance.Options.UseFont = true;
+        luePurchaseSupplierType.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        luePurchaseSupplierType.Properties.NullText = "";
+        luePurchaseSupplierType.Size = new Size(210, 22);
+        luePurchaseSupplierType.TabIndex = 43;
         // 
         // lblAverageDeliveryDays
         // 
@@ -3561,6 +3613,8 @@ partial class SupplierEditForm
         ((System.ComponentModel.ISupportInitialize)spnCommercialDiscountPercent.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)lueAssignedBuyer.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)luePreferredWarehouse.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)luePurchaseCurrency.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)luePurchaseSupplierType.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)spnAverageDeliveryDays.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)spnMinimumOrderAmount.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)spnMinimumOrderQuantity.Properties).EndInit();
@@ -3750,6 +3804,10 @@ partial class SupplierEditForm
     private LookUpEdit lueAssignedBuyer;
     private LabelControl lblPreferredWarehouse;
     private LookUpEdit luePreferredWarehouse;
+    private LabelControl lblPurchaseCurrency;
+    private LookUpEdit luePurchaseCurrency;
+    private LabelControl lblPurchaseSupplierType;
+    private LookUpEdit luePurchaseSupplierType;
     private LabelControl lblAverageDeliveryDays;
     private SpinEdit spnAverageDeliveryDays;
     private LabelControl lblMinimumOrderAmount;
