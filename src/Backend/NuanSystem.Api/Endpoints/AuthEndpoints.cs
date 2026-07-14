@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
+using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Abstractions.Authentication;
 using NuanSystem.Application.Features.Auth.Commands;
 using NuanSystem.Shared.Contracts.Auth;
@@ -51,6 +52,7 @@ public static class AuthEndpoints
 
             return Results.Ok(ApiResponse<LoginResponse>.Ok(response, "Login correcto."));
         })
+        .WithTags(SwaggerTags.Auth)
         .RequireRateLimiting("auth-login")
         .AllowAnonymous();
 
@@ -74,6 +76,7 @@ public static class AuthEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.Auth)
         .RequireAuthorization();
 
         return app;

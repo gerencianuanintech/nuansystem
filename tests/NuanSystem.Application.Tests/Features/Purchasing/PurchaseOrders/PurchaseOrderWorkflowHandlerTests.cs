@@ -1,9 +1,11 @@
 using FluentAssertions;
 using NSubstitute;
 using NuanSystem.Application.Abstractions.Data;
+using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders.Commands;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders.Dtos;
+using NuanSystem.Domain.Tenancy;
 
 namespace NuanSystem.Application.Tests.Features.Purchasing.PurchaseOrders;
 
@@ -12,15 +14,40 @@ public sealed class PurchaseOrderWorkflowHandlerTests
     private const int OrderId = 10;
     private const int AuditUserId = 42;
     private const string AuditUserName = "tester";
+    private const string CompanyCode = "EMPRESA01";
 
     private readonly IPurchaseOrderRepository _repository = Substitute.For<IPurchaseOrderRepository>();
+    private readonly ISecurityDocumentSeriesAccessRepository _seriesAccessRepository = Substitute.For<ISecurityDocumentSeriesAccessRepository>();
+    private readonly ICompanyContext _companyContext = Substitute.For<ICompanyContext>();
+
+    public PurchaseOrderWorkflowHandlerTests()
+    {
+        _companyContext.HasActiveCompany.Returns(true);
+        _companyContext.CurrentCompany.Returns(new CompanyConnectionInfo(
+            CompanyId: 1,
+            CompanyCode,
+            CommercialName: "Empresa de prueba",
+            DatabaseEngine: DatabaseEngine.SqlServer,
+            ConnectionString: "Server=(local);Database=NuanSystem_Test;Trusted_Connection=True;",
+            SapIntegrationMode: SapIntegrationMode.None));
+
+        _seriesAccessRepository.ValidateUserOperationAsync(
+                Arg.Any<int>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<int>(),
+                Arg.Any<string>(),
+                Arg.Any<CancellationToken>())
+            .Returns(true);
+    }
 
     [Fact]
     public async Task SendToApproval_ReturnsFailure_WhenOrderIsApproved()
     {
         _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
             .Returns(CreateOrder(PurchaseOrderStatuses.Approved));
-        var handler = new SendPurchaseOrderToApprovalCommandHandler(_repository);
+        var handler = CreateSendToApprovalHandler();
 
         var result = await handler.Handle(CreateSendToApprovalCommand(), CancellationToken.None);
 
@@ -36,7 +63,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
     public async Task SendToApproval_UpdatesStatusToPendingApproval_WhenOrderCanBeConfirmed(string status)
     {
         SetupStatusChange(status, PurchaseOrderStatuses.PendingApproval);
-        var handler = new SendPurchaseOrderToApprovalCommandHandler(_repository);
+        var handler = CreateSendToApprovalHandler();
 
         var result = await handler.Handle(CreateSendToApprovalCommand(), CancellationToken.None);
 
@@ -56,7 +83,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
     public async Task SendToApproval_ReturnsFailure_WhenAtomicTransitionDoesNotUpdateRows()
     {
         SetupStatusChange(PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.PendingApproval, updated: false);
-        var handler = new SendPurchaseOrderToApprovalCommandHandler(_repository);
+        var handler = CreateSendToApprovalHandler();
 
         var result = await handler.Handle(CreateSendToApprovalCommand(), CancellationToken.None);
 
@@ -69,7 +96,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
     {
         _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
             .Returns(CreateOrder(PurchaseOrderStatuses.Draft));
-        var handler = new ApprovePurchaseOrderCommandHandler(_repository);
+        var handler = CreateApproveHandler();
 
         var result = await handler.Handle(CreateApproveCommand(), CancellationToken.None);
 
@@ -83,7 +110,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
     public async Task Approve_UpdatesStatusToApproved_WhenOrderIsPendingApproval()
     {
         SetupStatusChange(PurchaseOrderStatuses.PendingApproval, PurchaseOrderStatuses.Approved);
-        var handler = new ApprovePurchaseOrderCommandHandler(_repository);
+        var handler = CreateApproveHandler();
 
         var result = await handler.Handle(CreateApproveCommand(), CancellationToken.None);
 
@@ -104,7 +131,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
     {
         _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
             .Returns(CreateOrder(PurchaseOrderStatuses.Draft));
-        var handler = new RejectPurchaseOrderCommandHandler(_repository);
+        var handler = CreateRejectHandler();
 
         var result = await handler.Handle(CreateRejectCommand(), CancellationToken.None);
 
@@ -118,7 +145,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
     public async Task Reject_UpdatesStatusToRejected_WhenOrderIsPendingApproval()
     {
         SetupStatusChange(PurchaseOrderStatuses.PendingApproval, PurchaseOrderStatuses.Rejected);
-        var handler = new RejectPurchaseOrderCommandHandler(_repository);
+        var handler = CreateRejectHandler();
 
         var result = await handler.Handle(CreateRejectCommand(), CancellationToken.None);
 
@@ -140,7 +167,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
             .Returns(CreateOrder(PurchaseOrderStatuses.Draft));
         SetupSapLog();
-        var handler = new SyncPurchaseOrderSapCommandHandler(_repository);
+        var handler = CreateSyncSapHandler();
 
         var result = await handler.Handle(CreateSyncSapCommand(), CancellationToken.None);
 
@@ -158,7 +185,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
             .Returns(CreateOrder(PurchaseOrderStatuses.SapSynced, PurchaseOrderSapStatuses.Synced));
         SetupSapLog();
-        var handler = new SyncPurchaseOrderSapCommandHandler(_repository);
+        var handler = CreateSyncSapHandler();
 
         var result = await handler.Handle(CreateSyncSapCommand(), CancellationToken.None);
 
@@ -184,7 +211,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
                 Arg.Any<CancellationToken>())
             .Returns(true);
         SetupSapLog();
-        var handler = new SyncPurchaseOrderSapCommandHandler(_repository);
+        var handler = CreateSyncSapHandler();
 
         var result = await handler.Handle(CreateSyncSapCommand(), CancellationToken.None);
 
@@ -216,7 +243,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
                 Arg.Any<CancellationToken>())
             .Returns(false);
         SetupSapLog();
-        var handler = new SyncPurchaseOrderSapCommandHandler(_repository);
+        var handler = CreateSyncSapHandler();
 
         var result = await handler.Handle(CreateSyncSapCommand(), CancellationToken.None);
 
@@ -231,7 +258,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
     {
         _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
             .Returns(CreateOrder(status));
-        var handler = new UpdatePurchaseOrderCommandHandler(_repository);
+        var handler = CreateUpdateHandler();
 
         var result = await handler.Handle(CreateUpdateCommand(), CancellationToken.None);
 
@@ -254,7 +281,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
                 Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected, PurchaseOrderStatuses.SapError)),
                 Arg.Any<CancellationToken>())
             .Returns(true);
-        var handler = new UpdatePurchaseOrderCommandHandler(_repository);
+        var handler = CreateUpdateHandler();
 
         var result = await handler.Handle(CreateUpdateCommand(), CancellationToken.None);
 
@@ -277,7 +304,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
                 Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected, PurchaseOrderStatuses.SapError)),
                 Arg.Any<CancellationToken>())
             .Returns(false);
-        var handler = new UpdatePurchaseOrderCommandHandler(_repository);
+        var handler = CreateUpdateHandler();
 
         var result = await handler.Handle(CreateUpdateCommand(), CancellationToken.None);
 
@@ -292,7 +319,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
     {
         _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
             .Returns(CreateOrder(status));
-        var handler = new DeletePurchaseOrderCommandHandler(_repository);
+        var handler = CreateDeleteHandler();
 
         var result = await handler.Handle(CreateDeleteCommand(), CancellationToken.None);
 
@@ -316,7 +343,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
                 AuditUserName,
                 Arg.Any<CancellationToken>())
             .Returns(true);
-        var handler = new DeletePurchaseOrderCommandHandler(_repository);
+        var handler = CreateDeleteHandler();
 
         var result = await handler.Handle(CreateDeleteCommand(), CancellationToken.None);
 
@@ -343,7 +370,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
                 AuditUserName,
                 Arg.Any<CancellationToken>())
             .Returns(false);
-        var handler = new DeletePurchaseOrderCommandHandler(_repository);
+        var handler = CreateDeleteHandler();
 
         var result = await handler.Handle(CreateDeleteCommand(), CancellationToken.None);
 
@@ -369,6 +396,36 @@ public sealed class PurchaseOrderWorkflowHandlerTests
     {
         _repository.AddSapLogAsync(OrderId, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), AuditUserId, AuditUserName, Arg.Any<CancellationToken>())
             .Returns(new PurchaseOrderSapSyncLogDto());
+    }
+
+    private SendPurchaseOrderToApprovalCommandHandler CreateSendToApprovalHandler()
+    {
+        return new SendPurchaseOrderToApprovalCommandHandler(_repository, _seriesAccessRepository, _companyContext);
+    }
+
+    private ApprovePurchaseOrderCommandHandler CreateApproveHandler()
+    {
+        return new ApprovePurchaseOrderCommandHandler(_repository, _seriesAccessRepository, _companyContext);
+    }
+
+    private RejectPurchaseOrderCommandHandler CreateRejectHandler()
+    {
+        return new RejectPurchaseOrderCommandHandler(_repository, _seriesAccessRepository, _companyContext);
+    }
+
+    private SyncPurchaseOrderSapCommandHandler CreateSyncSapHandler()
+    {
+        return new SyncPurchaseOrderSapCommandHandler(_repository, _seriesAccessRepository, _companyContext);
+    }
+
+    private UpdatePurchaseOrderCommandHandler CreateUpdateHandler()
+    {
+        return new UpdatePurchaseOrderCommandHandler(_repository, _seriesAccessRepository, _companyContext);
+    }
+
+    private DeletePurchaseOrderCommandHandler CreateDeleteHandler()
+    {
+        return new DeletePurchaseOrderCommandHandler(_repository, _seriesAccessRepository, _companyContext);
     }
 
     private static SendPurchaseOrderToApprovalCommand CreateSendToApprovalCommand()

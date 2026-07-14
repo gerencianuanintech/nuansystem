@@ -43,7 +43,9 @@ public sealed class SqlServerTenantDatabaseInitializer(
                       "048_tenant_sap_supplier_import.sql",
                       "050_tenant_sap_sync_worker.sql",
                       "051_tenant_security_document_series.sql",
-                      "053_tenant_operational_catalog.sql"
+                      "053_tenant_operational_catalog.sql",
+                      "063_tenant_global_ids_and_external_refs.sql",
+                      "065_tenant_sync_inbox_local_outbox.sql"
                    })
         {
             var scriptPath = FindDatabaseScriptPath(fileName);

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
+using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Features.SecurityUsers.Commands;
 using NuanSystem.Application.Features.SecurityUsers.Queries;
 using NuanSystem.Shared.Constants;
@@ -19,6 +20,7 @@ public static class UserEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityUsers)
         .RequirePermission(PermissionCodes.UsersManage);
 
         app.MapGet("/api/security/users", async (
@@ -29,6 +31,7 @@ public static class UserEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityUsers)
         .RequireFormOperation("users", "refresh");
 
         app.MapGet("/api/security/users/{id:int}", async (
@@ -40,6 +43,7 @@ public static class UserEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityUsers)
         .RequireFormOperation("users", "consult");
 
         app.MapPost("/api/users", async (
@@ -57,6 +61,7 @@ public static class UserEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityUsers)
         .RequirePermission(PermissionCodes.UsersManage);
 
         app.MapPost("/api/security/users", async (
@@ -74,6 +79,7 @@ public static class UserEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityUsers)
         .RequireFormOperation("users", "create");
 
         app.MapPut("/api/security/users/{id:int}", async (
@@ -93,6 +99,7 @@ public static class UserEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityUsers)
         .RequireFormOperation("users", "update");
 
         app.MapDelete("/api/security/users/{id:int}", async (
@@ -106,6 +113,7 @@ public static class UserEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityUsers)
         .RequireFormOperation("users", "delete");
 
         app.MapGet("/api/users/roles", async (
@@ -116,6 +124,7 @@ public static class UserEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityUsers)
         .RequirePermission(PermissionCodes.UsersManage);
 
         app.MapGet("/api/security/users/roles", async (
@@ -126,6 +135,7 @@ public static class UserEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityUsers)
         .RequireFormOperation("users", "refresh");
 
         return app;

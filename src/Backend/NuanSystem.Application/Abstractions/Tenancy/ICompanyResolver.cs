@@ -6,6 +6,10 @@ public interface ICompanyResolver
         string companyCode,
         CancellationToken cancellationToken = default);
 
+    Task<CompanyConnectionInfo?> ResolveByIdAsync(
+        int companyId,
+        CancellationToken cancellationToken = default);
+
     Task<CompanyConnectionInfo?> ResolveByCodeForUserAsync(
         string companyCode,
         int userId,

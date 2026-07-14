@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
+using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Features.SecurityAccess.Commands;
 using NuanSystem.Application.Features.SecurityAccess.Dtos;
@@ -40,6 +41,7 @@ public static class SecurityDocumentSeriesAccessEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequirePermission(PermissionCodes.SecurityFormAccessTransactionalManage);
 
         app.MapGet("/api/security/document-series-access/roles/{roleId:int}/series/{seriesId:int}/operations", async (
@@ -71,6 +73,7 @@ public static class SecurityDocumentSeriesAccessEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequirePermission(PermissionCodes.SecurityFormAccessTransactionalManage);
 
         app.MapPut("/api/security/document-series-access/roles/{roleId:int}/series/{seriesId:int}/operations", async (
@@ -105,6 +108,7 @@ public static class SecurityDocumentSeriesAccessEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequirePermission(PermissionCodes.SecurityFormAccessTransactionalManage);
 
         return app;

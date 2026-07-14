@@ -1,0 +1,27 @@
+namespace NuanSystem.Application.Features.GeneralInventory.Warehouses.Dtos;
+
+public sealed record UpdateWarehouseData(
+    int Id,
+    Guid GlobalId,
+    string Code,
+    string Name,
+    string? Description,
+    string? BranchCode,
+    string? Address,
+    string? City,
+    string? Province,
+    string? Country,
+    string? Phone,
+    string? Email,
+    string? ManagerName,
+    bool AllowsSales,
+    bool AllowsPurchases,
+    bool AllowsTransfers,
+    bool AllowsProduction,
+    bool IsDefault,
+    string? ExternalSystem,
+    string? ExternalCode,
+    string? SapCode,
+    bool IsActive,
+    int? UpdatedByUserId,
+    string? UpdatedByUserName);

@@ -38,6 +38,11 @@ public sealed class ItemGroupsViewModel : CrudViewModel<ItemGroupItem, SaveItemG
             .ToArray();
     }
 
+    public Task<ChartOfAccountItem> CreateAccountAsync(SaveChartOfAccountRequest request, CancellationToken cancellationToken = default)
+    {
+        return chartOfAccountClient.CreateAsync(request, cancellationToken);
+    }
+
     public override Task CreateAsync(SaveItemGroupRequest request, CancellationToken cancellationToken = default)
     {
         return itemGroupClient.CreateAsync(request, cancellationToken);

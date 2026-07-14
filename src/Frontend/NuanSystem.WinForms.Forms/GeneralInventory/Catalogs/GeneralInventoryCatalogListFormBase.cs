@@ -6,11 +6,16 @@ using NuanSystem.WinForms.ViewModels.GeneralInventory.Catalogs;
 
 namespace NuanSystem.WinForms.Forms.GeneralInventory.Catalogs;
 
-public abstract class GeneralInventoryCatalogListFormBase : BaseGridCrudListForm
+public class GeneralInventoryCatalogListFormBase : BaseGridCrudListForm
 {
     private readonly GeneralInventoryCatalogDescriptor descriptor;
     private readonly GeneralInventoryCatalogsViewModel viewModel;
     private readonly ApiSession session;
+
+    protected GeneralInventoryCatalogListFormBase()
+        : this(GeneralInventoryCatalogDescriptors.Warehouses)
+    {
+    }
 
     protected GeneralInventoryCatalogListFormBase(GeneralInventoryCatalogDescriptor descriptor)
     {
@@ -35,7 +40,10 @@ public abstract class GeneralInventoryCatalogListFormBase : BaseGridCrudListForm
         WirePermissions();
     }
 
-    protected abstract Form CreateEditForm(GeneralInventoryCatalogItem? item = null, bool copyMode = false);
+    protected virtual Form CreateEditForm(GeneralInventoryCatalogItem? item = null, bool copyMode = false)
+    {
+        throw new NotSupportedException("El formulario concreto debe crear su mantenimiento de edicion.");
+    }
 
     protected override async Task LoadDataAsync()
     {

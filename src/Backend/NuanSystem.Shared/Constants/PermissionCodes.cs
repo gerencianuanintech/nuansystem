@@ -136,6 +136,21 @@ public static class PermissionCodes
     public const string AccountingManage = "ACCOUNTING.CHARTOFACCOUNTS.MANAGE";
     public const string SapRead = "SAP.SYNC.READ";
     public const string SapManage = "SAP.SYNC.MANAGE";
+    public const string SyncOutboxView = "SYNC.OUTBOX.VIEW";
+    public const string SyncAuditView = "SYNC.AUDIT.VIEW";
+    public const string SyncOutboxRetry = "SYNC.OUTBOX.RETRY";
+    public const string SyncOutboxRetryDeadLetter = "SYNC.OUTBOX.RETRY_DEADLETTER";
+    public const string SyncOutboxReleaseLock = "SYNC.OUTBOX.RELEASE_LOCK";
+    public const string SyncConfigurationView = "SYNC.CONFIGURATION.VIEW";
+    public const string SyncConfigurationCreate = "SYNC.CONFIGURATION.CREATE";
+    public const string SyncConfigurationEdit = "SYNC.CONFIGURATION.EDIT";
+    public const string SyncConfigurationDelete = "SYNC.CONFIGURATION.DELETE";
+    public const string SyncConfigurationActivate = "SYNC.CONFIGURATION.ACTIVATE";
+    public const string SyncConfigurationValidate = "SYNC.CONFIGURATION.VALIDATE";
+    public const string SyncConfigurationExecute = "SYNC.CONFIGURATION.EXECUTE";
+    public const string SyncConfigurationViewExecutions = "SYNC.CONFIGURATION.VIEWEXECUTIONS";
+    public const string SyncConfigurationCancel = "SYNC.CONFIGURATION.CANCEL";
+    public const string SyncConfigurationRetry = "SYNC.CONFIGURATION.RETRY";
     public const string SettingsManage = "SETTINGS.PARAMETERS.MANAGE";
 
     public static readonly IReadOnlyCollection<string> All =
@@ -270,6 +285,21 @@ public static class PermissionCodes
         AccountingManage,
         SapRead,
         SapManage,
+        SyncOutboxView,
+        SyncAuditView,
+        SyncOutboxRetry,
+        SyncOutboxRetryDeadLetter,
+        SyncOutboxReleaseLock,
+        SyncConfigurationView,
+        SyncConfigurationCreate,
+        SyncConfigurationEdit,
+        SyncConfigurationDelete,
+        SyncConfigurationActivate,
+        SyncConfigurationValidate,
+        SyncConfigurationExecute,
+        SyncConfigurationViewExecutions,
+        SyncConfigurationCancel,
+        SyncConfigurationRetry,
         SettingsManage
     ];
 }

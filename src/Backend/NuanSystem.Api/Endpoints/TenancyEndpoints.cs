@@ -22,7 +22,12 @@ public static class TenancyEndpoints
                 companyContext.CurrentCompany.CompanyCode,
                 companyContext.CurrentCompany.CommercialName,
                 DatabaseEngine = companyContext.CurrentCompany.DatabaseEngine.ToString(),
-                SapIntegrationMode = companyContext.CurrentCompany.SapIntegrationMode.ToString()
+                SapIntegrationMode = companyContext.CurrentCompany.SapIntegrationMode.ToString(),
+                OperationMode = companyContext.CurrentCompany.OperationMode.ToString(),
+                companyContext.CurrentCompany.IsMaster,
+                companyContext.CurrentCompany.ParentCompanyId,
+                companyContext.CurrentCompany.BranchCode,
+                companyContext.CurrentCompany.SyncEnabled
             }));
         })
         .RequirePermission(PermissionCodes.BusinessPartnersRead);

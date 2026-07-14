@@ -823,6 +823,24 @@ END;
         {
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
         }
+
+        scriptPath = FindDatabaseScriptPath("062_master_tenant_configuration.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("063_tenant_global_ids_and_external_refs.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("064_master_sync_outbox_inbox.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
     }
 
     private static async Task ExecuteScriptFileAsync(

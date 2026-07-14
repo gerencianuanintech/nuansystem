@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
+using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Features.SecurityAccess.Commands;
 using NuanSystem.Application.Features.SecurityAccess.Queries;
 using NuanSystem.Shared.Constants;
@@ -24,6 +25,7 @@ public static class SecurityAccessEndpoints
             var result = await sender.Send(new GetNavigationQuery(userId), cancellationToken);
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequireAuthorization();
 
         app.MapGet("/api/security/forms/{formKey}/operations/me", async (
@@ -40,6 +42,7 @@ public static class SecurityAccessEndpoints
             var result = await sender.Send(new GetCurrentFormOperationsQuery(userId, formKey), cancellationToken);
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequireAuthorization();
 
         app.MapGet("/api/security/roles/{roleId:int}/access", async (
@@ -50,6 +53,7 @@ public static class SecurityAccessEndpoints
             var result = await sender.Send(new GetRoleAccessQuery(roleId), cancellationToken);
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequirePermission(PermissionCodes.RolesManage);
 
         app.MapPut("/api/security/roles/{roleId:int}/access", async (
@@ -69,6 +73,7 @@ public static class SecurityAccessEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequirePermission(PermissionCodes.RolesManage);
 
         return app;

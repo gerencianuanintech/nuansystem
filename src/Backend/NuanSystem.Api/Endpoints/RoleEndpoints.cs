@@ -1,11 +1,9 @@
 using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
-using NuanSystem.Application.Features.Roles.Commands;
-using NuanSystem.Application.Features.Roles.Queries;
+using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Features.SecurityRoles.Commands;
 using NuanSystem.Application.Features.SecurityRoles.Queries;
-using NuanSystem.Shared.Constants;
 
 namespace NuanSystem.Api.Endpoints;
 
@@ -13,48 +11,6 @@ public static class RoleEndpoints
 {
     public static IEndpointRouteBuilder MapRoleEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/roles", async (
-            ISender sender,
-            CancellationToken cancellationToken) =>
-        {
-            var result = await sender.Send(new GetRolesAdminQuery(), cancellationToken);
-
-            return result.ToHttpResult();
-        })
-        .RequirePermission(PermissionCodes.RolesManage);
-
-        app.MapPost("/api/roles", async (
-            CreateRoleCommand command,
-            ISender sender,
-            CancellationToken cancellationToken) =>
-        {
-            var result = await sender.Send(command, cancellationToken);
-
-            return result.ToHttpResult();
-        })
-        .RequirePermission(PermissionCodes.RolesManage);
-
-        app.MapGet("/api/roles/permissions", async (
-            ISender sender,
-            CancellationToken cancellationToken) =>
-        {
-            var result = await sender.Send(new GetPermissionsQuery(), cancellationToken);
-
-            return result.ToHttpResult();
-        })
-        .RequirePermission(PermissionCodes.RolesManage);
-
-        app.MapPost("/api/roles/assign-permission", async (
-            AssignRolePermissionCommand command,
-            ISender sender,
-            CancellationToken cancellationToken) =>
-        {
-            var result = await sender.Send(command, cancellationToken);
-
-            return result.ToHttpResult();
-        })
-        .RequirePermission(PermissionCodes.RolesManage);
-
         app.MapGet("/api/security/roles", async (
             ISender sender,
             CancellationToken cancellationToken) =>
@@ -63,6 +19,7 @@ public static class RoleEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityRoles)
         .RequireFormOperation("security-roles", "refresh");
 
         app.MapGet("/api/security/roles/{id:int}", async (
@@ -74,6 +31,7 @@ public static class RoleEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityRoles)
         .RequireFormOperation("security-roles", "consult");
 
         app.MapPost("/api/security/roles", async (
@@ -91,6 +49,7 @@ public static class RoleEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityRoles)
         .RequireFormOperation("security-roles", "create");
 
         app.MapPut("/api/security/roles/{id:int}", async (
@@ -110,6 +69,7 @@ public static class RoleEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityRoles)
         .RequireFormOperation("security-roles", "update");
 
         app.MapDelete("/api/security/roles/{id:int}", async (
@@ -123,6 +83,7 @@ public static class RoleEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityRoles)
         .RequireFormOperation("security-roles", "delete");
 
         return app;

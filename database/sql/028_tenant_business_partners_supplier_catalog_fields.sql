@@ -8,6 +8,18 @@ IF COL_LENGTH(N'dbo.BusinessPartners', N'SupplierGroupId') IS NULL
     ALTER TABLE dbo.BusinessPartners ADD SupplierGroupId int NULL;
 GO
 
+IF COL_LENGTH(N'dbo.BusinessPartners', N'GlobalId') IS NULL
+    ALTER TABLE dbo.BusinessPartners ADD GlobalId uniqueidentifier NOT NULL CONSTRAINT DF_BusinessPartners_GlobalId DEFAULT NEWID();
+GO
+
+IF COL_LENGTH(N'dbo.BusinessPartners', N'ExternalSystem') IS NULL
+    ALTER TABLE dbo.BusinessPartners ADD ExternalSystem nvarchar(50) NULL;
+GO
+
+IF COL_LENGTH(N'dbo.BusinessPartners', N'ExternalCode') IS NULL
+    ALTER TABLE dbo.BusinessPartners ADD ExternalCode nvarchar(100) NULL;
+GO
+
 IF COL_LENGTH(N'dbo.BusinessPartners', N'SupplierClassId') IS NULL
     ALTER TABLE dbo.BusinessPartners ADD SupplierClassId int NULL;
 GO
@@ -426,7 +438,7 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT
-        bp.Id, bp.Code, bp.Name, bp.CommercialName, bp.PartnerType,
+        bp.Id, bp.GlobalId, bp.Code, bp.Name, bp.ExternalSystem, bp.ExternalCode, bp.CommercialName, bp.PartnerType,
         bp.IdentificationTypeId, idt.Code AS IdentificationTypeCode, idt.Name AS IdentificationTypeName,
         bp.IdentificationNumber,
         bp.SupplierGroupId, bp.SupplierClassId, bp.EconomicActivityId, bp.ZoneId, bp.SupplyMethodId,
@@ -482,7 +494,7 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT
-        bp.Id, bp.Code, bp.Name, bp.CommercialName, bp.PartnerType,
+        bp.Id, bp.GlobalId, bp.Code, bp.Name, bp.ExternalSystem, bp.ExternalCode, bp.CommercialName, bp.PartnerType,
         bp.IdentificationTypeId, idt.Code AS IdentificationTypeCode, idt.Name AS IdentificationTypeName,
         bp.IdentificationNumber,
         bp.SupplierGroupId, bp.SupplierClassId, bp.EconomicActivityId, bp.ZoneId, bp.SupplyMethodId,

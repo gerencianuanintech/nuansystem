@@ -8,7 +8,8 @@ namespace NuanSystem.Persistence.Connections;
 
 public sealed class MasterConnectionFactory(
     IConfiguration configuration,
-    IOptions<MasterDatabaseOptions> options) : IMasterConnectionFactory
+    IOptions<MasterDatabaseOptions> options,
+    IOptions<SqlConnectionPolicyOptions> sqlConnectionPolicyOptions) : IMasterConnectionFactory
 {
     System.Data.IDbConnection IMasterConnectionFactory.CreateConnection()
     {
@@ -25,7 +26,9 @@ public sealed class MasterConnectionFactory(
 
         var builder = new SqlConnectionStringBuilder(serverConnectionString)
         {
-            InitialCatalog = options.Value.DatabaseName
+            InitialCatalog = options.Value.DatabaseName,
+            Encrypt = sqlConnectionPolicyOptions.Value.Encrypt,
+            TrustServerCertificate = sqlConnectionPolicyOptions.Value.TrustServerCertificate
         };
 
         return new SqlConnection(builder.ConnectionString);

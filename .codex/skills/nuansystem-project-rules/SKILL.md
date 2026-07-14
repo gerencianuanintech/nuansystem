@@ -14,7 +14,7 @@ When a task touches several areas, apply all relevant skills instead of forcing 
 Examples:
 
 - Backend CRUD: apply `$nuansystem-backend-crud`, `$nuansystem-mediatr-cqrs`, `$nuansystem-security-auth`, `$nuansystem-api-error-logging`, and `$nuansystem-sql-standards`.
-- WinForms screen: apply `$nuansystem-winforms-devexpress`, `$nuansystem-enterprise-typography`, `$nuansystem-frontend-api-client`, and `$nuansystem-security-auth`.
+- WinForms screen: apply `$nuansystem-winforms-devexpress`, `$nuansystem-frontend-api-client`, and `$nuansystem-security-auth`. Load `nuansystem-winforms-devexpress/references/enterprise-typography.md` only when typography details are needed.
 
 ## Global Non-Negotiable Rules
 
@@ -46,7 +46,7 @@ Examples:
 | Backend CRUD | `$nuansystem-backend-crud`, `$nuansystem-mediatr-cqrs`, `$nuansystem-security-auth`, `$nuansystem-api-error-logging`, `$nuansystem-sql-standards` |
 | Auxiliary master/catalog | `$nuansystem-commercial-architecture`, `$nuansystem-backend-crud`, `$nuansystem-sql-standards`, `$nuansystem-winforms-devexpress`, `$nuansystem-frontend-api-client`, `$nuansystem-security-auth` |
 | Operational process | `$nuansystem-operational-usecase`, `$nuansystem-mediatr-cqrs`, `$nuansystem-sql-standards`, `$nuansystem-api-error-logging`, `$nuansystem-security-auth` |
-| WinForms screen | `$nuansystem-winforms-devexpress`, `$nuansystem-enterprise-typography`, `$nuansystem-frontend-api-client` |
+| WinForms screen | `$nuansystem-winforms-devexpress`, `$nuansystem-frontend-api-client` |
 | Login or authentication | `$nuansystem-security-auth`, `$nuansystem-frontend-api-client`, `$nuansystem-api-error-logging` |
 | SQL Server scripts | `$nuansystem-sql-standards`, `$nuansystem-database-provider-compatibility` |
 | MySQL future compatibility | `$nuansystem-database-provider-compatibility` |
@@ -56,7 +56,7 @@ Examples:
 | Business capability configuration | `$nuansystem-business-capabilities`, `$nuansystem-commercial-architecture` |
 | Architecture decision | `$nuansystem-commercial-architecture`, `$nuansystem-business-capabilities` |
 | API client frontend | `$nuansystem-frontend-api-client`, `$nuansystem-winforms-devexpress` |
-| DevExpress typography | `$nuansystem-enterprise-typography`, `$nuansystem-winforms-devexpress` |
+| DevExpress typography | `$nuansystem-winforms-devexpress` with `references/enterprise-typography.md` |
 
 ## Backend Rules
 
@@ -86,7 +86,7 @@ Examples:
 - Use `XtraMessageBox` or approved shared UI helpers for user-facing errors.
 - Use `GridControl`/`GridView` for lists.
 - For operational document edit screens, avoid `LayoutControl` and avoid `GroupControl`/group panels unless explicitly requested; prefer manually positioned `PanelControl` sections with explicit `LabelControl` titles. Maintenance screens may use their established local pattern.
-- Apply official typography through `$nuansystem-enterprise-typography`.
+- Apply official typography through `$nuansystem-winforms-devexpress` and its internal `references/enterprise-typography.md`.
 - Keep main action buttons in the standard form area according to project design.
 - Do not place business rules in button click events; events coordinate UI, call services, and render responses.
 - Administrable auxiliary masters must have their own frontend module: service client, models, ViewModel when used by the local pattern, concrete list form, concrete edit form, `FormKey`, menu/security entry when applicable, and CRUD permissions. Consuming forms use `SearchLookUpEdit`/`LookUpEdit` and may expose a permission-controlled `+` button that opens the owner maintenance.
@@ -213,7 +213,6 @@ Example 1: If the task is "crear CRUD de clientes completo", apply:
 - `$nuansystem-security-auth`
 - `$nuansystem-api-error-logging`
 - `$nuansystem-winforms-devexpress`
-- `$nuansystem-enterprise-typography`
 - `$nuansystem-frontend-api-client`
 
 Example 2: If the task is "crear proceso de venta", apply:
@@ -236,7 +235,6 @@ Example 3: If the task is "enviar factura a SAP", apply:
 Example 4: If the task is "diseñar pantalla de artículos", apply:
 
 - `$nuansystem-winforms-devexpress`
-- `$nuansystem-enterprise-typography`
 - `$nuansystem-frontend-api-client`
 - `$nuansystem-business-capabilities`
 

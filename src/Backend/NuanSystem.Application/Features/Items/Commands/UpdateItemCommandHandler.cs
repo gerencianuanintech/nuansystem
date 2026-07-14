@@ -1,12 +1,18 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
+using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.Items.Dtos;
+using NuanSystem.Shared.Sync;
 using NuanSystem.Shared.Responses;
 
 namespace NuanSystem.Application.Features.Items.Commands;
 
-public sealed class UpdateItemCommandHandler(IItemRepository itemRepository)
+public sealed class UpdateItemCommandHandler(
+    IItemRepository itemRepository,
+    ISyncEventPublisher syncEventPublisher,
+    ICompanyContext companyContext)
     : ICommandHandler<UpdateItemCommand, ItemDto>
 {
     public async Task<Result<ItemDto>> Handle(UpdateItemCommand request, CancellationToken cancellationToken)
@@ -68,6 +74,18 @@ public sealed class UpdateItemCommandHandler(IItemRepository itemRepository)
 
         var item = await itemRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new InvalidOperationException("El articulo fue actualizado pero no pudo consultarse.");
+
+        var syncResult = await ItemSyncPublisher.PublishAsync(
+            syncEventPublisher,
+            companyContext,
+            item,
+            item.IsActive ? SyncOperation.Updated : SyncOperation.Disabled,
+            cancellationToken);
+
+        if (syncResult is { IsSuccess: false })
+        {
+            return Result<ItemDto>.Failure(syncResult.Message, syncResult.Errors);
+        }
 
         return Result<ItemDto>.Success(item, "Articulo actualizado correctamente.");
     }

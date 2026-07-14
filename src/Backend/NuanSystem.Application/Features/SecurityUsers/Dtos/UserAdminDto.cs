@@ -34,5 +34,7 @@ public sealed record UserAdminDto(
     DateTime? UpdatedAt,
     int? DeletedByUserId,
     string? DeletedByUserName,
-    DateTime? DeletedAt);
-
+    DateTime? DeletedAt,
+    Guid? GlobalId = null,
+    string? ExternalSystem = null,
+    string? ExternalCode = null);

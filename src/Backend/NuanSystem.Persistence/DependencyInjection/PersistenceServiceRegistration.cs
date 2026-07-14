@@ -5,6 +5,7 @@ using NuanSystem.Application.Abstractions.Authentication;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.Application.Abstractions.SapSync;
+using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Persistence.Connections;
 using NuanSystem.Persistence.Options;
 using NuanSystem.Persistence.Repositories;
@@ -16,6 +17,7 @@ using NuanSystem.Persistence.Repositories.Geography;
 using NuanSystem.Persistence.Repositories.OperationalCatalogs;
 using NuanSystem.Persistence.Repositories.Purchasing;
 using NuanSystem.Persistence.Repositories.SapSync;
+using NuanSystem.Persistence.Repositories.Sync;
 using NuanSystem.Persistence.Repositories.TaxCatalogs;
 using NuanSystem.Persistence.Security;
 using NuanSystem.Persistence.Services;
@@ -34,6 +36,19 @@ public static class PersistenceServiceRegistration
         {
             options.DatabaseName = configuration[$"{MasterDatabaseOptions.SectionName}:DatabaseName"]
                 ?? options.DatabaseName;
+        });
+
+        services.Configure<SqlConnectionPolicyOptions>(options =>
+        {
+            if (bool.TryParse(configuration[$"{SqlConnectionPolicyOptions.SectionName}:Encrypt"], out var encrypt))
+            {
+                options.Encrypt = encrypt;
+            }
+
+            if (bool.TryParse(configuration[$"{SqlConnectionPolicyOptions.SectionName}:TrustServerCertificate"], out var trustServerCertificate))
+            {
+                options.TrustServerCertificate = trustServerCertificate;
+            }
         });
 
         services.AddSingleton<IMasterDatabaseInitializer, SqlServerMasterDatabaseInitializer>();
@@ -59,8 +74,12 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ITaxCatalogRepository, TaxCatalogRepository>();
         services.AddScoped<ICompanyAdminRepository, CompanyAdminRepository>();
         services.AddScoped<IConfigurationCompanyRepository, ConfigurationCompanyRepository>();
+        services.AddScoped<ITenantFeatureRepository, TenantFeatureRepository>();
+        services.AddScoped<ITenantIntegrationRepository, TenantIntegrationRepository>();
+        services.AddScoped<IEntityOwnershipRepository, EntityOwnershipRepository>();
         services.AddScoped<ICompanyConnectionTester, SqlServerCompanyConnectionTester>();
         services.AddScoped<IItemRepository, ItemRepository>();
+        services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<IItemGroupRepository, ItemGroupRepository>();
         services.AddScoped<IItemFamilyRepository, ItemFamilyRepository>();
         services.AddScoped<IChartOfAccountRepository, ChartOfAccountRepository>();
@@ -78,7 +97,6 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IConfigurationSettingRepository, ConfigurationSettingRepository>();
         services.AddScoped<IUserCredentialRepository, SqlServerUserCredentialRepository>();
         services.AddScoped<IUserAdminRepository, UserAdminRepository>();
-        services.AddScoped<IRoleAdminRepository, RoleAdminRepository>();
         services.AddScoped<ISecurityRoleRepository, SecurityRoleRepository>();
         services.AddScoped<ISecurityOperationRepository, SecurityOperationRepository>();
         services.AddScoped<ISecurityMenuRepository, SecurityMenuRepository>();
@@ -91,6 +109,20 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IGridColumnSettingsRepository, GridColumnSettingsRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IInventoryAuditRepository, InventoryAuditRepository>();
+        services.AddScoped<ISyncOutboxRepository, SyncOutboxRepository>();
+        services.AddScoped<ISyncInboxRepository, SyncInboxRepository>();
+        services.AddScoped<ISyncAuditRepository, SyncAuditRepository>();
+        services.AddScoped<ISyncRuleEvaluator, SyncRuleEvaluator>();
+        services.AddScoped<ISyncProfileRepository, SyncProfileRepository>();
+        services.AddScoped<ISyncProfileExecutionRepository, SyncProfileExecutionRepository>();
+        services.AddScoped<ISyncRoutingRepository, SyncRoutingRepository>();
+        services.AddScoped<IReplicableEntityMetadataProvider, ReplicableEntityMetadataProvider>();
+        services.AddScoped<ISyncFullEntitySource, BusinessPartnerFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, ItemFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, WarehouseFullEntitySource>();
+        services.AddScoped<IBusinessPartnerSyncApplyRepository, BusinessPartnerSyncApplyRepository>();
+        services.AddScoped<IItemSyncApplyRepository, ItemSyncApplyRepository>();
+        services.AddScoped<IWarehouseSyncApplyRepository, WarehouseSyncApplyRepository>();
 
         return services;
     }

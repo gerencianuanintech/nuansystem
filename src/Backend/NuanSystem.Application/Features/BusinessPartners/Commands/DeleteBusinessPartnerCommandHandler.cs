@@ -1,11 +1,17 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
+using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
+using NuanSystem.Shared.Sync;
 using NuanSystem.Shared.Responses;
 
 namespace NuanSystem.Application.Features.BusinessPartners.Commands;
 
-public sealed class DeleteBusinessPartnerCommandHandler(IBusinessPartnerRepository repository)
+public sealed class DeleteBusinessPartnerCommandHandler(
+    IBusinessPartnerRepository repository,
+    ISyncEventPublisher syncEventPublisher,
+    ICompanyContext companyContext)
     : ICommandHandler<DeleteBusinessPartnerCommand, bool>
 {
     public async Task<Result<bool>> Handle(DeleteBusinessPartnerCommand request, CancellationToken cancellationToken)
@@ -19,8 +25,23 @@ public sealed class DeleteBusinessPartnerCommandHandler(IBusinessPartnerReposito
         }
 
         var deleted = await repository.DeleteAsync(request.Id, request.AuditUserId, request.AuditUserName, cancellationToken);
-        return deleted
-            ? Result<bool>.Success(true, "Tercero comercial eliminado correctamente.")
-            : Result<bool>.Failure("No se pudo eliminar el tercero comercial.");
+        if (!deleted)
+        {
+            return Result<bool>.Failure("No se pudo eliminar el tercero comercial.");
+        }
+
+        var syncResult = await BusinessPartnerSyncPublisher.PublishAsync(
+            syncEventPublisher,
+            companyContext,
+            current,
+            SyncOperation.Deleted,
+            cancellationToken);
+
+        if (syncResult is { IsSuccess: false })
+        {
+            return Result<bool>.Failure(syncResult.Message, syncResult.Errors);
+        }
+
+        return Result<bool>.Success(true, "Tercero comercial eliminado correctamente.");
     }
 }

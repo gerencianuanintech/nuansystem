@@ -69,8 +69,8 @@ public sealed partial class OperationalCatalogEditForm : BaseEditForm
 
     private void ConfigureForm()
     {
-        OperationButtonIcons.ApplySaveCancel(btnSave, btnCancel);
-        btnSave.Click += (_, _) => Save();
+        OperationButtonIcons.ApplySaveCancel(btnGuardar, btnCancelar);
+        btnGuardar.Click += (_, _) => Save();
 
         var descriptor = OperationalCatalogDescriptors.All
             .FirstOrDefault(item => string.Equals(item.CatalogKey, catalogKey, StringComparison.OrdinalIgnoreCase));

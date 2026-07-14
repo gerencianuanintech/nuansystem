@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
+using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Features.SecurityFields.Commands;
 using NuanSystem.Application.Features.SecurityFields.Queries;
 
@@ -17,6 +18,7 @@ public static class SecurityFieldEndpoints
             var result = await sender.Send(new GetSecurityFieldsQuery(), cancellationToken);
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityFields)
         .RequireFormOperation("security-fields", "refresh");
 
         app.MapGet("/api/security/fields/{id:int}", async (
@@ -27,6 +29,7 @@ public static class SecurityFieldEndpoints
             var result = await sender.Send(new GetSecurityFieldByIdQuery(id), cancellationToken);
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityFields)
         .RequireFormOperation("security-fields", "consult");
 
         app.MapPost("/api/security/fields", async (
@@ -44,6 +47,7 @@ public static class SecurityFieldEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityFields)
         .RequireFormOperation("security-fields", "create");
 
         app.MapPut("/api/security/fields/{id:int}", async (
@@ -63,6 +67,7 @@ public static class SecurityFieldEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityFields)
         .RequireFormOperation("security-fields", "update");
 
         app.MapDelete("/api/security/fields/{id:int}", async (
@@ -75,6 +80,7 @@ public static class SecurityFieldEndpoints
             var result = await sender.Send(new DeleteSecurityFieldCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityFields)
         .RequireFormOperation("security-fields", "delete");
 
         return app;

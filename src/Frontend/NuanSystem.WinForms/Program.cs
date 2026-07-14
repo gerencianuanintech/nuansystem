@@ -1,4 +1,4 @@
-﻿using NuanSystem.WinForms.Forms.Audit;
+using NuanSystem.WinForms.Forms.Audit;
 using NuanSystem.WinForms.Forms.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.Forms.Auth;
 using NuanSystem.WinForms.Forms.BusinessPartners;
@@ -7,17 +7,17 @@ using NuanSystem.WinForms.Forms.Documents.SecurityDocumentSeries;
 using NuanSystem.WinForms.Forms.OperationalCatalogs;
 using NuanSystem.WinForms.Forms.InventoryItems;
 using NuanSystem.WinForms.Forms.Purchasing.PurchaseOrders;
-using NuanSystem.WinForms.Forms.Roles;
 using NuanSystem.WinForms.Forms.Sap;
-using NuanSystem.WinForms.Forms.SecurityOperations;
-using NuanSystem.WinForms.Forms.SecurityMenus;
-using NuanSystem.WinForms.Forms.SecurityForms;
-using NuanSystem.WinForms.Forms.SecurityFields;
-using NuanSystem.WinForms.Forms.SecurityAccess;
-using NuanSystem.WinForms.Forms.SecurityRoles;
+using NuanSystem.WinForms.Forms.Sync;
+using NuanSystem.WinForms.Forms.Sync.Configuration;
+using NuanSystem.WinForms.Forms.Security.Operations;
+using NuanSystem.WinForms.Forms.Security.Menus;
+using NuanSystem.WinForms.Forms.Security.Forms;
+using NuanSystem.WinForms.Forms.Security.Fields;
+using NuanSystem.WinForms.Forms.Security.Access;
 using NuanSystem.WinForms.Forms.ConfigurationSettings;
 using NuanSystem.WinForms.Forms.Shell;
-using NuanSystem.WinForms.Forms.SecurityUsers;
+using NuanSystem.WinForms.Forms.Security.Users;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Forms.GeneralSupplier.ContactChannels;
 using NuanSystem.WinForms.Forms.GeneralSupplier.ContactTypes;
@@ -87,19 +87,19 @@ using NuanSystem.WinForms.Services.GeneralInventory.Catalogs;
 using NuanSystem.WinForms.Services.GeneralSupplier.Catalogs;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemFamilies;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemGroups;
+using NuanSystem.WinForms.Services.GeneralInventory.Warehouses;
 using NuanSystem.WinForms.Services.InventoryItems;
 using NuanSystem.WinForms.Services.Purchasing.PurchaseOrders;
-using NuanSystem.WinForms.Services.Roles;
 using NuanSystem.WinForms.Services.Sap;
-using NuanSystem.WinForms.Services.SecurityOperations;
-using NuanSystem.WinForms.Services.SecurityMenus;
-using NuanSystem.WinForms.Services.SecurityForms;
-using NuanSystem.WinForms.Services.SecurityFields;
-using NuanSystem.WinForms.Services.SecurityAccess;
-using NuanSystem.WinForms.Services.SecurityRoles;
+using NuanSystem.WinForms.Services.Sync;
+using NuanSystem.WinForms.Services.Security.Operations;
+using NuanSystem.WinForms.Services.Security.Menus;
+using NuanSystem.WinForms.Services.Security.Forms;
+using NuanSystem.WinForms.Services.Security.Fields;
+using NuanSystem.WinForms.Services.Security.Access;
 using NuanSystem.WinForms.Services.Session;
 using NuanSystem.WinForms.Services.Settings;
-using NuanSystem.WinForms.Services.SecurityUsers;
+using NuanSystem.WinForms.Services.Security.Users;
 using NuanSystem.WinForms.ViewModels.Audit;
 using NuanSystem.WinForms.ViewModels.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.ViewModels.Auth;
@@ -116,19 +116,22 @@ using NuanSystem.WinForms.ViewModels.GeneralInventory.Catalogs;
 using NuanSystem.WinForms.ViewModels.GeneralSupplier.Catalogs;
 using NuanSystem.WinForms.ViewModels.GeneralInventory.ItemFamilies;
 using NuanSystem.WinForms.ViewModels.GeneralInventory.ItemGroups;
+using NuanSystem.WinForms.ViewModels.GeneralInventory.Warehouses;
 using NuanSystem.WinForms.ViewModels.InventoryItems;
 using NuanSystem.WinForms.ViewModels.Purchasing.PurchaseOrders;
-using NuanSystem.WinForms.ViewModels.Roles;
 using NuanSystem.WinForms.ViewModels.Sap;
-using NuanSystem.WinForms.ViewModels.SecurityOperations;
-using NuanSystem.WinForms.ViewModels.SecurityMenus;
-using NuanSystem.WinForms.ViewModels.SecurityForms;
-using NuanSystem.WinForms.ViewModels.SecurityFields;
-using NuanSystem.WinForms.ViewModels.SecurityAccess;
-using NuanSystem.WinForms.ViewModels.SecurityRoles;
+using NuanSystem.WinForms.ViewModels.Sync;
+using NuanSystem.WinForms.ViewModels.Security.Operations;
+using NuanSystem.WinForms.ViewModels.Security.Menus;
+using NuanSystem.WinForms.ViewModels.Security.Forms;
+using NuanSystem.WinForms.ViewModels.Security.Fields;
+using NuanSystem.WinForms.ViewModels.Security.Access;
 using NuanSystem.WinForms.ViewModels.Settings;
 using NuanSystem.WinForms.ViewModels.Shell;
-using NuanSystem.WinForms.ViewModels.SecurityUsers;
+using NuanSystem.WinForms.ViewModels.Security.Users;
+using RoleMaintenanceClient = NuanSystem.WinForms.Services.Security.Roles.RoleClient;
+using RoleMaintenanceForm = NuanSystem.WinForms.Forms.Security.Roles.RolesForm;
+using RoleMaintenanceViewModel = NuanSystem.WinForms.ViewModels.Security.Roles.RolesViewModel;
 
 namespace NuanSystem.WinForms;
 
@@ -234,21 +237,23 @@ internal sealed class FrontendComposition : IDisposable
     private readonly GeneralSupplierCatalogClient generalSupplierCatalogClient;
     private readonly GeneralInventoryCatalogClient generalInventoryCatalogClient;
     private readonly ItemGroupClient itemGroupClient;
+    private readonly WarehouseClient warehouseClient;
     private readonly SecurityDocumentSeriesClient securityDocumentSeriesClient;
     private readonly OperationalCatalogClient operationalCatalogClient;
     private readonly ItemFamilyClient itemFamilyClient;
     private readonly ItemClient itemClient;
     private readonly PurchaseOrderClient purchaseOrderClient;
     private readonly SapClient sapClient;
+    private readonly SyncMonitorClient syncMonitorClient;
+    private readonly SyncConfigurationClient syncConfigurationClient;
     private readonly AuditClient auditClient;
     private readonly SettingsClient settingsClient;
     private readonly UserClient userClient;
-    private readonly RoleClient roleClient;
-    private readonly SecurityRoleClient securityRoleClient;
-    private readonly SecurityOperationClient securityOperationClient;
-    private readonly SecurityMenuClient securityMenuClient;
-    private readonly SecurityFormClient securityFormClient;
-    private readonly SecurityFieldClient securityFieldClient;
+    private readonly RoleMaintenanceClient roleMaintenanceClient;
+    private readonly OperationClient securityOperationClient;
+    private readonly MenuClient securityMenuClient;
+    private readonly FormClient securityFormClient;
+    private readonly FieldClient securityFieldClient;
     private readonly SecurityAccessClient securityAccessClient;
     private readonly SecurityRoleFormAccessClient securityRoleFormAccessClient;
     private readonly SecurityTransactionalFormAccessClient securityTransactionalFormAccessClient;
@@ -278,21 +283,23 @@ internal sealed class FrontendComposition : IDisposable
         generalSupplierCatalogClient = new GeneralSupplierCatalogClient(apiClient);
         generalInventoryCatalogClient = new GeneralInventoryCatalogClient(apiClient);
         itemGroupClient = new ItemGroupClient(apiClient);
+        warehouseClient = new WarehouseClient(apiClient);
         securityDocumentSeriesClient = new SecurityDocumentSeriesClient(apiClient);
         operationalCatalogClient = new OperationalCatalogClient(apiClient);
         itemFamilyClient = new ItemFamilyClient(apiClient);
         itemClient = new ItemClient(apiClient);
         purchaseOrderClient = new PurchaseOrderClient(apiClient);
         sapClient = new SapClient(apiClient);
+        syncMonitorClient = new SyncMonitorClient(apiClient);
+        syncConfigurationClient = new SyncConfigurationClient(apiClient);
         auditClient = new AuditClient(apiClient);
         settingsClient = new SettingsClient(apiClient);
         userClient = new UserClient(apiClient);
-        roleClient = new RoleClient(apiClient);
-        securityRoleClient = new SecurityRoleClient(apiClient);
-        securityOperationClient = new SecurityOperationClient(apiClient);
-        securityMenuClient = new SecurityMenuClient(apiClient);
-        securityFormClient = new SecurityFormClient(apiClient);
-        securityFieldClient = new SecurityFieldClient(apiClient);
+        roleMaintenanceClient = new RoleMaintenanceClient(apiClient);
+        securityOperationClient = new OperationClient(apiClient);
+        securityMenuClient = new MenuClient(apiClient);
+        securityFormClient = new FormClient(apiClient);
+        securityFieldClient = new FieldClient(apiClient);
         securityAccessClient = new SecurityAccessClient(apiClient);
         securityRoleFormAccessClient = new SecurityRoleFormAccessClient(apiClient);
         securityTransactionalFormAccessClient = new SecurityTransactionalFormAccessClient(apiClient);
@@ -325,7 +332,7 @@ internal sealed class FrontendComposition : IDisposable
             shellViewModel,
             CreateConfigurationCompaniesForm,
             CreateUsersForm,
-            CreateSecurityRolesForm,
+            CreateRolesForm,
             CreateOperationsForm,
             CreateMenusForm,
             CreateFormsForm,
@@ -374,6 +381,9 @@ internal sealed class FrontendComposition : IDisposable
             CreateItemsForm,
             CreatePurchaseOrdersForm,
             CreateSapSyncLogForm,
+            CreateSyncMonitorForm,
+            CreateSyncProfileListForm,
+            CreateSyncExecutionListForm,
             CreateAuditLogsForm,
             CreateSettingsForm);
     }
@@ -713,7 +723,7 @@ internal sealed class FrontendComposition : IDisposable
 
     public WarehousesForm CreateWarehousesForm()
     {
-        return CreateCatalogForm<WarehousesForm>(GeneralInventoryCatalogDescriptors.Warehouses);
+        return new WarehousesForm(new WarehousesViewModel(warehouseClient), session, gridColumnSettingsClient);
     }
 
     public ItemBrandsForm CreateItemBrandsForm()
@@ -822,12 +832,12 @@ internal sealed class FrontendComposition : IDisposable
 
     public UsersForm CreateUsersForm()
     {
-        return new UsersForm(new UsersViewModel(userClient, companyClient), session, auditClient, gridColumnSettingsClient);
+        return new UsersForm(new UsersViewModel(userClient, companyClient, roleMaintenanceClient, securityAccessClient), session, auditClient, gridColumnSettingsClient);
     }
 
-    public SecurityRolesForm CreateSecurityRolesForm()
+    public RoleMaintenanceForm CreateRolesForm()
     {
-        return new SecurityRolesForm(new SecurityRolesViewModel(securityRoleClient), session, auditClient, gridColumnSettingsClient);
+        return new RoleMaintenanceForm(new RoleMaintenanceViewModel(roleMaintenanceClient), session, auditClient, gridColumnSettingsClient);
     }
 
     public OperationsForm CreateOperationsForm()
@@ -853,14 +863,14 @@ internal sealed class FrontendComposition : IDisposable
     public SecurityMaintenanceFormAccessForm CreateSecurityMaintenanceFormAccessForm()
     {
         return new SecurityMaintenanceFormAccessForm(
-            new SecurityMaintenanceFormAccessViewModel(roleClient, securityRoleFormAccessClient));
+            new SecurityMaintenanceFormAccessViewModel(roleMaintenanceClient, securityRoleFormAccessClient));
     }
 
     public SecurityTransactionalFormAccessForm CreateSecurityTransactionalFormAccessForm()
     {
         return new SecurityTransactionalFormAccessForm(
             new SecurityTransactionalFormAccessViewModel(
-                roleClient,
+                roleMaintenanceClient,
                 securityTransactionalFormAccessClient,
                 securityDocumentSeriesAccessClient));
     }
@@ -869,7 +879,7 @@ internal sealed class FrontendComposition : IDisposable
     {
         return new SecurityMaintenanceFieldAccessForm(
             new SecurityFormFieldAccessViewModel(
-                roleClient,
+                roleMaintenanceClient,
                 securityRoleFormAccessClient,
                 securityMaintenanceFieldAccessClient,
                 1));
@@ -879,7 +889,7 @@ internal sealed class FrontendComposition : IDisposable
     {
         return new SecurityTransactionalFieldAccessForm(
             new SecurityTransactionalFieldAccessViewModel(
-                roleClient,
+                roleMaintenanceClient,
                 securityRoleFormAccessClient,
                 securityDocumentSeriesAccessClient,
                 securityTransactionalFieldAccessClient));
@@ -912,6 +922,29 @@ internal sealed class FrontendComposition : IDisposable
     public SapSyncLogForm CreateSapSyncLogForm()
     {
         return new SapSyncLogForm(new SapSyncLogViewModel(sapClient));
+    }
+
+    public SyncMonitorForm CreateSyncMonitorForm()
+    {
+        return new SyncMonitorForm(
+            new SyncMonitorViewModel(syncMonitorClient),
+            new SyncOutboxListViewModel(syncMonitorClient),
+            new SyncOutboxDetailViewModel(syncMonitorClient, session),
+            new SyncAuditViewModel(syncMonitorClient),
+            session);
+    }
+
+    public SyncProfileListForm CreateSyncProfileListForm()
+    {
+        return new SyncProfileListForm(new SyncProfilesViewModel(syncConfigurationClient), syncConfigurationClient, session);
+    }
+
+    public SyncExecutionListForm CreateSyncExecutionListForm()
+    {
+        return new SyncExecutionListForm(
+            new SyncExecutionsViewModel(syncConfigurationClient),
+            new SyncProfileExecutionDetailViewModel(syncConfigurationClient),
+            session);
     }
 
     public AuditLogsForm CreateAuditLogsForm()

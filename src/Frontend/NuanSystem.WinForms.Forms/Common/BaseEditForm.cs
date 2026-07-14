@@ -4,13 +4,14 @@ using System.ComponentModel;
 
 namespace NuanSystem.WinForms.Forms.Common;
 
-public class BaseEditForm : XtraForm
+public partial class BaseEditForm : XtraForm
 {
     private static readonly AsyncLocal<bool> ReadOnlyModeScope = new();
     private readonly DXErrorProvider errorProvider;
 
     public BaseEditForm()
     {
+        InitializeComponent();
         AppTypography.ApplyToForm(this);
 
         errorProvider = new DXErrorProvider
@@ -18,6 +19,8 @@ public class BaseEditForm : XtraForm
             ContainerControl = this
         };
         Validator = new FormValidator(errorProvider);
+        btnGuardar.Click += (_, _) => Save();
+        HideTemplateButtonsWhenDerivedFormDeclaresActions();
     }
 
     [Browsable(false)]
@@ -185,10 +188,40 @@ public class BaseEditForm : XtraForm
             || string.Equals(control.Text, "Cancelar", StringComparison.OrdinalIgnoreCase);
     }
 
+    private void HideTemplateButtonsWhenDerivedFormDeclaresActions()
+    {
+        var formType = GetType();
+        if (formType == typeof(BaseEditForm))
+        {
+            return;
+        }
+
+        const System.Reflection.BindingFlags flags =
+            System.Reflection.BindingFlags.Instance
+            | System.Reflection.BindingFlags.Public
+            | System.Reflection.BindingFlags.NonPublic
+            | System.Reflection.BindingFlags.DeclaredOnly;
+
+        var declaresOwnActions =
+            formType.GetField("btnGuardar", flags) is not null
+            || formType.GetField("btnCancelar", flags) is not null
+            || formType.GetField("btnSave", flags) is not null
+            || formType.GetField("btnCancel", flags) is not null;
+
+        if (!declaresOwnActions)
+        {
+            return;
+        }
+
+        btnGuardar.Visible = false;
+        btnCancelar.Visible = false;
+    }
+
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
+            components?.Dispose();
             errorProvider.Dispose();
         }
 

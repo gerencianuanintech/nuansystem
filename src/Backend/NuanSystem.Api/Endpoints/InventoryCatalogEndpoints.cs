@@ -7,6 +7,8 @@ using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Commands;
 using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Queries;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Commands;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Queries;
+using NuanSystem.Application.Features.GeneralInventory.Warehouses.Commands;
+using NuanSystem.Application.Features.GeneralInventory.Warehouses.Queries;
 using NuanSystem.Application.Features.Items.Commands;
 using NuanSystem.Application.Features.Items.Queries;
 using NuanSystem.Shared.Constants;
@@ -92,6 +94,75 @@ public static class InventoryCatalogEndpoints
             "attachment-categories",
             PermissionCodes.GeneralInventoryAttachmentCategoriesRead,
             PermissionCodes.GeneralInventoryAttachmentCategoriesManage);
+
+        app.MapGet("/api/warehouses", async (
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await sender.Send(new GetWarehousesQuery(), cancellationToken);
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.GeneralInventoryWarehousesRead);
+
+        app.MapGet("/api/warehouses/{id:int}", async (
+            int id,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await sender.Send(new GetWarehouseByIdQuery(id), cancellationToken);
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.GeneralInventoryWarehousesRead);
+
+        app.MapPost("/api/warehouses", async (
+            CreateWarehouseCommand command,
+            ISender sender,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken) =>
+        {
+            var auditUser = user.GetAuditUser();
+            var result = await sender.Send(command with { AuditUserId = auditUser.UserId, AuditUserName = auditUser.UserName }, cancellationToken);
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.GeneralInventoryWarehousesManage);
+
+        app.MapPut("/api/warehouses/{id:int}", async (
+            int id,
+            UpdateWarehouseCommand command,
+            ISender sender,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken) =>
+        {
+            var auditUser = user.GetAuditUser();
+            var result = await sender.Send(command with { Id = id, AuditUserId = auditUser.UserId, AuditUserName = auditUser.UserName }, cancellationToken);
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.GeneralInventoryWarehousesManage);
+
+        app.MapPatch("/api/warehouses/{id:int}/active", async (
+            int id,
+            SetWarehouseActiveStatusRequest request,
+            ISender sender,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken) =>
+        {
+            var auditUser = user.GetAuditUser();
+            var result = await sender.Send(new SetWarehouseActiveStatusCommand(id, request.IsActive, auditUser.UserId, auditUser.UserName), cancellationToken);
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.GeneralInventoryWarehousesManage);
+
+        app.MapDelete("/api/warehouses/{id:int}", async (
+            int id,
+            ISender sender,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken) =>
+        {
+            var auditUser = user.GetAuditUser();
+            var result = await sender.Send(new SetWarehouseActiveStatusCommand(id, false, auditUser.UserId, auditUser.UserName), cancellationToken);
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.GeneralInventoryWarehousesManage);
 
         app.MapGet("/api/items", async (
             ISender sender,
@@ -403,4 +474,6 @@ public static class InventoryCatalogEndpoints
         string Name,
         string? Description,
         bool IsActive);
+
+    private sealed record SetWarehouseActiveStatusRequest(bool IsActive);
 }

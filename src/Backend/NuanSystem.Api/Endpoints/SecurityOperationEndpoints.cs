@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
+using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Features.SecurityOperations.Commands;
 using NuanSystem.Application.Features.SecurityOperations.Queries;
 
@@ -18,6 +19,7 @@ public static class SecurityOperationEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityOperations)
         .RequireFormOperation("security-operations", "refresh");
 
         app.MapGet("/api/security/operations/{id:int}", async (
@@ -29,6 +31,7 @@ public static class SecurityOperationEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityOperations)
         .RequireFormOperation("security-operations", "consult");
 
         app.MapPost("/api/security/operations", async (
@@ -46,6 +49,7 @@ public static class SecurityOperationEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityOperations)
         .RequireFormOperation("security-operations", "create");
 
         app.MapPut("/api/security/operations/{id:int}", async (
@@ -65,6 +69,7 @@ public static class SecurityOperationEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityOperations)
         .RequireFormOperation("security-operations", "update");
 
         app.MapDelete("/api/security/operations/{id:int}", async (
@@ -80,6 +85,7 @@ public static class SecurityOperationEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityOperations)
         .RequireFormOperation("security-operations", "delete");
 
         return app;

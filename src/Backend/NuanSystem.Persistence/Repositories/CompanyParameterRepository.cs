@@ -21,7 +21,10 @@ SELECT
     [Value],
     Description,
     CreatedAt,
-    UpdatedAt
+    UpdatedAt,
+    GlobalId,
+    ExternalSystem,
+    ExternalCode
 FROM dbo.CompanyParameters
 WHERE CompanyId = @CompanyId
 ORDER BY [Key];
@@ -63,7 +66,10 @@ SELECT
     [Value],
     Description,
     CreatedAt,
-    UpdatedAt
+    UpdatedAt,
+    GlobalId,
+    ExternalSystem,
+    ExternalCode
 FROM dbo.CompanyParameters
 WHERE CompanyId = @CompanyId
   AND [Key] = @Key;

@@ -1,4 +1,6 @@
-﻿using DevExpress.XtraEditors;
+using DevExpress.XtraEditors;
+using DevExpress.XtraEditors.Controls;
+using NuanSystem.WinForms.Controls.Lookups;
 
 namespace NuanSystem.WinForms.Forms.GeneralInventory.ItemGroups;
 
@@ -15,20 +17,18 @@ partial class ItemGroupEditForm
         lblDescripcion = new LabelControl();
         memDescripcion = new MemoEdit();
         lblCuentaInventario = new LabelControl();
-        lueCuentaInventario = new LookUpEdit();
+        lueCuentaInventario = new NuanLookupEdit();
         lblCuentaCostoVentas = new LabelControl();
-        lueCuentaCostoVentas = new LookUpEdit();
+        lueCuentaCostoVentas = new NuanLookupEdit();
         lblCuentaVentas = new LabelControl();
-        lueCuentaVentas = new LookUpEdit();
+        lueCuentaVentas = new NuanLookupEdit();
         lblCuentaCompras = new LabelControl();
-        lueCuentaCompras = new LookUpEdit();
+        lueCuentaCompras = new NuanLookupEdit();
         lblGrupoSap = new LabelControl();
         txtGrupoSap = new TextEdit();
         lblCodigoSap = new LabelControl();
         txtCodigoSap = new TextEdit();
         chkActivo = new CheckEdit();
-        btnGuardar = new SimpleButton();
-        btnCancelar = new SimpleButton();
         ((System.ComponentModel.ISupportInitialize)txtCodigo.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtNombre.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)memDescripcion.Properties).BeginInit();
@@ -117,7 +117,9 @@ partial class ItemGroupEditForm
         // 
         lueCuentaInventario.Location = new Point(190, 144);
         lueCuentaInventario.Name = "lueCuentaInventario";
-        lueCuentaInventario.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+        lueCuentaInventario.Properties.Buttons.Clear();
+        lueCuentaInventario.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo), new EditorButton(ButtonPredefines.Delete), new EditorButton(ButtonPredefines.Plus) });
+        lueCuentaInventario.Properties.NullText = "";
         lueCuentaInventario.Size = new Size(350, 20);
         lueCuentaInventario.TabIndex = 7;
         // 
@@ -137,7 +139,9 @@ partial class ItemGroupEditForm
         // 
         lueCuentaCostoVentas.Location = new Point(190, 170);
         lueCuentaCostoVentas.Name = "lueCuentaCostoVentas";
-        lueCuentaCostoVentas.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+        lueCuentaCostoVentas.Properties.Buttons.Clear();
+        lueCuentaCostoVentas.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo), new EditorButton(ButtonPredefines.Delete), new EditorButton(ButtonPredefines.Plus) });
+        lueCuentaCostoVentas.Properties.NullText = "";
         lueCuentaCostoVentas.Size = new Size(350, 20);
         lueCuentaCostoVentas.TabIndex = 9;
         // 
@@ -157,7 +161,9 @@ partial class ItemGroupEditForm
         // 
         lueCuentaVentas.Location = new Point(190, 196);
         lueCuentaVentas.Name = "lueCuentaVentas";
-        lueCuentaVentas.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+        lueCuentaVentas.Properties.Buttons.Clear();
+        lueCuentaVentas.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo), new EditorButton(ButtonPredefines.Delete), new EditorButton(ButtonPredefines.Plus) });
+        lueCuentaVentas.Properties.NullText = "";
         lueCuentaVentas.Size = new Size(350, 20);
         lueCuentaVentas.TabIndex = 11;
         // 
@@ -177,7 +183,9 @@ partial class ItemGroupEditForm
         // 
         lueCuentaCompras.Location = new Point(190, 222);
         lueCuentaCompras.Name = "lueCuentaCompras";
-        lueCuentaCompras.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+        lueCuentaCompras.Properties.Buttons.Clear();
+        lueCuentaCompras.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo), new EditorButton(ButtonPredefines.Delete), new EditorButton(ButtonPredefines.Plus) });
+        lueCuentaCompras.Properties.NullText = "";
         lueCuentaCompras.Size = new Size(350, 20);
         lueCuentaCompras.TabIndex = 13;
         // 
@@ -296,8 +304,8 @@ partial class ItemGroupEditForm
         Controls.Add(lblCodigoSap);
         Controls.Add(txtCodigoSap);
         Controls.Add(chkActivo);
-        Controls.Add(btnCancelar);
-        Controls.Add(btnGuardar);
+        Controls.SetChildIndex(btnGuardar, 0);
+        Controls.SetChildIndex(btnCancelar, 0);
         Font = new Font("Segoe UI", 9F);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -336,19 +344,17 @@ partial class ItemGroupEditForm
     private LabelControl lblDescripcion;
     private MemoEdit memDescripcion;
     private LabelControl lblCuentaInventario;
-    private LookUpEdit lueCuentaInventario;
+    private NuanLookupEdit lueCuentaInventario;
     private LabelControl lblCuentaCostoVentas;
-    private LookUpEdit lueCuentaCostoVentas;
+    private NuanLookupEdit lueCuentaCostoVentas;
     private LabelControl lblCuentaVentas;
-    private LookUpEdit lueCuentaVentas;
+    private NuanLookupEdit lueCuentaVentas;
     private LabelControl lblCuentaCompras;
-    private LookUpEdit lueCuentaCompras;
+    private NuanLookupEdit lueCuentaCompras;
     private LabelControl lblGrupoSap;
     private TextEdit txtGrupoSap;
     private LabelControl lblCodigoSap;
     private TextEdit txtCodigoSap;
     private CheckEdit chkActivo;
-    private SimpleButton btnGuardar;
-    private SimpleButton btnCancelar;
 }
 

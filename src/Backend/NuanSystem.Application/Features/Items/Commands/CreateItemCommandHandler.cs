@@ -1,12 +1,18 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
+using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.Items.Dtos;
+using NuanSystem.Shared.Sync;
 using NuanSystem.Shared.Responses;
 
 namespace NuanSystem.Application.Features.Items.Commands;
 
-public sealed class CreateItemCommandHandler(IItemRepository itemRepository)
+public sealed class CreateItemCommandHandler(
+    IItemRepository itemRepository,
+    ISyncEventPublisher syncEventPublisher,
+    ICompanyContext companyContext)
     : ICommandHandler<CreateItemCommand, ItemDto>
 {
     public async Task<Result<ItemDto>> Handle(CreateItemCommand request, CancellationToken cancellationToken)
@@ -55,6 +61,18 @@ public sealed class CreateItemCommandHandler(IItemRepository itemRepository)
 
         var item = await itemRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new InvalidOperationException("El articulo fue creado pero no pudo consultarse.");
+
+        var syncResult = await ItemSyncPublisher.PublishAsync(
+            syncEventPublisher,
+            companyContext,
+            item,
+            SyncOperation.Created,
+            cancellationToken);
+
+        if (syncResult is { IsSuccess: false })
+        {
+            return Result<ItemDto>.Failure(syncResult.Message, syncResult.Errors);
+        }
 
         return Result<ItemDto>.Success(item, "Articulo creado correctamente.");
     }

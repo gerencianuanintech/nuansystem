@@ -22,7 +22,7 @@ public static class EndpointAuthorizationExtensions
             .RequireAuthorization()
             .AddEndpointFilter(async (context, next) =>
             {
-                if (!TryGetUserId(context.HttpContext.User, out var userId))
+                if (!context.HttpContext.User.TryGetUserId(out var userId))
                 {
                     return Results.Unauthorized();
                 }
@@ -55,7 +55,7 @@ public static class EndpointAuthorizationExtensions
             .RequireAuthorization()
             .AddEndpointFilter(async (context, next) =>
             {
-                if (!TryGetUserId(context.HttpContext.User, out var userId))
+                if (!context.HttpContext.User.TryGetUserId(out var userId))
                 {
                     return Results.Unauthorized();
                 }
@@ -100,12 +100,6 @@ public static class EndpointAuthorizationExtensions
                         "SecurityHistoryOperationDenied",
                         $"El rol actual no tiene la operacion de historial habilitada para el formulario '{formKey}'.");
             });
-    }
-
-    private static bool TryGetUserId(ClaimsPrincipal user, out int userId)
-    {
-        var userIdValue = user.FindFirstValue(ClaimTypes.NameIdentifier);
-        return int.TryParse(userIdValue, out userId);
     }
 
     private static bool OperationMatches(string? actionKey, IReadOnlyCollection<string> allowedAliases)

@@ -1,12 +1,18 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
+using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Shared.Sync;
 using NuanSystem.Shared.Responses;
 
 namespace NuanSystem.Application.Features.BusinessPartners.Commands;
 
-public sealed class CreateBusinessPartnerCommandHandler(IBusinessPartnerRepository repository)
+public sealed class CreateBusinessPartnerCommandHandler(
+    IBusinessPartnerRepository repository,
+    ISyncEventPublisher syncEventPublisher,
+    ICompanyContext companyContext)
     : ICommandHandler<CreateBusinessPartnerCommand, BusinessPartnerDto>
 {
     public async Task<Result<BusinessPartnerDto>> Handle(CreateBusinessPartnerCommand request, CancellationToken cancellationToken)
@@ -31,6 +37,18 @@ public sealed class CreateBusinessPartnerCommandHandler(IBusinessPartnerReposito
         var id = await repository.CreateAsync(ToCreateData(request, code, identificationNumber), cancellationToken);
         var partner = await repository.GetByIdAsync(id, cancellationToken)
             ?? throw new InvalidOperationException("El tercero comercial fue creado pero no pudo consultarse.");
+
+        var syncResult = await BusinessPartnerSyncPublisher.PublishAsync(
+            syncEventPublisher,
+            companyContext,
+            partner,
+            SyncOperation.Created,
+            cancellationToken);
+
+        if (syncResult is { IsSuccess: false })
+        {
+            return Result<BusinessPartnerDto>.Failure(syncResult.Message, syncResult.Errors);
+        }
 
         return Result<BusinessPartnerDto>.Success(partner, "Tercero comercial creado correctamente.");
     }

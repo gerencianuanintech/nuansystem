@@ -1,5 +1,5 @@
 using System.Net;
-using System.Security.Claims;
+using NuanSystem.Api.Extensions;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Shared.Responses;
 
@@ -35,7 +35,7 @@ public sealed class CompanyContextMiddleware(
         }
 
         var companyCode = headerValue.ToString().Trim();
-        if (!TryGetUserId(context.User, out var userId))
+        if (!context.User.TryGetUserId(out var userId))
         {
             await WriteErrorAsync(
                 context,
@@ -76,12 +76,6 @@ public sealed class CompanyContextMiddleware(
             || path.StartsWithSegments("/swagger")
             || path.StartsWithSegments("/api/auth")
             || path.StartsWithSegments("/api/companies");
-    }
-
-    private static bool TryGetUserId(ClaimsPrincipal user, out int userId)
-    {
-        var userIdValue = user.FindFirstValue(ClaimTypes.NameIdentifier);
-        return int.TryParse(userIdValue, out userId);
     }
 
     private static async Task WriteErrorAsync(

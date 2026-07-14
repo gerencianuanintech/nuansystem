@@ -3,8 +3,12 @@ namespace NuanSystem.Application.Features.GeneralInventory.Catalogs.Dtos;
 public sealed class GeneralInventoryCatalogDto
 {
     public int Id { get; set; }
+    public Guid? GlobalId { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string? ExternalSystem { get; set; }
+    public string? ExternalCode { get; set; }
+    public string? SapCode { get; set; }
     public string? Description { get; set; }
     public bool IsActive { get; set; }
     public int? CreatedByUserId { get; set; }

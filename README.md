@@ -23,6 +23,11 @@ Solucion empresarial modular para API REST .NET, frontend Windows Forms con DevE
 
 - `docs/ARCHITECTURE.md`: vision general de capas, flujo multiempresa y reglas de dependencia.
 - `docs/ARQUITECTURA-COMERCIAL.md`: direccion tecnica para evolucionar hacia una plataforma comercial multi-giro con capacidades configurables, inventario, ventas, compras, caja, precios y transacciones.
+- `docs/architecture/MASTER-BRANCH-STANDALONE-SAP.md`: arquitectura objetivo para ERP independiente, Master central, bases por sucursal, sincronizacion Outbox/Inbox e integracion SAP opcional.
+- `docs/architecture/SRI-DOCUMENTS-WORKER.md`: arquitectura objetivo para modulo SRI centralizado, cola de documentos y Worker Service responsable de XML.
+- `docs/operations/SYNC-MASTER-BRANCH-OPERATIONS.md`: guia operativa de Sync Master/Sucursal, estados, worker, monitoreo, acciones manuales y reglas de seguridad.
+- `docs/operations/SYNC-MASTER-BRANCH-DEPLOYMENT-CHECKLIST.md`: checklist de despliegue controlado para Sync Master/Sucursal.
+- `docs/operations/SYNC-MASTER-BRANCH-TROUBLESHOOTING.md`: diagnostico de eventos Pending, InProcess, Error, DeadLetter, duplicados y limites actuales.
 - `docs/FASE-1-BASE-TECNICA.md`: detalle de lo implementado en la Fase 1.
 - `docs/FASE-2-MULTIEMPRESA.md`: detalle de la arquitectura multiempresa y resolucion de tenant.
 - `docs/FASE-3-SEGURIDAD.md`: autenticacion JWT, roles, permisos y empresas por usuario.
@@ -43,3 +48,13 @@ Solucion empresarial modular para API REST .NET, frontend Windows Forms con DevE
 - `docs/FASE-17-ROLES-PERMISOS.md`: administracion de roles y permisos desde API y WinForms.
 - `docs/FASE-18-AUTORIZACION-POR-PERMISOS.md`: autorizacion real por permisos en endpoints de la API.
 - `docs/FASE-19-AUDITORIA-OPERATIVA.md`: auditoria de operaciones de escritura en API y consulta desde WinForms.
+
+## Arquitectura objetivo
+
+NuanSystem se dirige a operar como ERP independiente, multiempresa y multisucursal, con una base `NuanSystem_Master` para gobierno central y bases tenant/sucursal para la operacion diaria.
+
+SAP Business One es una integracion opcional por empresa. El producto debe funcionar con `SapIntegrationMode = None`, y cualquier comunicacion SAP queda aislada en backend mediante contratos de Application y el proyecto `NuanSystem.SapIntegration`; `Domain` y WinForms no dependen de SAP.
+
+La sincronizacion entre Master y sucursales debe implementarse con Outbox/Inbox, mensajes versionados, idempotencia, auditoria, reintentos y Dead Letter. No se permiten escrituras cruzadas directas entre bases.
+
+El modulo SRI es centralizado e independiente de SAP. Documentos originados por NuanSystem, TXT, AddOn SAP, formularios o integraciones externas solo alimentan una cola SRI; el Worker SRI es el unico responsable de consultar, descargar, procesar y almacenar XML.

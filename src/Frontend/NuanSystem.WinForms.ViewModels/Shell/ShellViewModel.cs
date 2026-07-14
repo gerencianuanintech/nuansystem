@@ -1,6 +1,6 @@
 using NuanSystem.Shared.Constants;
-using NuanSystem.WinForms.Services.SecurityAccess;
-using NuanSystem.WinForms.Services.SecurityAccess.Models;
+using NuanSystem.WinForms.Services.Security.Access;
+using NuanSystem.WinForms.Services.Security.Access.Models;
 using NuanSystem.WinForms.Services.Session;
 
 namespace NuanSystem.WinForms.ViewModels.Shell;
@@ -14,7 +14,9 @@ public sealed class ShellViewModel
     {
         this.session = session;
         this.securityAccessClient = securityAccessClient;
-        Modules = BuildAllowedModules();
+        Modules = securityAccessClient is null
+            ? BuildAllowedModules()
+            : Array.Empty<ShellModuleItem>();
     }
 
     public string UserDisplayName => session.CurrentUser?.DisplayName ?? "Usuario";
@@ -27,6 +29,7 @@ public sealed class ShellViewModel
     public IReadOnlyCollection<string> Roles => session.CurrentUser?.Roles ?? Array.Empty<string>();
     public IReadOnlyCollection<ShellModuleItem> Modules { get; private set; }
     public IReadOnlyCollection<NavigationMenuItem> NavigationMenus { get; private set; } = Array.Empty<NavigationMenuItem>();
+    public string? NavigationLoadError { get; private set; }
 
     public bool HasModules => Modules.Count > 0;
 
@@ -39,22 +42,32 @@ public sealed class ShellViewModel
     {
         if (securityAccessClient is null)
         {
+            NavigationLoadError = null;
+            Modules = BuildAllowedModules();
             return;
         }
 
         try
         {
+            NavigationLoadError = null;
             var navigation = await securityAccessClient.GetNavigationAsync(cancellationToken);
             var modules = BuildModulesFromNavigation(navigation);
+            NavigationMenus = navigation;
+            Modules = modules;
             if (modules.Count > 0)
             {
-                NavigationMenus = navigation;
-                Modules = modules;
+                return;
             }
+
+            NavigationLoadError = navigation.Count == 0
+                ? "La API no devolvio menus visibles para el usuario."
+                : "La API devolvio menus, pero no hay formularios navegables configurados.";
         }
-        catch
+        catch (Exception exception)
         {
-            Modules = BuildAllowedModules();
+            NavigationLoadError = exception.Message;
+            NavigationMenus = Array.Empty<NavigationMenuItem>();
+            Modules = Array.Empty<ShellModuleItem>();
         }
     }
 
@@ -133,6 +146,9 @@ public sealed class ShellViewModel
             new("Modulo de configuracion", "Documentos", "Mantenimiento de series de documentos", "security-document-series", [PermissionCodes.DocumentsSeriesRead, PermissionCodes.DocumentsSeriesManage]),
             new("Modulo de configuracion", "Catalogos operativos", "Mantenimiento de catalogos operativos", "operational-catalogs", [PermissionCodes.OperationalCatalogsRead, PermissionCodes.OperationalCatalogsManage]),
             new("Compras", "Ordenes de compra", "Gestion de ordenes de compra", "purchase-orders", [PermissionCodes.PurchaseOrdersRead, PermissionCodes.PurchaseOrdersManage, PermissionCodes.PurchaseOrdersApprove, PermissionCodes.PurchaseOrdersSyncSap]),
+            new("Administracion", "Monitor Sync", "Monitoreo Sync Master/Sucursal", "sync-monitor", [PermissionCodes.SyncOutboxView]),
+            new("Integraciones", "Perfiles de sincronizacion", "Configuracion Maestro - Sucursales", "sync-profiles", [PermissionCodes.SyncConfigurationView]),
+            new("Integraciones", "Ejecuciones de sincronizacion", "Monitoreo administrativo de ejecuciones", "sync-executions", [PermissionCodes.SyncConfigurationViewExecutions]),
             new("Catalogos Financieros", "Metodos de pago contable", "Mantenimiento de metodos de pago contable", "accounting-payment-methods", [PermissionCodes.FinancialCatalogsAccountingPaymentMethodsRead, PermissionCodes.FinancialCatalogsAccountingPaymentMethodsManage]),
             new("Catalogos Financieros", "Prioridades de pago", "Mantenimiento de prioridades de pago", "payment-priorities", [PermissionCodes.FinancialCatalogsPaymentPrioritiesRead, PermissionCodes.FinancialCatalogsPaymentPrioritiesManage]),
             new("Catalogos Financieros", "Flujos de aprobacion", "Mantenimiento de flujos de aprobacion", "approval-flows", [PermissionCodes.FinancialCatalogsApprovalFlowsRead, PermissionCodes.FinancialCatalogsApprovalFlowsManage]),

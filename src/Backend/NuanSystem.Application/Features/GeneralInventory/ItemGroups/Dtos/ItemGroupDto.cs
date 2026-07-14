@@ -3,8 +3,11 @@ namespace NuanSystem.Application.Features.GeneralInventory.ItemGroups.Dtos;
 public sealed class ItemGroupDto
 {
     public int Id { get; set; }
+    public Guid? GlobalId { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string? ExternalSystem { get; set; }
+    public string? ExternalCode { get; set; }
     public string? Description { get; set; }
     public bool IsActive { get; set; }
     public string? InventoryAccountCode { get; set; }

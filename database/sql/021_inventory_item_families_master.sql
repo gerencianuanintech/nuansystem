@@ -290,11 +290,27 @@ BEGIN
 END;
 GO
 
+IF COL_LENGTH(N'dbo.Items', N'GlobalId') IS NULL
+    ALTER TABLE dbo.Items ADD GlobalId uniqueidentifier NOT NULL CONSTRAINT DF_Items_GlobalId DEFAULT NEWID();
+GO
+
+IF COL_LENGTH(N'dbo.Items', N'ExternalSystem') IS NULL
+    ALTER TABLE dbo.Items ADD ExternalSystem nvarchar(50) NULL;
+GO
+
+IF COL_LENGTH(N'dbo.Items', N'ExternalCode') IS NULL
+    ALTER TABLE dbo.Items ADD ExternalCode nvarchar(100) NULL;
+GO
+
+IF COL_LENGTH(N'dbo.Items', N'SapCode') IS NULL
+    ALTER TABLE dbo.Items ADD SapCode nvarchar(100) NULL;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_ITEMS_LISTAR
 AS
 BEGIN
     SELECT
-        item.Id, item.Code, item.Name, item.Description,
+        item.Id, item.GlobalId, item.Code, item.Name, item.ExternalSystem, item.ExternalCode, item.SapCode, item.Description,
         item.ItemGroupId, itemGroup.Code AS ItemGroupCode, itemGroup.Name AS ItemGroupName,
         item.ItemFamilyId, itemFamily.Code AS ItemFamilyCode, itemFamily.Name AS ItemFamilyName,
         item.ItemType,
@@ -329,7 +345,7 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_ITEMS_BUSCARPORID
 AS
 BEGIN
     SELECT
-        item.Id, item.Code, item.Name, item.Description,
+        item.Id, item.GlobalId, item.Code, item.Name, item.ExternalSystem, item.ExternalCode, item.SapCode, item.Description,
         item.ItemGroupId, itemGroup.Code AS ItemGroupCode, itemGroup.Name AS ItemGroupName,
         item.ItemFamilyId, itemFamily.Code AS ItemFamilyCode, itemFamily.Name AS ItemFamilyName,
         item.ItemType,

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
 using NuanSystem.WinForms.Forms.Common;
+using NuanSystem.WinForms.Controls.Lookups;
 using NuanSystem.WinForms.Services.Accounting.ChartOfAccounts.Models;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemGroups.Models;
 
@@ -10,15 +11,18 @@ namespace NuanSystem.WinForms.Forms.GeneralInventory.ItemGroups;
 public sealed partial class ItemGroupEditForm : BaseEditForm
 {
     private readonly IReadOnlyCollection<ChartOfAccountLookupItem> accountLookups;
+    private readonly bool canCreateAccount;
+    private NuanLookupEdit? pendingCreateLookup;
 
     public ItemGroupEditForm()
-        : this(Array.Empty<ChartOfAccountLookupItem>())
+        : this(Array.Empty<ChartOfAccountLookupItem>(), canCreateAccount: false)
     {
     }
 
-    public ItemGroupEditForm(IReadOnlyCollection<ChartOfAccountLookupItem> accountLookups)
+    public ItemGroupEditForm(IReadOnlyCollection<ChartOfAccountLookupItem> accountLookups, bool canCreateAccount = false)
     {
         this.accountLookups = accountLookups;
+        this.canCreateAccount = canCreateAccount;
         InitializeComponent();
         ConfigureForm();
     }
@@ -29,12 +33,24 @@ public sealed partial class ItemGroupEditForm : BaseEditForm
     }
 
     public ItemGroupEditForm(ItemGroupItem itemGroup, IReadOnlyCollection<ChartOfAccountLookupItem> accountLookups, bool copyMode = false)
+        : this(itemGroup, accountLookups, canCreateAccount: false, copyMode)
+    {
+    }
+
+    public ItemGroupEditForm(
+        ItemGroupItem itemGroup,
+        IReadOnlyCollection<ChartOfAccountLookupItem> accountLookups,
+        bool canCreateAccount,
+        bool copyMode = false)
     {
         this.accountLookups = accountLookups;
+        this.canCreateAccount = canCreateAccount;
         InitializeComponent();
         ConfigureForm();
         LoadItemGroup(itemGroup, copyMode);
     }
+
+    public event Func<ItemGroupEditForm, Task<ChartOfAccountLookupItem?>>? CreateAccountRequested;
 
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -64,6 +80,19 @@ public sealed partial class ItemGroupEditForm : BaseEditForm
             NormalizeText(txtCodigoSap.Text));
     }
 
+    public void RefreshAccountLookups(IReadOnlyCollection<ChartOfAccountLookupItem> accounts, string? selectedCode = null)
+    {
+        ConfigureAccountLookup(lueCuentaInventario, accounts);
+        ConfigureAccountLookup(lueCuentaCostoVentas, accounts);
+        ConfigureAccountLookup(lueCuentaVentas, accounts);
+        ConfigureAccountLookup(lueCuentaCompras, accounts);
+
+        if (!string.IsNullOrWhiteSpace(selectedCode) && pendingCreateLookup is not null)
+        {
+            pendingCreateLookup.EditValue = selectedCode;
+        }
+    }
+
     private void LoadItemGroup(ItemGroupItem itemGroup, bool copyMode)
     {
         Text = copyMode ? "Copiar grupo de artículos" : "Editar grupo de artículos";
@@ -83,22 +112,18 @@ public sealed partial class ItemGroupEditForm : BaseEditForm
     private void ConfigureForm()
     {
         OperationButtonIcons.ApplySaveCancel(btnGuardar, btnCancelar);
-        btnGuardar.Click += (_, _) => Save();
         chkActivo.Checked = true;
-        ConfigureAccountLookup(lueCuentaInventario);
-        ConfigureAccountLookup(lueCuentaCostoVentas);
-        ConfigureAccountLookup(lueCuentaVentas);
-        ConfigureAccountLookup(lueCuentaCompras);
+        ConfigureAccountLookup(lueCuentaInventario, accountLookups);
+        ConfigureAccountLookup(lueCuentaCostoVentas, accountLookups);
+        ConfigureAccountLookup(lueCuentaVentas, accountLookups);
+        ConfigureAccountLookup(lueCuentaCompras, accountLookups);
     }
 
-    private void ConfigureAccountLookup(LookUpEdit lookup)
+    private void ConfigureAccountLookup(NuanLookupEdit lookup, IReadOnlyCollection<ChartOfAccountLookupItem> accounts)
     {
-        if (lookup.Properties.Buttons.Count == 1)
-        {
-            lookup.Properties.Buttons.Add(new EditorButton(ButtonPredefines.Delete));
-        }
-
-        lookup.Properties.DataSource = accountLookups;
+        lookup.RefreshButtons();
+        lookup.CreateButtonEnabled = canCreateAccount;
+        lookup.Properties.DataSource = accounts;
         lookup.Properties.DisplayMember = nameof(ChartOfAccountLookupItem.DisplayText);
         lookup.Properties.ValueMember = nameof(ChartOfAccountLookupItem.Code);
         lookup.Properties.NullText = string.Empty;
@@ -109,13 +134,30 @@ public sealed partial class ItemGroupEditForm : BaseEditForm
         lookup.Properties.Columns.Add(new LookUpColumnInfo(nameof(ChartOfAccountLookupItem.Code), "Codigo", 90));
         lookup.Properties.Columns.Add(new LookUpColumnInfo(nameof(ChartOfAccountLookupItem.Name), "Nombre", 220));
         lookup.Properties.Columns.Add(new LookUpColumnInfo(nameof(ChartOfAccountLookupItem.AccountType), "Tipo", 90));
-        lookup.ButtonClick += (_, e) =>
+        lookup.CreateButtonClick -= AccountLookupCreateButtonClick;
+        lookup.CreateButtonClick += AccountLookupCreateButtonClick;
+    }
+
+    private async void AccountLookupCreateButtonClick(object? sender, EventArgs e)
+    {
+        if (sender is not NuanLookupEdit lookup || CreateAccountRequested is null || !canCreateAccount)
         {
-            if (e.Button.Kind == ButtonPredefines.Delete)
+            return;
+        }
+
+        pendingCreateLookup = lookup;
+        try
+        {
+            var created = await CreateAccountRequested(this);
+            if (created is not null)
             {
-                lookup.EditValue = null;
+                lookup.EditValue = created.Code;
             }
-        };
+        }
+        finally
+        {
+            pendingCreateLookup = null;
+        }
     }
 
     private static string? NormalizeText(string? value)

@@ -8,4 +8,9 @@ public sealed record CompanyConnectionInfo(
     string CommercialName,
     DatabaseEngine DatabaseEngine,
     string ConnectionString,
-    SapIntegrationMode SapIntegrationMode);
+    SapIntegrationMode SapIntegrationMode,
+    CompanyOperationMode OperationMode = CompanyOperationMode.Standalone,
+    bool IsMaster = true,
+    int? ParentCompanyId = null,
+    string? BranchCode = null,
+    bool SyncEnabled = false);

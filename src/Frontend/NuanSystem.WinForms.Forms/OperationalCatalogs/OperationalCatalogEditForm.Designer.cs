@@ -22,8 +22,6 @@ partial class OperationalCatalogEditForm
         sedDisplayOrder = new SpinEdit();
         chkIsDefault = new CheckEdit();
         chkIsActive = new CheckEdit();
-        btnCancel = new SimpleButton();
-        btnSave = new SimpleButton();
         ((System.ComponentModel.ISupportInitialize)txtCatalogKey.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtCode.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtName.Properties).BeginInit();
@@ -33,15 +31,79 @@ partial class OperationalCatalogEditForm
         ((System.ComponentModel.ISupportInitialize)chkIsDefault.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)chkIsActive.Properties).BeginInit();
         SuspendLayout();
+        // 
+        // btnCancelar
+        // 
+        btnCancelar.Appearance.BackColor = Color.FromArgb(99, 110, 114);
+        btnCancelar.Appearance.BorderColor = Color.FromArgb(99, 110, 114);
+        btnCancelar.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        btnCancelar.Appearance.ForeColor = Color.White;
+        btnCancelar.Appearance.Options.UseBackColor = true;
+        btnCancelar.Appearance.Options.UseBorderColor = true;
+        btnCancelar.Appearance.Options.UseFont = true;
+        btnCancelar.Appearance.Options.UseForeColor = true;
+        btnCancelar.AppearanceHovered.BackColor = Color.FromArgb(78, 87, 90);
+        btnCancelar.AppearanceHovered.BorderColor = Color.FromArgb(78, 87, 90);
+        btnCancelar.AppearanceHovered.ForeColor = Color.White;
+        btnCancelar.AppearanceHovered.Options.UseBackColor = true;
+        btnCancelar.AppearanceHovered.Options.UseBorderColor = true;
+        btnCancelar.AppearanceHovered.Options.UseForeColor = true;
+        btnCancelar.AppearancePressed.BackColor = Color.FromArgb(60, 67, 70);
+        btnCancelar.AppearancePressed.BorderColor = Color.FromArgb(60, 67, 70);
+        btnCancelar.AppearancePressed.ForeColor = Color.White;
+        btnCancelar.AppearancePressed.Options.UseBackColor = true;
+        btnCancelar.AppearancePressed.Options.UseBorderColor = true;
+        btnCancelar.AppearancePressed.Options.UseForeColor = true;
+        btnCancelar.ImageOptions.ImageToTextIndent = 0;
+        btnCancelar.ImageOptions.Location = ImageLocation.MiddleLeft;
+        btnCancelar.ImageOptions.SvgImageSize = new Size(24, 24);
+        btnCancelar.Location = new Point(324, 305);
+        btnCancelar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
+        btnCancelar.LookAndFeel.UseDefaultLookAndFeel = false;
+        // 
+        // btnGuardar
+        // 
+        btnGuardar.Appearance.BackColor = Color.FromArgb(0, 184, 148);
+        btnGuardar.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
+        btnGuardar.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        btnGuardar.Appearance.ForeColor = Color.White;
+        btnGuardar.Appearance.Options.UseBackColor = true;
+        btnGuardar.Appearance.Options.UseBorderColor = true;
+        btnGuardar.Appearance.Options.UseFont = true;
+        btnGuardar.Appearance.Options.UseForeColor = true;
+        btnGuardar.AppearanceHovered.BackColor = Color.FromArgb(0, 160, 128);
+        btnGuardar.AppearanceHovered.BorderColor = Color.FromArgb(0, 160, 128);
+        btnGuardar.AppearanceHovered.ForeColor = Color.White;
+        btnGuardar.AppearanceHovered.Options.UseBackColor = true;
+        btnGuardar.AppearanceHovered.Options.UseBorderColor = true;
+        btnGuardar.AppearanceHovered.Options.UseForeColor = true;
+        btnGuardar.AppearancePressed.BackColor = Color.FromArgb(0, 137, 111);
+        btnGuardar.AppearancePressed.BorderColor = Color.FromArgb(0, 137, 111);
+        btnGuardar.AppearancePressed.ForeColor = Color.White;
+        btnGuardar.AppearancePressed.Options.UseBackColor = true;
+        btnGuardar.AppearancePressed.Options.UseBorderColor = true;
+        btnGuardar.AppearancePressed.Options.UseForeColor = true;
+        btnGuardar.ImageOptions.ImageToTextIndent = 0;
+        btnGuardar.ImageOptions.Location = ImageLocation.MiddleLeft;
+        btnGuardar.ImageOptions.SvgImageSize = new Size(24, 24);
+        btnGuardar.Location = new Point(430, 305);
+        btnGuardar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
+        btnGuardar.LookAndFeel.UseDefaultLookAndFeel = false;
+        // 
+        // lblCatalogKey
+        // 
         lblCatalogKey.Appearance.Font = new Font("Segoe UI", 9F);
         lblCatalogKey.Appearance.ForeColor = Color.Black;
         lblCatalogKey.Appearance.Options.UseFont = true;
         lblCatalogKey.Appearance.Options.UseForeColor = true;
         lblCatalogKey.Location = new Point(28, 29);
         lblCatalogKey.Name = "lblCatalogKey";
-        lblCatalogKey.Size = new Size(50, 15);
+        lblCatalogKey.Size = new Size(48, 15);
         lblCatalogKey.TabIndex = 0;
         lblCatalogKey.Text = "Catalogo";
+        // 
+        // txtCatalogKey
+        // 
         txtCatalogKey.Location = new Point(170, 26);
         txtCatalogKey.Name = "txtCatalogKey";
         txtCatalogKey.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -50,6 +112,9 @@ partial class OperationalCatalogEditForm
         txtCatalogKey.Properties.ReadOnly = true;
         txtCatalogKey.Size = new Size(360, 22);
         txtCatalogKey.TabIndex = 1;
+        // 
+        // lblCode
+        // 
         lblCode.Appearance.Font = new Font("Segoe UI", 9F);
         lblCode.Appearance.ForeColor = Color.Black;
         lblCode.Appearance.Options.UseFont = true;
@@ -59,6 +124,9 @@ partial class OperationalCatalogEditForm
         lblCode.Size = new Size(39, 15);
         lblCode.TabIndex = 2;
         lblCode.Text = "Codigo";
+        // 
+        // txtCode
+        // 
         txtCode.Location = new Point(170, 52);
         txtCode.Name = "txtCode";
         txtCode.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -67,6 +135,9 @@ partial class OperationalCatalogEditForm
         txtCode.Properties.MaxLength = 40;
         txtCode.Size = new Size(180, 22);
         txtCode.TabIndex = 3;
+        // 
+        // lblName
+        // 
         lblName.Appearance.Font = new Font("Segoe UI", 9F);
         lblName.Appearance.ForeColor = Color.Black;
         lblName.Appearance.Options.UseFont = true;
@@ -76,6 +147,9 @@ partial class OperationalCatalogEditForm
         lblName.Size = new Size(44, 15);
         lblName.TabIndex = 4;
         lblName.Text = "Nombre";
+        // 
+        // txtName
+        // 
         txtName.Location = new Point(170, 78);
         txtName.Name = "txtName";
         txtName.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -84,6 +158,9 @@ partial class OperationalCatalogEditForm
         txtName.Properties.MaxLength = 150;
         txtName.Size = new Size(360, 22);
         txtName.TabIndex = 5;
+        // 
+        // lblDescription
+        // 
         lblDescription.Appearance.Font = new Font("Segoe UI", 9F);
         lblDescription.Appearance.ForeColor = Color.Black;
         lblDescription.Appearance.Options.UseFont = true;
@@ -93,6 +170,9 @@ partial class OperationalCatalogEditForm
         lblDescription.Size = new Size(62, 15);
         lblDescription.TabIndex = 6;
         lblDescription.Text = "Descripcion";
+        // 
+        // memDescription
+        // 
         memDescription.Location = new Point(170, 104);
         memDescription.Name = "memDescription";
         memDescription.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -100,6 +180,9 @@ partial class OperationalCatalogEditForm
         memDescription.Properties.MaxLength = 500;
         memDescription.Size = new Size(360, 58);
         memDescription.TabIndex = 7;
+        // 
+        // lblParentCode
+        // 
         lblParentCode.Appearance.Font = new Font("Segoe UI", 9F);
         lblParentCode.Appearance.ForeColor = Color.Black;
         lblParentCode.Appearance.Options.UseFont = true;
@@ -109,6 +192,9 @@ partial class OperationalCatalogEditForm
         lblParentCode.Size = new Size(60, 15);
         lblParentCode.TabIndex = 8;
         lblParentCode.Text = "Valor padre";
+        // 
+        // lueParentCode
+        // 
         lueParentCode.Location = new Point(170, 168);
         lueParentCode.Name = "lueParentCode";
         lueParentCode.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -117,22 +203,28 @@ partial class OperationalCatalogEditForm
         lueParentCode.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
         lueParentCode.Size = new Size(360, 22);
         lueParentCode.TabIndex = 9;
+        // 
+        // lblDisplayOrder
+        // 
         lblDisplayOrder.Appearance.Font = new Font("Segoe UI", 9F);
         lblDisplayOrder.Appearance.ForeColor = Color.Black;
         lblDisplayOrder.Appearance.Options.UseFont = true;
         lblDisplayOrder.Appearance.Options.UseForeColor = true;
         lblDisplayOrder.Location = new Point(28, 197);
         lblDisplayOrder.Name = "lblDisplayOrder";
-        lblDisplayOrder.Size = new Size(35, 15);
+        lblDisplayOrder.Size = new Size(33, 15);
         lblDisplayOrder.TabIndex = 10;
         lblDisplayOrder.Text = "Orden";
+        // 
+        // sedDisplayOrder
+        // 
         sedDisplayOrder.EditValue = new decimal(new int[] { 0, 0, 0, 0 });
         sedDisplayOrder.Location = new Point(170, 194);
         sedDisplayOrder.Name = "sedDisplayOrder";
         sedDisplayOrder.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         sedDisplayOrder.Properties.Appearance.Options.UseFont = true;
-        sedDisplayOrder.Properties.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
         sedDisplayOrder.Properties.Appearance.Options.UseTextOptions = true;
+        sedDisplayOrder.Properties.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
         sedDisplayOrder.Properties.AutoHeight = false;
         sedDisplayOrder.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
         sedDisplayOrder.Properties.IsFloatValue = false;
@@ -140,6 +232,9 @@ partial class OperationalCatalogEditForm
         sedDisplayOrder.Properties.MaxValue = new decimal(new int[] { 999999, 0, 0, 0 });
         sedDisplayOrder.Size = new Size(120, 22);
         sedDisplayOrder.TabIndex = 11;
+        // 
+        // chkIsDefault
+        // 
         chkIsDefault.Location = new Point(166, 222);
         chkIsDefault.Name = "chkIsDefault";
         chkIsDefault.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -147,6 +242,9 @@ partial class OperationalCatalogEditForm
         chkIsDefault.Properties.Caption = "Valor por defecto";
         chkIsDefault.Size = new Size(140, 20);
         chkIsDefault.TabIndex = 12;
+        // 
+        // chkIsActive
+        // 
         chkIsActive.EditValue = true;
         chkIsActive.Location = new Point(166, 248);
         chkIsActive.Name = "chkIsActive";
@@ -155,47 +253,16 @@ partial class OperationalCatalogEditForm
         chkIsActive.Properties.Caption = "Activo";
         chkIsActive.Size = new Size(75, 20);
         chkIsActive.TabIndex = 13;
-        btnCancel.Appearance.BackColor = Color.FromArgb(99, 110, 114);
-        btnCancel.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
-        btnCancel.Appearance.ForeColor = Color.White;
-        btnCancel.Appearance.Options.UseBackColor = true;
-        btnCancel.Appearance.Options.UseFont = true;
-        btnCancel.Appearance.Options.UseForeColor = true;
-        btnCancel.AppearanceHovered.BackColor = Color.FromArgb(78, 87, 90);
-        btnCancel.AppearanceHovered.ForeColor = Color.White;
-        btnCancel.AppearanceHovered.Options.UseBackColor = true;
-        btnCancel.AppearanceHovered.Options.UseForeColor = true;
-        btnCancel.DialogResult = DialogResult.Cancel;
-        btnCancel.Location = new Point(324, 295);
-        btnCancel.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
-        btnCancel.LookAndFeel.UseDefaultLookAndFeel = false;
-        btnCancel.Name = "btnCancel";
-        btnCancel.Size = new Size(100, 36);
-        btnCancel.TabIndex = 14;
-        btnCancel.Text = "Cancelar";
-        btnSave.Appearance.BackColor = Color.FromArgb(0, 184, 148);
-        btnSave.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
-        btnSave.Appearance.ForeColor = Color.White;
-        btnSave.Appearance.Options.UseBackColor = true;
-        btnSave.Appearance.Options.UseFont = true;
-        btnSave.Appearance.Options.UseForeColor = true;
-        btnSave.AppearanceHovered.BackColor = Color.FromArgb(0, 160, 128);
-        btnSave.AppearanceHovered.ForeColor = Color.White;
-        btnSave.AppearanceHovered.Options.UseBackColor = true;
-        btnSave.AppearanceHovered.Options.UseForeColor = true;
-        btnSave.Location = new Point(430, 295);
-        btnSave.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
-        btnSave.LookAndFeel.UseDefaultLookAndFeel = false;
-        btnSave.Name = "btnSave";
-        btnSave.Size = new Size(100, 36);
-        btnSave.TabIndex = 15;
-        btnSave.Text = "Guardar";
-        AcceptButton = btnSave;
+        // 
+        // OperationalCatalogEditForm
+        // 
+        AcceptButton = null;
         Appearance.BackColor = Color.White;
         Appearance.Options.UseBackColor = true;
+        Appearance.Options.UseFont = true;
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        CancelButton = btnCancel;
+        CancelButton = null;
         ClientSize = new Size(558, 353);
         Controls.Add(lblCatalogKey);
         Controls.Add(txtCatalogKey);
@@ -211,15 +278,24 @@ partial class OperationalCatalogEditForm
         Controls.Add(sedDisplayOrder);
         Controls.Add(chkIsDefault);
         Controls.Add(chkIsActive);
-        Controls.Add(btnCancel);
-        Controls.Add(btnSave);
-        Font = new Font("Segoe UI", 9F);
-        FormBorderStyle = FormBorderStyle.FixedDialog;
-        MaximizeBox = false;
-        MinimizeBox = false;
         Name = "OperationalCatalogEditForm";
-        StartPosition = FormStartPosition.CenterParent;
         Text = "Valor de catalogo";
+        Controls.SetChildIndex(chkIsActive, 0);
+        Controls.SetChildIndex(chkIsDefault, 0);
+        Controls.SetChildIndex(sedDisplayOrder, 0);
+        Controls.SetChildIndex(lblDisplayOrder, 0);
+        Controls.SetChildIndex(lueParentCode, 0);
+        Controls.SetChildIndex(lblParentCode, 0);
+        Controls.SetChildIndex(memDescription, 0);
+        Controls.SetChildIndex(lblDescription, 0);
+        Controls.SetChildIndex(txtName, 0);
+        Controls.SetChildIndex(lblName, 0);
+        Controls.SetChildIndex(txtCode, 0);
+        Controls.SetChildIndex(lblCode, 0);
+        Controls.SetChildIndex(txtCatalogKey, 0);
+        Controls.SetChildIndex(lblCatalogKey, 0);
+        Controls.SetChildIndex(btnGuardar, 0);
+        Controls.SetChildIndex(btnCancelar, 0);
         ((System.ComponentModel.ISupportInitialize)txtCatalogKey.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtCode.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtName.Properties).EndInit();
@@ -256,6 +332,4 @@ partial class OperationalCatalogEditForm
     private SpinEdit sedDisplayOrder;
     private CheckEdit chkIsDefault;
     private CheckEdit chkIsActive;
-    private SimpleButton btnCancel;
-    private SimpleButton btnSave;
 }

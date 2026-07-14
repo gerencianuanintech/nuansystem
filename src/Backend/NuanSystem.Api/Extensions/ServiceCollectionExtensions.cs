@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using NuanSystem.Infrastructure.Authentication;
+using NuanSystem.Api.Options;
+using NuanSystem.Api.Services;
 using NuanSystem.Application.Abstractions.Authentication;
 using NuanSystem.Application.DependencyInjection;
 using NuanSystem.Infrastructure.DependencyInjection;
@@ -46,9 +48,10 @@ public static class ServiceCollectionExtensions
                 {
                     OnTokenValidated = async context =>
                     {
-                        var userIdValue = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
                         var tokenStamp = context.Principal?.FindFirstValue(AuthClaimNames.SecurityStamp);
-                        if (!int.TryParse(userIdValue, out var userId) || string.IsNullOrWhiteSpace(tokenStamp))
+                        if (context.Principal is null ||
+                            !context.Principal.TryGetUserId(out var userId) ||
+                            string.IsNullOrWhiteSpace(tokenStamp))
                         {
                             context.Fail("El token no contiene el estado de seguridad requerido.");
                             return;
@@ -76,6 +79,9 @@ public static class ServiceCollectionExtensions
             }
         });
         services.AddHealthChecks();
+        services.Configure<SyncProfileExecutionWorkerOptions>(
+            configuration.GetSection(SyncProfileExecutionWorkerOptions.SectionName));
+        services.AddHostedService<SyncProfileExecutionHostedService>();
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;

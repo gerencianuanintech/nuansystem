@@ -1,4 +1,4 @@
-﻿using DevExpress.LookAndFeel;
+using DevExpress.LookAndFeel;
 using DevExpress.Utils;
 using DevExpress.Utils.Svg;
 using DevExpress.XtraBars;
@@ -47,18 +47,19 @@ using NuanSystem.WinForms.Forms.GeneralInventory.ItemFamilies;
 using NuanSystem.WinForms.Forms.GeneralInventory.ItemGroups;
 using NuanSystem.WinForms.Forms.InventoryItems;
 using NuanSystem.WinForms.Forms.Purchasing.PurchaseOrders;
-using NuanSystem.WinForms.Forms.Roles;
 using NuanSystem.WinForms.Forms.Sap;
-using NuanSystem.WinForms.Forms.SecurityOperations;
-using NuanSystem.WinForms.Forms.SecurityMenus;
-using NuanSystem.WinForms.Forms.SecurityForms;
-using NuanSystem.WinForms.Forms.SecurityFields;
-using NuanSystem.WinForms.Forms.SecurityAccess;
-using NuanSystem.WinForms.Forms.SecurityRoles;
+using NuanSystem.WinForms.Forms.Sync;
+using NuanSystem.WinForms.Forms.Sync.Configuration;
+using NuanSystem.WinForms.Forms.Security.Operations;
+using NuanSystem.WinForms.Forms.Security.Menus;
+using NuanSystem.WinForms.Forms.Security.Forms;
+using NuanSystem.WinForms.Forms.Security.Fields;
+using NuanSystem.WinForms.Forms.Security.Access;
 using NuanSystem.WinForms.Forms.ConfigurationSettings;
-using NuanSystem.WinForms.Forms.SecurityUsers;
-using NuanSystem.WinForms.Services.SecurityAccess.Models;
+using NuanSystem.WinForms.Forms.Security.Users;
+using NuanSystem.WinForms.Services.Security.Access.Models;
 using NuanSystem.WinForms.ViewModels.Shell;
+using RoleMaintenanceForm = NuanSystem.WinForms.Forms.Security.Roles.RolesForm;
 
 namespace NuanSystem.WinForms.Forms.Shell;
 
@@ -73,7 +74,7 @@ public sealed class MainForm : RibbonForm
     private readonly ShellViewModel viewModel;
     private readonly Func<ConfigurationCompaniesForm> configurationCompaniesFormFactory;
     private readonly Func<UsersForm> usersFormFactory;
-    private readonly Func<SecurityRolesForm> rolesFormFactory;
+    private readonly Func<RoleMaintenanceForm> rolesFormFactory;
     private readonly Func<OperationsForm> operationsFormFactory;
     private readonly Func<MenusForm> menusFormFactory;
     private readonly Func<FormsForm> formsFormFactory;
@@ -122,6 +123,9 @@ public sealed class MainForm : RibbonForm
     private readonly Func<ItemsForm> itemsFormFactory;
     private readonly Func<PurchaseOrdersForm> purchaseOrdersFormFactory;
     private readonly Func<SapSyncLogForm> sapSyncLogFormFactory;
+    private readonly Func<SyncMonitorForm> syncMonitorFormFactory;
+    private readonly Func<SyncProfileListForm> syncProfileListFormFactory;
+    private readonly Func<SyncExecutionListForm> syncExecutionListFormFactory;
     private readonly Func<AuditLogsForm> auditLogsFormFactory;
     private readonly Func<SettingsForm> settingsFormFactory;
 
@@ -129,6 +133,7 @@ public sealed class MainForm : RibbonForm
     private readonly XtraTabControl tabControl = new();
     private readonly TextEdit searchEdit = new();
     private readonly Dictionary<string, XtraTabPage> openModuleTabs = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<BaseCrudListForm, IReadOnlyCollection<FormOperationAccessItem>> crudFormOperations = new();
 
     private RibbonControl ribbon = null!;
     private RibbonStatusBar statusBar = null!;
@@ -151,6 +156,7 @@ public sealed class MainForm : RibbonForm
     private BarButtonItem logoutButton = null!;
     private RibbonPageGroup sessionRibbonGroup = null!;
     private XtraTabPage? homePage;
+    private readonly List<CustomOperationButton> customOperationButtons = new();
 
     public MainForm()
     {
@@ -206,6 +212,9 @@ public sealed class MainForm : RibbonForm
         itemsFormFactory = null!;
         purchaseOrdersFormFactory = null!;
         sapSyncLogFormFactory = null!;
+        syncMonitorFormFactory = null!;
+        syncProfileListFormFactory = null!;
+        syncExecutionListFormFactory = null!;
         auditLogsFormFactory = null!;
         settingsFormFactory = null!;
         BuildLayout();
@@ -215,7 +224,7 @@ public sealed class MainForm : RibbonForm
         ShellViewModel viewModel,
         Func<ConfigurationCompaniesForm> configurationCompaniesFormFactory,
         Func<UsersForm> usersFormFactory,
-        Func<SecurityRolesForm> rolesFormFactory,
+        Func<RoleMaintenanceForm> rolesFormFactory,
         Func<OperationsForm> operationsFormFactory,
         Func<MenusForm> menusFormFactory,
         Func<FormsForm> formsFormFactory,
@@ -264,6 +273,9 @@ public sealed class MainForm : RibbonForm
         Func<ItemsForm> itemsFormFactory,
         Func<PurchaseOrdersForm> purchaseOrdersFormFactory,
         Func<SapSyncLogForm> sapSyncLogFormFactory,
+        Func<SyncMonitorForm> syncMonitorFormFactory,
+        Func<SyncProfileListForm> syncProfileListFormFactory,
+        Func<SyncExecutionListForm> syncExecutionListFormFactory,
         Func<AuditLogsForm> auditLogsFormFactory,
         Func<SettingsForm> settingsFormFactory)
     {
@@ -319,6 +331,9 @@ public sealed class MainForm : RibbonForm
         this.itemsFormFactory = itemsFormFactory;
         this.purchaseOrdersFormFactory = purchaseOrdersFormFactory;
         this.sapSyncLogFormFactory = sapSyncLogFormFactory;
+        this.syncMonitorFormFactory = syncMonitorFormFactory;
+        this.syncProfileListFormFactory = syncProfileListFormFactory;
+        this.syncExecutionListFormFactory = syncExecutionListFormFactory;
         this.auditLogsFormFactory = auditLogsFormFactory;
         this.settingsFormFactory = settingsFormFactory;
         BuildLayout();
@@ -377,9 +392,22 @@ public sealed class MainForm : RibbonForm
 
         var groupNavigation = new RibbonPageGroup("Navegacion");
         var groupActions = new RibbonPageGroup("Acciones");
+        var groupData = new RibbonPageGroup("Datos");
+        var groupMaintenance = new RibbonPageGroup("Mantenimiento");
+        var groupPersonalization = new RibbonPageGroup("Personalizacion");
+        var groupTracking = new RibbonPageGroup("Seguimiento");
         var groupSession = new RibbonPageGroup("Sesion");
         sessionRibbonGroup = groupSession;
-        pageInicio.Groups.AddRange(new RibbonPageGroup[] { groupNavigation, groupActions, groupSession });
+        pageInicio.Groups.AddRange(new RibbonPageGroup[]
+        {
+            groupNavigation,
+            groupActions,
+            groupData,
+            groupMaintenance,
+            groupPersonalization,
+            groupTracking,
+            groupSession
+        });
 
         homeButton = CreateRibbonButton("Inicio", "Home_32x32.svg", RibbonItemStyles.Large);
         ConfigureRibbonButtonHelp(homeButton, "Volver a la pantalla de inicio.", new RibbonShortcut(Keys.Control | Keys.I, "Ctrl + I"));
@@ -389,12 +417,12 @@ public sealed class MainForm : RibbonForm
         refreshButton = CreateRibbonButton("Actualizar", null, RibbonItemStyles.Large);
         ConfigureRibbonButtonHelp(refreshButton, "Actualizar la informacion del listado activo.", new RibbonShortcut(Keys.F5, "F5"));
         refreshButton.ItemClick += async (_, _) => await ExecuteActiveCrudActionAsync(form => form.ExecuteRefreshAsync());
-        groupActions.ItemLinks.Add(refreshButton);
+        groupData.ItemLinks.Add(refreshButton);
 
         createButton = CreateRibbonButton("Nuevo", null, RibbonItemStyles.Large);
         ConfigureRibbonButtonHelp(createButton, "Crear un nuevo registro.", new RibbonShortcut(Keys.Control | Keys.N, "Ctrl + N"));
         createButton.ItemClick += async (_, _) => await ExecuteActiveCrudActionAsync(form => form.ExecuteCreateAsync());
-        groupActions.ItemLinks.Add(createButton);
+        groupMaintenance.ItemLinks.Add(createButton);
 
         copyButton = CreateRibbonButton("Copiar", null, RibbonItemStyles.Large);
         ConfigureRibbonButtonHelp(copyButton, "Copiar el registro seleccionado para crear uno nuevo.", new RibbonShortcut(Keys.Control | Keys.Shift | Keys.C, "Ctrl + Shift + C"));
@@ -404,7 +432,7 @@ public sealed class MainForm : RibbonForm
         editButton = CreateRibbonButton("Editar", null, RibbonItemStyles.Large);
         ConfigureRibbonButtonHelp(editButton, "Modificar el registro seleccionado.", new RibbonShortcut(Keys.Control | Keys.E, "Ctrl + E"));
         editButton.ItemClick += async (_, _) => await ExecuteActiveCrudActionAsync(form => form.ExecuteEditAsync());
-        groupActions.ItemLinks.Add(editButton);
+        groupMaintenance.ItemLinks.Add(editButton);
 
         consultButton = CreateRibbonButton("Consultar", null, RibbonItemStyles.Large);
         ConfigureRibbonButtonHelp(consultButton, "Consultar el registro seleccionado sin permitir cambios.", new RibbonShortcut(Keys.Control | Keys.Q, "Ctrl + Q"));
@@ -414,17 +442,17 @@ public sealed class MainForm : RibbonForm
         historyButton = CreateRibbonButton("Historial", null, RibbonItemStyles.Large);
         ConfigureRibbonButtonHelp(historyButton, "Ver las modificaciones realizadas al registro seleccionado.", new RibbonShortcut(Keys.Control | Keys.H, "Ctrl + H"));
         historyButton.ItemClick += async (_, _) => await ExecuteActiveCrudActionAsync(form => form.ExecuteHistoryAsync());
-        groupActions.ItemLinks.Add(historyButton);
+        groupTracking.ItemLinks.Add(historyButton);
 
         columnsButton = CreateRibbonButton("Columnas", null, RibbonItemStyles.Large);
         ConfigureRibbonButtonHelp(columnsButton, "Personalizar columnas del listado activo.", new RibbonShortcut(Keys.Control | Keys.Shift | Keys.L, "Ctrl + Shift + L"));
         columnsButton.ItemClick += async (_, _) => await ExecuteActiveCrudActionAsync(form => form.ExecuteCustomizeColumnsAsync());
-        groupActions.ItemLinks.Add(columnsButton);
+        groupPersonalization.ItemLinks.Add(columnsButton);
 
         deleteButton = CreateRibbonButton("Eliminar", null, RibbonItemStyles.Large);
         ConfigureRibbonButtonHelp(deleteButton, "Eliminar el registro seleccionado.", new RibbonShortcut(Keys.Delete, "Del"));
         deleteButton.ItemClick += async (_, _) => await ExecuteActiveCrudActionAsync(form => form.ExecuteDeleteAsync());
-        groupActions.ItemLinks.Add(deleteButton);
+        groupMaintenance.ItemLinks.Add(deleteButton);
 
         reloadAccessButton = CreateRibbonButton("Cargar accesos", "Refresh_32x32.svg", RibbonItemStyles.Large);
         ConfigureRibbonButtonHelp(reloadAccessButton, "Recargar menus y operaciones sin cerrar sesion.", new RibbonShortcut(Keys.Control | Keys.F5, "Ctrl + F5"));
@@ -649,7 +677,7 @@ public sealed class MainForm : RibbonForm
         tabControl.SelectedPageChanged += (_, e) =>
         {
             UpdateStatusBar(e.Page?.Text ?? "Inicio");
-            UpdateRibbonActionState();
+            ApplyActiveRibbonOperations();
         };
     }
 
@@ -715,7 +743,7 @@ public sealed class MainForm : RibbonForm
             Text = string.Empty
         });
 
-        if (viewModel is null || !viewModel.HasModules)
+        if (viewModel is null)
         {
             navigationMenu.Elements.Add(new AccordionControlElement(ElementStyle.Item)
             {
@@ -726,6 +754,35 @@ public sealed class MainForm : RibbonForm
         }
 
         var normalizedFilter = filter?.Trim();
+        if (viewModel.NavigationMenus.Count > 0)
+        {
+            var filteredMenus = FilterNavigationTree(viewModel.NavigationMenus, normalizedFilter);
+            if (filteredMenus.Count == 0)
+            {
+                navigationMenu.Elements.Add(new AccordionControlElement(ElementStyle.Item)
+                {
+                    Text = "Sin resultados",
+                    Enabled = false
+                });
+                return;
+            }
+
+            LoadNavigationTree(filteredMenus);
+            return;
+        }
+
+        if (!viewModel.HasModules)
+        {
+            navigationMenu.Elements.Add(new AccordionControlElement(ElementStyle.Item)
+            {
+                Text = string.IsNullOrWhiteSpace(viewModel.NavigationLoadError)
+                    ? "Sin modulos disponibles"
+                    : "No se pudo cargar el menu dinamico",
+                Enabled = false
+            });
+            return;
+        }
+
         var modules = string.IsNullOrWhiteSpace(normalizedFilter)
             ? viewModel.Modules
             : viewModel.Modules
@@ -734,12 +791,6 @@ public sealed class MainForm : RibbonForm
                     module.Category.Contains(normalizedFilter, StringComparison.OrdinalIgnoreCase) ||
                     module.Description.Contains(normalizedFilter, StringComparison.OrdinalIgnoreCase))
                 .ToArray();
-
-        if (string.IsNullOrWhiteSpace(normalizedFilter) && viewModel.NavigationMenus.Count > 0)
-        {
-            LoadNavigationTree(viewModel.NavigationMenus);
-            return;
-        }
 
         foreach (var group in modules.GroupBy(module => module.Category))
         {
@@ -764,6 +815,71 @@ public sealed class MainForm : RibbonForm
             }
 
             navigationMenu.Elements.Add(groupElement);
+        }
+    }
+
+    private static IReadOnlyCollection<NavigationMenuItem> FilterNavigationTree(
+        IReadOnlyCollection<NavigationMenuItem> menus,
+        string? filter)
+    {
+        if (string.IsNullOrWhiteSpace(filter))
+        {
+            return menus;
+        }
+
+        var byId = menus.ToDictionary(menu => menu.Id);
+        var byParent = menus
+            .GroupBy(menu => menu.ParentId ?? 0)
+            .ToDictionary(group => group.Key, group => group.ToArray());
+        var includedIds = new HashSet<int>();
+
+        foreach (var menu in menus.Where(menu => MatchesNavigationFilter(menu, filter)))
+        {
+            IncludeMenuWithAncestors(menu, byId, includedIds);
+            IncludeMenuDescendants(menu.Id, byParent, includedIds);
+        }
+
+        return menus
+            .Where(menu => includedIds.Contains(menu.Id))
+            .ToArray();
+    }
+
+    private static bool MatchesNavigationFilter(NavigationMenuItem menu, string filter)
+    {
+        return menu.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
+            || menu.Code.Contains(filter, StringComparison.OrdinalIgnoreCase)
+            || (menu.Description?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)
+            || (menu.FormKey?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false);
+    }
+
+    private static void IncludeMenuWithAncestors(
+        NavigationMenuItem menu,
+        IReadOnlyDictionary<int, NavigationMenuItem> byId,
+        ISet<int> includedIds)
+    {
+        var current = menu;
+        while (includedIds.Add(current.Id)
+            && current.ParentId.HasValue
+            && byId.TryGetValue(current.ParentId.Value, out var parent))
+        {
+            current = parent;
+        }
+    }
+
+    private static void IncludeMenuDescendants(
+        int menuId,
+        IReadOnlyDictionary<int, NavigationMenuItem[]> byParent,
+        ISet<int> includedIds)
+    {
+        if (!byParent.TryGetValue(menuId, out var children))
+        {
+            return;
+        }
+
+        foreach (var child in children)
+        {
+            includedIds.Add(child.Id);
+            IncludeMenuDescendants(child.Id, byParent, includedIds);
         }
     }
 
@@ -965,7 +1081,10 @@ public sealed class MainForm : RibbonForm
 
         if (viewModel is null || !viewModel.HasModules)
         {
-            flow.Controls.Add(CreateInfoCard("Sin modulos", "El usuario actual no tiene permisos disponibles."));
+            var message = string.IsNullOrWhiteSpace(viewModel?.NavigationLoadError)
+                ? "El usuario actual no tiene permisos disponibles."
+                : viewModel.NavigationLoadError;
+            flow.Controls.Add(CreateInfoCard("Sin modulos", message));
         }
         else
         {
@@ -1174,6 +1293,7 @@ public sealed class MainForm : RibbonForm
         }
 
         var operations = await viewModel.GetFormOperationsAsync(module.Key);
+        crudFormOperations[crudForm] = operations;
         var allowedOperations = operations
             .Where(operation => operation.IsAllowed)
             .SelectMany(operation => new[] { operation.ActionKey, operation.Code, operation.Name })
@@ -1182,12 +1302,39 @@ public sealed class MainForm : RibbonForm
             .ToArray();
 
         crudForm.ConfigureCrudOperationAccess(allowedOperations);
-        ApplyOperationImages(operations);
+        if (ReferenceEquals(tabControl.SelectedTabPage?.Tag, crudForm))
+        {
+            ApplyOperationImages(operations, crudForm);
+        }
+
         UpdateRibbonActionState();
     }
 
-    private void ApplyOperationImages(IReadOnlyCollection<FormOperationAccessItem> operations)
+    private void ApplyActiveRibbonOperations()
     {
+        if (tabControl.SelectedTabPage?.Tag is not BaseCrudListForm activeCrudForm)
+        {
+            RemoveCustomOperationButtons();
+            UpdateRibbonActionState();
+            return;
+        }
+
+        if (crudFormOperations.TryGetValue(activeCrudForm, out var operations))
+        {
+            ApplyOperationImages(operations, activeCrudForm);
+        }
+        else
+        {
+            RemoveCustomOperationButtons();
+        }
+
+        UpdateRibbonActionState();
+    }
+
+    private void ApplyOperationImages(IReadOnlyCollection<FormOperationAccessItem> operations, BaseCrudListForm crudForm)
+    {
+        RemoveCustomOperationButtons();
+
         var buttonOperations = new[]
         {
             ResolveOperationButton(refreshButton, operations, "refresh", "actualizar", "reload"),
@@ -1217,6 +1364,16 @@ public sealed class MainForm : RibbonForm
         {
             ApplyOperationButtonSettings(buttonOperation.Button, buttonOperation.Operation!);
         }
+
+        foreach (var operation in operations
+            .Where(operation => operation.IsAllowed)
+            .Where(operation => !IsBuiltInOperation(operation))
+            .Where(operation => crudForm.CanExecuteCustomOperation(OperationKey(operation)))
+            .OrderBy(operation => operation.DisplayOrder)
+            .ThenBy(operation => operation.Name))
+        {
+            AddCustomOperationButton(operation);
+        }
     }
 
     private static OperationButton ResolveOperationButton(BarButtonItem button, IReadOnlyCollection<FormOperationAccessItem> operations, params string[] keys)
@@ -1226,14 +1383,139 @@ public sealed class MainForm : RibbonForm
 
     private void ApplyOperationButtonSettings(BarButtonItem button, FormOperationAccessItem operation)
     {
-        if (!string.IsNullOrWhiteSpace(operation.Name))
+        var builtInPlacement = ResolveBuiltInRibbonPlacement(operation);
+
+        if (builtInPlacement is not null)
+        {
+            button.Caption = builtInPlacement.Value.Caption;
+        }
+        else if (!string.IsNullOrWhiteSpace(operation.Name))
         {
             button.Caption = operation.Name;
         }
 
         ApplyRibbonButtonDatabaseImage(button, operation.IconLarge ?? operation.IconSmall);
         ConfigureRibbonButtonHelp(button, ResolveOperationDescription(operation), ResolveOperationShortcut(operation));
-        MoveRibbonButton(button, operation.RibbonPageName, operation.RibbonGroupName);
+        MoveRibbonButton(
+            button,
+            builtInPlacement?.PageName ?? operation.RibbonPageName,
+            builtInPlacement?.GroupName ?? operation.RibbonGroupName);
+    }
+
+    private static (string PageName, string GroupName, string Caption)? ResolveBuiltInRibbonPlacement(FormOperationAccessItem operation)
+    {
+        if (MatchesAnyOperation(operation, "consult", "consultar", "read", "buscar", "view"))
+        {
+            return ("Inicio", "Acciones", "Consultar");
+        }
+
+        if (MatchesAnyOperation(operation, "copy", "copiar", "duplicate", "duplicar"))
+        {
+            return ("Inicio", "Acciones", "Copiar");
+        }
+
+        if (MatchesAnyOperation(operation, "refresh", "actualizar", "reload"))
+        {
+            return ("Inicio", "Datos", "Actualizar");
+        }
+
+        if (MatchesAnyOperation(operation, "create", "crear", "new", "nuevo", "post"))
+        {
+            return ("Inicio", "Mantenimiento", "Nuevo");
+        }
+
+        if (MatchesAnyOperation(operation, "update", "editar", "edit", "modificar", "put", "patch"))
+        {
+            return ("Inicio", "Mantenimiento", "Editar");
+        }
+
+        if (MatchesAnyOperation(operation, "delete", "eliminar", "remove"))
+        {
+            return ("Inicio", "Mantenimiento", "Eliminar");
+        }
+
+        if (MatchesAnyOperation(operation, "customizecolumns", "customize-columns", "columns", "columnas", "personalizarcolumnas", "configurarcolumnas"))
+        {
+            return ("Inicio", "Personalizacion", "Columnas");
+        }
+
+        if (MatchesAnyOperation(operation, "history", "historia", "historial"))
+        {
+            return ("Inicio", "Seguimiento", "Historial");
+        }
+
+        return null;
+    }
+
+    private void AddCustomOperationButton(FormOperationAccessItem operation)
+    {
+        var operationKey = OperationKey(operation);
+        var customPlacement = ResolveCustomOperationRibbonPlacement(operation);
+        var button = CreateRibbonButton(operation.Name, operation.IconLarge ?? operation.IconSmall, RibbonItemStyles.Large);
+        ConfigureRibbonButtonHelp(button, ResolveOperationDescription(operation), ResolveOperationShortcut(operation));
+        button.ItemClick += async (_, _) => await ExecuteActiveCrudActionAsync(form => form.ExecuteCustomOperationAsync(operationKey));
+        MoveRibbonButton(
+            button,
+            customPlacement?.PageName ?? operation.RibbonPageName,
+            customPlacement?.GroupName ?? operation.RibbonGroupName);
+        customOperationButtons.Add(new CustomOperationButton(button, operationKey));
+    }
+
+    private static (string PageName, string GroupName)? ResolveCustomOperationRibbonPlacement(FormOperationAccessItem operation)
+    {
+        if (MatchesAnyOperation(operation, "filter", "filters", "filtro", "filtros"))
+        {
+            return ("Inicio", "Personalizacion");
+        }
+
+        return MatchesAnyOperation(operation, "activate", "deactivate", "execute", "view-executions", "viewexecutions", "validate")
+            ? ("Inicio", "Acciones")
+            : null;
+    }
+
+    private void RemoveCustomOperationButtons()
+    {
+        foreach (var customButton in customOperationButtons)
+        {
+            RemoveRibbonButtonLinks(customButton.Button);
+            ribbon.Items.Remove(customButton.Button);
+            customButton.Button.Dispose();
+        }
+
+        customOperationButtons.Clear();
+    }
+
+    private static string OperationKey(FormOperationAccessItem operation)
+    {
+        return !string.IsNullOrWhiteSpace(operation.ActionKey)
+            ? operation.ActionKey!
+            : !string.IsNullOrWhiteSpace(operation.Code)
+                ? operation.Code
+                : operation.Name;
+    }
+
+    private static bool IsBuiltInOperation(FormOperationAccessItem operation)
+    {
+        return MatchesAnyOperation(operation, "refresh", "actualizar", "reload")
+            || MatchesAnyOperation(operation, "create", "crear", "new", "nuevo", "post")
+            || MatchesAnyOperation(operation, "copy", "copiar", "duplicate", "duplicar")
+            || MatchesAnyOperation(operation, "update", "editar", "edit", "modificar", "put", "patch")
+            || MatchesAnyOperation(operation, "consult", "consultar", "read", "buscar", "view")
+            || MatchesAnyOperation(operation, "history", "historia", "historial")
+            || MatchesAnyOperation(operation, "customizecolumns", "customize-columns", "columns", "columnas", "personalizarcolumnas", "configurarcolumnas")
+            || MatchesAnyOperation(operation, "delete", "eliminar", "remove")
+            || MatchesAnyOperation(operation, "exportexcel", "export-excel", "excel")
+            || MatchesAnyOperation(operation, "exportpdf", "export-pdf", "pdf")
+            || MatchesAnyOperation(operation, "exportjson", "export-json", "json")
+            || MatchesAnyOperation(operation, "exportxml", "export-xml", "xml");
+    }
+
+    private static bool MatchesAnyOperation(FormOperationAccessItem operation, params string[] keys)
+    {
+        return keys.Any(key =>
+            MatchesOperationKey(operation.ActionKey, key) ||
+            MatchesOperationKey(operation.Code, key) ||
+            MatchesOperationKey(operation.Name, key));
     }
 
     private static string ResolveOperationDescription(FormOperationAccessItem operation)
@@ -1423,6 +1705,8 @@ public sealed class MainForm : RibbonForm
 
     private sealed record OperationButton(BarButtonItem Button, FormOperationAccessItem? Operation);
 
+    private sealed record CustomOperationButton(BarButtonItem Button, string OperationKey);
+
     private sealed record RibbonShortcut(Keys Keys, string Text);
 
     private async Task ReloadAccessAsync()
@@ -1532,6 +1816,9 @@ public sealed class MainForm : RibbonForm
             "items" => itemsFormFactory(),
             "purchase-orders" => purchaseOrdersFormFactory(),
             "sap" => sapSyncLogFormFactory(),
+            "sync-monitor" => syncMonitorFormFactory(),
+            "sync-profiles" => syncProfileListFormFactory(),
+            "sync-executions" => syncExecutionListFormFactory(),
             "audit" => auditLogsFormFactory(),
             "configuration-settings" => settingsFormFactory(),
             "settings" => settingsFormFactory(),
@@ -1637,6 +1924,13 @@ public sealed class MainForm : RibbonForm
         jsonButton.Enabled = activeCrudForm?.CanExportJson ?? false;
         xmlButton.Enabled = activeCrudForm?.CanExportXml ?? false;
 
+        foreach (var customButton in customOperationButtons)
+        {
+            var canExecuteCustomOperation = activeCrudForm?.CanExecuteCustomOperation(customButton.OperationKey) ?? false;
+            customButton.Button.Visibility = canExecuteCustomOperation ? BarItemVisibility.Always : BarItemVisibility.Never;
+            customButton.Button.Enabled = canExecuteCustomOperation;
+        }
+
         if (ribbon.Pages.Cast<RibbonPage>().FirstOrDefault(page => string.Equals(page.Text, "Inicio", StringComparison.OrdinalIgnoreCase)) is { } homeRibbonPage)
         {
             MoveSessionGroupToEnd(homeRibbonPage);
@@ -1662,6 +1956,7 @@ public sealed class MainForm : RibbonForm
             if (form is BaseCrudListForm crudForm)
             {
                 crudForm.ActionStateChanged -= ActiveCrudForm_ActionStateChanged;
+                crudFormOperations.Remove(crudForm);
             }
 
             form.Dispose();
@@ -1719,11 +2014,13 @@ public sealed class MainForm : RibbonForm
             if (form is BaseCrudListForm crudForm)
             {
                 crudForm.ActionStateChanged -= ActiveCrudForm_ActionStateChanged;
+                crudFormOperations.Remove(crudForm);
             }
 
             form.Dispose();
         }
 
+        crudFormOperations.Clear();
         base.OnFormClosed(e);
     }
 }

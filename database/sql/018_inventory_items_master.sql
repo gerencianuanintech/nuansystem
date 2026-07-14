@@ -123,8 +123,12 @@ BEGIN
     CREATE TABLE dbo.Items
     (
         Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_Items PRIMARY KEY,
+        GlobalId uniqueidentifier NOT NULL CONSTRAINT DF_Items_GlobalId DEFAULT NEWID(),
         Code nvarchar(50) NOT NULL,
         Name nvarchar(200) NOT NULL,
+        ExternalSystem nvarchar(50) NULL,
+        ExternalCode nvarchar(100) NULL,
+        SapCode nvarchar(100) NULL,
         Description nvarchar(500) NULL,
         ItemGroupId int NULL,
         ItemType nvarchar(30) NOT NULL CONSTRAINT DF_Items_ItemType DEFAULT N'Product',
@@ -216,6 +220,22 @@ IF LEN(@Sql) > 0
 BEGIN
     EXEC sys.sp_executesql @Sql;
 END;
+GO
+
+IF COL_LENGTH(N'dbo.Items', N'GlobalId') IS NULL
+    ALTER TABLE dbo.Items ADD GlobalId uniqueidentifier NOT NULL CONSTRAINT DF_Items_GlobalId DEFAULT NEWID();
+GO
+
+IF COL_LENGTH(N'dbo.Items', N'ExternalSystem') IS NULL
+    ALTER TABLE dbo.Items ADD ExternalSystem nvarchar(50) NULL;
+GO
+
+IF COL_LENGTH(N'dbo.Items', N'ExternalCode') IS NULL
+    ALTER TABLE dbo.Items ADD ExternalCode nvarchar(100) NULL;
+GO
+
+IF COL_LENGTH(N'dbo.Items', N'SapCode') IS NULL
+    ALTER TABLE dbo.Items ADD SapCode nvarchar(100) NULL;
 GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Items_Code_Active' AND object_id = OBJECT_ID(N'dbo.Items'))
@@ -383,7 +403,7 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_ITEMS_LISTAR
 AS
 BEGIN
     SELECT
-        item.Id, item.Code, item.Name, item.Description,
+        item.Id, item.GlobalId, item.Code, item.Name, item.ExternalSystem, item.ExternalCode, item.SapCode, item.Description,
         item.ItemGroupId, itemGroup.Code AS ItemGroupCode, itemGroup.Name AS ItemGroupName,
         item.ItemType,
         item.InventoryUnitOfMeasureId, inventoryUom.Code AS InventoryUnitOfMeasureCode, inventoryUom.Name AS InventoryUnitOfMeasureName,
@@ -416,7 +436,7 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_ITEMS_BUSCARPORID
 AS
 BEGIN
     SELECT
-        item.Id, item.Code, item.Name, item.Description,
+        item.Id, item.GlobalId, item.Code, item.Name, item.ExternalSystem, item.ExternalCode, item.SapCode, item.Description,
         item.ItemGroupId, itemGroup.Code AS ItemGroupCode, itemGroup.Name AS ItemGroupName,
         item.ItemType,
         item.InventoryUnitOfMeasureId, inventoryUom.Code AS InventoryUnitOfMeasureCode, inventoryUom.Name AS InventoryUnitOfMeasureName,

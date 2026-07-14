@@ -7,8 +7,8 @@ using NuanSystem.WinForms.Services.GeneralInventory.ItemFamilies;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemFamilies.Models;
 using NuanSystem.WinForms.Services.InventoryItems;
 using NuanSystem.WinForms.Services.InventoryItems.Models;
-using NuanSystem.WinForms.Services.SecurityAccess;
-using NuanSystem.WinForms.Services.SecurityAccess.Models;
+using NuanSystem.WinForms.Services.Security.Access;
+using NuanSystem.WinForms.Services.Security.Access.Models;
 using NuanSystem.WinForms.ViewModels.Common;
 
 namespace NuanSystem.WinForms.ViewModels.InventoryItems;

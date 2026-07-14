@@ -133,7 +133,10 @@ public sealed class UserAdminRepository(IMasterConnectionFactory connectionFacto
             user.UpdatedAt,
             user.DeletedByUserId,
             user.DeletedByUserName,
-            user.DeletedAt);
+            user.DeletedAt,
+            user.GlobalId,
+            user.ExternalSystem,
+            user.ExternalCode);
     }
 
     private static IReadOnlyCollection<string> SplitText(string? value)
@@ -143,40 +146,44 @@ public sealed class UserAdminRepository(IMasterConnectionFactory connectionFacto
             : value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
-    private sealed record UserRecord(
-        int Id,
-        string UserName,
-        string? Email,
-        string? PhoneNumber,
-        bool EmailConfirmed,
-        bool PhoneNumberConfirmed,
-        string? FirstName,
-        string? LastName,
-        string DisplayName,
-        bool IsActive,
-        bool IsLocked,
-        bool CanUseWeb,
-        bool CanUseMobile,
-        int FailedAccessCount,
-        DateTime? LastLoginAt,
-        bool MustChangePassword,
-        DateTime? LockoutEndAt,
-        bool TwoFactorEnabled,
-        string? ProfileImageUrl,
-        byte[]? ProfileImage,
-        string? ProfileImageContentType,
-        string? ProfileImageFileName,
-        int? RoleId,
-        string? RolesText,
-        string? CompaniesText,
-        int? CreatedByUserId,
-        string? CreatedByUserName,
-        DateTime CreatedAt,
-        int? UpdatedByUserId,
-        string? UpdatedByUserName,
-        DateTime? UpdatedAt,
-        int? DeletedByUserId,
-        string? DeletedByUserName,
-        DateTime? DeletedAt);
+    private sealed class UserRecord
+    {
+        public int Id { get; init; }
+        public string UserName { get; init; } = string.Empty;
+        public string? Email { get; init; }
+        public string? PhoneNumber { get; init; }
+        public bool EmailConfirmed { get; init; }
+        public bool PhoneNumberConfirmed { get; init; }
+        public string? FirstName { get; init; }
+        public string? LastName { get; init; }
+        public string DisplayName { get; init; } = string.Empty;
+        public bool IsActive { get; init; }
+        public bool IsLocked { get; init; }
+        public bool CanUseWeb { get; init; }
+        public bool CanUseMobile { get; init; }
+        public int FailedAccessCount { get; init; }
+        public DateTime? LastLoginAt { get; init; }
+        public bool MustChangePassword { get; init; }
+        public DateTime? LockoutEndAt { get; init; }
+        public bool TwoFactorEnabled { get; init; }
+        public string? ProfileImageUrl { get; init; }
+        public byte[]? ProfileImage { get; init; }
+        public string? ProfileImageContentType { get; init; }
+        public string? ProfileImageFileName { get; init; }
+        public int? RoleId { get; init; }
+        public string? RolesText { get; init; }
+        public string? CompaniesText { get; init; }
+        public int? CreatedByUserId { get; init; }
+        public string? CreatedByUserName { get; init; }
+        public DateTime CreatedAt { get; init; }
+        public int? UpdatedByUserId { get; init; }
+        public string? UpdatedByUserName { get; init; }
+        public DateTime? UpdatedAt { get; init; }
+        public int? DeletedByUserId { get; init; }
+        public string? DeletedByUserName { get; init; }
+        public DateTime? DeletedAt { get; init; }
+        public Guid? GlobalId { get; init; }
+        public string? ExternalSystem { get; init; }
+        public string? ExternalCode { get; init; }
+    }
 }
-

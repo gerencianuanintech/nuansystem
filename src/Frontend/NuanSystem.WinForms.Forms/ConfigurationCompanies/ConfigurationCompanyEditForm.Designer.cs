@@ -621,7 +621,7 @@ partial class ConfigurationCompanyEditForm
     private PictureEdit picLogo;
     private SimpleButton btnCargarLogo;
     private SimpleButton btnQuitarLogo;
-    private SimpleButton btnGuardar;
-    private SimpleButton btnCancelar;
+    private new SimpleButton btnGuardar;
+    private new SimpleButton btnCancelar;
 }
 

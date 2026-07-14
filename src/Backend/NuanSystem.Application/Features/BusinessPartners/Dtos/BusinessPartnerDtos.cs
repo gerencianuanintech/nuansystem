@@ -3,8 +3,11 @@ namespace NuanSystem.Application.Features.BusinessPartners.Dtos;
 public sealed class BusinessPartnerDto
 {
     public int Id { get; set; }
+    public Guid GlobalId { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string? ExternalSystem { get; set; }
+    public string? ExternalCode { get; set; }
     public string? CommercialName { get; set; }
     public string PartnerType { get; set; } = "Customer";
     public int IdentificationTypeId { get; set; }
@@ -383,6 +386,20 @@ public sealed record SaveBusinessPartnerAttachmentData(
     string? ReferencePath,
     long? FileSize,
     bool IsActive);
+
+public sealed record BusinessPartnerSyncPayload(
+    Guid GlobalId,
+    string Code,
+    string Name,
+    string? CommercialName,
+    string PartnerType,
+    string? IdentificationTypeCode,
+    string IdentificationNumber,
+    string? Email,
+    string? Phone,
+    bool IsActive,
+    string? ExternalSystem,
+    string? ExternalCode);
 
 public sealed record CreateBusinessPartnerData(
     string Code,

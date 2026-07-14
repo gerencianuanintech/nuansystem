@@ -81,8 +81,11 @@ BEGIN
     CREATE TABLE dbo.BusinessPartners
     (
         Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_BusinessPartners PRIMARY KEY,
+        GlobalId uniqueidentifier NOT NULL CONSTRAINT DF_BusinessPartners_GlobalId DEFAULT NEWID(),
         Code nvarchar(50) NOT NULL,
         Name nvarchar(200) NOT NULL,
+        ExternalSystem nvarchar(50) NULL,
+        ExternalCode nvarchar(100) NULL,
         CommercialName nvarchar(200) NULL,
         PartnerType nvarchar(20) NOT NULL,
         IdentificationTypeId int NOT NULL,
@@ -106,6 +109,18 @@ BEGIN
         CONSTRAINT CK_BusinessPartners_PartnerType CHECK (PartnerType IN (N'Customer', N'Supplier', N'Both'))
     );
 END;
+GO
+
+IF COL_LENGTH(N'dbo.BusinessPartners', N'GlobalId') IS NULL
+    ALTER TABLE dbo.BusinessPartners ADD GlobalId uniqueidentifier NOT NULL CONSTRAINT DF_BusinessPartners_GlobalId DEFAULT NEWID();
+GO
+
+IF COL_LENGTH(N'dbo.BusinessPartners', N'ExternalSystem') IS NULL
+    ALTER TABLE dbo.BusinessPartners ADD ExternalSystem nvarchar(50) NULL;
+GO
+
+IF COL_LENGTH(N'dbo.BusinessPartners', N'ExternalCode') IS NULL
+    ALTER TABLE dbo.BusinessPartners ADD ExternalCode nvarchar(100) NULL;
 GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_BusinessPartners_Code_Active' AND object_id = OBJECT_ID(N'dbo.BusinessPartners'))
@@ -509,7 +524,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SELECT
-        bp.Id, bp.Code, bp.Name, bp.CommercialName, bp.PartnerType,
+        bp.Id, bp.GlobalId, bp.Code, bp.Name, bp.ExternalSystem, bp.ExternalCode, bp.CommercialName, bp.PartnerType,
         bp.IdentificationTypeId, idt.Code AS IdentificationTypeCode, idt.Name AS IdentificationTypeName,
         bp.IdentificationNumber, bp.Email, bp.Phone, bp.Website, bp.Remarks, bp.IsActive,
         fiscal.TaxpayerTypeId, fiscal.TaxRegimeId, fiscal.FiscalCountryId,
@@ -562,7 +577,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SELECT
-        bp.Id, bp.Code, bp.Name, bp.CommercialName, bp.PartnerType,
+        bp.Id, bp.GlobalId, bp.Code, bp.Name, bp.ExternalSystem, bp.ExternalCode, bp.CommercialName, bp.PartnerType,
         bp.IdentificationTypeId, idt.Code AS IdentificationTypeCode, idt.Name AS IdentificationTypeName,
         bp.IdentificationNumber, bp.Email, bp.Phone, bp.Website, bp.Remarks, bp.IsActive,
         fiscal.TaxpayerTypeId, fiscal.TaxRegimeId, fiscal.FiscalCountryId,

@@ -163,7 +163,7 @@ partial class ItemFamilyEditForm
     private LabelControl lblCodigoSap;
     private TextEdit txtCodigoSap;
     private CheckEdit chkActivo;
-    private SimpleButton btnGuardar;
-    private SimpleButton btnCancelar;
+    private new SimpleButton btnGuardar;
+    private new SimpleButton btnCancelar;
 }
 

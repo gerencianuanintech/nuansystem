@@ -1,6 +1,7 @@
 using System.Net;
 using System.Security.Claims;
 using Microsoft.Data.SqlClient;
+using NuanSystem.Api.Extensions;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Common.Exceptions;
 using NuanSystem.Application.Features.Audit.Dtos;
@@ -54,8 +55,7 @@ public sealed class GlobalExceptionMiddleware(
     {
         try
         {
-            var userIdValue = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userId = int.TryParse(userIdValue, out var parsedUserId) ? parsedUserId : (int?)null;
+            var userId = context.User.TryGetUserId(out var parsedUserId) ? parsedUserId : (int?)null;
 
             var errorLog = new CreateAuditErrorLogData(
                 "Backend",

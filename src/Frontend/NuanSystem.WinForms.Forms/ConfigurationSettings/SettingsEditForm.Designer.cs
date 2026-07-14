@@ -344,7 +344,7 @@ partial class SettingsEditForm
     private CheckEdit chkSistema;
     private CheckEdit chkEditable;
     private CheckEdit chkActivo;
-    private SimpleButton btnGuardar;
-    private SimpleButton btnCancelar;
+    private new SimpleButton btnGuardar;
+    private new SimpleButton btnCancelar;
 }
 

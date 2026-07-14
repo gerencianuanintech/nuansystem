@@ -7,4 +7,7 @@ public sealed record CompanyParameterDto(
     string? Value,
     string? Description,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    Guid? GlobalId = null,
+    string? ExternalSystem = null,
+    string? ExternalCode = null);

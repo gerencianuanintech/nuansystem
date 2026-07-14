@@ -3,9 +3,17 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.Application.Abstractions.SapSync;
+using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Abstractions.Tenancy;
+using NuanSystem.Application.Abstractions.Common;
+using NuanSystem.Application.Common;
 using NuanSystem.Application.Common.Behaviors;
 using NuanSystem.Application.Features.SapSync.Handlers;
 using NuanSystem.Application.Features.SapSync.Services;
+using NuanSystem.Application.Features.Sync.Configuration.Services;
+using NuanSystem.Application.Features.Sync.Execution.Services;
+using NuanSystem.Application.Features.Sync.Services;
+using NuanSystem.Application.Features.TenantConfiguration.Services;
 using System.Reflection;
 
 namespace NuanSystem.Application.DependencyInjection;
@@ -35,6 +43,16 @@ public static class ApplicationServiceRegistration
         services.AddScoped<ISapSyncEntityHandler, SapSupplierSyncHandler>();
         services.AddScoped<ISapSyncEntityHandler, SapItemSyncHandler>();
         services.AddScoped<ISapSyncEntityHandler, SapPurchaseOrderSyncHandler>();
+        services.AddScoped<ITenantFeatureService, TenantFeatureService>();
+        services.AddScoped<ITenantIntegrationService, TenantIntegrationService>();
+        services.AddScoped<IEntityOwnershipService, EntityOwnershipService>();
+        services.AddSingleton<ISystemClock, SystemClock>();
+        services.AddScoped<ISyncEventPublisher, SyncEventPublisher>();
+        services.AddScoped<ISyncEventPayloadFactory, SyncEventPayloadFactory>();
+        services.AddScoped<ISyncRoutingService, SyncRoutingService>();
+        services.AddScoped<ISyncProfileValidationService, SyncProfileValidationService>();
+        services.AddScoped<ISyncProfileExecutionService, SyncProfileExecutionService>();
+        services.AddScoped<ISyncScheduleCalculator, SyncScheduleCalculator>();
 
         return services;
     }

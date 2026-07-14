@@ -23,4 +23,14 @@ public sealed class Company
     public bool IsActive { get; init; }
 
     public SapIntegrationMode SapIntegrationMode { get; init; }
+
+    public CompanyOperationMode OperationMode { get; init; }
+
+    public bool IsMaster { get; init; }
+
+    public int? ParentCompanyId { get; init; }
+
+    public string? BranchCode { get; init; }
+
+    public bool SyncEnabled { get; init; }
 }

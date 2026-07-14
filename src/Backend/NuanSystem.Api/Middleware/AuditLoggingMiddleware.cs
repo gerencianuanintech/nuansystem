@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using NuanSystem.Api.Extensions;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Features.Audit.Dtos;
 
@@ -33,8 +34,7 @@ public sealed class AuditLoggingMiddleware
 
         try
         {
-            var userIdValue = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userId = int.TryParse(userIdValue, out var parsedUserId) ? parsedUserId : (int?)null;
+            var userId = context.User.TryGetUserId(out var parsedUserId) ? parsedUserId : (int?)null;
 
             var auditLog = new CreateAuditLogData(
                 userId,

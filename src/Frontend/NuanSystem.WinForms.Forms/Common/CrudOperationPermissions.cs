@@ -50,6 +50,12 @@ public sealed record CrudOperationPermissions(
         PermissionCodes.ItemsManage,
         PermissionCodes.ItemsManage);
 
+    public static CrudOperationPermissions InventoryWarehouses { get; } = new(
+        PermissionCodes.GeneralInventoryWarehousesRead,
+        PermissionCodes.GeneralInventoryWarehousesManage,
+        PermissionCodes.GeneralInventoryWarehousesManage,
+        PermissionCodes.GeneralInventoryWarehousesManage);
+
     public static CrudOperationPermissions ChartOfAccounts { get; } = new(
         PermissionCodes.AccountingRead,
         PermissionCodes.AccountingManage,

@@ -1,12 +1,18 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
+using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Shared.Sync;
 using NuanSystem.Shared.Responses;
 
 namespace NuanSystem.Application.Features.BusinessPartners.Commands;
 
-public sealed class UpdateBusinessPartnerCommandHandler(IBusinessPartnerRepository repository)
+public sealed class UpdateBusinessPartnerCommandHandler(
+    IBusinessPartnerRepository repository,
+    ISyncEventPublisher syncEventPublisher,
+    ICompanyContext companyContext)
     : ICommandHandler<UpdateBusinessPartnerCommand, BusinessPartnerDto>
 {
     public async Task<Result<BusinessPartnerDto>> Handle(UpdateBusinessPartnerCommand request, CancellationToken cancellationToken)
@@ -44,6 +50,18 @@ public sealed class UpdateBusinessPartnerCommandHandler(IBusinessPartnerReposito
 
         var partner = await repository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new InvalidOperationException("El tercero comercial fue actualizado pero no pudo consultarse.");
+
+        var syncResult = await BusinessPartnerSyncPublisher.PublishAsync(
+            syncEventPublisher,
+            companyContext,
+            partner,
+            SyncOperation.Updated,
+            cancellationToken);
+
+        if (syncResult is { IsSuccess: false })
+        {
+            return Result<BusinessPartnerDto>.Failure(syncResult.Message, syncResult.Errors);
+        }
 
         return Result<BusinessPartnerDto>.Success(partner, "Tercero comercial actualizado correctamente.");
     }

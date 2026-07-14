@@ -3,8 +3,12 @@ namespace NuanSystem.Application.Features.Items.Dtos;
 public sealed class ItemDto
 {
     public int Id { get; set; }
+    public Guid GlobalId { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string? ExternalSystem { get; set; }
+    public string? ExternalCode { get; set; }
+    public string? SapCode { get; set; }
     public string? Description { get; set; }
     public int? ItemGroupId { get; set; }
     public string? ItemGroupCode { get; set; }
@@ -57,3 +61,24 @@ public sealed class ItemDto
     public IReadOnlyCollection<ItemWarehouseDto> Warehouses { get; set; } = [];
     public ItemMasterData? MasterData { get; set; }
 }
+
+public sealed record ItemSyncPayload(
+    Guid GlobalId,
+    string Code,
+    string Name,
+    string? Description,
+    string ItemType,
+    int? ItemGroupId,
+    string? ItemGroupCode,
+    int? ItemFamilyId,
+    string? ItemFamilyCode,
+    int? InventoryUnitOfMeasureId,
+    string? InventoryUnitOfMeasureCode,
+    string? Barcode,
+    bool IsInventoryItem,
+    bool IsSalesItem,
+    bool IsPurchaseItem,
+    bool IsActive,
+    string? ExternalSystem,
+    string? ExternalCode,
+    string? SapCode);

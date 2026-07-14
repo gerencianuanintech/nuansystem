@@ -169,6 +169,16 @@ public class BaseCrudListForm : XtraForm
         return CanCustomizeColumns ? ExecuteCustomizeColumnsCoreAsync() : Task.CompletedTask;
     }
 
+    public virtual bool CanExecuteCustomOperation(string operationKey)
+    {
+        return false;
+    }
+
+    public virtual Task ExecuteCustomOperationAsync(string operationKey)
+    {
+        return Task.CompletedTask;
+    }
+
     protected virtual Task LoadDataAsync()
     {
         return Task.CompletedTask;

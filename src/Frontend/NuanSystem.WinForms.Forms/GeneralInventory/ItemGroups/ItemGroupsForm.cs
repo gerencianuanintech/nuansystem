@@ -1,6 +1,8 @@
 using NuanSystem.WinForms.Forms.Audit;
+using NuanSystem.WinForms.Forms.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Services.Audit;
+using NuanSystem.WinForms.Services.Accounting.ChartOfAccounts.Models;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemGroups.Models;
 using NuanSystem.WinForms.Services.GridColumnSettings;
 using NuanSystem.WinForms.Services.Session;
@@ -51,7 +53,7 @@ public sealed partial class ItemGroupsForm : BaseGridCrudListForm
     protected override async Task CreateAsync()
     {
         await viewModel.LoadAccountLookupsAsync();
-        using var form = new ItemGroupEditForm(viewModel.AccountLookups);
+        using var form = CreateEditForm();
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -71,7 +73,7 @@ public sealed partial class ItemGroupsForm : BaseGridCrudListForm
 
         var fullItem = await viewModel.GetByIdAsync(item.Id);
         await viewModel.LoadAccountLookupsAsync();
-        using var form = new ItemGroupEditForm(fullItem, viewModel.AccountLookups);
+        using var form = CreateEditForm(fullItem);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -91,7 +93,7 @@ public sealed partial class ItemGroupsForm : BaseGridCrudListForm
 
         var fullItem = await viewModel.GetByIdAsync(item.Id);
         await viewModel.LoadAccountLookupsAsync();
-        using var form = new ItemGroupEditForm(fullItem, viewModel.AccountLookups, copyMode: true);
+        using var form = CreateEditForm(fullItem, copyMode: true);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -160,6 +162,50 @@ public sealed partial class ItemGroupsForm : BaseGridCrudListForm
     private ItemGroupItem? SelectedItem()
     {
         return SelectedGridItem<ItemGroupItem>();
+    }
+
+    private ItemGroupEditForm CreateEditForm(ItemGroupItem? item = null, bool copyMode = false)
+    {
+        var canCreateAccount = session?.HasPermission(CrudOperationPermissions.ChartOfAccounts.Create) == true;
+        var form = item is null
+            ? new ItemGroupEditForm(viewModel.AccountLookups, canCreateAccount)
+            : new ItemGroupEditForm(item, viewModel.AccountLookups, canCreateAccount, copyMode);
+
+        form.CreateAccountRequested += CreateAccountFromLookupAsync;
+        return form;
+    }
+
+    private async Task<ChartOfAccountLookupItem?> CreateAccountFromLookupAsync(ItemGroupEditForm owner)
+    {
+        if (session?.HasPermission(CrudOperationPermissions.ChartOfAccounts.Create) != true)
+        {
+            return null;
+        }
+
+        await viewModel.LoadAccountLookupsAsync();
+        using var form = new ChartOfAccountEditForm(
+            session.CurrentCompany?.Id ?? 0,
+            viewModel.AccountLookups,
+            canCreateParent: true);
+
+        if (form.ShowDialog(owner) != DialogResult.OK)
+        {
+            return null;
+        }
+
+        var created = await viewModel.CreateAccountAsync(form.Request);
+        ShowSuccess("Cuenta contable creada correctamente.");
+        await viewModel.LoadAccountLookupsAsync();
+        owner.RefreshAccountLookups(viewModel.AccountLookups, created.Code);
+
+        return new ChartOfAccountLookupItem(
+            created.Id,
+            created.Code,
+            created.Name,
+            created.AccountType,
+            created.ParentAccountId,
+            created.Level,
+            created.IsActive);
     }
 
     private void ConfigureColumn(string fieldName, string caption, int visibleIndex, int width)

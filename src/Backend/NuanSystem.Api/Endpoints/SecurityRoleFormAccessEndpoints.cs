@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
+using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Features.SecurityAccess.Commands;
 using NuanSystem.Application.Features.SecurityAccess.Dtos;
 using NuanSystem.Application.Features.SecurityAccess.Queries;
@@ -25,6 +26,7 @@ public static class SecurityRoleFormAccessEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequirePermission(PermissionCodes.SecurityFormAccessMaintenanceManage);
 
         app.MapGet("/api/security/form-access/roles/{roleId:int}/forms/{formId:int}/operations", async (
@@ -41,6 +43,7 @@ public static class SecurityRoleFormAccessEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequirePermission(PermissionCodes.SecurityFormAccessMaintenanceManage);
 
         app.MapPut("/api/security/form-access/roles/{roleId:int}/forms/{formId:int}/operations", async (
@@ -63,6 +66,7 @@ public static class SecurityRoleFormAccessEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequirePermission(PermissionCodes.SecurityFormAccessMaintenanceManage);
 
         app.MapGet("/api/security/form-access/me", async (
@@ -83,6 +87,7 @@ public static class SecurityRoleFormAccessEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequireAuthorization();
 
         app.MapGet("/api/security/transactional-form-access/forms", async (
@@ -97,6 +102,7 @@ public static class SecurityRoleFormAccessEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequirePermission(PermissionCodes.SecurityFormAccessTransactionalManage);
 
         app.MapGet("/api/security/transactional-form-access/roles/{roleId:int}/forms/{formId:int}/operations", async (
@@ -113,6 +119,7 @@ public static class SecurityRoleFormAccessEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequirePermission(PermissionCodes.SecurityFormAccessTransactionalManage);
 
         app.MapPut("/api/security/transactional-form-access/roles/{roleId:int}/forms/{formId:int}/operations", async (
@@ -135,6 +142,7 @@ public static class SecurityRoleFormAccessEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequirePermission(PermissionCodes.SecurityFormAccessTransactionalManage);
 
         return app;

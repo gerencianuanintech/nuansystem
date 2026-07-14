@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
+using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Features.Documents.SecurityDocumentSeries.Commands;
 using NuanSystem.Application.Features.Documents.SecurityDocumentSeries.Queries;
 using NuanSystem.Shared.Constants;
@@ -24,6 +25,7 @@ public static class SecurityDocumentSeriesEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityDocumentSeries)
         .RequirePermission(PermissionCodes.DocumentsSeriesRead);
 
         app.MapGet("/api/security-document-series/lookups", async (
@@ -37,6 +39,7 @@ public static class SecurityDocumentSeriesEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityDocumentSeries)
         .RequirePermission(PermissionCodes.DocumentsSeriesRead);
 
         app.MapGet("/api/security-document-series/{id:int}", async (
@@ -48,6 +51,7 @@ public static class SecurityDocumentSeriesEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityDocumentSeries)
         .RequirePermission(PermissionCodes.DocumentsSeriesRead);
 
         app.MapPost("/api/security-document-series", async (
@@ -63,6 +67,7 @@ public static class SecurityDocumentSeriesEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityDocumentSeries)
         .RequirePermission(PermissionCodes.DocumentsSeriesCreate);
 
         app.MapPut("/api/security-document-series/{id:int}", async (
@@ -79,6 +84,7 @@ public static class SecurityDocumentSeriesEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityDocumentSeries)
         .RequirePermission(PermissionCodes.DocumentsSeriesUpdate);
 
         app.MapDelete("/api/security-document-series/{id:int}", async (
@@ -94,6 +100,7 @@ public static class SecurityDocumentSeriesEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityDocumentSeries)
         .RequirePermission(PermissionCodes.DocumentsSeriesDelete);
 
         app.MapPost("/api/security-document-series/{id:int}/reserve-number", async (
@@ -109,6 +116,7 @@ public static class SecurityDocumentSeriesEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityDocumentSeries)
         .RequirePermission(PermissionCodes.DocumentsSeriesManage);
 
         return app;

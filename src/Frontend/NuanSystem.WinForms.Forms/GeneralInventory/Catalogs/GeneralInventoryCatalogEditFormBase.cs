@@ -1,12 +1,12 @@
 using System.ComponentModel;
-using DevExpress.LookAndFeel;
 using DevExpress.XtraEditors;
+using NuanSystem.WinForms.Controls.Buttons;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Services.GeneralInventory.Catalogs.Models;
 
 namespace NuanSystem.WinForms.Forms.GeneralInventory.Catalogs;
 
-public abstract class GeneralInventoryCatalogEditFormBase : BaseEditForm, IGeneralInventoryCatalogEditForm
+public class GeneralInventoryCatalogEditFormBase : BaseEditForm, IGeneralInventoryCatalogEditForm
 {
     private readonly GeneralInventoryCatalogDescriptor descriptor;
 
@@ -17,8 +17,13 @@ public abstract class GeneralInventoryCatalogEditFormBase : BaseEditForm, IGener
     protected LabelControl lblDescription = null!;
     protected MemoEdit memDescription = null!;
     protected CheckEdit chkIsActive = null!;
-    protected SimpleButton btnCancel = null!;
-    protected SimpleButton btnSave = null!;
+    protected NuanActionButton btnCancel = null!;
+    protected NuanActionButton btnSave = null!;
+
+    protected GeneralInventoryCatalogEditFormBase()
+        : this(GeneralInventoryCatalogDescriptors.Warehouses)
+    {
+    }
 
     protected GeneralInventoryCatalogEditFormBase(GeneralInventoryCatalogDescriptor descriptor)
     {
@@ -84,8 +89,8 @@ public abstract class GeneralInventoryCatalogEditFormBase : BaseEditForm, IGener
         lblDescription = new LabelControl();
         memDescription = new MemoEdit();
         chkIsActive = new CheckEdit();
-        btnCancel = new SimpleButton();
-        btnSave = new SimpleButton();
+        btnCancel = new NuanActionButton();
+        btnSave = new NuanActionButton();
 
         ((ISupportInitialize)txtCode.Properties).BeginInit();
         ((ISupportInitialize)txtName.Properties).BeginInit();
@@ -158,38 +163,18 @@ public abstract class GeneralInventoryCatalogEditFormBase : BaseEditForm, IGener
         chkIsActive.Size = new Size(75, 20);
         chkIsActive.TabIndex = 6;
 
-        btnCancel.Appearance.BackColor = Color.FromArgb(99, 110, 114);
-        btnCancel.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
-        btnCancel.Appearance.ForeColor = Color.White;
-        btnCancel.Appearance.Options.UseBackColor = true;
-        btnCancel.Appearance.Options.UseFont = true;
-        btnCancel.Appearance.Options.UseForeColor = true;
-        btnCancel.AppearanceHovered.BackColor = Color.FromArgb(78, 87, 90);
-        btnCancel.AppearanceHovered.ForeColor = Color.White;
-        btnCancel.AppearanceHovered.Options.UseBackColor = true;
-        btnCancel.AppearanceHovered.Options.UseForeColor = true;
+        btnCancel.ButtonKind = NuanActionButtonKind.Cancel;
+        btnCancel.ButtonText = "Cancelar";
         btnCancel.DialogResult = DialogResult.Cancel;
         btnCancel.Location = new Point(294, 217);
-        btnCancel.LookAndFeel.Style = LookAndFeelStyle.Flat;
-        btnCancel.LookAndFeel.UseDefaultLookAndFeel = false;
         btnCancel.Name = "btnCancel";
         btnCancel.Size = new Size(100, 36);
         btnCancel.TabIndex = 7;
         btnCancel.Text = "Cancelar";
 
-        btnSave.Appearance.BackColor = Color.FromArgb(0, 184, 148);
-        btnSave.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
-        btnSave.Appearance.ForeColor = Color.White;
-        btnSave.Appearance.Options.UseBackColor = true;
-        btnSave.Appearance.Options.UseFont = true;
-        btnSave.Appearance.Options.UseForeColor = true;
-        btnSave.AppearanceHovered.BackColor = Color.FromArgb(0, 160, 128);
-        btnSave.AppearanceHovered.ForeColor = Color.White;
-        btnSave.AppearanceHovered.Options.UseBackColor = true;
-        btnSave.AppearanceHovered.Options.UseForeColor = true;
+        btnSave.ButtonKind = NuanActionButtonKind.Save;
+        btnSave.ButtonText = "Guardar";
         btnSave.Location = new Point(400, 217);
-        btnSave.LookAndFeel.Style = LookAndFeelStyle.Flat;
-        btnSave.LookAndFeel.UseDefaultLookAndFeel = false;
         btnSave.Name = "btnSave";
         btnSave.Size = new Size(100, 36);
         btnSave.TabIndex = 8;

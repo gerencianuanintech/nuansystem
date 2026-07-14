@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
+using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Features.SecurityMenus.Commands;
 using NuanSystem.Application.Features.SecurityMenus.Queries;
 
@@ -17,6 +18,7 @@ public static class SecurityMenuEndpoints
             var result = await sender.Send(new GetSecurityMenusQuery(), cancellationToken);
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityMenus)
         .RequireFormOperation("security-menus", "refresh");
 
         app.MapGet("/api/security/menus/{id:int}", async (
@@ -27,6 +29,7 @@ public static class SecurityMenuEndpoints
             var result = await sender.Send(new GetSecurityMenuByIdQuery(id), cancellationToken);
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityMenus)
         .RequireFormOperation("security-menus", "consult");
 
         app.MapPost("/api/security/menus", async (
@@ -44,6 +47,7 @@ public static class SecurityMenuEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityMenus)
         .RequireFormOperation("security-menus", "create");
 
         app.MapPut("/api/security/menus/{id:int}", async (
@@ -63,6 +67,7 @@ public static class SecurityMenuEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityMenus)
         .RequireFormOperation("security-menus", "update");
 
         app.MapDelete("/api/security/menus/{id:int}", async (
@@ -75,6 +80,7 @@ public static class SecurityMenuEndpoints
             var result = await sender.Send(new DeleteSecurityMenuCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityMenus)
         .RequireFormOperation("security-menus", "delete");
 
         return app;

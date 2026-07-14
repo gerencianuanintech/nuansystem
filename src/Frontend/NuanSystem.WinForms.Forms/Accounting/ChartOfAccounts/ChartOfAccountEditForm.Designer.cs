@@ -689,8 +689,8 @@ partial class ChartOfAccountEditForm
     private SimpleButton btnTipoCosto;
     private SimpleButton btnTipoGasto;
     private SimpleButton btnTipoOrden;
-    private SimpleButton btnGuardar;
-    private SimpleButton btnCancelar;
+    private new SimpleButton btnGuardar;
+    private new SimpleButton btnCancelar;
 }
 
 

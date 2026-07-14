@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
+using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Features.SecurityAccess.Commands;
 using NuanSystem.Application.Features.SecurityAccess.Dtos;
@@ -37,6 +38,7 @@ public static class SecurityRoleFormFieldAccessEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequirePermission(PermissionCodes.SecurityFieldAccessMaintenanceManage);
 
         app.MapPut($"{basePath}/roles/{{roleId:int}}/forms/{{formId:int}}/fields", async (
@@ -59,6 +61,7 @@ public static class SecurityRoleFormFieldAccessEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequirePermission(PermissionCodes.SecurityFieldAccessMaintenanceManage);
     }
 
@@ -95,6 +98,7 @@ public static class SecurityRoleFormFieldAccessEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequirePermission(PermissionCodes.SecurityFieldAccessTransactionalManage);
 
         app.MapPut($"{basePath}/roles/{{roleId:int}}/forms/{{formId:int}}/series/{{seriesId:int}}/fields", async (
@@ -128,6 +132,7 @@ public static class SecurityRoleFormFieldAccessEndpoints
 
             return result.ToHttpResult();
         })
+        .WithTags(SwaggerTags.SecurityAccess)
         .RequirePermission(PermissionCodes.SecurityFieldAccessTransactionalManage);
     }
 }

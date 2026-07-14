@@ -19,8 +19,7 @@ public static class CompanyEndpoints
             IAuthService authService,
             CancellationToken cancellationToken) =>
         {
-            var userIdValue = user.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(userIdValue, out var userId))
+            if (!user.TryGetUserId(out var userId))
             {
                 return Results.Unauthorized();
             }

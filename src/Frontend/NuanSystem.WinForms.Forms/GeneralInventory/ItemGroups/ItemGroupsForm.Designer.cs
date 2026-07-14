@@ -13,7 +13,7 @@ partial class ItemGroupsForm
         Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         MinimumSize = new Size(900, 520);
         Name = "ItemGroupsForm";
-        Text = "Grupos de ArtÃ­culos";
+        Text = "Grupos de Artículos";
     }
 
     protected override void Dispose(bool disposing)

@@ -6,6 +6,7 @@ using DevExpress.XtraEditors;
 using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraReports.UI;
+using NuanSystem.WinForms.Controls.Grids;
 using NuanSystem.WinForms.Services.GridColumnSettings;
 using NuanSystem.WinForms.Services.GridColumnSettings.Models;
 using System.ComponentModel;
@@ -16,26 +17,25 @@ using System.Xml;
 
 namespace NuanSystem.WinForms.Forms.Common;
 
-public class BaseGridCrudListForm : BaseCrudListForm
+public partial class BaseGridCrudListForm : BaseCrudListForm
 {
     private const float PdfPageWidth = 747F;
     private const float PdfLandscapePageWidth = 1089F;
     private const string ExportFontName = "Segoe UI";
-    private readonly GridControl gridControl;
-    private readonly GridView gridView;
-    private readonly PanelControl paginationPanel;
-    private readonly SimpleButton firstPageButton;
-    private readonly SimpleButton previousPageButton;
-    private readonly LabelControl pageInfoLabel;
-    private readonly SimpleButton nextPageButton;
-    private readonly SimpleButton lastPageButton;
-    private readonly LabelControl pageSizeLabel;
-    private readonly ComboBoxEdit pageSizeCombo;
-    private readonly LabelControl totalInfoLabel;
-    private readonly LabelControl selectionInfoLabel;
-    private readonly PanelControl auditPanel;
-    private readonly LabelControl auditCreatedLabel;
-    private readonly LabelControl auditUpdatedLabel;
+    private NuanDataGridControl nuanGrid = null!;
+    private PanelControl paginationPanel = null!;
+    private SimpleButton firstPageButton = null!;
+    private SimpleButton previousPageButton = null!;
+    private LabelControl pageInfoLabel = null!;
+    private SimpleButton nextPageButton = null!;
+    private SimpleButton lastPageButton = null!;
+    private LabelControl pageSizeLabel = null!;
+    private ComboBoxEdit pageSizeCombo = null!;
+    private LabelControl totalInfoLabel = null!;
+    private LabelControl selectionInfoLabel = null!;
+    private PanelControl auditPanel = null!;
+    private LabelControl auditCreatedLabel = null!;
+    private LabelControl auditUpdatedLabel = null!;
     private readonly List<object> items = new();
     private IGridColumnSettingsClient? columnSettingsClient;
     private string? columnSettingsFormKey;
@@ -47,28 +47,16 @@ public class BaseGridCrudListForm : BaseCrudListForm
 
     public BaseGridCrudListForm()
     {
-        gridControl = new GridControl();
-        gridView = new GridView();
-        paginationPanel = new PanelControl();
-        firstPageButton = new SimpleButton();
-        previousPageButton = new SimpleButton();
-        pageInfoLabel = new LabelControl();
-        nextPageButton = new SimpleButton();
-        lastPageButton = new SimpleButton();
-        pageSizeLabel = new LabelControl();
-        pageSizeCombo = new ComboBoxEdit();
-        totalInfoLabel = new LabelControl();
-        selectionInfoLabel = new LabelControl();
-        auditPanel = new PanelControl();
-        auditCreatedLabel = new LabelControl();
-        auditUpdatedLabel = new LabelControl();
-
-        InitializeGridLayout();
+        InitializeComponent();
         WireGridEvents();
         UpdatePaginationInfo();
         UpdateSelectionInfo();
         UpdateAuditInfo();
     }
+
+    private GridControl gridControl => nuanGrid.InnerGridControl;
+
+    private GridView gridView => nuanGrid.InnerGridView;
 
     protected GridControl GridControl => gridControl;
 
@@ -392,170 +380,6 @@ public class BaseGridCrudListForm : BaseCrudListForm
         {
             column.Visible = false;
         }
-    }
-
-    private void InitializeGridLayout()
-    {
-        Appearance.BackColor = BrandResources.Background;
-        Appearance.Options.UseBackColor = true;
-        AutoScaleDimensions = new SizeF(7F, 15F);
-        AutoScaleMode = AutoScaleMode.Font;
-        Font = AppTypography.BaseFont;
-        ClientSize = new Size(900, 560);
-        MinimumSize = new Size(720, 420);
-        StartPosition = FormStartPosition.CenterScreen;
-
-        gridControl.Font = AppTypography.BaseFont;
-        gridControl.Dock = DockStyle.Fill;
-        gridControl.MainView = gridView;
-        gridControl.Name = "gridControl";
-        gridControl.TabIndex = 0;
-        gridControl.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView });
-
-        gridView.Appearance.HeaderPanel.Font = AppTypography.GridHeaderFont;
-        gridView.Appearance.HeaderPanel.ForeColor = BrandResources.Text;
-        gridView.Appearance.HeaderPanel.Options.UseFont = true;
-        gridView.Appearance.HeaderPanel.Options.UseForeColor = true;
-        gridView.Appearance.Row.Font = AppTypography.GridRowFont;
-        gridView.Appearance.Row.ForeColor = BrandResources.Text;
-        gridView.Appearance.Row.Options.UseFont = true;
-        gridView.Appearance.Row.Options.UseForeColor = true;
-        gridView.Appearance.FooterPanel.Font = AppTypography.GridHeaderFont;
-        gridView.Appearance.FooterPanel.Options.UseFont = true;
-        gridView.Appearance.FilterPanel.Font = AppTypography.GridRowFont;
-        gridView.Appearance.FilterPanel.Options.UseFont = true;
-        gridView.GridControl = gridControl;
-        gridView.Name = "gridView";
-        gridView.OptionsBehavior.Editable = false;
-        gridView.OptionsFind.AlwaysVisible = true;
-        gridView.OptionsFind.FindNullPrompt = "Buscar...";
-        gridView.OptionsSelection.EnableAppearanceFocusedCell = false;
-        gridView.OptionsSelection.MultiSelect = true;
-        gridView.OptionsSelection.MultiSelectMode = GridMultiSelectMode.CheckBoxRowSelect;
-        gridView.OptionsView.ColumnAutoWidth = false;
-        gridView.OptionsView.ShowGroupPanel = false;
-
-        ConfigureAuditPanel();
-        ConfigurePaginationPanel();
-
-        Controls.Add(gridControl);
-        Controls.Add(auditPanel);
-        Controls.Add(paginationPanel);
-    }
-
-    private void ConfigurePaginationPanel()
-    {
-        paginationPanel.Appearance.BackColor = Color.White;
-        paginationPanel.Appearance.Options.UseBackColor = true;
-        paginationPanel.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
-        paginationPanel.Dock = DockStyle.Bottom;
-        paginationPanel.Name = "paginationPanel";
-        paginationPanel.Size = new Size(900, 44);
-        paginationPanel.TabIndex = 1;
-
-        ConfigureButton(firstPageButton, "|<", new Point(10, 8), 0);
-        ConfigureButton(previousPageButton, "<", new Point(50, 8), 1);
-        ConfigureButton(nextPageButton, ">", new Point(178, 8), 3);
-        ConfigureButton(lastPageButton, ">|", new Point(218, 8), 4);
-
-        pageInfoLabel.Appearance.Font = AppTypography.LabelFont;
-        pageInfoLabel.Appearance.ForeColor = BrandResources.Text;
-        pageInfoLabel.Appearance.Options.UseFont = true;
-        pageInfoLabel.Appearance.Options.UseForeColor = true;
-        pageInfoLabel.Location = new Point(96, 14);
-        pageInfoLabel.Name = "pageInfoLabel";
-        pageInfoLabel.TabIndex = 2;
-        pageInfoLabel.Text = "Pagina 1 de 1";
-
-        pageSizeLabel.Appearance.Font = AppTypography.LabelFont;
-        pageSizeLabel.Appearance.ForeColor = BrandResources.Text;
-        pageSizeLabel.Appearance.Options.UseFont = true;
-        pageSizeLabel.Appearance.Options.UseForeColor = true;
-        pageSizeLabel.Location = new Point(276, 14);
-        pageSizeLabel.Name = "pageSizeLabel";
-        pageSizeLabel.TabIndex = 5;
-        pageSizeLabel.Text = "Registros:";
-
-        pageSizeCombo.EditValue = "20";
-        pageSizeCombo.Location = new Point(344, 10);
-        pageSizeCombo.Name = "pageSizeCombo";
-        pageSizeCombo.Properties.Appearance.Font = AppTypography.InputFont;
-        pageSizeCombo.Properties.Appearance.Options.UseFont = true;
-        pageSizeCombo.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
-        pageSizeCombo.Properties.Items.AddRange(new object[] { "10", "20", "50", "100" });
-        pageSizeCombo.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
-        pageSizeCombo.Size = new Size(70, 22);
-        pageSizeCombo.TabIndex = 6;
-
-        totalInfoLabel.Appearance.Font = AppTypography.LabelFont;
-        totalInfoLabel.Appearance.ForeColor = BrandResources.Text;
-        totalInfoLabel.Appearance.Options.UseFont = true;
-        totalInfoLabel.Appearance.Options.UseForeColor = true;
-        totalInfoLabel.Location = new Point(438, 14);
-        totalInfoLabel.Name = "totalInfoLabel";
-        totalInfoLabel.TabIndex = 7;
-        totalInfoLabel.Text = "Total: 0 registros";
-
-        selectionInfoLabel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        selectionInfoLabel.Appearance.Font = AppTypography.LabelFont;
-        selectionInfoLabel.Appearance.ForeColor = BrandResources.Text;
-        selectionInfoLabel.Appearance.Options.UseFont = true;
-        selectionInfoLabel.Appearance.Options.UseForeColor = true;
-        selectionInfoLabel.Location = new Point(735, 14);
-        selectionInfoLabel.Name = "selectionInfoLabel";
-        selectionInfoLabel.TabIndex = 8;
-        selectionInfoLabel.Text = "Seleccionados: 0 de 0";
-
-        paginationPanel.Controls.Add(firstPageButton);
-        paginationPanel.Controls.Add(previousPageButton);
-        paginationPanel.Controls.Add(pageInfoLabel);
-        paginationPanel.Controls.Add(nextPageButton);
-        paginationPanel.Controls.Add(lastPageButton);
-        paginationPanel.Controls.Add(pageSizeLabel);
-        paginationPanel.Controls.Add(pageSizeCombo);
-        paginationPanel.Controls.Add(totalInfoLabel);
-        paginationPanel.Controls.Add(selectionInfoLabel);
-    }
-
-    private void ConfigureAuditPanel()
-    {
-        auditPanel.Appearance.BackColor = Color.FromArgb(248, 250, 252);
-        auditPanel.Appearance.Options.UseBackColor = true;
-        auditPanel.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
-        auditPanel.Dock = DockStyle.Bottom;
-        auditPanel.Name = "auditPanel";
-        auditPanel.Size = new Size(900, 34);
-        auditPanel.TabIndex = 2;
-
-        auditCreatedLabel.Appearance.Font = AppTypography.LabelFont;
-        auditCreatedLabel.Appearance.ForeColor = BrandResources.Text;
-        auditCreatedLabel.Appearance.Options.UseFont = true;
-        auditCreatedLabel.Appearance.Options.UseForeColor = true;
-        auditCreatedLabel.Location = new Point(12, 10);
-        auditCreatedLabel.Name = "auditCreatedLabel";
-        auditCreatedLabel.TabIndex = 0;
-        auditCreatedLabel.Text = "Creado por: -";
-
-        auditUpdatedLabel.Appearance.Font = AppTypography.LabelFont;
-        auditUpdatedLabel.Appearance.ForeColor = BrandResources.Text;
-        auditUpdatedLabel.Appearance.Options.UseFont = true;
-        auditUpdatedLabel.Appearance.Options.UseForeColor = true;
-        auditUpdatedLabel.Location = new Point(360, 10);
-        auditUpdatedLabel.Name = "auditUpdatedLabel";
-        auditUpdatedLabel.TabIndex = 1;
-        auditUpdatedLabel.Text = "Modificado por: -";
-
-        auditPanel.Controls.Add(auditCreatedLabel);
-        auditPanel.Controls.Add(auditUpdatedLabel);
-    }
-
-    private static void ConfigureButton(SimpleButton button, string text, Point location, int tabIndex)
-    {
-        AppTypography.ApplyButton(button);
-        button.Location = location;
-        button.Size = new Size(36, 28);
-        button.TabIndex = tabIndex;
-        button.Text = text;
     }
 
     private void WireGridEvents()

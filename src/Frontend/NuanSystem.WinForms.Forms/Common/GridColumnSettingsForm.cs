@@ -13,7 +13,6 @@ public sealed partial class GridColumnSettingsForm : XtraForm
     {
         InitializeComponent();
         FormStyler.ApplyBase(this);
-        OperationButtonIcons.ApplySaveCancel(btnGuardar, btnCancelar);
         rows = new BindingList<GridColumnSettingRow>(
             columns
                 .OrderBy(column => column.VisibleIndex)

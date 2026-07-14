@@ -1,6 +1,7 @@
 using DevExpress.XtraEditors;
 using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Views.Grid;
+using NuanSystem.WinForms.Controls.Buttons;
 
 namespace NuanSystem.WinForms.Forms.Common;
 
@@ -12,8 +13,8 @@ partial class GridColumnSettingsForm
     {
         grcColumnas = new GridControl();
         grvColumnas = new GridView();
-        btnCancelar = new SimpleButton();
-        btnGuardar = new SimpleButton();
+        btnCancelar = new NuanActionButton();
+        btnGuardar = new NuanActionButton();
         ((System.ComponentModel.ISupportInitialize)grcColumnas).BeginInit();
         ((System.ComponentModel.ISupportInitialize)grvColumnas).BeginInit();
         SuspendLayout();
@@ -47,6 +48,8 @@ partial class GridColumnSettingsForm
         // 
         // btnCancelar
         // 
+        btnCancelar.ButtonKind = NuanActionButtonKind.Cancel;
+        btnCancelar.ButtonText = "Cancelar";
         btnCancelar.DialogResult = DialogResult.Cancel;
         btnCancelar.Location = new Point(438, 406);
         btnCancelar.Name = "btnCancelar";
@@ -56,13 +59,9 @@ partial class GridColumnSettingsForm
         // 
         // btnGuardar
         // 
-        btnGuardar.Appearance.BackColor = Color.FromArgb(0, 184, 148);
-        btnGuardar.Appearance.ForeColor = Color.White;
-        btnGuardar.Appearance.Options.UseBackColor = true;
-        btnGuardar.Appearance.Options.UseForeColor = true;
+        btnGuardar.ButtonKind = NuanActionButtonKind.Save;
+        btnGuardar.ButtonText = "Guardar";
         btnGuardar.Location = new Point(544, 406);
-        btnGuardar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
-        btnGuardar.LookAndFeel.UseDefaultLookAndFeel = false;
         btnGuardar.Name = "btnGuardar";
         btnGuardar.Size = new Size(100, 36);
         btnGuardar.TabIndex = 2;
@@ -114,6 +113,6 @@ partial class GridColumnSettingsForm
 
     private GridControl grcColumnas;
     private GridView grvColumnas;
-    private SimpleButton btnCancelar;
-    private SimpleButton btnGuardar;
+    private NuanActionButton btnCancelar;
+    private NuanActionButton btnGuardar;
 }
