@@ -1,0 +1,5 @@
+interface:
+  display_name: "NuanSystem WinForms Forms"
+  short_description: "Patrones de formularios WinForms de NuanSystem"
+  default_prompt: "Use $nuansystem-winforms-forms to classify and build the correct NuanSystem CRUD, operational, dashboard, wizard, or dialog form."
+
