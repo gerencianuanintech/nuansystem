@@ -7,6 +7,7 @@ Use this reference before creating or editing WinForms `.Designer.cs` files. The
 - Keep visual layout in `.Designer.cs` for designer-backed forms.
 - Keep logic, events, API calls, validation, permission checks, lookup loading, and request mapping in the main `.cs` partial class.
 - Author visual controls in the classic Designer style: declare fields, instantiate controls in `InitializeComponent`, set properties explicitly, and add controls to their parent.
+- For maintenance forms, do not use `Panel`, `PanelControl`, `TableLayoutPanel`, `FlowLayoutPanel`, or similar panel/layout containers unless the user explicitly requests them. Prefer direct placement on the form or `XtraTabPage` with explicit `Location`, `Size`, `Anchor`, and minimal `Dock`.
 - Do not build visual layout with runtime helper methods such as `BuildHeader()`, `BuildTabs()`, `AddLabeled(...)`, `AddSwitch(...)`, or `Group(...)`.
 - Do not hide visual structure behind factories that the Designer cannot represent.
 

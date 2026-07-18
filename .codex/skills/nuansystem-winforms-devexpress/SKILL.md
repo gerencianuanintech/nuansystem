@@ -68,6 +68,7 @@ If any of these are missing and the user asked for a new form, pause and ask a c
 ## Form Patterns
 
 - Use DevExpress controls for new UI: `XtraForm`, `SimpleButton`, `TextEdit`, `LabelControl`, `GridControl`, `GridView`, `LookUpEdit`, `SearchLookUpEdit`, `SpinEdit`, `CheckEdit`, `MemoEdit`, `DateEdit`, and related editors.
+- For designer-backed maintenance forms, do not use `Panel`, `PanelControl`, `TableLayoutPanel`, `FlowLayoutPanel`, or other panel/layout containers unless the user explicitly asks for that container. Place primary controls directly on the form or tab page with explicit `Location`, `Size`, `Anchor`, and `Dock` only where needed.
 - Apply `Common.FormStyler.ApplyBase(this)` in code-built forms and use `FormStyler`, `BrandResources`, and the typography reference instead of ad-hoc fonts/colors.
 - Use ViewModels for UI state, selected item state, busy state, validation state, and screen orchestration when the local module pattern supports it.
 - Use `GridControl` + `GridView`; do not introduce `DataGridView` for DevExpress screens.
