@@ -1,0 +1,5 @@
+interface:
+  display_name: "NuanSystem WinForms Layout"
+  short_description: "Layout visual consistente para formularios WinForms"
+  default_prompt: "Use $nuansystem-winforms-layout to design or review a NuanSystem WinForms layout using established spacing, sections, and Designer rules."
+
