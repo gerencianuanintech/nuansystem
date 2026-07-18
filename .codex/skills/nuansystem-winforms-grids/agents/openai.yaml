@@ -1,0 +1,5 @@
+interface:
+  display_name: "NuanSystem WinForms Grids"
+  short_description: "Grillas corporativas DevExpress de NuanSystem"
+  default_prompt: "Use $nuansystem-winforms-grids to configure or review NuanSystem grids, columns, paging, selection, export, and personalization."
+
