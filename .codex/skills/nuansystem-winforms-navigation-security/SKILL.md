@@ -1,0 +1,126 @@
+---
+name: nuansystem-winforms-navigation-security
+description: Add, modify, or review NuanSystem WinForms navigation and security wiring, including FormKey, dynamic menus, SecurityForms, SecurityMenus, SecurityRoleMenus, form operations, CrudOperationPermissions, ApiSession, Program registration, MainForm/ShellViewModel factories, column personalization keys, company context, and backend authorization.
+---
+
+# NuanSystem WinForms Navigation and Security
+
+## Authority and discovery
+
+Follow the engineering core and run `$nuansystem-framework-discovery`. Inspect:
+
+- `.codex/skills/nuansystem-winforms-devexpress/references/menu-integration.md`
+- `src/Frontend/NuanSystem.WinForms.Services/Session/ApiSession.cs`
+- `src/Frontend/NuanSystem.WinForms.Forms/Common/CrudOperationPermissions.cs`
+- `src/Frontend/NuanSystem.WinForms/Program.cs`
+- `src/Frontend/NuanSystem.WinForms.Forms/Shell/MainForm.cs`
+- `src/Frontend/NuanSystem.WinForms.ViewModels/Shell/ShellViewModel.cs`
+- `src/Backend/NuanSystem.Api/Extensions/EndpointAuthorizationExtensions.cs`
+- the closest idempotent Master security/menu SQL script
+
+Frontend visibility is UX. Backend authorization and tenant isolation remain authoritative.
+
+## Identity contract
+
+A navigable screen has one stable `FormKey` shared by:
+
+- `SecurityForms`;
+- `SecurityMenus` and navigation response;
+- endpoint form-operation authorization;
+- frontend form/factory routing;
+- operation-access loading;
+- grid column personalization;
+- logs/audit references where applicable.
+
+Use kebab-case following nearby values. Never introduce aliases or casing variations for the same screen.
+
+## New screen workflow
+
+1. Discover the closest menu/security slice.
+2. Determine domain folder, visible label, parent menu, display order, `FormKey`, operations, and default access.
+3. Add/update idempotent Master data for form, menu, operations, role-menu access, and approved default role access.
+4. Protect API endpoints through the established form-operation authorization path.
+5. Register typed clients/ViewModels/forms in `Program.cs` as required.
+6. Add the navigation/factory mapping used by `MainForm`/`ShellViewModel`.
+7. Use the same `FormKey` for the form and grid personalization.
+8. Validate allowed and denied users, menu visibility, direct navigation, and company context.
+
+Infer naming/order from the nearest module when safe. Stop for product decisions such as a new top-level module, destructive permissions, or default access that cannot be inferred.
+
+## Operation permissions
+
+- Reuse established operation names/codes when semantics match.
+- Map standard read/create/update/delete through `CrudOperationPermissions` when the feature follows that model.
+- Include refresh, consult, copy, history, customize columns, export, post, cancel, approve, or other operations only when the screen actually exposes them.
+- Disable/hide UI actions based on loaded access, but keep backend enforcement.
+- Related lookup creation checks the related maintenance's create permission, not only the parent form permission.
+- Consult/read-only mode disables all mutation paths.
+
+## `ApiSession`
+
+Use it for current authenticated user, active company, access token exposure to central transport, and permission lookup.
+
+- Do not mutate session from feature forms.
+- Do not manually add JWT or `X-Company-Code` in forms/feature clients.
+- Do not treat `HasPermission` as backend authorization.
+- Clear company-dependent screen state when company context changes through the established shell flow.
+
+## Menu and DI registration
+
+- Keep Services, ViewModels, Forms, and factories registered consistently.
+- Do not use service locator calls inside forms to avoid constructor registration.
+- Ensure dynamic menu payload can resolve the exact `FormKey`.
+- Preserve one-instance/multiple-instance behavior from the shell's existing form-opening pattern.
+- Keep visible menu text and codes separate from stable `FormKey` identity.
+
+## Master SQL
+
+- Use a new versioned, idempotent script; do not rewrite historical deployment scripts for new features.
+- Insert/update `SecurityForms`, `SecurityMenus`, operations, and role mappings using established keys and guards.
+- Keep menu codes in the established `MENU.{PARENT}.{ITEM}` family.
+- Do not silently grant default roles beyond the approved policy.
+- Preserve existing IDs/relationships on re-execution.
+
+## Multi-company boundary
+
+- Frontend requests flow through `NuanApiClient` with active company context.
+- Backend middleware validates company selection/access.
+- Persistence obtains the correct tenant connection through established infrastructure.
+- Never accept audit company/user identity from an untrusted form request when claims/context provide it.
+- Menu visibility does not grant cross-company data access.
+
+## Decision tree
+
+```text
+Screen is navigable?
+  No -> no menu row; still evaluate FormKey/operations for embedded security.
+  Yes -> existing parent/module?
+           Yes -> follow nearest menu/security seed and factory.
+           No -> product/architecture decision before a new top-level module.
+Standard CRUD permissions fit?
+  Yes -> reuse CrudOperationPermissions pattern.
+  No -> define only real operations and enforce them end-to-end.
+```
+
+## Antipatterns
+
+- Menu entry without API authorization.
+- UI-hidden action treated as security.
+- Different `FormKey` in SQL, API, factory, and grid settings.
+- Hard-coded menu trees that bypass dynamic navigation.
+- Default ADMIN grants assumed without policy evidence.
+- Manual auth/company headers.
+- Form service-location instead of DI registration.
+- Non-idempotent security seed or rewritten historical script.
+
+## Validation checklist
+
+- [ ] One stable `FormKey` is used end-to-end.
+- [ ] Form/menu/operations/role mappings are complete and idempotent.
+- [ ] DI and shell navigation resolve the screen.
+- [ ] UI permissions and backend authorization align.
+- [ ] Related creation and read-only paths are secured.
+- [ ] Allowed, denied, direct-route, and multi-company scenarios are tested or reported.
+- [ ] Menu/navigation, operation loading, build, and SQL checks are truthfully evidenced.
+
+
