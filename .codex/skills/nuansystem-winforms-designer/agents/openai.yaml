@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem WinForms Designer"
+  short_description: "Compatibilidad del Designer WinForms NuanSystem"
+  default_prompt: "Use $nuansystem-winforms-designer to create or modify a Designer-compatible NuanSystem WinForms form with explicit serialized layout."
