@@ -61,6 +61,9 @@ public sealed class SyncMonitorClient(INuanApiClient apiClient) : ISyncMonitorCl
             cancellationToken);
     }
 
+    public Task<RetrySyncOutboxBatchResult> RetryBatchAsync(RetrySyncOutboxBatchRequest request,CancellationToken cancellationToken=default)
+        => apiClient.PostAsync<RetrySyncOutboxBatchRequest,RetrySyncOutboxBatchResult>("/api/sync/outbox/retry-batch",request,cancellationToken);
+
     private static string BuildQuery(SyncOutboxFilter filter)
     {
         var builder = new QueryBuilder()

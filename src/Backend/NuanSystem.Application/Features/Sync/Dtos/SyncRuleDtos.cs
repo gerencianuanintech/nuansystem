@@ -25,4 +25,5 @@ public sealed record SyncEventApplyContext(
 public sealed record SyncEventApplyResult(
     bool Applied,
     string? Message = null,
-    string? ErrorCode = null);
+    string? ErrorCode = null,
+    bool Retryable = false);

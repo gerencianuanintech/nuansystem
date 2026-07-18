@@ -1,12 +1,15 @@
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Features.Sync.Configuration.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
+using NuanSystem.Application.Features.Sync.EntityDefinitions.Dtos;
+using NuanSystem.Application.Features.Sync.EntityDefinitions.Services;
 
 namespace NuanSystem.Application.Features.Sync.Configuration.Services;
 
 public sealed class SyncProfileValidationService(
     ISyncProfileRepository repository,
-    ISyncRoutingRepository routingRepository) : ISyncProfileValidationService
+    ISyncRoutingRepository routingRepository,
+    ISyncEntityCatalogService entityCatalogService) : ISyncProfileValidationService
 {
     private static readonly HashSet<string> SupportedExecutionModes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -32,11 +35,13 @@ public sealed class SyncProfileValidationService(
         var warnings = new List<SyncValidationMessageDto>();
         var companies = await repository.GetCompanyLookupsAsync(userId, cancellationToken);
         var companyById = companies.ToDictionary(company => company.Id);
+        var entityCatalog = (await entityCatalogService.GetAsync(true, cancellationToken: cancellationToken))
+            .ToDictionary(entity => entity.Code, StringComparer.OrdinalIgnoreCase);
 
         ValidateHeader(request, profileId, companyById, errors, warnings);
         await ValidateDuplicateCodeAsync(request, profileId, errors, cancellationToken);
         ValidateBranches(request, companyById, errors, warnings);
-        ValidateEntities(request, errors, warnings);
+        ValidateEntities(request, entityCatalog, errors, warnings);
         ValidateMatrix(request, errors, warnings);
         ValidateSchedule(request.Schedule, errors, warnings);
         await ValidateActiveRoutingConflictsAsync(request, profileId, errors, cancellationToken);
@@ -276,6 +281,7 @@ public sealed class SyncProfileValidationService(
 
     private static void ValidateEntities(
         SaveSyncProfileRequest request,
+        IReadOnlyDictionary<string, SyncEntityDefinitionLookupDto> entityCatalog,
         List<SyncValidationMessageDto> errors,
         List<SyncValidationMessageDto> warnings)
     {
@@ -292,18 +298,19 @@ public sealed class SyncProfileValidationService(
 
         foreach (var entity in request.Entities)
         {
-            if (!SyncMasterBranchEntityCodes.IsKnown(entity.EntityCode))
+            if (!entityCatalog.TryGetValue(entity.EntityCode, out var catalogItem))
             {
                 errors.Add(Message("SyncEntityUnknown", nameof(entity.EntityCode), $"La entidad {entity.EntityCode} no esta en el catalogo permitido."));
             }
             else
             {
-                var catalogItem = FindCatalogItem(entity.EntityCode);
-                if (catalogItem is not null)
+                if (entity.IsActive && !catalogItem.IsActive)
                 {
-                    ValidateEntityOperability(request, entity, catalogItem, errors, warnings);
-                    ValidateEntityCapabilities(request, entity, catalogItem, errors, warnings);
+                    errors.Add(Message("SyncEntityDefinitionInactive", nameof(entity.EntityCode), $"La entidad {entity.EntityCode} esta inactiva en el catalogo."));
                 }
+
+                ValidateEntityOperability(request, entity, catalogItem, errors, warnings);
+                ValidateEntityCapabilities(request, entity, catalogItem, errors, warnings);
             }
 
             if (entity.ExecutionOrder < 0)
@@ -328,15 +335,45 @@ public sealed class SyncProfileValidationService(
             }
         }
 
-        var configuredCodes = request.Entities.Select(entity => entity.EntityCode).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var entity in request.Entities)
+        var activeByCode = request.Entities
+            .Where(entity => entity.IsActive)
+            .GroupBy(entity => entity.EntityCode, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+        foreach (var entity in activeByCode.Values)
         {
-            var catalogItem = FindCatalogItem(entity.EntityCode);
+            entityCatalog.TryGetValue(entity.EntityCode, out var catalogItem);
             foreach (var dependency in catalogItem?.Dependencies ?? Array.Empty<string>())
             {
-                if (!configuredCodes.Contains(dependency))
+                if (!activeByCode.TryGetValue(dependency, out var requiredEntity))
                 {
-                    errors.Add(Message("SyncEntityDependencyMissing", nameof(request.Entities), $"La entidad {entity.EntityCode} requiere configurar {dependency}."));
+                    errors.Add(Message(
+                        "SyncEntityDependencyMissing",
+                        nameof(request.Entities),
+                        $"La entidad {entity.EntityCode} requiere que {dependency} este configurada y activa."));
+                    continue;
+                }
+
+                if (requiredEntity.ExecutionOrder >= entity.ExecutionOrder)
+                {
+                    warnings.Add(Message(
+                        "SyncEntityDependencyOrderAdjusted",
+                        nameof(entity.ExecutionOrder),
+                        $"La ejecucion colocara {dependency} antes de {entity.EntityCode}, independientemente del orden manual."));
+                }
+
+                var requiredBranches = requiredEntity.Branches
+                    .Where(branch => branch.IsEnabled)
+                    .Select(branch => branch.BranchCompanyId)
+                    .ToHashSet();
+                foreach (var branchCompanyId in entity.Branches
+                             .Where(branch => branch.IsEnabled)
+                             .Select(branch => branch.BranchCompanyId)
+                             .Where(branchCompanyId => !requiredBranches.Contains(branchCompanyId)))
+                {
+                    errors.Add(Message(
+                        "SyncEntityDependencyBranchMissing",
+                        nameof(entity.Branches),
+                        $"La entidad {entity.EntityCode} requiere {dependency} habilitada en la sucursal {branchCompanyId}."));
                 }
             }
         }
@@ -533,7 +570,7 @@ public sealed class SyncProfileValidationService(
     private static void ValidateEntityOperability(
         SaveSyncProfileRequest request,
         SaveSyncProfileEntityRequest entity,
-        SyncMasterBranchEntityCatalogItem catalogItem,
+        SyncEntityDefinitionLookupDto catalogItem,
         List<SyncValidationMessageDto> errors,
         List<SyncValidationMessageDto> warnings)
     {
@@ -555,7 +592,7 @@ public sealed class SyncProfileValidationService(
     private static void ValidateEntityCapabilities(
         SaveSyncProfileRequest request,
         SaveSyncProfileEntityRequest entity,
-        SyncMasterBranchEntityCatalogItem catalogItem,
+        SyncEntityDefinitionLookupDto catalogItem,
         List<SyncValidationMessageDto> errors,
         List<SyncValidationMessageDto> warnings)
     {
@@ -579,12 +616,6 @@ public sealed class SyncProfileValidationService(
 
             warnings.Add(Message(code, nameof(entity.EntityCode), message));
         }
-    }
-
-    private static SyncMasterBranchEntityCatalogItem? FindCatalogItem(string entityCode)
-    {
-        return SyncMasterBranchEntityCodes.InitialCatalog.FirstOrDefault(item =>
-            string.Equals(item.EntityCode, entityCode, StringComparison.OrdinalIgnoreCase));
     }
 
     private static void ValidateTechnicalField(string? value, string field, List<SyncValidationMessageDto> errors)

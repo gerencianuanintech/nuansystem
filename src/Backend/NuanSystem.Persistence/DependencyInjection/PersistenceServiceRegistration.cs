@@ -71,6 +71,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ISecurityDocumentSeriesRepository, SecurityDocumentSeriesRepository>();
         services.AddScoped<ISecurityDocumentNumberingService, SecurityDocumentNumberingService>();
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
+        services.AddScoped<ISapPurchaseOrderImportRepository, SapPurchaseOrderImportRepository>();
         services.AddScoped<ITaxCatalogRepository, TaxCatalogRepository>();
         services.AddScoped<ICompanyAdminRepository, CompanyAdminRepository>();
         services.AddScoped<IConfigurationCompanyRepository, ConfigurationCompanyRepository>();
@@ -84,6 +85,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IItemFamilyRepository, ItemFamilyRepository>();
         services.AddScoped<IChartOfAccountRepository, ChartOfAccountRepository>();
         services.AddScoped<ISapCompanySettingsRepository, SapCompanySettingsRepository>();
+        services.AddScoped<ISapCatalogMappingRepository, SapCatalogMappingRepository>();
         services.AddScoped<ISapSyncLogRepository, SapSyncLogRepository>();
         services.AddScoped<ISapSyncCompanyRepository, SapSyncCompanyRepository>();
         services.AddScoped<ISapSyncSettingsRepository, SapSyncSettingsRepository>();
@@ -114,15 +116,33 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ISyncAuditRepository, SyncAuditRepository>();
         services.AddScoped<ISyncRuleEvaluator, SyncRuleEvaluator>();
         services.AddScoped<ISyncProfileRepository, SyncProfileRepository>();
+        services.AddScoped<ISyncEntityDefinitionRepository, SyncEntityDefinitionRepository>();
         services.AddScoped<ISyncProfileExecutionRepository, SyncProfileExecutionRepository>();
         services.AddScoped<ISyncRoutingRepository, SyncRoutingRepository>();
+        services.AddScoped<ISyncDistributionPolicyRepository, SyncDistributionPolicyRepository>();
         services.AddScoped<IReplicableEntityMetadataProvider, ReplicableEntityMetadataProvider>();
+        services.AddScoped<ISyncFullEntitySource, CountryFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, ProvinceFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, CityFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, CurrencyFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, TaxFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, UnitOfMeasureFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, PriceListFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, BusinessPartnerFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, ItemGroupFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, ItemFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, WarehouseFullEntitySource>();
         services.AddScoped<IBusinessPartnerSyncApplyRepository, BusinessPartnerSyncApplyRepository>();
         services.AddScoped<IItemSyncApplyRepository, ItemSyncApplyRepository>();
         services.AddScoped<IWarehouseSyncApplyRepository, WarehouseSyncApplyRepository>();
+        services.AddScoped<ICountrySyncApplyRepository, CountrySyncApplyRepository>();
+        services.AddScoped<IProvinceSyncApplyRepository, ProvinceSyncApplyRepository>();
+        services.AddScoped<ICitySyncApplyRepository, CitySyncApplyRepository>();
+        services.AddScoped<ICurrencySyncApplyRepository, CurrencySyncApplyRepository>();
+        services.AddScoped<IReferenceCatalogSyncApplyRepository, ReferenceCatalogSyncApplyRepository>();
+        services.AddScoped<IPurchaseOrderRoutingRepository, PurchaseOrderRoutingRepository>();
+        services.AddScoped<IPurchaseOrderSyncApplyRepository, PurchaseOrderSyncApplyRepository>();
+        services.AddScoped<IItemGroupSyncApplyRepository, ItemGroupSyncApplyRepository>();
 
         return services;
     }

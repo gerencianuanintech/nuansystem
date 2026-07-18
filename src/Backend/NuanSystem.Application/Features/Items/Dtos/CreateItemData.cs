@@ -52,4 +52,8 @@ public sealed record CreateItemData(
     IReadOnlyCollection<SaveItemWarehouseData> Warehouses,
     ItemMasterData? MasterData,
     int? CreatedByUserId,
-    string? CreatedByUserName);
+    string? CreatedByUserName,
+    Guid? GlobalId = null,
+    string? ExternalSystem = null,
+    string? ExternalCode = null,
+    string? SapCode = null);

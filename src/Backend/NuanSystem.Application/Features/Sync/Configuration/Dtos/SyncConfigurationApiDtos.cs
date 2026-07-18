@@ -188,7 +188,13 @@ public sealed record SyncConfigurationCatalogDto
     public string DefaultTimeZoneId { get; init; } = "America/Guayaquil";
 }
 
-public sealed record CompanyLookupDto(int Id, string Code, string Name, bool IsActive);
+public sealed record CompanyLookupDto(
+    int Id,
+    string Code,
+    string Name,
+    bool IsActive,
+    string? BranchCode = null,
+    string? DatabaseName = null);
 
 public sealed record SyncCompanyLookupRecord(
     int Id,
@@ -197,12 +203,15 @@ public sealed record SyncCompanyLookupRecord(
     bool IsActive,
     bool IsMaster,
     int? ParentCompanyId,
-    bool SyncEnabled);
+    bool SyncEnabled,
+    string? BranchCode = null,
+    string? DatabaseName = null);
 
 public sealed record LookupItemDto(string Code, string Name);
 
 public sealed record SyncEntityCatalogItemDto
 {
+    public int Id { get; init; }
     public string Code { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
@@ -213,6 +222,8 @@ public sealed record SyncEntityCatalogItemDto
     public bool SupportsInsert { get; init; }
     public bool SupportsUpdate { get; init; }
     public bool SupportsDeactivate { get; init; }
+    public bool IsSystem { get; init; }
+    public bool IsActive { get; init; } = true;
     public string? DefaultKeyField { get; init; }
     public string? DefaultModifiedAtField { get; init; }
     public IReadOnlyCollection<string> Dependencies { get; init; } = Array.Empty<string>();

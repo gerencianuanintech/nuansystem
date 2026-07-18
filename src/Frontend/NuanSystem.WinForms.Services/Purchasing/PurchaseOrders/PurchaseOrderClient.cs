@@ -62,6 +62,12 @@ public sealed class PurchaseOrderClient(INuanApiClient apiClient) : IPurchaseOrd
         return apiClient.PostAsync<object, PurchaseOrderDetail>($"{BasePath}/{id}/sync-sap", new { }, cancellationToken);
     }
 
+    public Task<PurchaseOrderRoutingResult> RouteAsync(int id,CancellationToken cancellationToken=default)
+        => apiClient.PostAsync<object,PurchaseOrderRoutingResult>($"/api/sap/purchase-orders/{id}/route",new{},cancellationToken);
+
+    public Task<PurchaseOrderRoutingResult> ApproveRouteAsync(int id,ApprovePurchaseOrderRouteRequest request,CancellationToken cancellationToken=default)
+        => apiClient.PostAsync<ApprovePurchaseOrderRouteRequest,PurchaseOrderRoutingResult>($"/api/sap/purchase-orders/{id}/approve-route",request,cancellationToken);
+
     public Task<PurchaseOrderDetail> AddRelatedDocumentAsync(int id, PurchaseOrderRelatedDocumentItem relatedDocument, CancellationToken cancellationToken = default)
     {
         return apiClient.PostAsync<PurchaseOrderRelatedDocumentItem, PurchaseOrderDetail>($"{BasePath}/{id}/related-documents", relatedDocument, cancellationToken);

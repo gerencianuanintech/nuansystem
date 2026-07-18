@@ -115,7 +115,9 @@ public sealed class SyncEventPublisherTests
             .Returns(new SyncRoutingEvaluationResult(true, [Target(2, maxRetries: 3), Target(3, maxRetries: 4)]));
         var publisher = CreatePublisher();
 
-        var result = await publisher.PublishAsync(CreateRequest(entityName: "Warehouse"), CancellationToken.None);
+        var result = await publisher.PublishAsync(
+            CreateRequest(entityName: "Warehouse", targetBranchCode: "REMIGIO", requireTargetBranchMatch: true),
+            CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Published.Should().BeTrue();
@@ -123,6 +125,8 @@ public sealed class SyncEventPublisherTests
         capturedContext.Should().NotBeNull();
         capturedContext!.SourceCompanyId.Should().Be(1);
         capturedContext.EntityCode.Should().Be("Warehouse");
+        capturedContext.TargetBranchCode.Should().Be("REMIGIO");
+        capturedContext.RequireTargetBranchMatch.Should().BeTrue();
         await _outboxRepository.Received(1).CreateTargetAsync(
             Arg.Is<CreateSyncOutboxTargetData>(target => target.OutboxId == 77 && target.BranchCompanyId == 2 && target.MaxAttempts == 4),
             Arg.Any<CancellationToken>());
@@ -249,7 +253,9 @@ public sealed class SyncEventPublisherTests
         Guid? globalId = null,
         string? entityCode = "ART-001",
         string entityName = "Items",
-        object? payload = null)
+        object? payload = null,
+        string? targetBranchCode = null,
+        bool requireTargetBranchMatch = false)
     {
         var resolvedGlobalId = globalId ?? Guid.NewGuid();
         return new SyncPublishRequest(
@@ -260,6 +266,8 @@ public sealed class SyncEventPublisherTests
             Operation: SyncOperation.Updated,
             Payload: payload ?? new { GlobalId = resolvedGlobalId, Code = entityCode, Name = "Articulo" },
             SourceSystem: null,
-            SourceReference: null);
+            SourceReference: null,
+            TargetBranchCode: targetBranchCode,
+            RequireTargetBranchMatch: requireTargetBranchMatch);
     }
 }

@@ -29,5 +29,9 @@ public sealed record CreateConfigurationCompanyCommand(
     string TimeZoneId,
     string CultureCode,
     string CurrencyCode,
+    bool IsMaster = true,
+    int? ParentCompanyId = null,
+    string? BranchCode = null,
+    bool SyncEnabled = false,
     int? AuditUserId = null,
     string? AuditUserName = null) : ICommand<ConfigurationCompanyDto>;

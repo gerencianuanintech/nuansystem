@@ -171,3 +171,6 @@ public sealed class SyncAuditFilter
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 100;
 }
+public sealed record RetrySyncOutboxBatchRequest(IReadOnlyCollection<long> Ids,string Reason,bool ResetDeadLetterAttempts=true);
+public sealed record RetrySyncOutboxBatchItem(long Id,string Status,string Message);
+public sealed record RetrySyncOutboxBatchResult(int Requested,int Retried,int Skipped,IReadOnlyCollection<RetrySyncOutboxBatchItem> Items);

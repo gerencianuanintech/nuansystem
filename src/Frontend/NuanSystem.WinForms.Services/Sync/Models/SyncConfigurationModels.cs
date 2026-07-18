@@ -94,6 +94,48 @@ public sealed record SyncEntityBranch
     public int? BatchSize { get; init; }
 }
 
+public sealed record SyncDistributionSelection(Guid EntityGlobalId, string? EntityCode);
+
+public sealed record SyncDistributionCandidate(
+    Guid EntityGlobalId,
+    string EntityCode,
+    string EntityName,
+    bool IsActive)
+{
+    public bool IsSelected { get; set; }
+    public string DisplayName => $"{EntityCode} - {EntityName}";
+}
+
+public sealed record SyncDistributionPolicy(
+    int SyncProfileEntityBranchId,
+    int SyncProfileId,
+    string SyncProfileCode,
+    int CompanyId,
+    string CompanyCode,
+    string EntityCode,
+    int BranchCompanyId,
+    string BranchCompanyCode,
+    string BranchCompanyName,
+    string DistributionMode,
+    string OnNoMatch,
+    string? RuleExpressionJson,
+    int RuleVersion,
+    IReadOnlyCollection<SyncDistributionSelection> Selections);
+
+public sealed record SyncDistributionPolicyCatalog(
+    IReadOnlyCollection<string> Modes,
+    IReadOnlyCollection<string> OnNoMatchActions,
+    IReadOnlyCollection<string> Operators,
+    IReadOnlyCollection<string> Fields);
+
+public sealed record SaveSyncDistributionPolicyRequest
+{
+    public string DistributionMode { get; init; } = "None";
+    public string OnNoMatch { get; init; } = "KeepInMaster";
+    public string? RuleExpressionJson { get; init; }
+    public IReadOnlyCollection<SyncDistributionSelection> Selections { get; init; } = Array.Empty<SyncDistributionSelection>();
+}
+
 public sealed record SyncSchedule
 {
     public int Id { get; init; }
@@ -180,7 +222,13 @@ public sealed record SyncConfigurationCatalog
     public string DefaultTimeZoneId { get; init; } = "America/Guayaquil";
 }
 
-public sealed record CompanyLookupItem(int Id, string Code, string Name, bool IsActive)
+public sealed record CompanyLookupItem(
+    int Id,
+    string Code,
+    string Name,
+    bool IsActive,
+    string? BranchCode = null,
+    string? DatabaseName = null)
 {
     public string DisplayName => $"{Code} - {Name}";
 }
@@ -199,6 +247,7 @@ public sealed record SyncEntityCatalogItem
     public bool SupportsIncremental { get; init; }
     public bool HasProducer { get; init; }
     public bool HasApplier { get; init; }
+    public bool IsOperative => HasProducer && HasApplier;
     public bool SupportsInsert { get; init; }
     public bool SupportsUpdate { get; init; }
     public bool SupportsDeactivate { get; init; }

@@ -1,12 +1,18 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
+using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.FinancialCatalogs.Catalogs.Dtos;
 using NuanSystem.Shared.Responses;
+using NuanSystem.Shared.Sync;
 
 namespace NuanSystem.Application.Features.FinancialCatalogs.Catalogs.Commands;
 
-public sealed class UpdateFinancialCatalogCommandHandler(IFinancialCatalogRepository catalogRepository)
+public sealed class UpdateFinancialCatalogCommandHandler(
+    IFinancialCatalogRepository catalogRepository,
+    ISyncEventPublisher syncEventPublisher,
+    ICompanyContext companyContext)
     : ICommandHandler<UpdateFinancialCatalogCommand, FinancialCatalogDto>
 {
     public async Task<Result<FinancialCatalogDto>> Handle(UpdateFinancialCatalogCommand request, CancellationToken cancellationToken)
@@ -49,6 +55,19 @@ public sealed class UpdateFinancialCatalogCommandHandler(IFinancialCatalogReposi
 
         var catalog = await catalogRepository.GetByIdAsync(catalogKey, request.Id, cancellationToken)
             ?? throw new InvalidOperationException("El catalogo financiero fue actualizado pero no pudo consultarse.");
+
+        var syncResult = await CurrencySyncPublisher.PublishAsync(
+            syncEventPublisher,
+            companyContext,
+            catalogKey,
+            catalog,
+            catalog.IsActive ? SyncOperation.Updated : SyncOperation.Disabled,
+            cancellationToken);
+
+        if (syncResult is { IsSuccess: false })
+        {
+            return Result<FinancialCatalogDto>.Failure(syncResult.Message, syncResult.Errors);
+        }
 
         return Result<FinancialCatalogDto>.Success(catalog, "Catalogo financiero actualizado correctamente.");
     }

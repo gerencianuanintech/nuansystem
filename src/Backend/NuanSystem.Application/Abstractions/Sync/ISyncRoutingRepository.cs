@@ -13,4 +13,10 @@ public interface ISyncRoutingRepository
         int companyId,
         IReadOnlyCollection<SyncRoutingConflictCheckItem> combinations,
         CancellationToken cancellationToken = default);
+
+    Task RecordDecisionAsync(
+        long outboxId,
+        Guid entityGlobalId,
+        SyncDistributionDecisionDto decision,
+        CancellationToken cancellationToken = default) => Task.CompletedTask;
 }

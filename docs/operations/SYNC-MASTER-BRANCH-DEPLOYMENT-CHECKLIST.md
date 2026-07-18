@@ -22,6 +22,13 @@ Este checklist guia un despliegue controlado de Sync Master/Sucursal. No reempla
 | `database/sql/063_tenant_global_ids_and_external_refs.sql` | Master para `Users`/`CompanyParameters` si existen; tenant/sucursal para entidades y catalogos operativos | `GlobalId`, referencias externas e indices idempotentes. |
 | `database/sql/064_master_sync_outbox_inbox.sql` | Master | `SyncOutbox`, targets, auditoria, configuraciones y permisos. |
 | `database/sql/065_tenant_sync_inbox_local_outbox.sql` | Tenant/sucursal | `SyncInbox`, `LocalOutbox` y auditoria local. |
+| `database/sql/099_sync_entity_dependency_engine.sql` | Master | Dependencias y definiciones de entidades operativas. |
+| `database/sql/100_tenant_purchase_reference_catalog_sync.sql` | Master operativo y sucursales | Catalogos requeridos por compras. |
+| `database/sql/101_tenant_sap_purchase_order_import.sql` | Master operativo y sucursales | Identidad/version SAP de ordenes. |
+| `database/sql/102_purchase_order_warehouse_routing.sql` | Master | Rutas configurables por bodega. |
+| `database/sql/103_tenant_purchase_order_sync.sql` | Master operativo y sucursales | Auditoria de enrutamiento. |
+| `database/sql/104_master_demo_purchase_order_pilot_profile.sql` | Master | Perfil piloto limitado a sucursales aprobadas. |
+| `database/sql/105_master_activate_reference_and_purchase_order_sync.sql` | Master | Capacidades de catalogos y PurchaseOrder. |
 
 Checklist:
 
@@ -75,6 +82,8 @@ Checklist:
 - [ ] Validar que `SyncOutbox` no cambia estado.
 - [ ] Validar dashboard y summary por API.
 - [ ] Confirmar que no se escribio `SyncInbox` en sucursal.
+- [ ] Validar `/health/live` como liveness sin dependencias.
+- [ ] Validar `/health/ready` autenticado y confirmar conectividad a Master.
 
 ## 6. Prueba ClaimAndRelease
 

@@ -12,6 +12,42 @@ namespace NuanSystem.Persistence.Repositories.Sync;
 
 public sealed class ItemSyncApplyRepository(ICompanyResolver companyResolver) : IItemSyncApplyRepository
 {
+    public async Task<ItemSyncDependencyCheckResult> CheckDependenciesAsync(
+        int branchCompanyId,
+        ItemSyncPayload payload,
+        CancellationToken cancellationToken = default)
+    {
+        var company = await ResolveBranchAsync(branchCompanyId, cancellationToken);
+        await using var connection = CreateSqlConnection(company);
+        await connection.OpenAsync(cancellationToken);
+
+        var itemGroupCode = NormalizeOptional(payload.ItemGroupCode, 50);
+        if (itemGroupCode is null && payload.ItemGroupId is null)
+        {
+            return ItemSyncDependencyCheckResult.Satisfied;
+        }
+
+        const string sql = """
+SELECT COUNT(1)
+FROM dbo.ItemGroups
+WHERE IsDeleted = 0
+  AND ((@Code IS NOT NULL AND Code = @Code)
+       OR (@Code IS NULL AND @Id IS NOT NULL AND Id = @Id));
+""";
+
+        var exists = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            sql,
+            new { Id = payload.ItemGroupId, Code = itemGroupCode },
+            cancellationToken: cancellationToken));
+
+        return exists > 0
+            ? ItemSyncDependencyCheckResult.Satisfied
+            : new ItemSyncDependencyCheckResult(
+                false,
+                "ItemGroups",
+                $"El grupo {itemGroupCode ?? payload.ItemGroupId?.ToString() ?? "sin codigo"} requerido por Item {payload.Code} aun no existe en la sucursal.");
+    }
+
     public async Task<bool> ExistsByGlobalIdAsync(
         int branchCompanyId,
         Guid globalId,
@@ -312,8 +348,9 @@ SELECT @ItemId;
 SELECT TOP (1) Id
 FROM {tableName}
 WHERE IsDeleted = 0
-  AND ((@Id IS NOT NULL AND Id = @Id) OR (@Code IS NOT NULL AND Code = @Code))
-ORDER BY CASE WHEN @Id IS NOT NULL AND Id = @Id THEN 0 ELSE 1 END;
+  AND ((@Code IS NOT NULL AND Code = @Code)
+       OR (@Code IS NULL AND @Id IS NOT NULL AND Id = @Id))
+ORDER BY CASE WHEN @Code IS NOT NULL AND Code = @Code THEN 0 ELSE 1 END;
 """;
 
         return await connection.ExecuteScalarAsync<int?>(new CommandDefinition(

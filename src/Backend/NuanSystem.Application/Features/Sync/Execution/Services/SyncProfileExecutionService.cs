@@ -2,10 +2,12 @@ using System.Text.Json;
 using NuanSystem.Application.Abstractions.Common;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Common.Models;
+using NuanSystem.Application.Features.Sync.Configuration;
 using NuanSystem.Application.Features.Sync.Configuration.Dtos;
 using NuanSystem.Application.Features.Sync.Configuration.Services;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Application.Features.Sync.Execution.Dtos;
+using NuanSystem.Application.Features.Sync.EntityDefinitions.Services;
 using NuanSystem.Shared.Responses;
 using NuanSystem.Shared.Sync;
 
@@ -17,15 +19,13 @@ public sealed class SyncProfileExecutionService(
     ISyncProfileExecutionRepository executionRepository,
     IEnumerable<ISyncFullEntitySource> entitySources,
     ISyncEventPublisher eventPublisher,
+    ISyncEntityCatalogService entityCatalogService,
     ISystemClock clock) : ISyncProfileExecutionService
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly HashSet<string> SupportedFullSources = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "BusinessPartner",
-        "Item",
-        "Warehouse"
-    };
+    private readonly IReadOnlyDictionary<string, ISyncFullEntitySource> entitySourcesByCode = entitySources
+        .GroupBy(source => source.EntityCode, StringComparer.OrdinalIgnoreCase)
+        .ToDictionary(group => group.Key, group => group.Single(), StringComparer.OrdinalIgnoreCase);
 
     public async Task<Result<CreateSyncProfileExecutionResultDto>> RequestExecutionAsync(
         int syncProfileId,
@@ -65,7 +65,8 @@ public sealed class SyncProfileExecutionService(
         }
 
         var requestedCodes = NormalizeEntityCodes(request.EntityCodes);
-        var entities = GetExecutableEntities(profile, requestedCodes);
+        var catalog = await entityCatalogService.GetAsync(true, cancellationToken: cancellationToken);
+        var entities = GetExecutableEntities(profile, requestedCodes, entitySourcesByCode.Keys, catalog);
         if (entities.Count == 0)
         {
             return Failure<CreateSyncProfileExecutionResultDto>("SyncExecutionNoEntities", "No hay entidades operativas activas para ejecutar.", nameof(request.EntityCodes));
@@ -197,8 +198,8 @@ public sealed class SyncProfileExecutionService(
         }
 
         var requestedCodes = NormalizeEntityCodes(DeserializeEntityCodes(execution.EntityCodesJson));
-        var entities = GetExecutableEntities(profile, requestedCodes);
-        var sourcesByCode = entitySources.ToDictionary(source => source.EntityCode, StringComparer.OrdinalIgnoreCase);
+        var catalog = await entityCatalogService.GetAsync(true, cancellationToken: cancellationToken);
+        var entities = GetExecutableEntities(profile, requestedCodes, entitySourcesByCode.Keys, catalog);
         var totalRead = 0;
         var totalPublished = 0;
         var totalSkipped = 0;
@@ -215,7 +216,7 @@ public sealed class SyncProfileExecutionService(
             var lastKey = execution.FromKey;
             string? message = null;
 
-            if (!sourcesByCode.TryGetValue(entity.EntityCode, out var source))
+            if (!entitySourcesByCode.TryGetValue(entity.EntityCode, out var source))
             {
                 detailStatus = "Skipped";
                 detailSkipped++;
@@ -265,7 +266,9 @@ public sealed class SyncProfileExecutionService(
                                     "SyncProfileExecution",
                                     execution.CorrelationId,
                                     profile.Id,
-                                    execution.CorrelationId),
+                                    execution.CorrelationId,
+                                    record.TargetBranchCode,
+                                    record.RequireTargetBranchMatch),
                                 cancellationToken);
 
                             detailRead++;
@@ -359,15 +362,19 @@ public sealed class SyncProfileExecutionService(
 
     private static IReadOnlyCollection<SyncProfileEntityRecord> GetExecutableEntities(
         SyncProfileDetailDto profile,
-        IReadOnlyCollection<string> requestedCodes)
+        IReadOnlyCollection<string> requestedCodes,
+        IEnumerable<string> registeredSourceCodes,
+        IReadOnlyCollection<NuanSystem.Application.Features.Sync.EntityDefinitions.Dtos.SyncEntityDefinitionLookupDto> catalog)
     {
-        return profile.Entities
-            .Where(entity => entity.IsActive)
-            .Where(entity => SupportedFullSources.Contains(entity.EntityCode))
-            .Where(entity => requestedCodes.Count == 0 || requestedCodes.Contains(entity.EntityCode))
-            .OrderBy(entity => entity.ExecutionOrder)
-            .ThenBy(entity => entity.EntityCode)
+        var operativeEntities = profile.Entities
+            .Where(entity => SyncMasterBranchEntityCodes.IsOperative(entity.EntityCode))
             .ToArray();
+
+        return SyncEntityDependencyPlanner.Plan(
+            operativeEntities,
+            requestedCodes,
+            registeredSourceCodes,
+            catalog);
     }
 
     private static IReadOnlyCollection<string> NormalizeEntityCodes(IReadOnlyCollection<string>? entityCodes)

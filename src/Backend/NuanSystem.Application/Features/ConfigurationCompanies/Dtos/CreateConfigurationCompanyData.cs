@@ -26,5 +26,9 @@ public sealed record CreateConfigurationCompanyData(
     string TimeZoneId,
     string CultureCode,
     string CurrencyCode,
+    bool IsMaster,
+    int? ParentCompanyId,
+    string? BranchCode,
+    bool SyncEnabled,
     int? CreatedByUserId,
     string? CreatedByUserName);

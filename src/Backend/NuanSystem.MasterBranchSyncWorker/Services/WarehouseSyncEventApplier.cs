@@ -1,5 +1,6 @@
 using System.Text.Json;
 using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Features.Sync.Configuration;
 using NuanSystem.Application.Features.GeneralInventory.Warehouses.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Shared.Sync;
@@ -9,7 +10,7 @@ namespace NuanSystem.MasterBranchSyncWorker.Services;
 public sealed class WarehouseSyncEventApplier(
     IWarehouseSyncApplyRepository repository) : ISyncEntityEventApplier
 {
-    private const string EntityName = "Warehouse";
+    private const string EntityName = SyncMasterBranchEntityCodes.Warehouse;
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 

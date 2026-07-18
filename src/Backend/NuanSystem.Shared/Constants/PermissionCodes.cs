@@ -151,6 +151,10 @@ public static class PermissionCodes
     public const string SyncConfigurationViewExecutions = "SYNC.CONFIGURATION.VIEWEXECUTIONS";
     public const string SyncConfigurationCancel = "SYNC.CONFIGURATION.CANCEL";
     public const string SyncConfigurationRetry = "SYNC.CONFIGURATION.RETRY";
+    public const string SyncEntitiesView = "SYNC.ENTITIES.VIEW";
+    public const string SyncEntitiesCreate = "SYNC.ENTITIES.CREATE";
+    public const string SyncEntitiesEdit = "SYNC.ENTITIES.EDIT";
+    public const string SyncEntitiesDelete = "SYNC.ENTITIES.DELETE";
     public const string SettingsManage = "SETTINGS.PARAMETERS.MANAGE";
 
     public static readonly IReadOnlyCollection<string> All =
@@ -300,6 +304,10 @@ public static class PermissionCodes
         SyncConfigurationViewExecutions,
         SyncConfigurationCancel,
         SyncConfigurationRetry,
+        SyncEntitiesView,
+        SyncEntitiesCreate,
+        SyncEntitiesEdit,
+        SyncEntitiesDelete,
         SettingsManage
     ];
 }

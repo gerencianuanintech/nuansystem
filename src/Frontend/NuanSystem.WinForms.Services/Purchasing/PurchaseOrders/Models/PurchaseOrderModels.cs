@@ -181,6 +181,8 @@ public sealed record SavePurchaseOrderRequest(
     IReadOnlyCollection<PurchaseOrderAttachmentItem>? Attachments);
 
 public sealed record PurchaseOrderWorkflowRequest(string? Observation);
+public sealed record ApprovePurchaseOrderRouteRequest(int BranchCompanyId,string Reason);
+public sealed record PurchaseOrderRoutingResult(int PurchaseOrderId,string Status,int? BranchCompanyId,string Message,long? OutboxId);
 
 public sealed record PurchaseOrderLookups(
     IReadOnlyCollection<PurchaseOrderLookupOption> Suppliers,

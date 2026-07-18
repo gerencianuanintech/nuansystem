@@ -105,6 +105,23 @@ public sealed class GlobalExceptionMiddleware(
             return ClassifySqlException(sqlException, traceId);
         }
 
+        if (TryFindException<SapServiceLayerException>(exception, out var sapException))
+        {
+            var statusDetail = sapException.StatusCode is null
+                ? "SAP Service Layer no estuvo disponible."
+                : $"SAP Service Layer respondio HTTP {sapException.StatusCode}.";
+            var codeDetail = string.IsNullOrWhiteSpace(sapException.SapErrorCode)
+                ? string.Empty
+                : $" Codigo SAP: {sapException.SapErrorCode}.";
+
+            return new ClassifiedError(
+                StatusCodes.Status502BadGateway,
+                "SAP Business One no pudo completar la operacion solicitada.",
+                [new ApiError(
+                    "SapServiceLayerRejected",
+                    $"{statusDetail}{codeDetail} Codigo de seguimiento: {traceId}")]);
+        }
+
         if (exception is TimeoutException)
         {
             return new ClassifiedError(

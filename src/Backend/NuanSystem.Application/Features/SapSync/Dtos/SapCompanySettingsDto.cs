@@ -24,4 +24,27 @@ public sealed class SapCompanySettingsDto
     // HANA access is read-only for imports and previews; writes to SAP must go through Service Layer.
     public string? HanaPasswordEncrypted { get; init; }
     public int MaxRetryCount { get; init; } = 3;
+    public DateTime? UpdatedAt { get; init; }
 }
+
+public sealed record SapServiceLayerSettingsDto(
+    int CompanyId,
+    string CompanyCode,
+    bool IsEnabled,
+    string? ServiceLayerUrl,
+    string? SapCompanyDb,
+    string? SapUser,
+    bool HasPassword,
+    int MaxRetryCount,
+    DateTime? UpdatedAt);
+
+public sealed record UpdateSapServiceLayerSettingsData(
+    int CompanyId,
+    bool IsEnabled,
+    string ServiceLayerUrl,
+    string SapCompanyDb,
+    string SapUser,
+    string? SapPasswordEncrypted,
+    int MaxRetryCount,
+    int? UpdatedByUserId,
+    string? UpdatedByUserName);

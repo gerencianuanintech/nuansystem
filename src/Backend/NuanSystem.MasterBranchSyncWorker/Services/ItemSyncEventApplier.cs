@@ -1,5 +1,6 @@
 using System.Text.Json;
 using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Features.Sync.Configuration;
 using NuanSystem.Application.Features.Items.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Shared.Sync;
@@ -9,7 +10,7 @@ namespace NuanSystem.MasterBranchSyncWorker.Services;
 public sealed class ItemSyncEventApplier(
     IItemSyncApplyRepository repository) : ISyncEntityEventApplier
 {
-    private const string EntityName = "Item";
+    private const string EntityName = SyncMasterBranchEntityCodes.Item;
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -34,6 +35,22 @@ public sealed class ItemSyncEventApplier(
         }
 
         var operation = Enum.Parse<SyncOperation>(context.Operation, ignoreCase: true);
+        if (operation is not SyncOperation.Disabled and not SyncOperation.Deleted)
+        {
+            var dependencyCheck = await repository.CheckDependenciesAsync(
+                context.TargetCompanyId.Value,
+                payload,
+                cancellationToken);
+            if (!dependencyCheck.IsSatisfied)
+            {
+                return new SyncEventApplyResult(
+                    false,
+                    dependencyCheck.Message ?? $"Dependencia {dependencyCheck.MissingDependencyCode} pendiente para Item.",
+                    "SYNC_DEPENDENCY_PENDING",
+                    Retryable: true);
+            }
+        }
+
         var result = operation switch
         {
             SyncOperation.Disabled => await repository.DisableFromSyncAsync(

@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Microsoft.Data.SqlClient;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using NuanSystem.Api.Endpoints;
 using NuanSystem.Api.Extensions;
 using NuanSystem.Application.Abstractions.Data;
@@ -20,14 +22,18 @@ try
     var diagnosticsAndExit = args.Contains("--diagnostics-and-exit", StringComparer.OrdinalIgnoreCase) ||
         builder.Configuration.GetValue<bool>("Diagnostics:ProcessEnvironmentAndExit");
 
+    NuanSystem.Api.Options.ProductionConfigurationValidator.Validate(builder.Configuration, builder.Environment);
+
     builder.Host.UseSerilog((context, services, configuration) =>
     {
+        var logPath = context.Configuration["Serilog:FilePath"] ?? "logs/nuansystem-api-.log";
+        var retainedFileCount = context.Configuration.GetValue<int?>("Serilog:RetainedFileCountLimit") ?? 30;
         configuration
             .ReadFrom.Configuration(context.Configuration)
             .ReadFrom.Services(services)
             .Enrich.FromLogContext()
             .WriteTo.Console()
-            .WriteTo.File("logs/nuansystem-api-.log", rollingInterval: RollingInterval.Day);
+            .WriteTo.File(logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: retainedFileCount, shared: true);
     });
 
     if (diagnosticsAndExit)
@@ -73,7 +79,20 @@ try
     app.UseAuthorization();
     app.UseAuditLogging();
 
-    app.MapHealthChecks("/health");
+    app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
+    app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
+    app.MapHealthChecks("/health/ready", new HealthCheckOptions
+    {
+        Predicate = registration => registration.Tags.Contains("ready"),
+        ResponseWriter = async (context, report) =>
+        {
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new
+            {
+                status = report.Status == HealthStatus.Healthy ? "Healthy" : "Unhealthy"
+            });
+        }
+    }).RequireAuthorization();
     app.MapGet("/", () => ApiResponse<object>.Ok(new
     {
         Service = "NuanSystem.Api",
@@ -103,6 +122,7 @@ try
     app.MapAuditEndpoints();
     app.MapSyncEndpoints();
     app.MapSyncConfigurationEndpoints();
+    app.MapSyncEntityDefinitionEndpoints();
 
     app.MapAccountingEndpoints();
     app.MapBusinessPartnerEndpoints();

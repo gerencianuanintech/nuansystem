@@ -124,6 +124,43 @@ public sealed class MasterBranchSyncWorkerProcessor(
                         continue;
                     }
 
+                    if (applyResult.Retryable)
+                    {
+                        var dependencyMessage = applyResult.Message ?? "Dependencia de sincronizacion pendiente.";
+                        if (target.AttemptCount + 1 >= target.MaxAttempts)
+                        {
+                            await outboxRepository.MarkTargetDeadLetterAsync(target.Id, dependencyMessage, cancellationToken);
+                            targetStatuses[target.Id] = SyncEventStatus.DeadLetter;
+                            await AddAuditAsync(
+                                syncEvent,
+                                SyncAuditAction.DeadLetter,
+                                previousStatus: SyncEventStatus.InProcess,
+                                newStatus: SyncEventStatus.DeadLetter,
+                                message: dependencyMessage,
+                                errorCode: applyResult.ErrorCode,
+                                errorDetail: null,
+                                currentOptions,
+                                cancellationToken,
+                                target.BranchCompanyId);
+                            continue;
+                        }
+
+                        await outboxRepository.MarkTargetErrorAsync(target.Id, dependencyMessage, currentOptions.ErrorDelay, cancellationToken);
+                        targetStatuses[target.Id] = SyncEventStatus.Error;
+                        await AddAuditAsync(
+                            syncEvent,
+                            SyncAuditAction.Failed,
+                            previousStatus: SyncEventStatus.InProcess,
+                            newStatus: SyncEventStatus.Error,
+                            message: dependencyMessage,
+                            errorCode: applyResult.ErrorCode,
+                            errorDetail: null,
+                            currentOptions,
+                            cancellationToken,
+                            target.BranchCompanyId);
+                        continue;
+                    }
+
                     await outboxRepository.MarkTargetIgnoredAsync(target.Id, applyResult.Message, cancellationToken);
                     targetStatuses[target.Id] = SyncEventStatus.Ignored;
                     await AddAuditAsync(

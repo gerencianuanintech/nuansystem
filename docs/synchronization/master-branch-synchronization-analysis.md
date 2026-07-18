@@ -126,7 +126,7 @@ Ya existen:
 - `ISyncEventPublisher`
 - `ISyncRuleEvaluator`
 - `IReplicableEntityMetadataProvider`
-- aplicadores para `BusinessPartner`, `Item` y `Warehouse`
+- aplicadores para `Countries`, `Provinces`, `Cities`, `Currencies`, `BusinessPartner`, `Item` y `Warehouse`
 - monitor API/WinForms para dashboard, outbox, targets, audit y acciones manuales acotadas
 
 El modulo nuevo debe administrar configuracion, no reemplazar estas tablas tecnicas sin una migracion planificada.
@@ -192,7 +192,7 @@ El modelo de configuracion debe vivir en Master porque gobierna empresas, sucurs
 `SynchronizationEntity`
 
 - Catalogo administrable de entidades sincronizables por perfil.
-- En esta version debe mapearse a nombres reales soportados por la infraestructura: inicialmente `BusinessPartner` limitado, `Item` maestro y `Warehouse` maestro, segun `IReplicableEntityMetadataProvider` y aplicadores existentes.
+- En esta version debe mapearse a nombres reales soportados por la infraestructura: `Countries`, `Provinces`, `Cities`, `Currencies`, `BusinessPartner` limitado, `Item` maestro y `Warehouse` maestro, segun el manifiesto operativo y los aplicadores existentes.
 - Puede ser global por perfil o por master company.
 - Campos sugeridos: `Id`, `ProfileId`, `EntityName`, `DisplayName`, `Direction = MasterToBranch`, `IsEnabled`, `BatchSize`, `MaxAttempts`, `ConflictPolicy`.
 - Debe excluir documentos, stock, kardex, caja, compras, ventas, adjuntos fisicos y mapeo de campos.
@@ -437,7 +437,7 @@ Diseno recomendado:
 
 ## Etapa 4 - Flujo operativo identificado
 
-La clase que genera eventos `SyncOutbox` es `SyncEventPublisher` en `src/Backend/NuanSystem.Application/Features/Sync/Services/SyncEventPublisher.cs`. Recibe solicitudes desde publicadores existentes como `BusinessPartnerSyncPublisher`, `ItemSyncPublisher` y `WarehouseSyncPublisher`, valida metadata con `IReplicableEntityMetadataProvider`, serializa payload seguro con `SyncEventPayloadFactory` y persiste el evento mediante `ISyncOutboxRepository.CreateAsync`.
+La clase que genera eventos `SyncOutbox` es `SyncEventPublisher` en `src/Backend/NuanSystem.Application/Features/Sync/Services/SyncEventPublisher.cs`. Recibe solicitudes desde publicadores existentes como `CountrySyncPublisher`, `ProvinceSyncPublisher`, `CitySyncPublisher`, `CurrencySyncPublisher`, `BusinessPartnerSyncPublisher`, `ItemSyncPublisher` y `WarehouseSyncPublisher`, valida metadata con `IReplicableEntityMetadataProvider`, serializa payload seguro con `SyncEventPayloadFactory` y persiste el evento mediante `ISyncOutboxRepository.CreateAsync`.
 
 La creacion de `SyncOutboxTargets` ocurre en el mismo `SyncEventPublisher` despues de persistir el outbox. Antes de esta etapa, los destinos salian de `ISyncRuleEvaluator`/`SyncRuleEvaluator`, que consultaba `SyncDistributionRules`. En Etapa 4 la resolucion pasa a `ISyncRoutingService`/`ISyncRoutingRepository` y al SP `SP_NA_GET_SYNCROUTINGTARGETS`, que consulta perfiles activos `MasterToBranch`, `Incremental` y `MasterWins`. La insercion de targets sigue reutilizando `SyncOutboxRepository.CreateTargetAsync`.
 
@@ -447,7 +447,7 @@ El worker `NuanSystem.MasterBranchSyncWorker` esta referenciado en `NuanSystem.s
 
 La prevencion de duplicados existe en `SyncOutboxTargets` con la restriccion unica `UQ_SyncOutboxTargets_Outbox_Branch` sobre `OutboxId` y `BranchCompanyId`. `SyncOutboxRepository.CreateTargetAsync` tambien es idempotente: si el target ya existe devuelve su `Id`; si hay error de indice unico por carrera, recupera el target existente. Etapa 4 no modifica historicos ni reescribe targets previos.
 
-Los `EntityCode` operativos se identifican por los productores existentes y por los aplicadores reales: `BusinessPartner`, `Item` y `Warehouse`. El catalogo administrativo inicial tambien contiene catalogos como `Countries`, `Provinces` y `Cities`, pero esos codigos no tienen productor/aplicador Master-Branch en el codigo actual; se permiten como borrador inactivo con advertencias y se bloquean al activar perfiles.
+Los `EntityCode` operativos se identifican por el manifiesto, productores y aplicadores reales: `Countries`, `Provinces`, `Cities`, `Currencies`, `BusinessPartner`, `Item` y `Warehouse`. Los demas catalogos sin implementacion siguen permitidos solo como borrador inactivo y se bloquean al activar perfiles.
 
 Los reintentos se manejan en `SyncOutboxRepository`: `ClaimPendingAsync` reclama eventos en estado `Pending` o `Error` con `AttemptCount < MaxAttempts`; `MarkErrorAsync` y `MarkTargetErrorAsync` calculan `NextRetryAt`; cuando se agotan intentos se marca `DeadLetter`. La configuracion efectiva de Etapa 4 alimenta `MaxAttempts` de targets a partir de `MaxRetries` efectivo, manteniendo la semantica existente de targets.
 
@@ -666,6 +666,10 @@ No se escribe directo en sucursales, no se escribe `SyncInbox` desde la API, no 
 - `BusinessPartnerSyncPayload`
 - `ItemSyncPayload`
 - `WarehouseSyncPayload`
+- `CountrySyncPayload`
+- `ProvinceSyncPayload`
+- `CitySyncPayload`
+- `CurrencySyncPayload`
 
 No se guardan payloads completos en `SyncProfileExecutions` ni en `SyncProfileExecutionDetails`.
 
@@ -734,6 +738,9 @@ No reclama outbox, no aplica en sucursal, no transporta eventos y no toca `SyncI
 
 Los lectores Full registrados en Persistence son:
 
+- `CountryFullEntitySource`
+- `ProvinceFullEntitySource`
+- `CityFullEntitySource`
 - `BusinessPartnerFullEntitySource`
 - `ItemFullEntitySource`
 - `WarehouseFullEntitySource`

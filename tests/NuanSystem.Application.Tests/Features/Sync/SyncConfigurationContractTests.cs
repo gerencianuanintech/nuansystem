@@ -8,6 +8,94 @@ namespace NuanSystem.Application.Tests.Features.Sync;
 public sealed class SyncConfigurationContractTests
 {
     [Fact]
+    public void CountrySyncScripts_DefineGlobalIdentityWithoutEnablingProfiles()
+    {
+        var tenantScript = ReadDatabaseScript("083_tenant_country_master_branch_sync.sql");
+        var masterScript = ReadDatabaseScript("084_master_country_sync_registration.sql");
+
+        tenantScript.Should().Contain("GlobalId uniqueidentifier");
+        tenantScript.Should().Contain("UX_Countries_GlobalId");
+        tenantScript.Should().Contain("SP_NA_GET_COUNTRIES_LISTAR");
+        tenantScript.Should().Contain("SP_NA_POST_COUNTRIES_CREAR");
+        tenantScript.Should().Contain("SP_NA_PUT_COUNTRIES_ACTUALIZAR");
+        tenantScript.Should().Contain("SP_NA_DELETE_COUNTRIES_ELIMINAR");
+        tenantScript.Should().NotContain("Provinces");
+        tenantScript.Should().NotContain("Cities");
+
+        masterScript.Should().Contain("WHERE Code = N'Countries'");
+        masterScript.Should().Contain("SupportsInsert = 1");
+        masterScript.Should().Contain("SupportsUpdate = 1");
+        masterScript.Should().Contain("SupportsDeactivate = 1");
+        masterScript.Should().Contain("CONVERT(bit, 0)");
+        masterScript.Should().NotContain("UPDATE dbo.SyncProfiles");
+    }
+
+    [Fact]
+    public void ProvinceSyncScripts_DefineParentIdentityWithoutEnablingProfiles()
+    {
+        var tenantScript = ReadDatabaseScript("085_tenant_province_master_branch_sync.sql");
+        var masterScript = ReadDatabaseScript("086_master_province_sync_registration.sql");
+
+        tenantScript.Should().Contain("GlobalId uniqueidentifier");
+        tenantScript.Should().Contain("UX_Provinces_GlobalId");
+        tenantScript.Should().Contain("country.GlobalId AS CountryGlobalId");
+        tenantScript.Should().Contain("SP_NA_POST_PROVINCES_CREAR");
+        tenantScript.Should().Contain("SP_NA_PUT_PROVINCES_ACTUALIZAR");
+        tenantScript.Should().Contain("SP_NA_DELETE_PROVINCES_ELIMINAR");
+        tenantScript.Should().NotContain("dbo.Cities");
+
+        masterScript.Should().Contain("WHERE Code = N'Provinces'");
+        masterScript.Should().Contain("SupportsInsert = 1");
+        masterScript.Should().Contain("SupportsUpdate = 1");
+        masterScript.Should().Contain("SupportsDeactivate = 1");
+        masterScript.Should().Contain("CONVERT(bit, 0)");
+        masterScript.Should().NotContain("UPDATE dbo.SyncProfiles");
+    }
+
+    [Fact]
+    public void CitySyncScripts_DefineBothParentIdentitiesWithoutEnablingProfiles()
+    {
+        var tenantScript = ReadDatabaseScript("087_tenant_city_master_branch_sync.sql");
+        var masterScript = ReadDatabaseScript("088_master_city_sync_registration.sql");
+
+        tenantScript.Should().Contain("UX_Cities_GlobalId");
+        tenantScript.Should().Contain("country.GlobalId AS CountryGlobalId");
+        tenantScript.Should().Contain("province.GlobalId AS ProvinceGlobalId");
+        tenantScript.Should().Contain("province.CountryId = country.CountryId");
+        tenantScript.Should().Contain("SP_NA_POST_CITIES_CREAR");
+        tenantScript.Should().Contain("SP_NA_PUT_CITIES_ACTUALIZAR");
+        tenantScript.Should().Contain("SP_NA_DELETE_CITIES_ELIMINAR");
+
+        masterScript.Should().Contain("WHERE Code = N'Cities'");
+        masterScript.Should().Contain("SupportsInsert = 1");
+        masterScript.Should().Contain("SupportsUpdate = 1");
+        masterScript.Should().Contain("SupportsDeactivate = 1");
+        masterScript.Should().Contain("CONVERT(bit, 0)");
+        masterScript.Should().NotContain("UPDATE dbo.SyncProfiles");
+    }
+
+    [Fact]
+    public void CurrencySyncScripts_DefineGlobalIdentityWithoutEnablingProfiles()
+    {
+        var tenantScript = ReadDatabaseScript("090_tenant_currency_master_branch_sync.sql");
+        var masterScript = ReadDatabaseScript("091_master_currency_sync_registration.sql");
+
+        tenantScript.Should().Contain("GlobalId uniqueidentifier");
+        tenantScript.Should().Contain("UX_Currencies_GlobalId");
+        tenantScript.Should().Contain("SP_NA_GET_CURRENCIES_LISTAR");
+        tenantScript.Should().Contain("SP_NA_POST_CURRENCIES_CREAR");
+        tenantScript.Should().Contain("SP_NA_PUT_CURRENCIES_ACTUALIZAR");
+        tenantScript.Should().Contain("SP_NA_DELETE_CURRENCIES_ELIMINAR");
+
+        masterScript.Should().Contain("WHERE Code = N'Currencies'");
+        masterScript.Should().Contain("SupportsInsert = 1");
+        masterScript.Should().Contain("SupportsUpdate = 1");
+        masterScript.Should().Contain("SupportsDeactivate = 1");
+        masterScript.Should().Contain("CONVERT(bit, 0)");
+        masterScript.Should().NotContain("UPDATE dbo.SyncProfiles");
+    }
+
+    [Fact]
     public void SyncConfigurationScript_DefinesOnlyAdministrativeConfigurationTables()
     {
         var script = ReadDatabaseScript("069_sync_master_branch_configuration.sql");
@@ -65,6 +153,75 @@ public sealed class SyncConfigurationContractTests
         script.Should().Contain("MaxRetries BETWEEN 0 AND 10");
         script.Should().Contain("RetryDelaySeconds BETWEEN 0 AND 3600");
         script.Should().Contain("TimeoutMinutes BETWEEN 1 AND 1440");
+    }
+
+    [Fact]
+    public void SyncProfilePersistenceScripts_ShouldAcceptTheOperativeEntityCatalog()
+    {
+        var baseScript = ReadDatabaseScript("069_sync_master_branch_configuration.sql");
+        var alignmentScript = ReadDatabaseScript("079_sync_profile_entity_catalog_alignment.sql");
+        const string operativeCatalog = "N'SupplyMethods', N'BusinessPartner', N'ItemGroups', N'Item', N'Warehouse'";
+
+        baseScript.Should().Contain(operativeCatalog);
+        alignmentScript.Should().Contain("SP_NA_PUT_SYNCPROFILEACTUALIZAR");
+        alignmentScript.Should().Contain(operativeCatalog);
+        alignmentScript.Should().Contain("20260715.079");
+    }
+
+    [Fact]
+    public void SyncEntityDefinitionScript_ShouldProvideAnAuditableMasterCatalog()
+    {
+        var script = ReadDatabaseScript("080_sync_entity_definitions.sql");
+
+        script.Should().Contain("CREATE TABLE dbo.SyncEntityDefinitions");
+        script.Should().Contain("CREATE TABLE dbo.SyncEntityDefinitionDependencies");
+        script.Should().Contain("CREATE TABLE dbo.AuditSyncConfigurationChanges");
+        script.Should().Contain("SP_NA_GET_SYNCENTITYDEFINITIONPAGINAR");
+        script.Should().Contain("SP_NA_GET_SYNCENTITYDEFINITIONBUSCARPORID");
+        script.Should().Contain("SP_NA_GET_SYNCENTITYDEFINITIONLOOKUP");
+        script.Should().Contain("@IncludeInactive bit = 0");
+        script.Should().Contain("dependency.EntityDefinitionId");
+        script.Should().Contain("SP_NA_POST_SYNCENTITYDEFINITIONCREAR");
+        script.Should().Contain("SP_NA_PUT_SYNCENTITYDEFINITIONACTUALIZAR");
+        script.Should().Contain("SP_NA_DELETE_SYNCENTITYDEFINITIONELIMINAR");
+        script.Should().Contain("FK_SyncProfileEntities_EntityDefinition");
+        script.Should().Contain("definition.IsDeleted = 0");
+        script.Should().Contain("definition.IsActive = 1 OR entity.IsActive = 0");
+        script.Should().Contain("IsSystem = 1");
+        script.Should().Contain("20260715.080");
+
+        script.Should().NotContain("TenantId");
+        script.Should().NotContain("SELECT *");
+        script.Should().NotContain("CustomSql");
+    }
+
+    [Fact]
+    public void SyncEntityDefinitionRepository_ShouldUseMasterStoredProceduresAndTypedErrors()
+    {
+        var repository = ReadSourceFile(
+            "src",
+            "Backend",
+            "NuanSystem.Persistence",
+            "Repositories",
+            "Sync",
+            "SyncEntityDefinitionRepository.cs");
+        var registration = ReadSourceFile(
+            "src",
+            "Backend",
+            "NuanSystem.Persistence",
+            "DependencyInjection",
+            "PersistenceServiceRegistration.cs");
+
+        repository.Should().Contain("IMasterConnectionFactory");
+        repository.Should().Contain("CommandType.StoredProcedure");
+        repository.Should().Contain("SP_NA_GET_SYNCENTITYDEFINITIONPAGINAR");
+        repository.Should().Contain("SP_NA_GET_SYNCENTITYDEFINITIONLOOKUP");
+        repository.Should().Contain("SP_NA_POST_SYNCENTITYDEFINITIONCREAR");
+        repository.Should().Contain("SP_NA_PUT_SYNCENTITYDEFINITIONACTUALIZAR");
+        repository.Should().Contain("SP_NA_DELETE_SYNCENTITYDEFINITIONELIMINAR");
+        repository.Should().Contain("TryMapSqlError");
+        repository.Should().NotContain("CommandType.Text");
+        registration.Should().Contain("services.AddScoped<ISyncEntityDefinitionRepository, SyncEntityDefinitionRepository>();");
     }
 
     [Fact]
@@ -137,11 +294,21 @@ public sealed class SyncConfigurationContractTests
 
         aggregate.CompanyId.Should().Be(1);
         SyncMasterBranchEntityCodes.IsKnown(SyncMasterBranchEntityCodes.Countries).Should().BeTrue();
+        SyncMasterBranchEntityCodes.Find(" warehouse ")?.EntityCode.Should().Be(SyncMasterBranchEntityCodes.Warehouse);
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.BusinessPartner).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Countries).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Provinces).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Cities).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Currencies).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.ItemGroups).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative("CustomCatalog").Should().BeFalse();
         SyncMasterBranchEntityCodes.InitialCatalog.Select(item => item.EntityCode).Should().BeEquivalentTo(
             "Countries",
             "Provinces",
             "Cities",
             "Currencies",
+            "Tax",
+            "UnitOfMeasure",
             "BusinessPartnerPaymentTerms",
             "SupplierGroups",
             "SupplierClasses",
@@ -149,17 +316,77 @@ public sealed class SyncConfigurationContractTests
             "Zones",
             "SupplyMethods",
             "BusinessPartner",
+            "ItemGroups",
             "Item",
-            "Warehouse");
+            "Warehouse",
+            "PriceList",
+            "PurchaseOrder");
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.PriceLists).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.PurchaseOrder).Should().BeTrue();
         SyncMasterBranchEntityCodes.InitialCatalog.Should().OnlyContain(item => item.ExistsInModel);
         SyncMasterBranchEntityCodes.InitialCatalog
-            .Where(item => item.EntityCode is "BusinessPartner" or "Item" or "Warehouse")
+            .Where(item => item.IsOperative)
             .Should()
             .OnlyContain(item => item.HasProducer && item.HasApplier && item.SupportsInsert && item.SupportsUpdate && item.SupportsDeactivate);
         SyncMasterBranchEntityCodes.InitialCatalog
-            .Where(item => item.EntityCode is not "BusinessPartner" and not "Item" and not "Warehouse")
+            .Where(item => !item.IsOperative)
             .Should()
             .OnlyContain(item => !item.HasProducer && !item.HasApplier);
+    }
+
+    [Fact]
+    public void OperationalEntityRegistrations_ShouldUseTheSharedManifest()
+    {
+        var executionService = ReadSourceFile(
+            "src", "Backend", "NuanSystem.Application", "Features", "Sync", "Execution", "Services", "SyncProfileExecutionService.cs");
+        var publishers = string.Join(Environment.NewLine,
+            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Geography", "Commands", "CountrySyncPublisher.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Geography", "Commands", "ProvinceSyncPublisher.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Geography", "Commands", "CitySyncPublisher.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "FinancialCatalogs", "Catalogs", "Commands", "CurrencySyncPublisher.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "BusinessPartners", "Commands", "BusinessPartnerSyncPublisher.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "GeneralInventory", "ItemGroups", "Commands", "ItemGroupSyncPublisher.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Items", "Commands", "ItemSyncPublisher.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "GeneralInventory", "Warehouses", "Commands", "WarehouseSyncPublisher.cs"));
+        var fullSources = ReadSourceFile(
+            "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync", "SyncFullEntitySources.cs");
+        var appliers = string.Join(Environment.NewLine,
+            ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "CountrySyncEventApplier.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "ProvinceSyncEventApplier.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "CitySyncEventApplier.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "CurrencySyncEventApplier.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "BusinessPartnerSyncEventApplier.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "ItemGroupSyncEventApplier.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "ItemSyncEventApplier.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "WarehouseSyncEventApplier.cs"));
+
+        executionService.Should().NotContain("SupportedFullSources");
+        executionService.Should().Contain("entitySourcesByCode.Keys");
+        executionService.Should().Contain("SyncMasterBranchEntityCodes.IsOperative(entity.EntityCode)");
+        publishers.Should().Contain("SyncMasterBranchEntityCodes.Countries");
+        publishers.Should().Contain("SyncMasterBranchEntityCodes.Provinces");
+        publishers.Should().Contain("SyncMasterBranchEntityCodes.Cities");
+        publishers.Should().Contain("SyncMasterBranchEntityCodes.Currencies");
+        publishers.Should().Contain("SyncMasterBranchEntityCodes.BusinessPartner");
+        publishers.Should().Contain("SyncMasterBranchEntityCodes.ItemGroups");
+        publishers.Should().Contain("SyncMasterBranchEntityCodes.Item");
+        publishers.Should().Contain("SyncMasterBranchEntityCodes.Warehouse");
+        fullSources.Should().Contain("SyncMasterBranchEntityCodes.BusinessPartner");
+        fullSources.Should().Contain("SyncMasterBranchEntityCodes.ItemGroups");
+        fullSources.Should().Contain("SyncMasterBranchEntityCodes.Item");
+        fullSources.Should().Contain("SyncMasterBranchEntityCodes.Warehouse");
+        fullSources.Should().Contain("SyncMasterBranchEntityCodes.Countries");
+        fullSources.Should().Contain("SyncMasterBranchEntityCodes.Provinces");
+        fullSources.Should().Contain("SyncMasterBranchEntityCodes.Cities");
+        fullSources.Should().Contain("SyncMasterBranchEntityCodes.Currencies");
+        appliers.Should().Contain("SyncMasterBranchEntityCodes.Countries");
+        appliers.Should().Contain("SyncMasterBranchEntityCodes.Provinces");
+        appliers.Should().Contain("SyncMasterBranchEntityCodes.Cities");
+        appliers.Should().Contain("SyncMasterBranchEntityCodes.Currencies");
+        appliers.Should().Contain("SyncMasterBranchEntityCodes.BusinessPartner");
+        appliers.Should().Contain("SyncMasterBranchEntityCodes.ItemGroups");
+        appliers.Should().Contain("SyncMasterBranchEntityCodes.Item");
+        appliers.Should().Contain("SyncMasterBranchEntityCodes.Warehouse");
     }
 
     [Fact]
@@ -341,6 +568,25 @@ public sealed class SyncConfigurationContractTests
         hostedService.Should().Contain("ISyncScheduleCalculator");
         hostedService.Should().NotContain("SyncInbox");
         hostedService.Should().NotContain("CreateTargetAsync");
+    }
+
+    [Fact]
+    public void DependencyEngineScript_SeedsFutureDefinitionsWithoutActivatingImplementations()
+    {
+        var script = ReadDatabaseScript("099_master_sync_dependency_engine.sql");
+
+        script.Should().Contain("IF OBJECT_ID(N'dbo.SyncEntityDefinitions'");
+        script.Should().Contain("WHERE NOT EXISTS");
+        script.Should().Contain("N'Tax'");
+        script.Should().Contain("N'UnitOfMeasure'");
+        script.Should().Contain("N'PriceList'");
+        script.Should().Contain("N'PurchaseOrder'");
+        script.Should().Contain("(N'PriceList', N'Item')");
+        script.Should().Contain("(N'PurchaseOrder', N'BusinessPartner')");
+        script.Should().Contain("(N'PurchaseOrder', N'Warehouse')");
+        script.Should().Contain("20260718.099");
+        script.Should().NotContain("SyncEntityConfigurations");
+        script.Should().NotContain("EntityOwnershipConfigurations");
     }
 
     private static string ReadDatabaseScript(string scriptName)

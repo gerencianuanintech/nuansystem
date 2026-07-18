@@ -33,4 +33,7 @@ public sealed record UpdateItemData(
     IReadOnlyCollection<SaveItemWarehouseData> Warehouses,
     ItemMasterData? MasterData,
     int? UpdatedByUserId,
-    string? UpdatedByUserName);
+    string? UpdatedByUserName,
+    string? ExternalSystem = null,
+    string? ExternalCode = null,
+    string? SapCode = null);

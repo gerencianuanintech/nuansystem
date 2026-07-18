@@ -4,9 +4,11 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using NuanSystem.Infrastructure.Authentication;
 using NuanSystem.Api.Options;
 using NuanSystem.Api.Services;
+using NuanSystem.Api.Health;
 using NuanSystem.Application.Abstractions.Authentication;
 using NuanSystem.Application.DependencyInjection;
 using NuanSystem.Infrastructure.DependencyInjection;
@@ -23,7 +25,31 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen();
+        services.AddSwaggerGen(options =>
+        {
+            const string bearerScheme = "Bearer";
+            const string companyCodeScheme = "CompanyCode";
+
+            options.AddSecurityDefinition(bearerScheme, new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                Description = "Ingrese el token JWT obtenido en POST /api/auth/login."
+            });
+            options.AddSecurityDefinition(companyCodeScheme, new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.ApiKey,
+                Name = "X-Company-Code",
+                In = ParameterLocation.Header,
+                Description = "Ingrese el codigo de la empresa activa, por ejemplo DEMO."
+            });
+            options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference(bearerScheme, document)] = [],
+                [new OpenApiSecuritySchemeReference(companyCodeScheme, document)] = []
+            });
+        });
         services.AddHttpContextAccessor();
 
         var jwtOptions = ReadJwtOptions(configuration);
@@ -78,7 +104,8 @@ public static class ServiceCollectionExtensions
                 });
             }
         });
-        services.AddHealthChecks();
+        services.AddHealthChecks()
+            .AddCheck<MasterDatabaseHealthCheck>("master-db", tags: ["ready"]);
         services.Configure<SyncProfileExecutionWorkerOptions>(
             configuration.GetSection(SyncProfileExecutionWorkerOptions.SectionName));
         services.AddHostedService<SyncProfileExecutionHostedService>();

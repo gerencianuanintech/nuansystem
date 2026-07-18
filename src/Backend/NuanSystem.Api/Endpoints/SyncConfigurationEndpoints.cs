@@ -7,6 +7,7 @@ using NuanSystem.Application.Features.Sync.Configuration.Queries;
 using NuanSystem.Application.Features.Sync.Execution.Commands;
 using NuanSystem.Application.Features.Sync.Execution.Dtos;
 using NuanSystem.Application.Features.Sync.Execution.Queries;
+using NuanSystem.Application.Features.Sync.Distribution;
 using NuanSystem.Shared.Constants;
 using NuanSystem.Shared.Responses;
 
@@ -236,6 +237,83 @@ public static class SyncConfigurationEndpoints
             return ToSyncConfigurationHttpResult(result);
         })
         .RequirePermission(PermissionCodes.SyncConfigurationRetry);
+
+        app.MapGet("/api/sync/configuration/distribution-policies/{matrixId:int}", async (
+            int matrixId,
+            ClaimsPrincipal user,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            if (!EndpointContextHelper.TryGetUserId(user, out var userId))
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await sender.Send(new GetSyncDistributionPolicyQuery(matrixId, userId), cancellationToken);
+            return ToSyncConfigurationHttpResult(result);
+        })
+        .RequirePermission(PermissionCodes.SyncConfigurationView);
+
+        app.MapGet("/api/sync/configuration/distribution-policies/catalog/{entityCode}", async (
+            string entityCode,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await sender.Send(new GetSyncDistributionPolicyCatalogQuery(entityCode), cancellationToken);
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.SyncConfigurationView);
+
+        app.MapGet("/api/sync/configuration/distribution-policies/{matrixId:int}/candidates", async (
+            int matrixId,
+            string? search,
+            int? take,
+            ClaimsPrincipal user,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            if (!EndpointContextHelper.TryGetUserId(user, out var userId))
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await sender.Send(
+                new GetSyncDistributionCandidatesQuery(matrixId, search, take ?? 100, userId),
+                cancellationToken);
+            return ToSyncConfigurationHttpResult(result);
+        })
+        .RequirePermission(PermissionCodes.SyncConfigurationView);
+
+        app.MapPut("/api/sync/configuration/distribution-policies/{matrixId:int}", async (
+            int matrixId,
+            SaveSyncDistributionPolicyRequest request,
+            ClaimsPrincipal user,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var auditUser = EndpointContextHelper.GetAuditUser(user);
+            var result = await sender.Send(new UpdateSyncDistributionPolicyCommand(
+                matrixId, request, auditUser.UserId, auditUser.UserName), cancellationToken);
+            return ToSyncConfigurationHttpResult(result);
+        })
+        .RequirePermission(PermissionCodes.SyncConfigurationEdit);
+
+        app.MapPost("/api/sync/configuration/distribution-policies/{matrixId:int}/preview", async (
+            int matrixId,
+            PreviewSyncDistributionPolicyRequest request,
+            ClaimsPrincipal user,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            if (!EndpointContextHelper.TryGetUserId(user, out var userId))
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await sender.Send(new PreviewSyncDistributionPolicyQuery(matrixId, request, userId), cancellationToken);
+            return ToSyncConfigurationHttpResult(result);
+        })
+        .RequirePermission(PermissionCodes.SyncConfigurationValidate);
 
         return app;
     }

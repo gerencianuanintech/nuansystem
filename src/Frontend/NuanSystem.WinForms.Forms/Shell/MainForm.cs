@@ -50,6 +50,7 @@ using NuanSystem.WinForms.Forms.Purchasing.PurchaseOrders;
 using NuanSystem.WinForms.Forms.Sap;
 using NuanSystem.WinForms.Forms.Sync;
 using NuanSystem.WinForms.Forms.Sync.Configuration;
+using NuanSystem.WinForms.Forms.Sync.EntityDefinitions;
 using NuanSystem.WinForms.Forms.Security.Operations;
 using NuanSystem.WinForms.Forms.Security.Menus;
 using NuanSystem.WinForms.Forms.Security.Forms;
@@ -125,6 +126,7 @@ public sealed class MainForm : RibbonForm
     private readonly Func<SapSyncLogForm> sapSyncLogFormFactory;
     private readonly Func<SyncMonitorForm> syncMonitorFormFactory;
     private readonly Func<SyncProfileListForm> syncProfileListFormFactory;
+    private readonly Func<SyncEntityListForm> syncEntityListFormFactory;
     private readonly Func<SyncExecutionListForm> syncExecutionListFormFactory;
     private readonly Func<AuditLogsForm> auditLogsFormFactory;
     private readonly Func<SettingsForm> settingsFormFactory;
@@ -214,6 +216,7 @@ public sealed class MainForm : RibbonForm
         sapSyncLogFormFactory = null!;
         syncMonitorFormFactory = null!;
         syncProfileListFormFactory = null!;
+        syncEntityListFormFactory = null!;
         syncExecutionListFormFactory = null!;
         auditLogsFormFactory = null!;
         settingsFormFactory = null!;
@@ -275,6 +278,7 @@ public sealed class MainForm : RibbonForm
         Func<SapSyncLogForm> sapSyncLogFormFactory,
         Func<SyncMonitorForm> syncMonitorFormFactory,
         Func<SyncProfileListForm> syncProfileListFormFactory,
+        Func<SyncEntityListForm> syncEntityListFormFactory,
         Func<SyncExecutionListForm> syncExecutionListFormFactory,
         Func<AuditLogsForm> auditLogsFormFactory,
         Func<SettingsForm> settingsFormFactory)
@@ -333,6 +337,7 @@ public sealed class MainForm : RibbonForm
         this.sapSyncLogFormFactory = sapSyncLogFormFactory;
         this.syncMonitorFormFactory = syncMonitorFormFactory;
         this.syncProfileListFormFactory = syncProfileListFormFactory;
+        this.syncEntityListFormFactory = syncEntityListFormFactory;
         this.syncExecutionListFormFactory = syncExecutionListFormFactory;
         this.auditLogsFormFactory = auditLogsFormFactory;
         this.settingsFormFactory = settingsFormFactory;
@@ -1818,6 +1823,7 @@ public sealed class MainForm : RibbonForm
             "sap" => sapSyncLogFormFactory(),
             "sync-monitor" => syncMonitorFormFactory(),
             "sync-profiles" => syncProfileListFormFactory(),
+            "sync-entities" => syncEntityListFormFactory(),
             "sync-executions" => syncExecutionListFormFactory(),
             "audit" => auditLogsFormFactory(),
             "configuration-settings" => settingsFormFactory(),

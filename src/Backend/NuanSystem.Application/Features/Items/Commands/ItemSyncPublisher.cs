@@ -2,6 +2,7 @@ using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.Items.Dtos;
+using NuanSystem.Application.Features.Sync.Configuration;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Shared.Sync;
 
@@ -9,7 +10,7 @@ namespace NuanSystem.Application.Features.Items.Commands;
 
 internal static class ItemSyncPublisher
 {
-    private const string EntityName = "Item";
+    private const string EntityName = SyncMasterBranchEntityCodes.Item;
 
     public static async Task<Result<SyncPublishResult>?> PublishAsync(
         ISyncEventPublisher syncEventPublisher,

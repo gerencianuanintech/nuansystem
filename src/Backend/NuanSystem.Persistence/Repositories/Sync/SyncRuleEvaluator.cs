@@ -1,3 +1,4 @@
+using System.Data;
 using Dapper;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Sync;
@@ -11,37 +12,16 @@ public sealed class SyncRuleEvaluator(IMasterConnectionFactory connectionFactory
         SyncRuleEvaluationContext context,
         CancellationToken cancellationToken = default)
     {
-        const string sql = """
-SELECT DISTINCT
-    distRule.BranchCompanyId
-FROM dbo.SyncDistributionRules AS distRule
-INNER JOIN dbo.Companies AS branch
-    ON branch.Id = distRule.BranchCompanyId
-WHERE distRule.CompanyId = @CompanyId
-  AND distRule.EntityName = @EntityName
-  AND distRule.IsEnabled = 1
-  AND branch.IsActive = 1
-  AND branch.IsMaster = 0
-  AND branch.SyncEnabled = 1
-  AND branch.ParentCompanyId = @CompanyId
-  AND branch.IsDeleted = 0
-  AND (
-        distRule.RuleType = N'All'
-        OR (distRule.RuleType = N'ByEntityCode' AND distRule.RuleValue = @EntityCode)
-        OR (distRule.RuleType = N'ByBranch' AND distRule.RuleValue = branch.BranchCode)
-      )
-ORDER BY distRule.BranchCompanyId;
-""";
-
         using var connection = connectionFactory.CreateConnection();
         var branchCompanyIds = await connection.QueryAsync<int>(new CommandDefinition(
-            sql,
+            "dbo.SP_NA_GET_SYNCDISTRIBUTIONRULETARGETS",
             new
             {
                 context.CompanyId,
                 context.EntityName,
                 context.EntityCode
             },
+            commandType: CommandType.StoredProcedure,
             cancellationToken: cancellationToken));
 
         var targets = branchCompanyIds.AsList();

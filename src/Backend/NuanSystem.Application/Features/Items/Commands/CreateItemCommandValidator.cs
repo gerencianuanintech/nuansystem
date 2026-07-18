@@ -27,15 +27,15 @@ public sealed class CreateItemCommandValidator : AbstractValidator<CreateItemCom
 
         RuleFor(command => command.InventoryUnitOfMeasureId)
             .NotNull()
-            .When(command => command.IsInventoryItem);
+            .When(command => command.IsInventoryItem && !command.IsExternalImport);
 
         RuleFor(command => command.PurchaseTaxId)
             .NotNull()
-            .When(command => command.IsPurchaseItem);
+            .When(command => command.IsPurchaseItem && !command.IsExternalImport);
 
         RuleFor(command => command.SalesTaxId)
             .NotNull()
-            .When(command => command.IsSalesItem);
+            .When(command => command.IsSalesItem && !command.IsExternalImport);
 
         RuleFor(command => command.ManagedBy)
             .Equal("None")
@@ -117,14 +117,14 @@ public sealed class CreateItemCommandValidator : AbstractValidator<CreateItemCom
             .Must(items => items.Count(item => item.IsDefaultWarehouse && item.IsActive) <= 1)
             .WithMessage("Solo puede existir una bodega predeterminada activa.");
 
-        RuleForEach(command => command.Barcodes ?? Array.Empty<SaveItemBarcodeData>()).ChildRules(barcode =>
+        RuleForEach(command => command.Barcodes).ChildRules(barcode =>
         {
             barcode.RuleFor(item => item.Barcode).NotEmpty().MaximumLength(120);
             barcode.RuleFor(item => item.BarcodeType).NotEmpty().MaximumLength(40);
             barcode.RuleFor(item => item.ConversionFactor).GreaterThan(0);
         });
 
-        RuleForEach(command => command.Warehouses ?? Array.Empty<SaveItemWarehouseData>()).ChildRules(warehouse =>
+        RuleForEach(command => command.Warehouses).ChildRules(warehouse =>
         {
             warehouse.RuleFor(item => item.WarehouseId).GreaterThan(0);
             warehouse.RuleFor(item => item.MinimumStock).GreaterThanOrEqualTo(0);

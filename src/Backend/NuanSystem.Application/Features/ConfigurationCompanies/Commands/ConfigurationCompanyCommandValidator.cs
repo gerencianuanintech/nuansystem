@@ -83,6 +83,7 @@ internal sealed class ConfigurationCompanyCommandValidator<TCommand> : AbstractV
         RuleFor(command => Read<string>(command, "CurrencyCode"))
             .NotEmpty()
             .Length(3);
+
     }
 
     private static TValue Read<TValue>(object source, string propertyName)

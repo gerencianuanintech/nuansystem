@@ -64,6 +64,30 @@ BEGIN
 END;
 GO
 
+IF COL_LENGTH('dbo.Companies', 'IsMaster') IS NULL
+BEGIN
+    ALTER TABLE dbo.Companies ADD IsMaster bit NOT NULL CONSTRAINT DF_Companies_IsMaster DEFAULT 1;
+END;
+GO
+
+IF COL_LENGTH('dbo.Companies', 'ParentCompanyId') IS NULL
+BEGIN
+    ALTER TABLE dbo.Companies ADD ParentCompanyId int NULL;
+END;
+GO
+
+IF COL_LENGTH('dbo.Companies', 'BranchCode') IS NULL
+BEGIN
+    ALTER TABLE dbo.Companies ADD BranchCode nvarchar(50) NULL;
+END;
+GO
+
+IF COL_LENGTH('dbo.Companies', 'SyncEnabled') IS NULL
+BEGIN
+    ALTER TABLE dbo.Companies ADD SyncEnabled bit NOT NULL CONSTRAINT DF_Companies_SyncEnabled DEFAULT 0;
+END;
+GO
+
 IF COL_LENGTH('dbo.Companies', 'CreatedByUserId') IS NULL
 BEGIN
     ALTER TABLE dbo.Companies ADD CreatedByUserId int NULL;
@@ -130,6 +154,14 @@ BEGIN
 END;
 GO
 
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Companies_Parent_BranchCode_Active' AND object_id = OBJECT_ID(N'dbo.Companies'))
+BEGIN
+    CREATE UNIQUE INDEX UX_Companies_Parent_BranchCode_Active
+        ON dbo.Companies (ParentCompanyId, BranchCode)
+        WHERE ParentCompanyId IS NOT NULL AND BranchCode IS NOT NULL AND IsDeleted = 0;
+END;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_COMPANIACONFIGURACIONLISTAR
 AS
 BEGIN
@@ -138,6 +170,7 @@ BEGIN
         LogoImage, LogoImageContentType, LogoImageFileName,
         DatabaseEngine, [Server], Port, DatabaseName, DatabaseUser, IsActive,
         SapIntegrationMode, DisplayOrder, IsDefault, TimeZoneId, CultureCode, CurrencyCode,
+        IsMaster, ParentCompanyId, BranchCode, SyncEnabled,
         CreatedByUserId, CreatedByUserName, CreatedAt, UpdatedByUserId, UpdatedByUserName, UpdatedAt,
         DeletedByUserId, DeletedByUserName, DeletedAt
     FROM dbo.Companies
@@ -155,6 +188,7 @@ BEGIN
         LogoImage, LogoImageContentType, LogoImageFileName,
         DatabaseEngine, [Server], Port, DatabaseName, DatabaseUser, IsActive,
         SapIntegrationMode, DisplayOrder, IsDefault, TimeZoneId, CultureCode, CurrencyCode,
+        IsMaster, ParentCompanyId, BranchCode, SyncEnabled,
         CreatedByUserId, CreatedByUserName, CreatedAt, UpdatedByUserId, UpdatedByUserName, UpdatedAt,
         DeletedByUserId, DeletedByUserName, DeletedAt
     FROM dbo.Companies
@@ -200,10 +234,33 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_COMPANIACONFIGURACIONCREAR
     @TimeZoneId nvarchar(80) = N'America/Guayaquil',
     @CultureCode nvarchar(20) = N'es-EC',
     @CurrencyCode nvarchar(3) = N'USD',
+    @IsMaster bit = 1,
+    @ParentCompanyId int = NULL,
+    @BranchCode nvarchar(50) = NULL,
+    @SyncEnabled bit = 0,
     @CreatedByUserId int = NULL,
     @CreatedByUserName nvarchar(120) = NULL
 AS
 BEGIN
+    IF (@IsMaster = 1 AND (@ParentCompanyId IS NOT NULL OR NULLIF(LTRIM(RTRIM(@BranchCode)), N'') IS NOT NULL))
+       OR (@IsMaster = 0 AND (@ParentCompanyId IS NULL OR NULLIF(LTRIM(RTRIM(@BranchCode)), N'') IS NULL))
+    BEGIN
+        THROW 51011, 'La jerarquia de la compania no es valida.', 1;
+    END;
+
+    IF @IsMaster = 0 AND NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.Companies
+        WHERE Id = @ParentCompanyId
+          AND IsMaster = 1
+          AND IsActive = 1
+          AND IsDeleted = 0
+    )
+    BEGIN
+        THROW 51011, 'La empresa padre debe existir, estar activa y ser maestra.', 1;
+    END;
+
     IF @IsDefault = 1
     BEGIN
         UPDATE dbo.Companies SET IsDefault = 0 WHERE IsDefault = 1 AND IsDeleted = 0;
@@ -215,6 +272,7 @@ BEGIN
         LogoImage, LogoImageContentType, LogoImageFileName,
         DatabaseEngine, [Server], Port, DatabaseName, DatabaseUser, DatabasePasswordEncrypted,
         IsActive, SapIntegrationMode, DisplayOrder, IsDefault, TimeZoneId, CultureCode, CurrencyCode,
+        IsMaster, ParentCompanyId, BranchCode, SyncEnabled,
         CreatedByUserId, CreatedByUserName, CreatedAt
     )
     VALUES
@@ -223,6 +281,7 @@ BEGIN
         @LogoImage, @LogoImageContentType, @LogoImageFileName,
         @DatabaseEngine, @Server, @Port, @DatabaseName, @DatabaseUser, @DatabasePasswordEncrypted,
         @IsActive, @SapIntegrationMode, @DisplayOrder, @IsDefault, @TimeZoneId, @CultureCode, @CurrencyCode,
+        @IsMaster, @ParentCompanyId, @BranchCode, @SyncEnabled,
         @CreatedByUserId, @CreatedByUserName, SYSUTCDATETIME()
     );
 
@@ -252,7 +311,11 @@ BEGIN
             (N'IsDefault', CONVERT(nvarchar(max), CONVERT(int, @IsDefault))),
             (N'TimeZoneId', CONVERT(nvarchar(max), @TimeZoneId)),
             (N'CultureCode', CONVERT(nvarchar(max), @CultureCode)),
-            (N'CurrencyCode', CONVERT(nvarchar(max), @CurrencyCode))
+            (N'CurrencyCode', CONVERT(nvarchar(max), @CurrencyCode)),
+            (N'IsMaster', CONVERT(nvarchar(max), CONVERT(int, @IsMaster))),
+            (N'ParentCompanyId', CONVERT(nvarchar(max), @ParentCompanyId)),
+            (N'BranchCode', CONVERT(nvarchar(max), @BranchCode)),
+            (N'SyncEnabled', CONVERT(nvarchar(max), CONVERT(int, @SyncEnabled)))
     ) AS Changes(FieldName, NewValue)
     WHERE NewValue IS NOT NULL;
 
@@ -285,6 +348,10 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_PUT_COMPANIACONFIGURACIONACTUALIZAR
     @TimeZoneId nvarchar(80) = N'America/Guayaquil',
     @CultureCode nvarchar(20) = N'es-EC',
     @CurrencyCode nvarchar(3) = N'USD',
+    @IsMaster bit = 1,
+    @ParentCompanyId int = NULL,
+    @BranchCode nvarchar(50) = NULL,
+    @SyncEnabled bit = 0,
     @UpdatedByUserId int = NULL,
     @UpdatedByUserName nvarchar(120) = NULL
 AS
@@ -309,7 +376,11 @@ BEGIN
         @OldIsDefault bit,
         @OldTimeZoneId nvarchar(80),
         @OldCultureCode nvarchar(20),
-        @OldCurrencyCode nvarchar(3);
+        @OldCurrencyCode nvarchar(3),
+        @OldIsMaster bit,
+        @OldParentCompanyId int,
+        @OldBranchCode nvarchar(50),
+        @OldSyncEnabled bit;
 
     SELECT
         @OldCode = Code,
@@ -331,7 +402,11 @@ BEGIN
         @OldIsDefault = IsDefault,
         @OldTimeZoneId = TimeZoneId,
         @OldCultureCode = CultureCode,
-        @OldCurrencyCode = CurrencyCode
+        @OldCurrencyCode = CurrencyCode,
+        @OldIsMaster = IsMaster,
+        @OldParentCompanyId = ParentCompanyId,
+        @OldBranchCode = BranchCode,
+        @OldSyncEnabled = SyncEnabled
     FROM dbo.Companies
     WHERE Id = @Id
       AND IsDeleted = 0;
@@ -340,6 +415,30 @@ BEGIN
     BEGIN
         SELECT 0;
         RETURN;
+    END;
+
+    IF @OldIsMaster <> @IsMaster
+    BEGIN
+        THROW 51011, 'El tipo maestra/sucursal no puede modificarse.', 1;
+    END;
+
+    IF (@IsMaster = 1 AND (@ParentCompanyId IS NOT NULL OR NULLIF(LTRIM(RTRIM(@BranchCode)), N'') IS NOT NULL))
+       OR (@IsMaster = 0 AND (@ParentCompanyId IS NULL OR NULLIF(LTRIM(RTRIM(@BranchCode)), N'') IS NULL))
+    BEGIN
+        THROW 51011, 'La jerarquia de la compania no es valida.', 1;
+    END;
+
+    IF @IsMaster = 0 AND NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.Companies
+        WHERE Id = @ParentCompanyId
+          AND IsMaster = 1
+          AND IsActive = 1
+          AND IsDeleted = 0
+    )
+    BEGIN
+        THROW 51011, 'La empresa padre debe existir, estar activa y ser maestra.', 1;
     END;
 
     IF @IsDefault = 1
@@ -372,6 +471,10 @@ BEGIN
         TimeZoneId = @TimeZoneId,
         CultureCode = @CultureCode,
         CurrencyCode = @CurrencyCode,
+        IsMaster = @IsMaster,
+        ParentCompanyId = @ParentCompanyId,
+        BranchCode = @BranchCode,
+        SyncEnabled = @SyncEnabled,
         UpdatedByUserId = @UpdatedByUserId,
         UpdatedByUserName = @UpdatedByUserName,
         UpdatedAt = SYSUTCDATETIME()
@@ -404,7 +507,11 @@ BEGIN
             (N'IsDefault', CONVERT(nvarchar(max), CONVERT(int, @OldIsDefault)), CONVERT(nvarchar(max), CONVERT(int, @IsDefault))),
             (N'TimeZoneId', CONVERT(nvarchar(max), @OldTimeZoneId), CONVERT(nvarchar(max), @TimeZoneId)),
             (N'CultureCode', CONVERT(nvarchar(max), @OldCultureCode), CONVERT(nvarchar(max), @CultureCode)),
-            (N'CurrencyCode', CONVERT(nvarchar(max), @OldCurrencyCode), CONVERT(nvarchar(max), @CurrencyCode))
+            (N'CurrencyCode', CONVERT(nvarchar(max), @OldCurrencyCode), CONVERT(nvarchar(max), @CurrencyCode)),
+            (N'IsMaster', CONVERT(nvarchar(max), CONVERT(int, @OldIsMaster)), CONVERT(nvarchar(max), CONVERT(int, @IsMaster))),
+            (N'ParentCompanyId', CONVERT(nvarchar(max), @OldParentCompanyId), CONVERT(nvarchar(max), @ParentCompanyId)),
+            (N'BranchCode', CONVERT(nvarchar(max), @OldBranchCode), CONVERT(nvarchar(max), @BranchCode)),
+            (N'SyncEnabled', CONVERT(nvarchar(max), CONVERT(int, @OldSyncEnabled)), CONVERT(nvarchar(max), CONVERT(int, @SyncEnabled)))
     ) AS Changes(FieldName, OldValue, NewValue)
     WHERE ISNULL(OldValue, N'') <> ISNULL(NewValue, N'');
 

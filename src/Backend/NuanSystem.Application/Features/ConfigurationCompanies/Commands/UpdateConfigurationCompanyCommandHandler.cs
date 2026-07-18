@@ -18,11 +18,29 @@ public sealed class UpdateConfigurationCompanyCommandHandler(
         UpdateConfigurationCompanyCommand request,
         CancellationToken cancellationToken)
     {
-        if (await companyRepository.GetByIdAsync(request.Id, cancellationToken) is null)
+        var existing = await companyRepository.GetByIdAsync(request.Id, cancellationToken);
+        if (existing is null)
         {
             return Result<ConfigurationCompanyDto>.Failure(
                 "Compania no encontrada.",
                 [new ApiError("ConfigurationCompanyNotFound", "La compania no existe.", nameof(request.Id))]);
+        }
+        var isMaster = request.IsMaster ?? existing.IsMaster;
+        var parentCompanyId = request.IsMaster.HasValue ? request.ParentCompanyId : existing.ParentCompanyId;
+        var branchCode = request.IsMaster.HasValue ? request.BranchCode : existing.BranchCode;
+        var syncEnabled = request.SyncEnabled ?? existing.SyncEnabled;
+
+        if (existing.IsMaster != isMaster)
+        {
+            return Result<ConfigurationCompanyDto>.Failure(
+                "No se puede cambiar el tipo de la compania.",
+                [new ApiError("ConfigurationCompanyTypeImmutable", "El tipo maestra/sucursal no puede cambiarse despues de crear la compania.", nameof(request.IsMaster))]);
+        }
+
+        var hierarchyError = await ValidateHierarchyAsync(request.Id, isMaster, parentCompanyId, cancellationToken);
+        if (hierarchyError is not null)
+        {
+            return Result<ConfigurationCompanyDto>.Failure("La jerarquia de la compania no es valida.", [hierarchyError]);
         }
 
         var code = request.Code.Trim().ToUpperInvariant();
@@ -76,6 +94,10 @@ public sealed class UpdateConfigurationCompanyCommandHandler(
             request.TimeZoneId.Trim(),
             request.CultureCode.Trim(),
             request.CurrencyCode.Trim().ToUpperInvariant(),
+            isMaster,
+            isMaster ? null : parentCompanyId,
+            isMaster ? null : Clean(branchCode)?.ToUpperInvariant(),
+            syncEnabled,
             request.AuditUserId,
             Clean(request.AuditUserName)), cancellationToken);
 
@@ -88,5 +110,36 @@ public sealed class UpdateConfigurationCompanyCommandHandler(
     private static string? Clean(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private async Task<ApiError?> ValidateHierarchyAsync(
+        int companyId,
+        bool isMaster,
+        int? parentCompanyId,
+        CancellationToken cancellationToken)
+    {
+        if (isMaster)
+        {
+            return null;
+        }
+
+        if (parentCompanyId == companyId)
+        {
+            return new ApiError(
+                "ConfigurationCompanySelfParent",
+                "Una sucursal no puede ser su propia empresa padre.",
+                nameof(UpdateConfigurationCompanyCommand.ParentCompanyId));
+        }
+
+        var parent = parentCompanyId.HasValue
+            ? await companyRepository.GetByIdAsync(parentCompanyId.Value, cancellationToken)
+            : null;
+
+        return parent is { IsMaster: true, IsActive: true }
+            ? null
+            : new ApiError(
+                "ConfigurationCompanyInvalidParent",
+                "La empresa padre debe existir, estar activa y ser una empresa maestra.",
+                nameof(UpdateConfigurationCompanyCommand.ParentCompanyId));
     }
 }

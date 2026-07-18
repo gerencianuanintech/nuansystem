@@ -9,7 +9,9 @@ public sealed class FinancialCatalogDto
     public string? ExternalSystem { get; set; }
     public string? ExternalCode { get; set; }
     public string? SapCode { get; set; }
+    public string? Symbol { get; set; }
     public string? Description { get; set; }
+    public bool IsBaseCurrency { get; set; }
     public bool IsActive { get; set; }
     public int? CreatedByUserId { get; set; }
     public string? CreatedByUserName { get; set; }
@@ -18,3 +20,16 @@ public sealed class FinancialCatalogDto
     public string? UpdatedByUserName { get; set; }
     public DateTime? UpdatedAt { get; set; }
 }
+
+public sealed record CurrencySyncPayload(
+    Guid GlobalId,
+    string Code,
+    string Name,
+    string? Symbol,
+    string? Description,
+    bool IsBaseCurrency,
+    bool IsActive,
+    string? ExternalSystem,
+    string? ExternalCode,
+    DateTime CreatedAt,
+    DateTime? UpdatedAt);

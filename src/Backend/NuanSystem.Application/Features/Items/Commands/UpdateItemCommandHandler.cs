@@ -65,7 +65,10 @@ public sealed class UpdateItemCommandHandler(
             CreateItemCommandHandler.NormalizeWarehouses(request.Warehouses),
             CreateItemCommandHandler.NormalizeMasterData(request.MasterData),
             request.AuditUserId,
-            request.AuditUserName?.Trim()), cancellationToken);
+            request.AuditUserName?.Trim(),
+            request.ExternalSystem?.Trim(),
+            request.ExternalCode?.Trim(),
+            request.SapCode?.Trim()), cancellationToken);
 
         if (!updated)
         {

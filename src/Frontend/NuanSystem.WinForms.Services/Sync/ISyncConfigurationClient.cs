@@ -33,6 +33,21 @@ public interface ISyncConfigurationClient
     Task<CancelSyncProfileExecutionResult> CancelExecutionAsync(int id, CancellationToken cancellationToken = default);
 
     Task<RetrySyncProfileExecutionResult> RetryExecutionAsync(int id, CancellationToken cancellationToken = default);
+
+    Task<SyncDistributionPolicy> GetDistributionPolicyAsync(int matrixId, CancellationToken cancellationToken = default);
+
+    Task<SyncDistributionPolicyCatalog> GetDistributionPolicyCatalogAsync(string entityCode, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<SyncDistributionCandidate>> SearchDistributionCandidatesAsync(
+        int matrixId,
+        string? search,
+        int take = 100,
+        CancellationToken cancellationToken = default);
+
+    Task UpdateDistributionPolicyAsync(
+        int matrixId,
+        SaveSyncDistributionPolicyRequest request,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class SyncProfileListFilter
@@ -55,4 +70,3 @@ public sealed class SyncProfileExecutionFilter
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 50;
 }
-

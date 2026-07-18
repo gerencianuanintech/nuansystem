@@ -12,7 +12,9 @@ public sealed record SyncPublishRequest(
     string? SourceSystem,
     string? SourceReference,
     int? SyncProfileId = null,
-    string? CorrelationId = null);
+    string? CorrelationId = null,
+    string? TargetBranchCode = null,
+    bool RequireTargetBranchMatch = false);
 
 public sealed record SyncPublishResult(
     bool Published,

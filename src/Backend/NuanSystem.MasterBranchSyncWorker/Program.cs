@@ -6,7 +6,6 @@ using System.Reflection;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
 using NuanSystem.Application.Abstractions.Data;
-using NuanSystem.Application.DependencyInjection;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Infrastructure.DependencyInjection;
 using NuanSystem.MasterBranchSyncWorker.Options;
@@ -35,25 +34,43 @@ try
         })
         .UseSerilog((context, services, configuration) =>
         {
+            var logPath = context.Configuration["Serilog:FilePath"] ?? "logs/nuansystem-masterbranch-syncworker-.log";
+            var errorLogPath = context.Configuration["Serilog:ErrorFilePath"] ?? "logs/nuansystem-masterbranch-syncworker-errors-.log";
+            var retainedFileCount = context.Configuration.GetValue<int?>("Serilog:RetainedFileCountLimit") ?? 30;
             configuration
                 .ReadFrom.Configuration(context.Configuration)
                 .ReadFrom.Services(services)
                 .Enrich.FromLogContext()
                 .WriteTo.Console()
-                .WriteTo.File("logs/nuansystem-masterbranch-syncworker-.log", rollingInterval: RollingInterval.Day)
-                .WriteTo.File("logs/nuansystem-masterbranch-syncworker-errors-.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Error);
+                .WriteTo.File(logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: retainedFileCount, shared: true)
+                .WriteTo.File(errorLogPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: retainedFileCount, shared: true, restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Error);
         })
         .ConfigureServices((context, services) =>
         {
-            services.Configure<MasterBranchSyncWorkerOptions>(
-                context.Configuration.GetSection(MasterBranchSyncWorkerOptions.SectionName));
+            services.AddOptions<MasterBranchSyncWorkerOptions>()
+                .Bind(context.Configuration.GetSection(MasterBranchSyncWorkerOptions.SectionName))
+                .Validate(options => !options.Enabled || options.SkeletonMode || options.EnabledEntityAppliers.Length > 0,
+                    "EnabledEntityAppliers es obligatorio cuando el worker opera en modo real.")
+                .Validate(options => !context.HostingEnvironment.IsProduction() || options.SkeletonModeBehavior != SkeletonModeBehavior.ClaimAndIgnore,
+                    "ClaimAndIgnore no esta permitido en Production.")
+                .Validate(options => !options.Enabled || !context.HostingEnvironment.IsProduction() ||
+                    (!string.IsNullOrWhiteSpace(context.Configuration.GetConnectionString("SqlServerAdmin")) &&
+                     !string.IsNullOrWhiteSpace(context.Configuration["Security:EncryptionKey"])),
+                    "ConnectionStrings:SqlServerAdmin y Security:EncryptionKey son obligatorios al habilitar el worker en Production.")
+                .ValidateOnStart();
 
             services
-                .AddApplicationServices()
                 .AddInfrastructureServices()
                 .AddPersistenceServices(context.Configuration);
 
+            services.AddScoped<ISyncEntityEventApplier, CountrySyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, ProvinceSyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, CitySyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, CurrencySyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, ReferenceCatalogSyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, PurchaseOrderSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, BusinessPartnerSyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, ItemGroupSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, ItemSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, WarehouseSyncEventApplier>();
             services.AddScoped<ISyncEventApplier, SyncEventApplierDispatcher>();

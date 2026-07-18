@@ -26,6 +26,12 @@ public sealed class CreateConfigurationCompanyCommandHandler(
                 [new ApiError("ConfigurationCompanyCodeAlreadyExists", "El codigo de compania ya existe.", nameof(request.Code))]);
         }
 
+        var hierarchyError = await ValidateHierarchyAsync(request.IsMaster, request.ParentCompanyId, cancellationToken);
+        if (hierarchyError is not null)
+        {
+            return Result<ConfigurationCompanyDto>.Failure("La jerarquia de la compania no es valida.", [hierarchyError]);
+        }
+
         if (request.ValidateConnection)
         {
             var test = await connectionTester.TestAsync(new CompanyConnectionTestData(
@@ -68,6 +74,10 @@ public sealed class CreateConfigurationCompanyCommandHandler(
             request.TimeZoneId.Trim(),
             request.CultureCode.Trim(),
             request.CurrencyCode.Trim().ToUpperInvariant(),
+            request.IsMaster,
+            request.IsMaster ? null : request.ParentCompanyId,
+            request.IsMaster ? null : Clean(request.BranchCode)?.ToUpperInvariant(),
+            request.SyncEnabled,
             request.AuditUserId,
             Clean(request.AuditUserName)), cancellationToken);
 
@@ -80,5 +90,27 @@ public sealed class CreateConfigurationCompanyCommandHandler(
     private static string? Clean(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private async Task<ApiError?> ValidateHierarchyAsync(
+        bool isMaster,
+        int? parentCompanyId,
+        CancellationToken cancellationToken)
+    {
+        if (isMaster)
+        {
+            return null;
+        }
+
+        var parent = parentCompanyId.HasValue
+            ? await companyRepository.GetByIdAsync(parentCompanyId.Value, cancellationToken)
+            : null;
+
+        return parent is { IsMaster: true, IsActive: true }
+            ? null
+            : new ApiError(
+                "ConfigurationCompanyInvalidParent",
+                "La empresa padre debe existir, estar activa y ser una empresa maestra.",
+                nameof(CreateConfigurationCompanyCommand.ParentCompanyId));
     }
 }

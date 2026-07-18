@@ -21,4 +21,6 @@ public interface ISyncMonitorClient
     Task<SyncManualActionResult> RetryDeadLetterAsync(long id, RetryDeadLetterRequest request, CancellationToken cancellationToken = default);
 
     Task<SyncManualActionResult> ReleaseExpiredLockAsync(long id, ReleaseExpiredLockRequest request, CancellationToken cancellationToken = default);
+    Task<RetrySyncOutboxBatchResult> RetryBatchAsync(RetrySyncOutboxBatchRequest request,CancellationToken cancellationToken=default)
+        => throw new NotSupportedException("El cliente no implementa reintento por lote.");
 }

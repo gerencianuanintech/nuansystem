@@ -19,6 +19,8 @@ public sealed class ItemSyncEventApplierTests
         var repository = Substitute.For<IItemSyncApplyRepository>();
         var payload = CreatePayload();
         var context = CreateContext(payload, SyncOperation.Created);
+        repository.CheckDependenciesAsync(2, payload, Arg.Any<CancellationToken>())
+            .Returns(ItemSyncDependencyCheckResult.Satisfied);
         repository.UpsertFromSyncAsync(2, context, payload, SyncOperation.Created, Arg.Any<CancellationToken>())
             .Returns(new ItemSyncApplyResult(true, false, 100, "Creado."));
         var applier = new ItemSyncEventApplier(repository);
@@ -43,6 +45,8 @@ public sealed class ItemSyncEventApplierTests
         var repository = Substitute.For<IItemSyncApplyRepository>();
         var payload = CreatePayload(name: "Articulo actualizado");
         var context = CreateContext(payload, SyncOperation.Updated);
+        repository.CheckDependenciesAsync(2, payload, Arg.Any<CancellationToken>())
+            .Returns(ItemSyncDependencyCheckResult.Satisfied);
         repository.UpsertFromSyncAsync(2, context, payload, SyncOperation.Updated, Arg.Any<CancellationToken>())
             .Returns(new ItemSyncApplyResult(true, false, 100, "Actualizado."));
         var applier = new ItemSyncEventApplier(repository);
@@ -78,6 +82,30 @@ public sealed class ItemSyncEventApplierTests
             context,
             Arg.Is<ItemSyncPayload>(value => value.GlobalId == payload.GlobalId && value.IsActive == false),
             markDeleted: false,
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ItemApplier_MissingItemGroup_ReturnsRetryableDependencyResult()
+    {
+        var repository = Substitute.For<IItemSyncApplyRepository>();
+        var payload = CreatePayload();
+        var context = CreateContext(payload, SyncOperation.Created);
+        repository.CheckDependenciesAsync(2, payload, Arg.Any<CancellationToken>())
+            .Returns(new ItemSyncDependencyCheckResult(false, "ItemGroups", "Grupo pendiente."));
+        var applier = new ItemSyncEventApplier(repository);
+
+        var result = await applier.ApplyAsync(context, CancellationToken.None);
+
+        result.Applied.Should().BeFalse();
+        result.Retryable.Should().BeTrue();
+        result.ErrorCode.Should().Be("SYNC_DEPENDENCY_PENDING");
+        result.Message.Should().Be("Grupo pendiente.");
+        await repository.DidNotReceive().UpsertFromSyncAsync(
+            Arg.Any<int>(),
+            Arg.Any<SyncEventApplyContext>(),
+            Arg.Any<ItemSyncPayload>(),
+            Arg.Any<SyncOperation>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -191,6 +219,9 @@ public sealed class ItemSyncEventApplierTests
         repository.Should().Contain("EventId = @EventId");
         repository.Should().Contain("Status = N'Applied'");
         repository.Should().Contain("SapCode = @SapCode");
+        repository.Should().Contain("FROM dbo.ItemGroups");
+        repository.Should().Contain("ItemSyncDependencyCheckResult");
+        applier.Should().Contain("SYNC_DEPENDENCY_PENDING");
         repository.Should().NotContain("WarehouseStock");
         repository.Should().NotContain("Kardex");
         repository.Should().NotContain("AverageCost");
@@ -308,6 +339,14 @@ public sealed class ItemSyncEventApplierTests
             CancellationToken cancellationToken = default)
         {
             return Task.FromResult(_itemsByGlobalId.ContainsKey(globalId));
+        }
+
+        public Task<ItemSyncDependencyCheckResult> CheckDependenciesAsync(
+            int branchCompanyId,
+            ItemSyncPayload payload,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(ItemSyncDependencyCheckResult.Satisfied);
         }
 
         public Task<ItemSyncApplyResult> UpsertFromSyncAsync(

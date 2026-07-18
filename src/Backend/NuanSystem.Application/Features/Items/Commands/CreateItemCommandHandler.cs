@@ -57,7 +57,11 @@ public sealed class CreateItemCommandHandler(
             NormalizeWarehouses(request.Warehouses),
             NormalizeMasterData(request.MasterData),
             request.AuditUserId,
-            request.AuditUserName?.Trim()), cancellationToken);
+            request.AuditUserName?.Trim(),
+            request.GlobalId,
+            request.ExternalSystem?.Trim(),
+            request.ExternalCode?.Trim(),
+            request.SapCode?.Trim()), cancellationToken);
 
         var item = await itemRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new InvalidOperationException("El articulo fue creado pero no pudo consultarse.");

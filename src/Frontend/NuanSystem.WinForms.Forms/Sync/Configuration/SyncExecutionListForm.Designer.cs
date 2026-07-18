@@ -13,6 +13,7 @@ partial class SyncExecutionListForm
         // 
         // pollingTimer
         // 
+        pollingTimer.Enabled = false;
         pollingTimer.Interval = 7000;
         // 
         // SyncExecutionListForm

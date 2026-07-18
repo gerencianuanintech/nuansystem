@@ -2,9 +2,12 @@ using System.ComponentModel;
 using DevExpress.XtraEditors;
 using NuanSystem.Shared.Constants;
 using NuanSystem.WinForms.Forms.Common;
+using NuanSystem.WinForms.Forms.ConfigurationCompanies;
+using NuanSystem.WinForms.Services.ConfigurationCompanies;
 using NuanSystem.WinForms.Services.Session;
 using NuanSystem.WinForms.Services.Sync;
 using NuanSystem.WinForms.Services.Sync.Models;
+using NuanSystem.WinForms.Services.Sync.EntityDefinitions;
 using NuanSystem.WinForms.ViewModels.Sync;
 
 namespace NuanSystem.WinForms.Forms.Sync.Configuration;
@@ -16,6 +19,8 @@ public sealed partial class SyncProfileListForm : BaseGridCrudListForm
     private SyncProfilesViewModel? viewModel;
     private ISyncConfigurationClient? client;
     private ApiSession? session;
+    private IConfigurationCompanyClient? configurationCompanyClient;
+    private ISyncEntityDefinitionClient? entityDefinitionClient;
 
     public SyncProfileListForm()
     {
@@ -23,12 +28,19 @@ public sealed partial class SyncProfileListForm : BaseGridCrudListForm
         FormStyler.ApplyBase(this);
     }
 
-    public SyncProfileListForm(SyncProfilesViewModel viewModel, ISyncConfigurationClient client, ApiSession session)
+    public SyncProfileListForm(
+        SyncProfilesViewModel viewModel,
+        ISyncConfigurationClient client,
+        ApiSession session,
+        IConfigurationCompanyClient? configurationCompanyClient = null,
+        ISyncEntityDefinitionClient? entityDefinitionClient = null)
         : this()
     {
         this.viewModel = viewModel;
         this.client = client;
         this.session = session;
+        this.configurationCompanyClient = configurationCompanyClient;
+        this.entityDefinitionClient = entityDefinitionClient;
 
         ConfigureCrudPermissions(session, new CrudOperationPermissions(
             PermissionCodes.SyncConfigurationView,
@@ -46,6 +58,9 @@ public sealed partial class SyncProfileListForm : BaseGridCrudListForm
 
     private ApiSession Session =>
         session ?? throw new InvalidOperationException("El formulario debe abrirse mediante inyeccion de dependencias.");
+
+    private IConfigurationCompanyClient ConfigurationCompanyClient =>
+        configurationCompanyClient ?? throw new InvalidOperationException("El cliente de companias no esta configurado.");
 
     protected override async Task LoadDataAsync()
     {
@@ -99,16 +114,71 @@ public sealed partial class SyncProfileListForm : BaseGridCrudListForm
 
     private void WireEvents()
     {
-        GridView.DoubleClick += async (_, _) => await ExecuteEditAsync();
+        GridView.DoubleClick += async (_, _) =>
+        {
+            if (CanUpdate)
+            {
+                await ExecuteEditAsync();
+            }
+            else
+            {
+                await ExecuteConsultAsync();
+            }
+        };
     }
 
     private async Task OpenEditorAsync(int? id)
     {
-        using var form = new SyncProfileEditForm(new SyncProfileEditViewModel(Client), id);
+        var editViewModel = new SyncProfileEditViewModel(Client);
+        await editViewModel.InitializeAsync(id);
+
+        using var form = new SyncProfileEditForm(
+            editViewModel,
+            id,
+            Session.HasPermission(PermissionCodes.CompaniesManage),
+            Session.HasPermission(PermissionCodes.SyncConfigurationValidate),
+            Client,
+            Session,
+            entityDefinitionClient);
+        form.CreateBranchCompanyRequested += CreateBranchCompanyFromLookupAsync;
         if (form.ShowDialog(this) == DialogResult.OK)
         {
             await LoadDataAsync();
         }
+    }
+
+    private async Task<CompanyLookupItem?> CreateBranchCompanyFromLookupAsync(SyncProfileEditForm owner)
+    {
+        if (!Session.HasPermission(PermissionCodes.CompaniesManage))
+        {
+            ShowWarning("No tiene acceso para crear companias.");
+            return null;
+        }
+
+        using var form = new ConfigurationCompanyEditForm();
+        if (form.ShowDialog(owner) != DialogResult.OK)
+        {
+            return null;
+        }
+
+        var created = await ConfigurationCompanyClient.CreateAsync(form.Request);
+        ShowSuccess("Compania creada correctamente.");
+
+        var catalog = await ViewModel.LoadCatalogAsync();
+        var branch = catalog.BranchCompanies.FirstOrDefault(company => company.Id == created.Id);
+        if (branch is not null)
+        {
+            return branch;
+        }
+
+        ShowWarning("La compania fue creada, pero aun no esta marcada como sucursal con sincronizacion habilitada.");
+        return new CompanyLookupItem(
+            created.Id,
+            created.Code,
+            created.CommercialName,
+            created.IsActive,
+            null,
+            created.DatabaseName);
     }
 
     private async Task ChangeActivationAsync(bool active)
@@ -173,12 +243,17 @@ public sealed partial class SyncProfileListForm : BaseGridCrudListForm
 
     private void OpenExecutions()
     {
-        var profileId = GetSelectedProfile()?.Id;
+        if (GetSelectedProfile() is not { } profile)
+        {
+            ShowWarning("Seleccione un perfil para consultar sus ejecuciones.");
+            return;
+        }
+
         using var form = new SyncExecutionListForm(
             new SyncExecutionsViewModel(Client),
             new SyncProfileExecutionDetailViewModel(Client),
             Session,
-            profileId);
+            profile.Id);
         form.ShowDialog(this);
     }
 

@@ -43,7 +43,7 @@ public static class TenancyEndpoints
                 Initialized = true
             }, "Base de datos tenant validada correctamente."));
         })
-        .RequirePermission(PermissionCodes.BusinessPartnersRead);
+        .RequirePermission(PermissionCodes.CompaniesManage);
 
         return app;
     }

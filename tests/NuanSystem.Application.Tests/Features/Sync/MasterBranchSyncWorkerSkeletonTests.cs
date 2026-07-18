@@ -124,10 +124,13 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
         source.Should().NotContain("ItemRepository");
         source.Should().NotContain("IWarehouseRepository");
         source.Should().NotContain("WarehouseRepository");
-        source.Should().NotContain("PriceLists");
+        source.Should().NotContain("IPriceListRepository");
+        source.Should().NotContain("PriceListRepository");
         source.Should().Contain("BusinessPartnerSyncEventApplier");
         source.Should().Contain("ItemSyncEventApplier");
         source.Should().Contain("WarehouseSyncEventApplier");
+        source.Should().Contain("ReferenceCatalogSyncEventApplier");
+        source.Should().Contain("PurchaseOrderSyncEventApplier");
     }
 
     [Fact]
@@ -219,6 +222,50 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
                 data.BranchCompanyId == 2 &&
                 data.Action == SyncAuditAction.Failed &&
                 data.NewStatus == SyncEventStatus.Error),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Processor_KeepsMissingDependencyRetryableInsteadOfIgnoringTarget()
+    {
+        var outboxRepository = Substitute.For<ISyncOutboxRepository>();
+        var auditRepository = Substitute.For<ISyncAuditRepository>();
+        var applier = Substitute.For<ISyncEventApplier>();
+        var syncEvent = CreateOutboxEvent(attemptCount: 1, maxAttempts: 3);
+        var target = CreateTarget(syncEvent.Id);
+
+        outboxRepository.ClaimPendingAsync(
+                Arg.Any<string>(), Arg.Any<int>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { syncEvent });
+        outboxRepository.GetTargetsAsync(syncEvent.CompanyId, syncEvent.Id, Arg.Any<CancellationToken>())
+            .Returns(new[] { target });
+        outboxRepository.TryMarkTargetInProcessAsync(target.Id, Arg.Any<CancellationToken>()).Returns(true);
+        applier.ApplyAsync(Arg.Any<SyncEventApplyContext>(), Arg.Any<CancellationToken>())
+            .Returns(new SyncEventApplyResult(
+                false,
+                "El grupo INV-PAP aun no existe en la sucursal.",
+                "SYNC_DEPENDENCY_PENDING",
+                Retryable: true));
+
+        var processor = CreateProcessor(
+            new MasterBranchSyncWorkerOptions { Enabled = true, WorkerInstance = "worker-a", SkeletonMode = false },
+            outboxRepository,
+            auditRepository,
+            applier);
+
+        await processor.ProcessOnceAsync(CancellationToken.None);
+
+        await outboxRepository.Received(1).MarkTargetErrorAsync(
+            target.Id,
+            "El grupo INV-PAP aun no existe en la sucursal.",
+            Arg.Any<TimeSpan>(),
+            Arg.Any<CancellationToken>());
+        await outboxRepository.DidNotReceiveWithAnyArgs().MarkTargetIgnoredAsync(default, default, default);
+        await auditRepository.Received(1).AddAsync(
+            Arg.Is<CreateSyncAuditData>(data =>
+                data.BranchCompanyId == target.BranchCompanyId &&
+                data.Action == SyncAuditAction.Failed &&
+                data.ErrorCode == "SYNC_DEPENDENCY_PENDING"),
             Arg.Any<CancellationToken>());
     }
 

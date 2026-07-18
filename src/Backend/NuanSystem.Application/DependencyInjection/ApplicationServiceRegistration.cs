@@ -12,6 +12,7 @@ using NuanSystem.Application.Features.SapSync.Handlers;
 using NuanSystem.Application.Features.SapSync.Services;
 using NuanSystem.Application.Features.Sync.Configuration.Services;
 using NuanSystem.Application.Features.Sync.Execution.Services;
+using NuanSystem.Application.Features.Sync.EntityDefinitions.Services;
 using NuanSystem.Application.Features.Sync.Services;
 using NuanSystem.Application.Features.TenantConfiguration.Services;
 using System.Reflection;
@@ -33,6 +34,9 @@ public static class ApplicationServiceRegistration
 
         services.AddValidatorsFromAssembly(assembly);
         services.AddScoped<ISapSupplierImportService, SapSupplierImportService>();
+        services.AddScoped<ISapWarehouseImportService, SapWarehouseImportService>();
+        services.AddScoped<ISapItemImportService, SapItemImportService>();
+        services.AddScoped<ISapPurchaseOrderImportService, SapPurchaseOrderImportService>();
         services.AddScoped<ISapSyncOrchestrator, SapSyncOrchestrator>();
         services.AddScoped<ISapSyncJobRunner, SapSyncJobRunner>();
         services.AddScoped<ISapSyncLockService, SapSyncLockService>();
@@ -50,8 +54,11 @@ public static class ApplicationServiceRegistration
         services.AddScoped<ISyncEventPublisher, SyncEventPublisher>();
         services.AddScoped<ISyncEventPayloadFactory, SyncEventPayloadFactory>();
         services.AddScoped<ISyncRoutingService, SyncRoutingService>();
+        services.AddSingleton<ISyncDistributionPolicyEvaluator, SyncDistributionPolicyEvaluator>();
         services.AddScoped<ISyncProfileValidationService, SyncProfileValidationService>();
+        services.AddScoped<ISyncEntityCatalogService, SyncEntityCatalogService>();
         services.AddScoped<ISyncProfileExecutionService, SyncProfileExecutionService>();
+        services.AddScoped<IPurchaseOrderRoutingService, PurchaseOrderRoutingService>();
         services.AddScoped<ISyncScheduleCalculator, SyncScheduleCalculator>();
 
         return services;

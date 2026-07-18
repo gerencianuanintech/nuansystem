@@ -1,14 +1,19 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
+using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Dtos;
 using NuanSystem.Shared.Responses;
+using NuanSystem.Shared.Sync;
 
 namespace NuanSystem.Application.Features.GeneralInventory.ItemGroups.Commands;
 
 public sealed class UpdateItemGroupCommandHandler(
     IItemGroupRepository itemGroupRepository,
-    IChartOfAccountRepository chartOfAccountRepository)
+    IChartOfAccountRepository chartOfAccountRepository,
+    ISyncEventPublisher syncEventPublisher,
+    ICompanyContext companyContext)
     : ICommandHandler<UpdateItemGroupCommand, ItemGroupDto>
 {
     public async Task<Result<ItemGroupDto>> Handle(UpdateItemGroupCommand request, CancellationToken cancellationToken)
@@ -65,6 +70,18 @@ public sealed class UpdateItemGroupCommandHandler(
 
         var itemGroup = await itemGroupRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new InvalidOperationException("El grupo de artículos fue actualizado pero no pudo consultarse.");
+
+        var syncResult = await ItemGroupSyncPublisher.PublishAsync(
+            syncEventPublisher,
+            companyContext,
+            itemGroup,
+            itemGroup.IsActive ? SyncOperation.Updated : SyncOperation.Disabled,
+            cancellationToken);
+
+        if (syncResult is { IsSuccess: false })
+        {
+            return Result<ItemGroupDto>.Failure(syncResult.Message, syncResult.Errors);
+        }
 
         return Result<ItemGroupDto>.Success(itemGroup, "Grupo de artículos actualizado correctamente.");
     }

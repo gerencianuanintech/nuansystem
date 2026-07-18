@@ -1,5 +1,6 @@
 using System.Text.Json;
 using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Features.Sync.Configuration;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Shared.Sync;
@@ -9,7 +10,7 @@ namespace NuanSystem.MasterBranchSyncWorker.Services;
 public sealed class BusinessPartnerSyncEventApplier(
     IBusinessPartnerSyncApplyRepository repository) : ISyncEntityEventApplier
 {
-    private const string EntityName = "BusinessPartner";
+    private const string EntityName = SyncMasterBranchEntityCodes.BusinessPartner;
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 

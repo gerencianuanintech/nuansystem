@@ -458,10 +458,13 @@ CLOSE catalog_cursor;
 DEALLOCATE catalog_cursor;
 GO
 
-IF OBJECT_ID(N'dbo.MasterSchemaHistory', N'U') IS NOT NULL
-    AND NOT EXISTS (SELECT 1 FROM dbo.MasterSchemaHistory WHERE Version = N'20260709.03')
+IF OBJECT_ID(N'dbo.SchemaHistory', N'U') IS NOT NULL
 BEGIN
-    INSERT INTO dbo.MasterSchemaHistory (Version, Description)
-    VALUES (N'20260709.03', N'Fase 3: GlobalId y referencias externas opcionales en entidades replicables');
+    EXEC sys.sp_executesql N'
+        IF NOT EXISTS (SELECT 1 FROM dbo.SchemaHistory WHERE Version = N''20260709.03'')
+        BEGIN
+            INSERT INTO dbo.SchemaHistory (Version, Description)
+            VALUES (N''20260709.03'', N''Fase 3: GlobalId y referencias externas opcionales en entidades replicables'');
+        END;';
 END;
 GO

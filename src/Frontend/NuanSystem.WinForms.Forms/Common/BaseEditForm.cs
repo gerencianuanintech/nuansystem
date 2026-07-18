@@ -8,6 +8,7 @@ public partial class BaseEditForm : XtraForm
 {
     private static readonly AsyncLocal<bool> ReadOnlyModeScope = new();
     private readonly DXErrorProvider errorProvider;
+    private bool isSaving;
 
     public BaseEditForm()
     {
@@ -45,9 +46,19 @@ public partial class BaseEditForm : XtraForm
     {
     }
 
+    protected virtual Task<bool> PersistAsync()
+    {
+        return Task.FromResult(true);
+    }
+
     protected void Save()
     {
-        if (IsReadOnlyMode)
+        _ = SaveAsync();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (IsReadOnlyMode || isSaving)
         {
             return;
         }
@@ -61,9 +72,36 @@ public partial class BaseEditForm : XtraForm
             return;
         }
 
-        BuildRequest();
-        DialogResult = DialogResult.OK;
-        Close();
+        isSaving = true;
+        var originalButtonText = btnGuardar.ButtonText;
+        btnGuardar.Enabled = false;
+        btnCancelar.Enabled = false;
+        btnGuardar.ButtonText = "Guardando";
+        try
+        {
+            BuildRequest();
+            if (!await PersistAsync())
+            {
+                return;
+            }
+
+            DialogResult = DialogResult.OK;
+            Close();
+        }
+        catch (Exception exception)
+        {
+            ShowError(exception);
+        }
+        finally
+        {
+            isSaving = false;
+            if (!IsDisposed && !Disposing)
+            {
+                btnGuardar.ButtonText = originalButtonText;
+                btnGuardar.Enabled = true;
+                btnCancelar.Enabled = true;
+            }
+        }
     }
 
     protected void ShowWarning(string message)

@@ -3,16 +3,277 @@ using Microsoft.Data.SqlClient;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Features.FinancialCatalogs.Catalogs.Dtos;
+using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Dtos;
 using NuanSystem.Application.Features.GeneralInventory.Warehouses.Dtos;
+using NuanSystem.Application.Features.Geography.Dtos;
 using NuanSystem.Application.Features.Items.Dtos;
+using NuanSystem.Application.Features.Sync.Configuration;
 using NuanSystem.Application.Features.Sync.Execution.Dtos;
 using NuanSystem.Domain.Tenancy;
 
 namespace NuanSystem.Persistence.Repositories.Sync;
 
+public sealed class CountryFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource
+{
+    public string EntityCode => SyncMasterBranchEntityCodes.Countries;
+
+    public async Task<SyncSourcePage> ReadPageAsync(
+        SyncSourceReadContext context,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT TOP (@Take)
+                GlobalId,
+                Code,
+                Name,
+                Iso2,
+                Iso3,
+                PhonePrefix,
+                IsActive,
+                CreatedAt,
+                UpdatedAt
+            FROM dbo.Countries
+            WHERE IsDeleted = 0
+              AND (@LastKey IS NULL OR Code > @LastKey)
+            ORDER BY Code;
+            """;
+
+        var company = await SyncFullEntitySourceHelpers.ResolveSqlServerCompanyAsync(companyResolver, context.CompanyId, cancellationToken);
+        await using var connection = new SqlConnection(company.ConnectionString);
+        var rows = (await connection.QueryAsync<CountrySourceRow>(
+            new CommandDefinition(sql, SyncFullEntitySourceHelpers.ReadParameters(context), cancellationToken: cancellationToken))).AsList();
+
+        var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context)).Select(row => new SyncSourceRecord(
+            row.GlobalId,
+            row.Code,
+            row.IsActive,
+            new CountrySyncPayload(
+                row.GlobalId,
+                row.Code,
+                row.Name,
+                row.Iso2,
+                row.Iso3,
+                row.PhonePrefix,
+                row.IsActive,
+                row.CreatedAt,
+                row.UpdatedAt))).ToArray();
+
+        return new SyncSourcePage(limited, limited.LastOrDefault()?.EntityKey, rows.Count > SyncFullEntitySourceHelpers.GetPageLimit(context));
+    }
+
+    private sealed record CountrySourceRow(
+        Guid GlobalId,
+        string Code,
+        string Name,
+        string? Iso2,
+        string? Iso3,
+        string? PhonePrefix,
+        bool IsActive,
+        DateTime CreatedAt,
+        DateTime? UpdatedAt);
+}
+
+public sealed class ProvinceFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource
+{
+    public string EntityCode => SyncMasterBranchEntityCodes.Provinces;
+
+    public async Task<SyncSourcePage> ReadPageAsync(
+        SyncSourceReadContext context,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT TOP (@Take)
+                province.GlobalId,
+                country.GlobalId AS CountryGlobalId,
+                country.Code AS CountryCode,
+                province.Code,
+                province.Name,
+                province.IsActive,
+                province.CreatedAt,
+                province.UpdatedAt,
+                CONCAT(country.Code, N'|', province.Code) AS EntityKey
+            FROM dbo.Provinces AS province
+            INNER JOIN dbo.Countries AS country ON country.CountryId = province.CountryId
+            WHERE province.IsDeleted = 0
+              AND country.IsDeleted = 0
+              AND (@LastKey IS NULL OR CONCAT(country.Code, N'|', province.Code) > @LastKey)
+            ORDER BY country.Code, province.Code;
+            """;
+
+        var company = await SyncFullEntitySourceHelpers.ResolveSqlServerCompanyAsync(companyResolver, context.CompanyId, cancellationToken);
+        await using var connection = new SqlConnection(company.ConnectionString);
+        var rows = (await connection.QueryAsync<ProvinceSourceRow>(
+            new CommandDefinition(sql, SyncFullEntitySourceHelpers.ReadParameters(context), cancellationToken: cancellationToken))).AsList();
+
+        var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context)).Select(row => new SyncSourceRecord(
+            row.GlobalId,
+            row.EntityKey,
+            row.IsActive,
+            new ProvinceSyncPayload(
+                row.GlobalId,
+                row.CountryGlobalId,
+                row.CountryCode,
+                row.Code,
+                row.Name,
+                row.IsActive,
+                row.CreatedAt,
+                row.UpdatedAt))).ToArray();
+
+        return new SyncSourcePage(limited, limited.LastOrDefault()?.EntityKey, rows.Count > SyncFullEntitySourceHelpers.GetPageLimit(context));
+    }
+
+    private sealed record ProvinceSourceRow(
+        Guid GlobalId,
+        Guid CountryGlobalId,
+        string CountryCode,
+        string Code,
+        string Name,
+        bool IsActive,
+        DateTime CreatedAt,
+        DateTime? UpdatedAt,
+        string EntityKey);
+}
+
+public sealed class CityFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource
+{
+    public string EntityCode => SyncMasterBranchEntityCodes.Cities;
+
+    public async Task<SyncSourcePage> ReadPageAsync(
+        SyncSourceReadContext context,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT TOP (@Take)
+                city.GlobalId,
+                country.GlobalId AS CountryGlobalId,
+                country.Code AS CountryCode,
+                province.GlobalId AS ProvinceGlobalId,
+                province.Code AS ProvinceCode,
+                city.Code,
+                city.Name,
+                city.IsActive,
+                city.CreatedAt,
+                city.UpdatedAt,
+                CONCAT(country.Code, N'|', province.Code, N'|', city.Code) AS EntityKey
+            FROM dbo.Cities AS city
+            INNER JOIN dbo.Countries AS country ON country.CountryId = city.CountryId
+            INNER JOIN dbo.Provinces AS province ON province.ProvinceId = city.ProvinceId
+            WHERE city.IsDeleted = 0
+              AND country.IsDeleted = 0
+              AND province.IsDeleted = 0
+              AND province.CountryId = country.CountryId
+              AND (@LastKey IS NULL OR CONCAT(country.Code, N'|', province.Code, N'|', city.Code) > @LastKey)
+            ORDER BY country.Code, province.Code, city.Code;
+            """;
+
+        var company = await SyncFullEntitySourceHelpers.ResolveSqlServerCompanyAsync(companyResolver, context.CompanyId, cancellationToken);
+        await using var connection = new SqlConnection(company.ConnectionString);
+        var rows = (await connection.QueryAsync<CitySourceRow>(
+            new CommandDefinition(sql, SyncFullEntitySourceHelpers.ReadParameters(context), cancellationToken: cancellationToken))).AsList();
+
+        var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context)).Select(row => new SyncSourceRecord(
+            row.GlobalId,
+            row.EntityKey,
+            row.IsActive,
+            new CitySyncPayload(
+                row.GlobalId,
+                row.CountryGlobalId,
+                row.CountryCode,
+                row.ProvinceGlobalId,
+                row.ProvinceCode,
+                row.Code,
+                row.Name,
+                row.IsActive,
+                row.CreatedAt,
+                row.UpdatedAt))).ToArray();
+
+        return new SyncSourcePage(limited, limited.LastOrDefault()?.EntityKey, rows.Count > SyncFullEntitySourceHelpers.GetPageLimit(context));
+    }
+
+    private sealed record CitySourceRow(
+        Guid GlobalId,
+        Guid CountryGlobalId,
+        string CountryCode,
+        Guid ProvinceGlobalId,
+        string ProvinceCode,
+        string Code,
+        string Name,
+        bool IsActive,
+        DateTime CreatedAt,
+        DateTime? UpdatedAt,
+        string EntityKey);
+}
+
+public sealed class CurrencyFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource
+{
+    public string EntityCode => SyncMasterBranchEntityCodes.Currencies;
+
+    public async Task<SyncSourcePage> ReadPageAsync(
+        SyncSourceReadContext context,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT TOP (@Take)
+                GlobalId,
+                Code,
+                Name,
+                Symbol,
+                Description,
+                IsBaseCurrency,
+                IsActive,
+                ExternalSystem,
+                ExternalCode,
+                CreatedAt,
+                UpdatedAt
+            FROM dbo.Currencies
+            WHERE IsDeleted = 0
+              AND (@LastKey IS NULL OR Code > @LastKey)
+            ORDER BY Code;
+            """;
+
+        var company = await SyncFullEntitySourceHelpers.ResolveSqlServerCompanyAsync(companyResolver, context.CompanyId, cancellationToken);
+        await using var connection = new SqlConnection(company.ConnectionString);
+        var rows = (await connection.QueryAsync<CurrencySourceRow>(
+            new CommandDefinition(sql, SyncFullEntitySourceHelpers.ReadParameters(context), cancellationToken: cancellationToken))).AsList();
+
+        var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context)).Select(row => new SyncSourceRecord(
+            row.GlobalId,
+            row.Code,
+            row.IsActive,
+            new CurrencySyncPayload(
+                row.GlobalId,
+                row.Code,
+                row.Name,
+                row.Symbol,
+                row.Description,
+                row.IsBaseCurrency,
+                row.IsActive,
+                row.ExternalSystem,
+                row.ExternalCode,
+                row.CreatedAt,
+                row.UpdatedAt))).ToArray();
+
+        return new SyncSourcePage(limited, limited.LastOrDefault()?.EntityKey, rows.Count > SyncFullEntitySourceHelpers.GetPageLimit(context));
+    }
+
+    private sealed record CurrencySourceRow(
+        Guid GlobalId,
+        string Code,
+        string Name,
+        string? Symbol,
+        string? Description,
+        bool IsBaseCurrency,
+        bool IsActive,
+        string? ExternalSystem,
+        string? ExternalCode,
+        DateTime CreatedAt,
+        DateTime? UpdatedAt);
+}
+
 public sealed class BusinessPartnerFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource
 {
-    public string EntityCode => "BusinessPartner";
+    public string EntityCode => SyncMasterBranchEntityCodes.BusinessPartner;
 
     public async Task<SyncSourcePage> ReadPageAsync(
         SyncSourceReadContext context,
@@ -44,7 +305,7 @@ public sealed class BusinessPartnerFullEntitySource(ICompanyResolver companyReso
         var rows = (await connection.QueryAsync<BusinessPartnerSourceRow>(
             new CommandDefinition(sql, SyncFullEntitySourceHelpers.ReadParameters(context), cancellationToken: cancellationToken))).AsList();
 
-        var limited = rows.Take(context.PageSize).Select(row => new SyncSourceRecord(
+        var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context)).Select(row => new SyncSourceRecord(
             row.GlobalId,
             row.Code,
             row.IsActive,
@@ -62,7 +323,7 @@ public sealed class BusinessPartnerFullEntitySource(ICompanyResolver companyReso
                 row.ExternalSystem,
                 row.ExternalCode))).ToArray();
 
-        return new SyncSourcePage(limited, limited.LastOrDefault()?.EntityKey, rows.Count > context.PageSize);
+        return new SyncSourcePage(limited, limited.LastOrDefault()?.EntityKey, rows.Count > SyncFullEntitySourceHelpers.GetPageLimit(context));
     }
 
     private sealed record BusinessPartnerSourceRow(
@@ -80,9 +341,87 @@ public sealed class BusinessPartnerFullEntitySource(ICompanyResolver companyReso
         string? ExternalCode);
 }
 
+public sealed class ItemGroupFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource
+{
+    public string EntityCode => SyncMasterBranchEntityCodes.ItemGroups;
+
+    public async Task<SyncSourcePage> ReadPageAsync(
+        SyncSourceReadContext context,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT TOP (@Take)
+                GlobalId,
+                Code,
+                Name,
+                Description,
+                InventoryAccountCode,
+                CostOfSalesAccountCode,
+                SalesAccountCode,
+                PurchaseAccountCode,
+                SapGroupCode,
+                SapCode,
+                IsActive,
+                ExternalSystem,
+                ExternalCode,
+                CreatedAt,
+                UpdatedAt
+            FROM dbo.ItemGroups
+            WHERE IsDeleted = 0
+              AND (@LastKey IS NULL OR Code > @LastKey)
+            ORDER BY Code;
+            """;
+
+        var company = await SyncFullEntitySourceHelpers.ResolveSqlServerCompanyAsync(companyResolver, context.CompanyId, cancellationToken);
+        await using var connection = new SqlConnection(company.ConnectionString);
+        var rows = (await connection.QueryAsync<ItemGroupSourceRow>(
+            new CommandDefinition(sql, SyncFullEntitySourceHelpers.ReadParameters(context), cancellationToken: cancellationToken))).AsList();
+
+        var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context)).Select(row => new SyncSourceRecord(
+            row.GlobalId,
+            row.Code,
+            row.IsActive,
+            new ItemGroupSyncPayload(
+                row.GlobalId,
+                row.Code,
+                row.Name,
+                row.Description,
+                row.InventoryAccountCode,
+                row.CostOfSalesAccountCode,
+                row.SalesAccountCode,
+                row.PurchaseAccountCode,
+                row.SapGroupCode,
+                row.SapCode,
+                row.IsActive,
+                row.ExternalSystem,
+                row.ExternalCode,
+                row.CreatedAt,
+                row.UpdatedAt))).ToArray();
+
+        return new SyncSourcePage(limited, limited.LastOrDefault()?.EntityKey, rows.Count > SyncFullEntitySourceHelpers.GetPageLimit(context));
+    }
+
+    private sealed record ItemGroupSourceRow(
+        Guid GlobalId,
+        string Code,
+        string Name,
+        string? Description,
+        string? InventoryAccountCode,
+        string? CostOfSalesAccountCode,
+        string? SalesAccountCode,
+        string? PurchaseAccountCode,
+        string? SapGroupCode,
+        string? SapCode,
+        bool IsActive,
+        string? ExternalSystem,
+        string? ExternalCode,
+        DateTime CreatedAt,
+        DateTime? UpdatedAt);
+}
+
 public sealed class ItemFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource
 {
-    public string EntityCode => "Item";
+    public string EntityCode => SyncMasterBranchEntityCodes.Item;
 
     public async Task<SyncSourcePage> ReadPageAsync(
         SyncSourceReadContext context,
@@ -128,7 +467,7 @@ public sealed class ItemFullEntitySource(ICompanyResolver companyResolver) : ISy
         var rows = (await connection.QueryAsync<ItemSourceRow>(
             new CommandDefinition(sql, SyncFullEntitySourceHelpers.ReadParameters(context), cancellationToken: cancellationToken))).AsList();
 
-        var limited = rows.Take(context.PageSize).Select(row => new SyncSourceRecord(
+        var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context)).Select(row => new SyncSourceRecord(
             row.GlobalId,
             row.Code,
             row.IsActive,
@@ -153,7 +492,7 @@ public sealed class ItemFullEntitySource(ICompanyResolver companyResolver) : ISy
                 row.ExternalCode,
                 row.SapCode))).ToArray();
 
-        return new SyncSourcePage(limited, limited.LastOrDefault()?.EntityKey, rows.Count > context.PageSize);
+        return new SyncSourcePage(limited, limited.LastOrDefault()?.EntityKey, rows.Count > SyncFullEntitySourceHelpers.GetPageLimit(context));
     }
 
     private sealed record ItemSourceRow(
@@ -180,7 +519,7 @@ public sealed class ItemFullEntitySource(ICompanyResolver companyResolver) : ISy
 
 public sealed class WarehouseFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource
 {
-    public string EntityCode => "Warehouse";
+    public string EntityCode => SyncMasterBranchEntityCodes.Warehouse;
 
     public async Task<SyncSourcePage> ReadPageAsync(
         SyncSourceReadContext context,
@@ -222,7 +561,7 @@ public sealed class WarehouseFullEntitySource(ICompanyResolver companyResolver) 
         var rows = (await connection.QueryAsync<WarehouseSourceRow>(
             new CommandDefinition(sql, SyncFullEntitySourceHelpers.ReadParameters(context), cancellationToken: cancellationToken))).AsList();
 
-        var limited = rows.Take(context.PageSize).Select(row => new SyncSourceRecord(
+        var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context)).Select(row => new SyncSourceRecord(
             row.GlobalId,
             row.Code,
             row.IsActive,
@@ -251,7 +590,7 @@ public sealed class WarehouseFullEntitySource(ICompanyResolver companyResolver) 
                 row.CreatedAt,
                 row.UpdatedAt))).ToArray();
 
-        return new SyncSourcePage(limited, limited.LastOrDefault()?.EntityKey, rows.Count > context.PageSize);
+        return new SyncSourcePage(limited, limited.LastOrDefault()?.EntityKey, rows.Count > SyncFullEntitySourceHelpers.GetPageLimit(context));
     }
 
     private sealed record WarehouseSourceRow(
@@ -282,6 +621,13 @@ public sealed class WarehouseFullEntitySource(ICompanyResolver companyResolver) 
 
 file static class SyncFullEntitySourceHelpers
 {
+    public static int GetPageLimit(SyncSourceReadContext context)
+    {
+        return context.RemainingLimit.HasValue
+            ? Math.Min(context.PageSize, Math.Max(context.RemainingLimit.Value, 0))
+            : context.PageSize;
+    }
+
     public static object ReadParameters(SyncSourceReadContext context)
     {
         var requestedTake = context.RemainingLimit.HasValue

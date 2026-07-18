@@ -108,7 +108,9 @@ El proyecto `NuanSystem.SyncWorker` existente corresponde a workers SAP ya imple
 - `ClaimAndRelease`: reclama eventos para dry-run tecnico, registra auditoria `DryRun` y devuelve el evento a `Pending` liberando el lock.
 - `ClaimAndIgnore`: conserva el comportamiento anterior y marca `Ignored`, pero solo debe usarse con configuracion explicita.
 
-La aplicacion real solo ocurre cuando `SkeletonMode = false`, la entidad esta en `EnabledEntityAppliers` y existe un aplicador registrado. `Items` puede habilitarse como maestro de articulo, pero no activa sincronizacion de inventario operativo. `Warehouse` puede habilitarse como maestro de bodega, sin stock, kardex, costos ni transferencias. Listas de precio y otros catalogos quedan para fases posteriores.
+La aplicacion real solo ocurre cuando `SkeletonMode = false`, la entidad esta en `EnabledEntityAppliers` y existe un aplicador registrado. `Countries`, `Provinces` y `Cities` pueden habilitarse como catalogos geograficos ordenados por dependencia. `Currencies` puede habilitarse como catalogo de monedas. `Items` puede habilitarse como maestro de articulo, pero no activa sincronizacion de inventario operativo. `Warehouse` puede habilitarse como maestro de bodega, sin stock, kardex, costos ni transferencias. Listas de precio y otros catalogos quedan para fases posteriores.
+
+`ItemGroups` es una dependencia operativa de `Item` y debe ejecutarse primero. Replica identidad `GlobalId`, codigo, nombre, descripcion, cuentas contables configuradas, referencias SAP opcionales, referencias externas y estado. El aplicador adopta por `Code` solamente registros heredados que aun no comparten `GlobalId`; no replica articulos, stock ni movimientos.
 
 El alcance de `Item` en Fase 4.7 es exclusivamente maestro:
 
@@ -121,6 +123,34 @@ El alcance de `Warehouse` en Fase 4.10 es exclusivamente maestro:
 - Incluye identidad `GlobalId`, codigo, nombre, descripcion, sucursal logica, direccion, ciudad, provincia, pais, contacto responsable, flags operativos, estado y referencias externas.
 - Excluye stock, saldos, kardex, movimientos, costos, ubicaciones internas avanzadas, lotes, series y transferencias.
 - `SapCode` no es identidad de sincronizacion y no es requerido para clientes Standalone.
+
+El alcance de `Countries` es exclusivamente el catalogo maestro de paises:
+
+- Incluye `GlobalId`, codigo, nombre, ISO2, ISO3, prefijo telefonico y estado.
+- Conserva `CountryId` como identidad local de cada tenant y usa `GlobalId` para la replica.
+- Durante la adopcion inicial puede reconciliar por `Code` unico para no duplicar catalogos preexistentes.
+- Excluye provincias, ciudades, direcciones, geocodificacion y cualquier dato transaccional.
+
+El alcance de `Provinces` es exclusivamente el catalogo maestro de provincias:
+
+- Incluye `GlobalId`, `CountryGlobalId`, codigo, nombre y estado.
+- Conserva `ProvinceId` y `CountryId` como identidades locales de cada tenant.
+- Resuelve el pais por `CountryGlobalId` y usa `CountryCode` solo para adoptar datos heredados.
+- Excluye ciudades, direcciones, geocodificacion y cualquier dato transaccional.
+
+El alcance de `Cities` es exclusivamente el catalogo maestro de ciudades:
+
+- Incluye `GlobalId`, `CountryGlobalId`, `ProvinceGlobalId`, codigo, nombre y estado.
+- Conserva `CityId`, `ProvinceId` y `CountryId` como identidades locales de cada tenant.
+- Resuelve pais y provincia por sus identidades globales, valida la jerarquia y usa codigos solo para adoptar datos heredados.
+- Excluye direcciones, parroquias, zonas, geocodificacion y cualquier dato transaccional.
+
+El alcance de `Currencies` es exclusivamente el catalogo maestro de monedas:
+
+- Incluye `GlobalId`, codigo ISO/comercial, nombre, simbolo, descripcion, indicador de moneda base, estado y referencias externas opcionales.
+- Conserva `CurrencyId` como identidad local de cada tenant y usa `GlobalId` para la replica.
+- Durante la adopcion inicial puede reconciliar por `Code` unico para no duplicar USD, EUR u otras monedas existentes.
+- Excluye tipos de cambio, historicos de cotizacion, listas de precio, documentos y conversiones monetarias.
 
 Desde Fase 4.9 existen acciones manuales acotadas:
 
@@ -175,6 +205,11 @@ Entidades iniciales preparadas:
 - `BusinessPartners`: `GlobalId`, `ExternalSystem`, `ExternalCode`. SAP se mantiene en `BusinessPartnerSapMapping.SapCardCode` para no duplicar `SapCode`.
 - `Items`: `GlobalId`, `ExternalSystem`, `ExternalCode`, `SapCode` opcional.
 - `Warehouses`: `GlobalId`, `ExternalSystem`, `ExternalCode`, `SapCode` opcional.
+- `Countries`: `GlobalId` y codigo comercial unico por tenant.
+- `Provinces`: `GlobalId` y referencia al `GlobalId` de Countries.
+- `Cities`: `GlobalId` y referencias a los `GlobalId` de Countries y Provinces.
+- `Currencies`: `GlobalId`, `ExternalSystem` y `ExternalCode` opcionales; `Code` se usa solo para adopcion inicial.
+- `ItemGroups`: `GlobalId`, referencias externas y referencias SAP opcionales; se distribuye antes de `Items`.
 - `PriceLists`: `GlobalId`, `ExternalSystem`, `ExternalCode`, `SapCode` opcional.
 - `Users` y `CompanyParameters` en Master.
 - Catalogos administrativos tenant existentes: unidades de medida, grupos y familias de items, impuestos, monedas, catalogos auxiliares de terceros/proveedores, geografia, bancos y catalogo operacional.
@@ -196,12 +231,30 @@ Reglas:
 - SAP puede consumir documentos locales o publicar referencias externas, pero no sustituye la consistencia local.
 - La sincronizacion Master/Sucursal no depende de SAP.
 
+## Alta administrativa de sucursales
+
+El mantenimiento de companias en Master expone de forma explicita `IsMaster`,
+`ParentCompanyId`, `BranchCode` y `SyncEnabled`. Una sucursal se registra como una
+compania tenant independiente, con base propia, y siempre referencia una compania
+maestra activa.
+
+Reglas de ciclo de vida:
+
+- El tipo maestra/sucursal no puede cambiar despues del alta.
+- Una maestra no acepta padre ni codigo de sucursal.
+- Una sucursal exige padre maestro y `BranchCode` unico dentro de ese padre.
+- El alta inicial se realiza con `SyncEnabled = false` hasta provisionar la base,
+  inicializar el esquema, configurar politicas y validar una previsualizacion.
+- Las sucursales del piloto operan en modo Standalone; no almacenan credenciales SAP.
+- La activacion de `SyncEnabled` no sustituye la configuracion del perfil ni de sus
+  politicas de distribucion.
+
 ## Pendientes de implementacion
 
 - Definir entidades Master para sucursales, nodos de sincronizacion y politicas de direccion.
 - Definir el limite transaccional definitivo entre CRUD tenant y `SyncOutbox` Master antes de conectar mas entidades replicables.
-- Implementar evaluacion real de reglas de distribucion y generacion de targets por sucursal.
+- Completar la consola WinForms para administrar politicas de distribucion y sus selecciones.
 - Diseñar consola operativa avanzada para revision historica, aprobaciones y reproceso masivo controlado de eventos `DeadLetter`.
-- Implementar aplicadores reales para listas de precio y otros catalogos replicables. `Items` y `Warehouse` ya cuentan con aplicadores limitados al maestro.
+- Implementar aplicadores reales para listas de precio y otros catalogos replicables. `Currencies`, `Items` y `Warehouse` ya cuentan con aplicadores limitados al maestro.
 - Versionar tipos de mensaje y contratos JSON.
-- Agregar UI WinForms/API para configurar empresa, sucursales, capacidades, SAP y sincronizacion.
+- Completar la UI WinForms para configurar jerarquia de empresa/sucursal y el aprovisionamiento tenant.

@@ -148,6 +148,7 @@ public sealed class ShellViewModel
             new("Compras", "Ordenes de compra", "Gestion de ordenes de compra", "purchase-orders", [PermissionCodes.PurchaseOrdersRead, PermissionCodes.PurchaseOrdersManage, PermissionCodes.PurchaseOrdersApprove, PermissionCodes.PurchaseOrdersSyncSap]),
             new("Administracion", "Monitor Sync", "Monitoreo Sync Master/Sucursal", "sync-monitor", [PermissionCodes.SyncOutboxView]),
             new("Integraciones", "Perfiles de sincronizacion", "Configuracion Maestro - Sucursales", "sync-profiles", [PermissionCodes.SyncConfigurationView]),
+            new("Integraciones", "Entidades de sincronizacion", "Catalogo tecnico de entidades sincronizables", "sync-entities", [PermissionCodes.SyncEntitiesView]),
             new("Integraciones", "Ejecuciones de sincronizacion", "Monitoreo administrativo de ejecuciones", "sync-executions", [PermissionCodes.SyncConfigurationViewExecutions]),
             new("Catalogos Financieros", "Metodos de pago contable", "Mantenimiento de metodos de pago contable", "accounting-payment-methods", [PermissionCodes.FinancialCatalogsAccountingPaymentMethodsRead, PermissionCodes.FinancialCatalogsAccountingPaymentMethodsManage]),
             new("Catalogos Financieros", "Prioridades de pago", "Mantenimiento de prioridades de pago", "payment-priorities", [PermissionCodes.FinancialCatalogsPaymentPrioritiesRead, PermissionCodes.FinancialCatalogsPaymentPrioritiesManage]),

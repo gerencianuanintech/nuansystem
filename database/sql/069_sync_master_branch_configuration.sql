@@ -364,11 +364,11 @@ BEGIN
         company.IsActive,
         company.IsMaster,
         company.ParentCompanyId,
-        company.SyncEnabled
+        company.SyncEnabled,
+        company.BranchCode,
+        company.DatabaseName
     FROM dbo.Companies company
     WHERE company.IsDeleted = 0
-      AND (@UserId IS NULL OR EXISTS (
-          SELECT 1 FROM dbo.UserCompanies uc WHERE uc.UserId = @UserId AND uc.CompanyId = company.Id AND uc.IsActive = 1))
       AND (company.IsMaster = 1 OR company.ParentCompanyId IS NOT NULL)
     ORDER BY company.IsMaster DESC, company.CommercialName;
 END;
@@ -562,7 +562,7 @@ BEGIN
 
         IF EXISTS (SELECT 1 FROM @Branches branch WHERE NOT EXISTS (SELECT 1 FROM dbo.Companies company WHERE company.Id = branch.BranchCompanyId AND company.ParentCompanyId = @CompanyId AND company.IsMaster = 0 AND company.SyncEnabled = 1 AND company.IsDeleted = 0))
             THROW 51003, 'Una sucursal no pertenece a la empresa maestra o no tiene sincronizacion habilitada.', 1;
-        IF EXISTS (SELECT 1 FROM @Entities entity WHERE entity.EntityCode NOT IN (N'Countries', N'Provinces', N'Cities', N'Currencies', N'BusinessPartnerPaymentTerms', N'SupplierGroups', N'SupplierClasses', N'EconomicActivities', N'Zones', N'SupplyMethods'))
+        IF EXISTS (SELECT 1 FROM @Entities entity WHERE entity.EntityCode NOT IN (N'Countries', N'Provinces', N'Cities', N'Currencies', N'BusinessPartnerPaymentTerms', N'SupplierGroups', N'SupplierClasses', N'EconomicActivities', N'Zones', N'SupplyMethods', N'BusinessPartner', N'ItemGroups', N'Item', N'Warehouse'))
             THROW 51004, 'Una entidad no pertenece al catalogo inicial permitido.', 1;
         IF EXISTS (SELECT 1 FROM @Matrix matrix WHERE NOT EXISTS (SELECT 1 FROM @Entities entity WHERE entity.EntityCode = matrix.EntityCode) OR NOT EXISTS (SELECT 1 FROM @Branches branch WHERE branch.BranchCompanyId = matrix.BranchCompanyId))
             THROW 51005, 'La matriz entidad-sucursal referencia una entidad o sucursal no incluida en el perfil.', 1;

@@ -165,19 +165,9 @@ public sealed class SyncInfrastructureContractTests
             "Sync",
             "SyncRuleEvaluator.cs");
 
-        ruleEvaluator.Should().Contain("FROM dbo.SyncDistributionRules AS distRule");
-        ruleEvaluator.Should().NotContain("AS rule");
-        ruleEvaluator.Should().NotContain(" rule.");
-        ruleEvaluator.Should().Contain("distRule.CompanyId = @CompanyId");
-        ruleEvaluator.Should().Contain("distRule.EntityName = @EntityName");
-        ruleEvaluator.Should().Contain("distRule.IsEnabled = 1");
-        ruleEvaluator.Should().Contain("branch.IsActive = 1");
-        ruleEvaluator.Should().Contain("branch.IsMaster = 0");
-        ruleEvaluator.Should().Contain("branch.SyncEnabled = 1");
-        ruleEvaluator.Should().Contain("branch.ParentCompanyId = @CompanyId");
-        ruleEvaluator.Should().Contain("branch.IsDeleted = 0");
-        ruleEvaluator.Should().Contain("distRule.RuleType = N'All'");
-        ruleEvaluator.Should().Contain("ORDER BY distRule.BranchCompanyId");
+        ruleEvaluator.Should().Contain("dbo.SP_NA_GET_SYNCDISTRIBUTIONRULETARGETS");
+        ruleEvaluator.Should().Contain("CommandType.StoredProcedure");
+        ruleEvaluator.Should().NotContain("SELECT DISTINCT");
     }
 
     [Fact]

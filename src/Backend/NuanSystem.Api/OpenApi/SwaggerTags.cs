@@ -11,4 +11,5 @@ internal static class SwaggerTags
     public const string SecurityFields = "Security - Fields";
     public const string SecurityAccess = "Security - Access";
     public const string SecurityDocumentSeries = "Security - Document Series";
+    public const string SyncEntityDefinitions = "Synchronization - Entity Definitions";
 }

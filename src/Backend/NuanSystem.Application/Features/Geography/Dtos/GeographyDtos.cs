@@ -4,6 +4,8 @@ public sealed class CountryDto
 {
     public int Id { get; set; }
 
+    public Guid GlobalId { get; set; }
+
     public string Code { get; set; } = string.Empty;
 
     public string Name { get; set; } = string.Empty;
@@ -15,13 +17,32 @@ public sealed class CountryDto
     public string? PhonePrefix { get; set; }
 
     public bool IsActive { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
 }
+
+public sealed record CountrySyncPayload(
+    Guid GlobalId,
+    string Code,
+    string Name,
+    string? Iso2,
+    string? Iso3,
+    string? PhonePrefix,
+    bool IsActive,
+    DateTime CreatedAt,
+    DateTime? UpdatedAt);
 
 public sealed class ProvinceDto
 {
     public int Id { get; set; }
 
+    public Guid GlobalId { get; set; }
+
     public int CountryId { get; set; }
+
+    public Guid CountryGlobalId { get; set; }
 
     public string CountryCode { get; set; } = string.Empty;
 
@@ -32,19 +53,39 @@ public sealed class ProvinceDto
     public string Name { get; set; } = string.Empty;
 
     public bool IsActive { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
 }
+
+public sealed record ProvinceSyncPayload(
+    Guid GlobalId,
+    Guid CountryGlobalId,
+    string CountryCode,
+    string Code,
+    string Name,
+    bool IsActive,
+    DateTime CreatedAt,
+    DateTime? UpdatedAt);
 
 public sealed class CityDto
 {
     public int Id { get; set; }
 
+    public Guid GlobalId { get; set; }
+
     public int CountryId { get; set; }
+
+    public Guid CountryGlobalId { get; set; }
 
     public string CountryCode { get; set; } = string.Empty;
 
     public string CountryName { get; set; } = string.Empty;
 
     public int ProvinceId { get; set; }
+
+    public Guid ProvinceGlobalId { get; set; }
 
     public string ProvinceCode { get; set; } = string.Empty;
 
@@ -55,7 +96,23 @@ public sealed class CityDto
     public string Name { get; set; } = string.Empty;
 
     public bool IsActive { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
 }
+
+public sealed record CitySyncPayload(
+    Guid GlobalId,
+    Guid CountryGlobalId,
+    string CountryCode,
+    Guid ProvinceGlobalId,
+    string ProvinceCode,
+    string Code,
+    string Name,
+    bool IsActive,
+    DateTime CreatedAt,
+    DateTime? UpdatedAt);
 
 public sealed class GeographyLookupDto
 {
@@ -92,6 +149,7 @@ public sealed class StaticMapResultDto
 
 public sealed record SaveCountryData(
     int? Id,
+    Guid GlobalId,
     string Code,
     string Name,
     string? Iso2,
@@ -103,6 +161,7 @@ public sealed record SaveCountryData(
 
 public sealed record SaveProvinceData(
     int? Id,
+    Guid GlobalId,
     int CountryId,
     string Code,
     string Name,
@@ -112,6 +171,7 @@ public sealed record SaveProvinceData(
 
 public sealed record SaveCityData(
     int? Id,
+    Guid GlobalId,
     int CountryId,
     int ProvinceId,
     string Code,

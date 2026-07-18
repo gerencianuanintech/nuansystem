@@ -19,6 +19,28 @@ public sealed class ItemSyncPublishingTests
     private readonly ICompanyContext _companyContext = Substitute.For<ICompanyContext>();
 
     [Fact]
+    public async Task CreateValidator_AcceptsBarcodeAndWarehouseCollections_WithoutRuntimeException()
+    {
+        var validator = new CreateItemCommandValidator();
+        var command = CreateCommand() with { IsExternalImport = true };
+
+        var action = async () => await validator.ValidateAsync(command);
+
+        await action.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task UpdateValidator_AcceptsBarcodeAndWarehouseCollections_WithoutRuntimeException()
+    {
+        var validator = new UpdateItemCommandValidator();
+        var command = UpdateCommand(25) with { IsExternalImport = true };
+
+        var action = async () => await validator.ValidateAsync(command);
+
+        await action.Should().NotThrowAsync();
+    }
+
+    [Fact]
     public async Task Create_PublishesItemSyncEvent_WithGlobalIdAndCode()
     {
         SyncPublishRequest? captured = null;

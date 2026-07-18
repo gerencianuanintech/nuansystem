@@ -7,9 +7,6 @@ namespace NuanSystem.WinForms.Controls.Lookups;
 [DefaultEvent(nameof(CreateButtonClick))]
 public class NuanLookupEdit : LookUpEdit
 {
-    private EditorButton? clearButton;
-    private EditorButton? createButton;
-
     public NuanLookupEdit()
     {
         EnsureActionButtons();
@@ -23,13 +20,13 @@ public class NuanLookupEdit : LookUpEdit
     [DefaultValue(false)]
     public bool CreateButtonEnabled
     {
-        get => createButton?.Enabled == true;
+        get => ActionButtons(ButtonPredefines.Plus).Any(button => button.Enabled);
         set
         {
             EnsureActionButtons();
-            if (createButton is not null)
+            foreach (var button in ActionButtons(ButtonPredefines.Plus))
             {
-                createButton.Enabled = value;
+                button.Enabled = value;
             }
         }
     }
@@ -37,13 +34,13 @@ public class NuanLookupEdit : LookUpEdit
     [DefaultValue(true)]
     public bool ClearButtonEnabled
     {
-        get => clearButton?.Enabled != false;
+        get => ActionButtons(ButtonPredefines.Delete).All(button => button.Enabled);
         set
         {
             EnsureActionButtons();
-            if (clearButton is not null)
+            foreach (var button in ActionButtons(ButtonPredefines.Delete))
             {
-                clearButton.Enabled = value;
+                button.Enabled = value;
             }
         }
     }
@@ -65,56 +62,62 @@ public class NuanLookupEdit : LookUpEdit
 
     private void EnsureActionButtons()
     {
-        var buttons = Properties.Buttons.Cast<EditorButton>().ToList();
-        if (buttons.All(button => button.Kind != ButtonPredefines.Combo))
+        if (!ActionButtons(ButtonPredefines.Combo).Any())
         {
             Properties.Buttons.Insert(0, new EditorButton(ButtonPredefines.Combo));
         }
 
-        clearButton = Properties.Buttons
-            .Cast<EditorButton>()
-            .FirstOrDefault(button => button.Kind == ButtonPredefines.Delete);
-        if (clearButton is null)
+        NormalizeActionButton(ButtonPredefines.Delete, "Limpiar seleccion", enabledByDefault: true);
+        NormalizeActionButton(ButtonPredefines.Plus, "Crear nuevo", enabledByDefault: false);
+    }
+
+    private void NormalizeActionButton(
+        ButtonPredefines kind,
+        string toolTip,
+        bool enabledByDefault)
+    {
+        var buttons = ActionButtons(kind).ToList();
+        var button = buttons.FirstOrDefault();
+        if (button is null)
         {
-            clearButton = new EditorButton(ButtonPredefines.Delete)
-            { 
-                ToolTip = "Limpiar seleccion" 
-            };
-            Properties.Buttons.Add(clearButton);
-        }
-        else
-        {
-            clearButton.ToolTip = "Limpiar seleccion";
+            Properties.Buttons.Add(new EditorButton(kind)
+            {
+                ToolTip = toolTip,
+                Enabled = enabledByDefault
+            });
+            return;
         }
 
-        createButton = Properties.Buttons
+        foreach (var duplicate in buttons.Skip(1))
+        {
+            Properties.Buttons.Remove(duplicate);
+        }
+
+        button.ToolTip = toolTip;
+        if (buttons.Count > 1 && !buttons.Any(item => item.Enabled))
+        {
+            button.Enabled = enabledByDefault;
+        }
+
+    }
+
+    private IEnumerable<EditorButton> ActionButtons(ButtonPredefines kind)
+    {
+        return Properties.Buttons
             .Cast<EditorButton>()
-            .FirstOrDefault(button => button.Kind == ButtonPredefines.Plus);
-        if (createButton is null)
-        {
-            createButton = new EditorButton(ButtonPredefines.Plus)
-            {
-                ToolTip = "Crear nuevo",
-                Enabled = false
-            };
-            Properties.Buttons.Add(createButton);
-        }
-        else
-        {
-            createButton.ToolTip = "Crear nuevo";
-        }
+            .Where(button => button.Kind == kind);
     }
 
     private void PropertiesButtonClick(object sender, ButtonPressedEventArgs e)
     {
-        if (ReferenceEquals(e.Button, clearButton))
+        if (e.Button.Kind == ButtonPredefines.Delete && e.Button.Enabled)
         {
             EditValue = null;
             ClearButtonClick?.Invoke(this, EventArgs.Empty);
             return;
         }
 
-        if (ReferenceEquals(e.Button, createButton) && createButton.Enabled)
+        if (e.Button.Kind == ButtonPredefines.Plus && e.Button.Enabled)
         {
             CreateButtonClick?.Invoke(this, EventArgs.Empty);
         }

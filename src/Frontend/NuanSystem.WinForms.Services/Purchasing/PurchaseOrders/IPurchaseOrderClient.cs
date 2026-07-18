@@ -25,6 +25,8 @@ public interface IPurchaseOrderClient
     Task<PurchaseOrderDetail> RejectAsync(int id, string? observation, CancellationToken cancellationToken = default);
 
     Task<PurchaseOrderDetail> SyncSapAsync(int id, CancellationToken cancellationToken = default);
+    Task<PurchaseOrderRoutingResult> RouteAsync(int id,CancellationToken cancellationToken=default);
+    Task<PurchaseOrderRoutingResult> ApproveRouteAsync(int id,ApprovePurchaseOrderRouteRequest request,CancellationToken cancellationToken=default);
 
     Task<PurchaseOrderDetail> AddRelatedDocumentAsync(int id, PurchaseOrderRelatedDocumentItem relatedDocument, CancellationToken cancellationToken = default);
 

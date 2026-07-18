@@ -177,4 +177,6 @@ public sealed record SyncSourceRecord(
     Guid GlobalId,
     string EntityKey,
     bool IsActive,
-    object Payload);
+    object Payload,
+    string? TargetBranchCode = null,
+    bool RequireTargetBranchMatch = false);

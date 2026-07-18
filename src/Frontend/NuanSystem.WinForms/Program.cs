@@ -10,6 +10,7 @@ using NuanSystem.WinForms.Forms.Purchasing.PurchaseOrders;
 using NuanSystem.WinForms.Forms.Sap;
 using NuanSystem.WinForms.Forms.Sync;
 using NuanSystem.WinForms.Forms.Sync.Configuration;
+using NuanSystem.WinForms.Forms.Sync.EntityDefinitions;
 using NuanSystem.WinForms.Forms.Security.Operations;
 using NuanSystem.WinForms.Forms.Security.Menus;
 using NuanSystem.WinForms.Forms.Security.Forms;
@@ -92,6 +93,7 @@ using NuanSystem.WinForms.Services.InventoryItems;
 using NuanSystem.WinForms.Services.Purchasing.PurchaseOrders;
 using NuanSystem.WinForms.Services.Sap;
 using NuanSystem.WinForms.Services.Sync;
+using NuanSystem.WinForms.Services.Sync.EntityDefinitions;
 using NuanSystem.WinForms.Services.Security.Operations;
 using NuanSystem.WinForms.Services.Security.Menus;
 using NuanSystem.WinForms.Services.Security.Forms;
@@ -121,6 +123,7 @@ using NuanSystem.WinForms.ViewModels.InventoryItems;
 using NuanSystem.WinForms.ViewModels.Purchasing.PurchaseOrders;
 using NuanSystem.WinForms.ViewModels.Sap;
 using NuanSystem.WinForms.ViewModels.Sync;
+using NuanSystem.WinForms.ViewModels.Sync.EntityDefinitions;
 using NuanSystem.WinForms.ViewModels.Security.Operations;
 using NuanSystem.WinForms.ViewModels.Security.Menus;
 using NuanSystem.WinForms.ViewModels.Security.Forms;
@@ -246,6 +249,7 @@ internal sealed class FrontendComposition : IDisposable
     private readonly SapClient sapClient;
     private readonly SyncMonitorClient syncMonitorClient;
     private readonly SyncConfigurationClient syncConfigurationClient;
+    private readonly SyncEntityDefinitionClient syncEntityDefinitionClient;
     private readonly AuditClient auditClient;
     private readonly SettingsClient settingsClient;
     private readonly UserClient userClient;
@@ -292,6 +296,7 @@ internal sealed class FrontendComposition : IDisposable
         sapClient = new SapClient(apiClient);
         syncMonitorClient = new SyncMonitorClient(apiClient);
         syncConfigurationClient = new SyncConfigurationClient(apiClient);
+        syncEntityDefinitionClient = new SyncEntityDefinitionClient(apiClient);
         auditClient = new AuditClient(apiClient);
         settingsClient = new SettingsClient(apiClient);
         userClient = new UserClient(apiClient);
@@ -383,6 +388,7 @@ internal sealed class FrontendComposition : IDisposable
             CreateSapSyncLogForm,
             CreateSyncMonitorForm,
             CreateSyncProfileListForm,
+            CreateSyncEntityListForm,
             CreateSyncExecutionListForm,
             CreateAuditLogsForm,
             CreateSettingsForm);
@@ -936,7 +942,12 @@ internal sealed class FrontendComposition : IDisposable
 
     public SyncProfileListForm CreateSyncProfileListForm()
     {
-        return new SyncProfileListForm(new SyncProfilesViewModel(syncConfigurationClient), syncConfigurationClient, session);
+        return new SyncProfileListForm(
+            new SyncProfilesViewModel(syncConfigurationClient),
+            syncConfigurationClient,
+            session,
+            configurationCompanyClient,
+            syncEntityDefinitionClient);
     }
 
     public SyncExecutionListForm CreateSyncExecutionListForm()
@@ -945,6 +956,15 @@ internal sealed class FrontendComposition : IDisposable
             new SyncExecutionsViewModel(syncConfigurationClient),
             new SyncProfileExecutionDetailViewModel(syncConfigurationClient),
             session);
+    }
+
+    public SyncEntityListForm CreateSyncEntityListForm()
+    {
+        return new SyncEntityListForm(
+            new SyncEntityDefinitionsViewModel(syncEntityDefinitionClient),
+            syncEntityDefinitionClient,
+            session,
+            gridColumnSettingsClient);
     }
 
     public AuditLogsForm CreateAuditLogsForm()

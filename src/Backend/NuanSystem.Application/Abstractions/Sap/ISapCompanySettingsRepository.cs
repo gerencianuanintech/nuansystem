@@ -11,4 +11,8 @@ public interface ISapCompanySettingsRepository
     Task<SapCompanySettingsDto?> GetByCompanyCodeAsync(
         string companyCode,
         CancellationToken cancellationToken = default);
+
+    Task<int> UpsertServiceLayerAsync(
+        UpdateSapServiceLayerSettingsData settings,
+        CancellationToken cancellationToken = default);
 }

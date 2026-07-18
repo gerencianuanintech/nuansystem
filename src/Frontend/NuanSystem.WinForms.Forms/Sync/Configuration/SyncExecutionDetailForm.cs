@@ -14,6 +14,8 @@ public sealed partial class SyncExecutionDetailForm : XtraForm
     private ApiSession? session;
     private int executionId;
     private bool isRefreshing;
+    private bool isActionInProgress;
+    private bool allowActions = true;
 
     public SyncExecutionDetailForm()
     {
@@ -21,12 +23,17 @@ public sealed partial class SyncExecutionDetailForm : XtraForm
         FormStyler.ApplyBase(this);
     }
 
-    public SyncExecutionDetailForm(SyncProfileExecutionDetailViewModel viewModel, ApiSession session, int executionId)
+    public SyncExecutionDetailForm(
+        SyncProfileExecutionDetailViewModel viewModel,
+        ApiSession session,
+        int executionId,
+        bool allowActions = true)
         : this()
     {
         this.viewModel = viewModel;
         this.session = session;
         this.executionId = executionId;
+        this.allowActions = allowActions;
         Text = $"Detalle de ejecucion {executionId}";
         WireEvents();
         ApplyPermissions();
@@ -47,7 +54,7 @@ public sealed partial class SyncExecutionDetailForm : XtraForm
         }
 
         await RefreshAsync();
-        pollingTimer.Start();
+        UpdatePollingState();
     }
 
     protected override void OnFormClosed(FormClosedEventArgs e)
@@ -66,8 +73,7 @@ public sealed partial class SyncExecutionDetailForm : XtraForm
 
     private void ApplyPermissions()
     {
-        cancelButton.Enabled = Session.HasPermission(PermissionCodes.SyncConfigurationCancel);
-        retryButton.Enabled = Session.HasPermission(PermissionCodes.SyncConfigurationRetry);
+        UpdateActionState();
     }
 
     private async Task RefreshAsync()
@@ -94,12 +100,17 @@ public sealed partial class SyncExecutionDetailForm : XtraForm
         finally
         {
             isRefreshing = false;
+            UpdateActionState();
+            UpdatePollingState();
         }
     }
 
     private async Task RefreshIfActiveAsync()
     {
-        if (!IsDisposed && !Disposing && (ViewModel.Detail is null || IsActiveStatus(ViewModel.Detail.Status)))
+        if (!IsDisposed
+            && !Disposing
+            && !isActionInProgress
+            && (ViewModel.Detail is null || SyncExecutionStatusPolicy.IsActive(ViewModel.Detail.Status)))
         {
             await RefreshAsync();
         }
@@ -120,41 +131,111 @@ public sealed partial class SyncExecutionDetailForm : XtraForm
             $"Mensaje: {detail.Message}";
 
         detailGrid.DataSource = detail.Details;
+        UpdateActionState();
     }
 
     private async Task CancelAsync()
     {
+        if (!CanCancelCurrentExecution())
+        {
+            return;
+        }
+
         if (XtraMessageBox.Show(this, $"Cancelar la ejecucion {executionId}?", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
         {
             return;
         }
 
-        await UiExceptionHandler.RunAsync(this, Text, async () =>
+        isActionInProgress = true;
+        UpdateActionState();
+        try
         {
-            await ViewModel.CancelAsync(executionId);
-            await RefreshAsync();
-        });
+            await UiExceptionHandler.RunAsync(this, Text, async () =>
+            {
+                await ViewModel.CancelAsync(executionId);
+                await RefreshAsync();
+            });
+        }
+        finally
+        {
+            isActionInProgress = false;
+            UpdateActionState();
+        }
     }
 
     private async Task RetryAsync()
     {
+        if (!CanRetryCurrentExecution())
+        {
+            return;
+        }
+
         if (XtraMessageBox.Show(this, $"Reintentar la ejecucion {executionId}?", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
         {
             return;
         }
 
-        await UiExceptionHandler.RunAsync(this, Text, async () =>
+        isActionInProgress = true;
+        UpdateActionState();
+        try
         {
-            await ViewModel.RetryAsync(executionId);
-            await RefreshAsync();
-        });
+            await UiExceptionHandler.RunAsync(this, Text, async () =>
+            {
+                var retry = await ViewModel.RetryAsync(executionId);
+                executionId = retry.NewExecutionId;
+                Text = $"Detalle de ejecucion {executionId}";
+                await RefreshAsync();
+            });
+        }
+        finally
+        {
+            isActionInProgress = false;
+            UpdateActionState();
+        }
     }
 
-    private static bool IsActiveStatus(string status)
+    private bool CanCancelCurrentExecution()
     {
-        return string.Equals(status, "Pending", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(status, "Running", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(status, "Cancelling", StringComparison.OrdinalIgnoreCase);
+        return allowActions
+            && !isRefreshing
+            && !isActionInProgress
+            && Session.HasPermission(PermissionCodes.SyncConfigurationCancel)
+            && ViewModel.Detail is { } detail
+            && SyncExecutionStatusPolicy.CanCancel(detail.Status);
+    }
+
+    private bool CanRetryCurrentExecution()
+    {
+        return allowActions
+            && !isRefreshing
+            && !isActionInProgress
+            && Session.HasPermission(PermissionCodes.SyncConfigurationRetry)
+            && ViewModel.Detail is { } detail
+            && SyncExecutionStatusPolicy.CanRetry(detail.Status);
+    }
+
+    private void UpdateActionState()
+    {
+        refreshButton.Enabled = !isRefreshing && !isActionInProgress;
+        cancelButton.Enabled = CanCancelCurrentExecution();
+        retryButton.Enabled = CanRetryCurrentExecution();
+    }
+
+    private void UpdatePollingState()
+    {
+        if (IsDisposed || Disposing)
+        {
+            pollingTimer.Stop();
+            return;
+        }
+
+        if (ViewModel.Detail is null || SyncExecutionStatusPolicy.IsActive(ViewModel.Detail.Status))
+        {
+            pollingTimer.Start();
+            return;
+        }
+
+        pollingTimer.Stop();
     }
 
     private bool IsInDesignMode()

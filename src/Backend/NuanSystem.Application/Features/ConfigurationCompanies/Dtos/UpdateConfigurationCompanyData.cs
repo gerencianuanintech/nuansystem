@@ -27,5 +27,9 @@ public sealed record UpdateConfigurationCompanyData(
     string TimeZoneId,
     string CultureCode,
     string CurrencyCode,
+    bool IsMaster,
+    int? ParentCompanyId,
+    string? BranchCode,
+    bool SyncEnabled,
     int? UpdatedByUserId,
     string? UpdatedByUserName);

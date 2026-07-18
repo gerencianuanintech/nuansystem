@@ -26,3 +26,20 @@ public sealed class ItemGroupDto
     public string? DeletedByUserName { get; set; }
     public DateTime? DeletedAt { get; set; }
 }
+
+public sealed record ItemGroupSyncPayload(
+    Guid GlobalId,
+    string Code,
+    string Name,
+    string? Description,
+    string? InventoryAccountCode,
+    string? CostOfSalesAccountCode,
+    string? SalesAccountCode,
+    string? PurchaseAccountCode,
+    string? SapGroupCode,
+    string? SapCode,
+    bool IsActive,
+    string? ExternalSystem,
+    string? ExternalCode,
+    DateTime CreatedAt,
+    DateTime? UpdatedAt);

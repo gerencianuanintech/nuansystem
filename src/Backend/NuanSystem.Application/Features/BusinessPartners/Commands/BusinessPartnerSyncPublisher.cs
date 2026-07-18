@@ -2,6 +2,7 @@ using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Features.Sync.Configuration;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Shared.Sync;
 
@@ -9,7 +10,7 @@ namespace NuanSystem.Application.Features.BusinessPartners.Commands;
 
 internal static class BusinessPartnerSyncPublisher
 {
-    private const string EntityName = "BusinessPartner";
+    private const string EntityName = SyncMasterBranchEntityCodes.BusinessPartner;
 
     public static async Task<Result<SyncPublishResult>?> PublishAsync(
         ISyncEventPublisher syncEventPublisher,

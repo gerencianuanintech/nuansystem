@@ -196,20 +196,20 @@ DECLARE @Operations table
 INSERT INTO @Operations (Code, Name, ActionKey, IconLarge, IconSmall, DisplayOrder)
 VALUES
     (N'ACTION.REFRESH', N'Actualizar', N'refresh', NULL, NULL, 10),
-    (N'ACTION.CREATE', N'Crear', N'create', NULL, NULL, 20),
-    (N'ACTION.UPDATE', N'Actualizar registro', N'update', NULL, NULL, 30),
+    (N'ACTION.CREATE', N'Crear', N'create', N'Ribbon/nuevo_32.svg', N'Ribbon/nuevo_16.svg', 20),
+    (N'ACTION.UPDATE', N'Actualizar registro', N'update', N'Ribbon/editar_32.svg', N'Ribbon/editar_16.svg', 30),
     (N'ACTION.DELETE', N'Eliminar', N'delete', NULL, NULL, 40),
     (N'ACTION.CONSULT', N'Consultar', N'consult', NULL, NULL, 50),
     (N'ACTION.COPY', N'Copiar', N'copy', NULL, NULL, 52),
-    (N'ACTION.ACTIVATE', N'Activar', N'activate', NULL, NULL, 55),
-    (N'ACTION.DEACTIVATE', N'Desactivar', N'deactivate', NULL, NULL, 56),
-    (N'ACTION.EXECUTE', N'Ejecutar', N'execute', NULL, NULL, 60),
-    (N'ACTION.VIEWEXECUTIONS', N'Ver ejecuciones', N'view-executions', NULL, NULL, 65),
+    (N'ACTION.ACTIVATE', N'Activar', N'activate', N'Ribbon/activar_toggle_on_32.svg', N'Ribbon/activar_toggle_on_16.svg', 55),
+    (N'ACTION.DEACTIVATE', N'Desactivar', N'deactivate', N'Ribbon/desactivar_toggle_off_32.svg', N'Ribbon/desactivar_toggle_off_16.svg', 56),
+    (N'ACTION.EXECUTE', N'Ejecutar', N'execute', N'Ribbon/ejecutar_play_circulo_32.svg', N'Ribbon/ejecutar_play_circulo_16.svg', 60),
+    (N'ACTION.VIEWEXECUTIONS', N'Ver ejecuciones', N'view-executions', N'Ribbon/ver_ejecuciones_lista_32.svg', N'Ribbon/ver_ejecuciones_lista_16.svg', 65),
     (N'ACTION.CANCEL', N'Anular', N'cancel', NULL, NULL, 70),
     (N'ACTION.RETRY', N'Reintentar', N'retry', NULL, NULL, 80),
     (N'ACTION.FILTER', N'Filtro', N'filter', N'Ribbon/filtro_32.svg', N'Ribbon/filtro_16.svg', 84),
     (N'ACTION.CUSTOMIZE_COLUMNS', N'Columnas', N'customize-columns', NULL, NULL, 85),
-    (N'ACTION.VALIDATE', N'Validar', N'validate', NULL, NULL, 90),
+    (N'ACTION.VALIDATE', N'Validar', N'validate', N'Ribbon/validar_cuadro_check_32.svg', N'Ribbon/validar_cuadro_check_16.svg', 90),
     (N'ACTION.HISTORY', N'Historial', N'history', NULL, NULL, 95);
 
 MERGE dbo.SecurityOperations AS target

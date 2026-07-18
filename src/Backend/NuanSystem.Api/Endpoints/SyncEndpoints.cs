@@ -149,6 +149,12 @@ public static class SyncEndpoints
         })
         .RequirePermission(PermissionCodes.SyncOutboxRetryDeadLetter);
 
+        app.MapPost("/api/sync/outbox/retry-batch", async (RetrySyncOutboxBatchRequest request,ISender sender,ClaimsPrincipal user,CancellationToken cancellationToken) =>
+        {
+            var auditUser=user.GetAuditUser();
+            return (await sender.Send(new RetrySyncOutboxBatchCommand(request.Ids,request.Reason,request.ResetDeadLetterAttempts,auditUser.UserName),cancellationToken)).ToHttpResult();
+        }).RequirePermission(PermissionCodes.SyncOutboxRetryDeadLetter);
+
         app.MapPost("/api/sync/outbox/{id:long}/release-expired-lock", async (
             long id,
             ReleaseExpiredLockRequest? request,
@@ -167,3 +173,5 @@ public static class SyncEndpoints
         return app;
     }
 }
+
+public sealed record RetrySyncOutboxBatchRequest(IReadOnlyCollection<long> Ids,string Reason,bool ResetDeadLetterAttempts=true);

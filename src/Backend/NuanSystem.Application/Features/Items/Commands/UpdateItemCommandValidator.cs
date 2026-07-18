@@ -32,9 +32,9 @@ public sealed class UpdateItemCommandValidator : AbstractValidator<UpdateItemCom
             RuleFor(command => command.PurchaseFactor).GreaterThan(0);
             RuleFor(command => command.SalesFactor).GreaterThan(0);
             RuleFor(command => command.Remarks).MaximumLength(1000);
-            RuleFor(command => command.InventoryUnitOfMeasureId).NotNull().When(command => command.IsInventoryItem);
-            RuleFor(command => command.PurchaseTaxId).NotNull().When(command => command.IsPurchaseItem);
-            RuleFor(command => command.SalesTaxId).NotNull().When(command => command.IsSalesItem);
+            RuleFor(command => command.InventoryUnitOfMeasureId).NotNull().When(command => command.IsInventoryItem && !command.IsExternalImport);
+            RuleFor(command => command.PurchaseTaxId).NotNull().When(command => command.IsPurchaseItem && !command.IsExternalImport);
+            RuleFor(command => command.SalesTaxId).NotNull().When(command => command.IsSalesItem && !command.IsExternalImport);
             RuleFor(command => command.ManagedBy).Equal("None").When(command => !command.IsInventoryItem);
             RuleFor(command => command.MasterData)
                 .Must((command, masterData) => masterData?.General is null || !masterData.General.IsService || (!command.IsInventoryItem && !masterData.General.AffectsInventory))
@@ -91,13 +91,13 @@ public sealed class UpdateItemCommandValidator : AbstractValidator<UpdateItemCom
                 .WithMessage("La fecha hasta de una alerta operativa no puede ser menor que la fecha desde.");
             RuleFor(command => command.Barcodes ?? Array.Empty<SaveItemBarcodeData>()).Must(items => items.Count(item => item.IsMain && item.IsActive) <= 1);
             RuleFor(command => command.Warehouses ?? Array.Empty<SaveItemWarehouseData>()).Must(items => items.Count(item => item.IsDefaultWarehouse && item.IsActive) <= 1);
-            RuleForEach(command => command.Barcodes ?? Array.Empty<SaveItemBarcodeData>()).ChildRules(barcode =>
+            RuleForEach(command => command.Barcodes).ChildRules(barcode =>
             {
                 barcode.RuleFor(item => item.Barcode).NotEmpty().MaximumLength(120);
                 barcode.RuleFor(item => item.BarcodeType).NotEmpty().MaximumLength(40);
                 barcode.RuleFor(item => item.ConversionFactor).GreaterThan(0);
             });
-            RuleForEach(command => command.Warehouses ?? Array.Empty<SaveItemWarehouseData>()).ChildRules(warehouse =>
+            RuleForEach(command => command.Warehouses).ChildRules(warehouse =>
             {
                 warehouse.RuleFor(item => item.WarehouseId).GreaterThan(0);
                 warehouse.RuleFor(item => item.MinimumStock).GreaterThanOrEqualTo(0);

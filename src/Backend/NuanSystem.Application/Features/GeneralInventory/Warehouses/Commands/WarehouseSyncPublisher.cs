@@ -2,6 +2,7 @@ using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.GeneralInventory.Warehouses.Dtos;
+using NuanSystem.Application.Features.Sync.Configuration;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Shared.Sync;
 
@@ -9,7 +10,7 @@ namespace NuanSystem.Application.Features.GeneralInventory.Warehouses.Commands;
 
 internal static class WarehouseSyncPublisher
 {
-    private const string EntityName = "Warehouse";
+    private const string EntityName = SyncMasterBranchEntityCodes.Warehouse;
 
     public static async Task<Result<SyncPublishResult>?> PublishAsync(
         ISyncEventPublisher syncEventPublisher,

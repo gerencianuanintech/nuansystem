@@ -30,5 +30,9 @@ public sealed record UpdateConfigurationCompanyCommand(
     string TimeZoneId,
     string CultureCode,
     string CurrencyCode,
+    bool? IsMaster = null,
+    int? ParentCompanyId = null,
+    string? BranchCode = null,
+    bool? SyncEnabled = null,
     int? AuditUserId = null,
     string? AuditUserName = null) : ICommand<ConfigurationCompanyDto>;

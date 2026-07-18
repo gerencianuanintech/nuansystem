@@ -20,12 +20,39 @@ public sealed class SyncRoutingRepository(IMasterConnectionFactory connectionFac
             {
                 context.SourceCompanyId,
                 EntityCode = context.EntityCode,
-                context.SyncProfileId
+                context.SyncProfileId,
+                context.TargetBranchCode,
+                context.RequireTargetBranchMatch,
+                context.EntityGlobalId
             },
             commandType: CommandType.StoredProcedure,
             cancellationToken: cancellationToken));
 
         return rows.AsList();
+    }
+
+    public async Task RecordDecisionAsync(
+        long outboxId,
+        Guid entityGlobalId,
+        SyncDistributionDecisionDto decision,
+        CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        await connection.ExecuteAsync(new CommandDefinition(
+            "dbo.SP_NA_POST_SYNCDISTRIBUTIONDECISIONREGISTRAR",
+            new
+            {
+                OutboxId = outboxId,
+                decision.SyncProfileEntityBranchId,
+                decision.BranchCompanyId,
+                EntityGlobalId = entityGlobalId,
+                decision.DistributionMode,
+                decision.Matched,
+                decision.Reason,
+                decision.RuleVersion
+            },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
     }
 
     public async Task<IReadOnlyCollection<SyncRoutingConflictDto>> FindActiveConflictsAsync(

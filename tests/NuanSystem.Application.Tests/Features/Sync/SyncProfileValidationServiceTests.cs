@@ -1,8 +1,11 @@
 using FluentAssertions;
 using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Features.Sync.Configuration;
 using NuanSystem.Application.Features.Sync.Configuration.Dtos;
 using NuanSystem.Application.Features.Sync.Configuration.Services;
 using NuanSystem.Application.Features.Sync.Dtos;
+using NuanSystem.Application.Features.Sync.EntityDefinitions.Dtos;
+using NuanSystem.Application.Features.Sync.EntityDefinitions.Services;
 
 namespace NuanSystem.Application.Tests.Features.Sync;
 
@@ -33,6 +36,7 @@ public sealed class SyncProfileValidationServiceTests
             Entities =
             [
                 Entity("BusinessPartner", 10, [2, 3]),
+                Entity("ItemGroups", 15, [2, 3]),
                 Entity("Item", 20, [2, 3]),
                 Entity("Warehouse", 30, [2, 3])
             ]
@@ -42,6 +46,67 @@ public sealed class SyncProfileValidationServiceTests
 
         result.IsValid.Should().BeTrue();
         result.Errors.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ValidateAsync_RejectsInactiveDependency()
+    {
+        var service = CreateService();
+        var request = ValidRequest() with
+        {
+            Entities =
+            [
+                Entity("ItemGroups", 10, [2]) with { IsActive = false },
+                Entity("Item", 20, [2])
+            ]
+        };
+
+        var result = await service.ValidateAsync(request, null, userId: 1);
+
+        result.Errors.Should().Contain(error => error.Code == "SyncEntityDependencyMissing");
+    }
+
+    [Fact]
+    public async Task ValidateAsync_RejectsDependencyDisabledForSameBranch()
+    {
+        var service = CreateService();
+        var request = ValidRequest() with
+        {
+            Branches =
+            [
+                new SaveSyncProfileBranchRequest { BranchCompanyId = 2, IsActive = true },
+                new SaveSyncProfileBranchRequest { BranchCompanyId = 3, IsActive = true }
+            ],
+            Entities =
+            [
+                Entity("ItemGroups", 10, [2]),
+                Entity("Item", 20, [2, 3])
+            ]
+        };
+
+        var result = await service.ValidateAsync(request, null, userId: 1);
+
+        result.Errors.Should().Contain(error =>
+            error.Code == "SyncEntityDependencyBranchMissing" && error.Message.Contains("3"));
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WarnsWhenManualOrderWillBeAdjusted()
+    {
+        var service = CreateService();
+        var request = ValidRequest() with
+        {
+            Entities =
+            [
+                Entity("Item", 10, [2]),
+                Entity("ItemGroups", 20, [2])
+            ]
+        };
+
+        var result = await service.ValidateAsync(request, null, userId: 1);
+
+        result.IsValid.Should().BeTrue();
+        result.Warnings.Should().Contain(warning => warning.Code == "SyncEntityDependencyOrderAdjusted");
     }
 
     [Theory]
@@ -107,7 +172,7 @@ public sealed class SyncProfileValidationServiceTests
                 [],
                 null)
         };
-        var service = new SyncProfileValidationService(repository, new FakeSyncRoutingRepository());
+        var service = new SyncProfileValidationService(repository, new FakeSyncRoutingRepository(), new FakeSyncEntityCatalogService());
 
         var result = await service.ValidatePersistedAsync(10, userId: 1);
 
@@ -122,7 +187,7 @@ public sealed class SyncProfileValidationServiceTests
         var service = CreateService();
 
         var result = await service.ValidateAsync(
-            ValidRequest() with { IsActive = false, Entities = [Entity("Countries", 10, [2])] },
+            ValidRequest() with { IsActive = false, Entities = [Entity("BusinessPartnerPaymentTerms", 50, [2])] },
             null,
             userId: 1);
 
@@ -131,11 +196,47 @@ public sealed class SyncProfileValidationServiceTests
     }
 
     [Fact]
+    public async Task ValidateAsync_AllowsCustomMasterDefinitionOnlyAsInactiveProfileDraft()
+    {
+        var customDefinition = new SyncEntityDefinitionLookupDto(
+            100,
+            "CustomCatalog",
+            "Catalogo personalizado",
+            null,
+            300,
+            true,
+            true,
+            true,
+            false,
+            "Code",
+            "UpdatedAt",
+            false,
+            true,
+            false,
+            false,
+            []);
+        var service = new SyncProfileValidationService(
+            new FakeSyncProfileRepository(),
+            new FakeSyncRoutingRepository(),
+            new FakeSyncEntityCatalogService { AdditionalDefinitions = [customDefinition] });
+
+        var result = await service.ValidateAsync(
+            ValidRequest() with { IsActive = false, Entities = [Entity("CustomCatalog", 300, [2])] },
+            null,
+            userId: 1);
+
+        result.IsValid.Should().BeTrue();
+        result.Errors.Should().NotContain(error => error.Code == "SyncEntityUnknown");
+        result.Warnings.Should().Contain(warning => warning.Code == "SyncEntityDraftOnly");
+    }
+
+    [Fact]
     public async Task ValidateAsync_RejectsActiveRoutingConflict()
     {
         var service = new SyncProfileValidationService(
             new FakeSyncProfileRepository(),
-            new FakeSyncRoutingRepository { Conflict = true });
+            new FakeSyncRoutingRepository { Conflict = true },
+            new FakeSyncEntityCatalogService());
 
         var result = await service.ValidateAsync(ValidRequest(), profileId: 10, userId: 1);
 
@@ -170,7 +271,7 @@ public sealed class SyncProfileValidationServiceTests
             { ValidRequest() with { Schedule = new SaveSyncScheduleRequest { ScheduleType = "Daily" } }, "SyncScheduleDailyTimeRequired" },
             { ValidRequest() with { Schedule = new SaveSyncScheduleRequest { ScheduleType = "Manual", TimeZoneId = "Invalid/Zone" } }, "SyncScheduleTimeZoneInvalid" },
             { ValidRequest() with { Entities = [Entity("Warehouse", 10, [2]) with { KeyField = "Code;DROP" }] }, "SyncTechnicalFieldExecutable" },
-            { ValidRequest() with { Entities = [Entity("Countries", 10, [2])] }, "SyncEntityNotOperative" }
+            { ValidRequest() with { Entities = [Entity("BusinessPartnerPaymentTerms", 50, [2])] }, "SyncEntityNotOperative" }
         };
 
         return data;
@@ -180,7 +281,8 @@ public sealed class SyncProfileValidationServiceTests
     {
         return new SyncProfileValidationService(
             new FakeSyncProfileRepository { DuplicatedCode = duplicatedCode },
-            new FakeSyncRoutingRepository());
+            new FakeSyncRoutingRepository(),
+            new FakeSyncEntityCatalogService());
     }
 
     private static SaveSyncProfileRequest ValidRequest()
@@ -290,5 +392,38 @@ public sealed class SyncProfileValidationServiceTests
             => Task.FromResult<IReadOnlyCollection<SyncRoutingConflictDto>>(Conflict
                 ? [new SyncRoutingConflictDto(20, "OTHER", 2, combinations.First().EntityCode)]
                 : []);
+    }
+
+    private sealed class FakeSyncEntityCatalogService : ISyncEntityCatalogService
+    {
+        public IReadOnlyCollection<SyncEntityDefinitionLookupDto> AdditionalDefinitions { get; init; } = [];
+
+        public Task<IReadOnlyCollection<SyncEntityDefinitionLookupDto>> GetAsync(
+            bool includeInactive,
+            int? includeId = null,
+            CancellationToken cancellationToken = default)
+        {
+            var definitions = SyncMasterBranchEntityCodes.InitialCatalog
+                .Select((item, index) => new SyncEntityDefinitionLookupDto(
+                    index + 1,
+                    item.EntityCode,
+                    item.DisplayName,
+                    item.Notes,
+                    item.DefaultExecutionOrder,
+                    item.SupportsIncremental,
+                    item.SupportsInsert,
+                    item.SupportsUpdate,
+                    item.SupportsDeactivate,
+                    item.DefaultKeyField,
+                    item.DefaultModifiedAtField,
+                    true,
+                    true,
+                    item.HasProducer,
+                    item.HasApplier,
+                    item.Dependencies ?? []))
+                .Concat(AdditionalDefinitions)
+                .ToArray();
+            return Task.FromResult<IReadOnlyCollection<SyncEntityDefinitionLookupDto>>(definitions);
+        }
     }
 }

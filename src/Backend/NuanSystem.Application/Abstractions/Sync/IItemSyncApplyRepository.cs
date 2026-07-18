@@ -11,6 +11,11 @@ public interface IItemSyncApplyRepository
         Guid globalId,
         CancellationToken cancellationToken = default);
 
+    Task<ItemSyncDependencyCheckResult> CheckDependenciesAsync(
+        int branchCompanyId,
+        ItemSyncPayload payload,
+        CancellationToken cancellationToken = default);
+
     Task<ItemSyncApplyResult> UpsertFromSyncAsync(
         int branchCompanyId,
         SyncEventApplyContext context,
@@ -31,3 +36,11 @@ public sealed record ItemSyncApplyResult(
     bool AlreadyApplied,
     int? ItemId,
     string Message);
+
+public sealed record ItemSyncDependencyCheckResult(
+    bool IsSatisfied,
+    string? MissingDependencyCode = null,
+    string? Message = null)
+{
+    public static ItemSyncDependencyCheckResult Satisfied { get; } = new(true);
+}

@@ -2,6 +2,8 @@ using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.Sync.Configuration.Dtos;
+using NuanSystem.Application.Features.Sync.EntityDefinitions;
+using NuanSystem.Application.Features.Sync.EntityDefinitions.Services;
 using NuanSystem.Shared.Responses;
 
 namespace NuanSystem.Application.Features.Sync.Configuration.Queries;
@@ -64,7 +66,9 @@ public sealed class GetSyncProfileByIdQueryHandler(ISyncProfileRepository reposi
     }
 }
 
-public sealed class GetSyncConfigurationCatalogQueryHandler(ISyncProfileRepository repository)
+public sealed class GetSyncConfigurationCatalogQueryHandler(
+    ISyncProfileRepository repository,
+    ISyncEntityCatalogService entityCatalogService)
     : IQueryHandler<GetSyncConfigurationCatalogQuery, SyncConfigurationCatalogDto>
 {
     public async Task<Result<SyncConfigurationCatalogDto>> Handle(
@@ -72,17 +76,30 @@ public sealed class GetSyncConfigurationCatalogQueryHandler(ISyncProfileReposito
         CancellationToken cancellationToken)
     {
         var companies = await repository.GetCompanyLookupsAsync(request.UserId, cancellationToken);
+        var entityDefinitions = await entityCatalogService.GetAsync(false, cancellationToken: cancellationToken);
         var catalog = new SyncConfigurationCatalogDto
         {
             MasterCompanies = companies
                 .Where(company => company.IsMaster && company.SyncEnabled)
-                .Select(company => new CompanyLookupDto(company.Id, company.Code, company.Name, company.IsActive))
+                .Select(company => new CompanyLookupDto(
+                    company.Id,
+                    company.Code,
+                    company.Name,
+                    company.IsActive,
+                    company.BranchCode,
+                    company.DatabaseName))
                 .ToArray(),
             BranchCompanies = companies
                 .Where(company => !company.IsMaster && company.SyncEnabled)
-                .Select(company => new CompanyLookupDto(company.Id, company.Code, company.Name, company.IsActive))
+                .Select(company => new CompanyLookupDto(
+                    company.Id,
+                    company.Code,
+                    company.Name,
+                    company.IsActive,
+                    company.BranchCode,
+                    company.DatabaseName))
                 .ToArray(),
-            Entities = SyncProfileMapper.ToEntityCatalog(),
+            Entities = entityDefinitions.Select(SyncEntityDefinitionMapper.ToProfileCatalogItem).ToArray(),
             Directions = [new LookupItemDto("MasterToBranch", "Maestro a sucursal")],
             ExecutionModes =
             [

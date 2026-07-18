@@ -28,6 +28,10 @@ public static class SyncMasterBranchEntityCodes
     public const string Provinces = "Provinces";
     public const string Cities = "Cities";
     public const string Currencies = "Currencies";
+    public const string Taxes = "Tax";
+    public const string UnitOfMeasures = "UnitOfMeasure";
+    public const string PriceLists = "PriceList";
+    public const string PurchaseOrder = "PurchaseOrder";
     public const string BusinessPartnerPaymentTerms = "BusinessPartnerPaymentTerms";
     public const string SupplierGroups = "SupplierGroups";
     public const string SupplierClasses = "SupplierClasses";
@@ -35,15 +39,18 @@ public static class SyncMasterBranchEntityCodes
     public const string Zones = "Zones";
     public const string SupplyMethods = "SupplyMethods";
     public const string BusinessPartner = "BusinessPartner";
+    public const string ItemGroups = "ItemGroups";
     public const string Item = "Item";
     public const string Warehouse = "Warehouse";
 
     public static readonly IReadOnlyCollection<SyncMasterBranchEntityCatalogItem> InitialCatalog =
     [
-        new(Countries, Countries, "Paises", true, false, false, false, false, false, "Catalogo tenant definido en 029_tenant_geography_catalogs.sql. Sin productor/aplicador Master-Branch operativo.", 10),
-        new(Provinces, Provinces, "Provincias", true, false, false, false, false, false, "Catalogo tenant definido en 029_tenant_geography_catalogs.sql. Sin productor/aplicador Master-Branch operativo.", 20, Dependencies: [Countries]),
-        new(Cities, Cities, "Ciudades", true, false, false, false, false, false, "Catalogo tenant definido en 029_tenant_geography_catalogs.sql. Sin productor/aplicador Master-Branch operativo.", 30, Dependencies: [Countries, Provinces]),
-        new(Currencies, Currencies, "Monedas", true, false, false, false, false, false, "Catalogo tenant definido en 031_tenant_commercial_pricing_catalogs.sql. Sin productor/aplicador Master-Branch operativo.", 40),
+        new(Countries, Countries, "Paises", true, true, true, true, true, true, "Catalogo tenant con publicacion incremental, fuente Full y aplicador idempotente por GlobalId.", 10),
+        new(Provinces, Provinces, "Provincias", true, true, true, true, true, true, "Catalogo tenant dependiente de Countries, con publicacion incremental, fuente Full y aplicador idempotente por GlobalId.", 20, Dependencies: [Countries]),
+        new(Cities, Cities, "Ciudades", true, true, true, true, true, true, "Catalogo tenant dependiente de Countries y Provinces, con publicacion incremental, fuente Full y aplicador idempotente por GlobalId.", 30, Dependencies: [Countries, Provinces]),
+        new(Currencies, Currencies, "Monedas", true, true, true, true, true, true, "Catalogo tenant con publicacion incremental, fuente Full y aplicador idempotente por GlobalId.", 40),
+        new(Taxes, Taxes, "Impuestos", true, true, true, true, true, true, "Catalogo tributario con fuente Full y aplicador idempotente por GlobalId.", 45),
+        new(UnitOfMeasures, UnitOfMeasures, "Unidades de medida", true, true, true, true, true, true, "Catalogo de unidades con fuente Full y aplicador idempotente por GlobalId.", 50),
         new(BusinessPartnerPaymentTerms, BusinessPartnerPaymentTerms, "Condiciones de pago", true, false, false, false, false, false, "Catalogo tenant definido en 024_tenant_business_partners.sql. Sin productor/aplicador Master-Branch operativo.", 50),
         new(SupplierGroups, SupplierGroups, "Grupos de proveedor", true, false, false, false, false, false, "Catalogo tenant definido en 026_tenant_general_supplier_catalogs.sql. Sin productor/aplicador Master-Branch operativo.", 60),
         new(SupplierClasses, SupplierClasses, "Clases de proveedor", true, false, false, false, false, false, "Catalogo tenant definido en 026_tenant_general_supplier_catalogs.sql. Sin productor/aplicador Master-Branch operativo.", 70),
@@ -51,12 +58,31 @@ public static class SyncMasterBranchEntityCodes
         new(Zones, Zones, "Zonas", true, false, false, false, false, false, "Catalogo tenant definido en 026_tenant_general_supplier_catalogs.sql. Sin productor/aplicador Master-Branch operativo.", 90),
         new(SupplyMethods, SupplyMethods, "Metodos de abastecimiento", true, false, false, false, false, false, "Catalogo tenant definido en 026_tenant_general_supplier_catalogs.sql. Sin productor/aplicador Master-Branch operativo.", 100),
         new(BusinessPartner, BusinessPartner, "Socios de negocio", true, true, true, true, true, true, "Productor BusinessPartnerSyncPublisher y aplicador BusinessPartnerSyncApplyRepository existentes; alcance limitado, no BusinessPartners completos.", 200),
-        new(Item, Item, "Articulos", true, true, true, true, true, true, "Productor ItemSyncPublisher y aplicador ItemSyncApplyRepository existentes; alcance maestro limitado.", 210),
+        new(ItemGroups, ItemGroups, "Grupos de articulos", true, true, true, true, true, true, "Catalogo maestro con productor incremental, fuente Full y aplicador idempotente por GlobalId.", 205),
+        new(Item, Item, "Articulos", true, true, true, true, true, true, "Productor ItemSyncPublisher y aplicador ItemSyncApplyRepository existentes; alcance maestro limitado.", 210, Dependencies: [ItemGroups]),
         new(Warehouse, Warehouse, "Almacenes", true, true, true, true, true, true, "Productor WarehouseSyncPublisher y aplicador WarehouseSyncApplyRepository existentes.", 220)
+        ,new(PriceLists, PriceLists, "Listas de precios", true, true, true, true, true, true, "Catalogo comercial con fuente Full y aplicador idempotente por GlobalId.", 230, Dependencies: [Currencies])
+        ,new(PurchaseOrder, PurchaseOrder, "Ordenes de compra", true, true, true, true, true, true, "Documento operativo con enrutamiento por bodega, Outbox/Inbox y aplicacion transaccional.", 300, Dependencies: [Currencies, Taxes, UnitOfMeasures, BusinessPartner, Item, Warehouse, PriceLists])
     ];
+
+    private static readonly IReadOnlyDictionary<string, SyncMasterBranchEntityCatalogItem> CatalogByCode =
+        InitialCatalog.ToDictionary(item => item.EntityCode, StringComparer.OrdinalIgnoreCase);
+
+    public static SyncMasterBranchEntityCatalogItem? Find(string? entityCode)
+    {
+        return !string.IsNullOrWhiteSpace(entityCode)
+               && CatalogByCode.TryGetValue(entityCode.Trim(), out var item)
+            ? item
+            : null;
+    }
 
     public static bool IsKnown(string entityCode)
     {
-        return InitialCatalog.Any(item => string.Equals(item.EntityCode, entityCode, StringComparison.OrdinalIgnoreCase));
+        return Find(entityCode) is not null;
+    }
+
+    public static bool IsOperative(string? entityCode)
+    {
+        return Find(entityCode)?.IsOperative == true;
     }
 }

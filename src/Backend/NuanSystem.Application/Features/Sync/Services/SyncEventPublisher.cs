@@ -52,8 +52,17 @@ public sealed class SyncEventPublisher(
             new SyncRoutingContext(
                 request.CompanyId,
                 entityName,
-                request.SyncProfileId),
+                request.SyncProfileId,
+                request.TargetBranchCode,
+                request.RequireTargetBranchMatch,
+                request.EntityGlobalId,
+                payloadJson),
             cancellationToken);
+
+        foreach (var decision in routingEvaluation.Decisions ?? [])
+        {
+            await routingService.RecordDecisionAsync(outboxId, request.EntityGlobalId, decision, cancellationToken);
+        }
 
         var targetCount = 0;
         foreach (var target in routingEvaluation.Targets.GroupBy(target => target.BranchCompanyId).Select(group => group.First()))

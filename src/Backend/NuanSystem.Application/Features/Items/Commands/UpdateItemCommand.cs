@@ -1,5 +1,6 @@
 using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Features.Items.Dtos;
+using System.Text.Json.Serialization;
 
 namespace NuanSystem.Application.Features.Items.Commands;
 
@@ -36,4 +37,8 @@ public sealed record UpdateItemCommand(
     IReadOnlyCollection<SaveItemWarehouseData>? Warehouses,
     ItemMasterData? MasterData = null,
     int? AuditUserId = null,
-    string? AuditUserName = null) : ICommand<ItemDto>;
+    string? AuditUserName = null,
+    [property: JsonIgnore] string? ExternalSystem = null,
+    [property: JsonIgnore] string? ExternalCode = null,
+    [property: JsonIgnore] string? SapCode = null,
+    [property: JsonIgnore] bool IsExternalImport = false) : ICommand<ItemDto>;
