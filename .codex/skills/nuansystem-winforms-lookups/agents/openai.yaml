@@ -1,0 +1,5 @@
+interface:
+  display_name: "NuanSystem WinForms Lookups"
+  short_description: "Lookups corporativos y creación relacionada"
+  default_prompt: "Use $nuansystem-winforms-lookups to implement NuanSystem lookup selection, permissions, related creation, refresh, and binding."
+
