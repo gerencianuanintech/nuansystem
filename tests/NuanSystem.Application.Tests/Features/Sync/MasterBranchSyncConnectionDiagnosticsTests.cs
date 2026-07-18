@@ -18,6 +18,7 @@ using NuanSystem.Persistence.DependencyInjection;
 using NuanSystem.Persistence.Options;
 using NuanSystem.Persistence.Repositories.Sync;
 using NuanSystem.Shared.Sync;
+using NuanSystem.Application.Tests.Infrastructure;
 using Xunit.Abstractions;
 
 namespace NuanSystem.Application.Tests.Features.Sync;
@@ -111,7 +112,8 @@ public sealed class MasterBranchSyncConnectionDiagnosticsTests
         Assert.Equal("NuanSystem_Master", builder.InitialCatalog);
     }
 
-    [Fact(DisplayName = "Compara conexion MasterConnectionFactory con politica SQL esperada sin secretos")]
+    [SqlServerIntegrationFact(DisplayName = "Compara conexion MasterConnectionFactory con politica SQL esperada sin secretos")]
+    [Trait("Category", "SqlServerIntegration")]
     public async Task CompareMasterConnectionFactoryConnectionPolicyWithoutSecrets()
     {
         await using var provider = BuildWorkerServiceProvider(out var configuration);
@@ -152,7 +154,8 @@ public sealed class MasterBranchSyncConnectionDiagnosticsTests
         Assert.Equal(manualBuilder.InitialCatalog, factoryBuilder.InitialCatalog);
     }
 
-    [Fact(DisplayName = "Diagnostica conexiones Master y Sucursal sin procesar eventos")]
+    [SqlServerIntegrationFact(DisplayName = "Diagnostica conexiones Master y Sucursal sin procesar eventos")]
+    [Trait("Category", "SqlServerIntegration")]
     public async Task DiagnoseMasterAndBranchConnectionsWithoutProcessingEvents()
     {
         var repositoryRoot = FindRepositoryRoot();
@@ -222,7 +225,8 @@ public sealed class MasterBranchSyncConnectionDiagnosticsTests
         }
     }
 
-    [Fact(DisplayName = "Diagnostica ruta real del worker sin claim ni apply")]
+    [SqlServerIntegrationFact(DisplayName = "Diagnostica ruta real del worker sin claim ni apply")]
+    [Trait("Category", "SqlServerIntegration")]
     public async Task DiagnoseWorkerRouteWithoutClaimOrApply()
     {
         var repositoryRoot = FindRepositoryRoot();
@@ -357,7 +361,8 @@ public sealed class MasterBranchSyncConnectionDiagnosticsTests
         Assert.Contains(entityAppliers, applier => applier.CanApply("Warehouse"));
     }
 
-    [Fact(DisplayName = "ReleaseExpiredLocksAsync diagnostico con rollback no persiste cambios")]
+    [SqlServerIntegrationFact(DisplayName = "ReleaseExpiredLocksAsync diagnostico con rollback no persiste cambios")]
+    [Trait("Category", "SqlServerIntegration")]
     public async Task ReleaseExpiredLocksAsync_DiagnosticRollback_DoesNotPersistChanges()
     {
         await using var provider = BuildWorkerServiceProvider(out var configuration);
@@ -393,7 +398,8 @@ public sealed class MasterBranchSyncConnectionDiagnosticsTests
         AssertDiagnosticEventClean(after);
     }
 
-    [Fact(DisplayName = "ClaimPendingAsync diagnostico con rollback puede reclamar sin persistir")]
+    [SqlServerIntegrationFact(DisplayName = "ClaimPendingAsync diagnostico con rollback puede reclamar sin persistir")]
+    [Trait("Category", "SqlServerIntegration")]
     public async Task ClaimPendingAsync_DiagnosticRollback_CanClaimWithoutPersisting()
     {
         await using var provider = BuildWorkerServiceProvider(out var configuration);
