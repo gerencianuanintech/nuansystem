@@ -1,31 +1,34 @@
-# Lookup Controls Checklist
+# Lookup Controls Compatibility Reference
 
-Use this when a form has `LookUpEdit`, `SearchLookUpEdit`, or any selector backed by another table/maintenance.
+Use `$nuansystem-winforms-lookups` as the authoritative workflow. This reference remains for older links.
 
-## Display
+## Selection
 
-- Show at least `Codigo` and `Nombre` columns for business tables.
-- Include description or status columns only when they help the user distinguish records.
-- Use a readable display member. Prefer a `DisplayText` property like `"CODE - Name"` when available.
-- Keep the value member aligned with the API contract: usually `Id`, sometimes `Code` if the backend expects a code.
-- Set `NullText = ""` unless the form needs placeholder text.
+- Prefer `NuanLookupEdit` for related catalogs requiring corporate clear/create behavior.
+- Use direct `LookUpEdit`, `SearchLookUpEdit`, or `GridLookUpEdit` only when the corporate control does not cover the established selector behavior.
+- Do not add a parallel plus/clear button when `NuanLookupEdit` fits.
+- Inspect the closest same-domain lookup, related edit form, typed client, and permissions.
 
-## Related Create Action
+## Display and value
 
-- Provide a way to add a missing related option when the selector points to another maintenance table.
-- Use a nearby plus button or a lookup editor button with a clear tooltip/caption.
-- Show or enable the create action only when the user has create access for that related maintenance.
-- Check create access through `ApiSession.HasPermission(...)`, `CrudOperationPermissions`, or loaded form-operation access for the related `FormKey`.
-- If the user lacks create access, hide the create action or keep it disabled; do not open the related maintenance in create mode.
+- Show business code and name when both exist.
+- Use a readable display member and stable API value member.
+- Keep display text separate from identity.
+- Use empty `NullText` unless a documented placeholder is required.
+- Apply corporate typography to popup views.
 
-## After Create
+## Related creation
 
-- Open the related maintenance's create/edit form using the established factory/service pattern.
-- On successful save, reload the lookup data source.
-- Select the newly created option when the related form or service returns its Id/code.
-- Preserve the current form state and validation messages while refreshing lookup data.
+- Check create permission for the related maintenance FormKey.
+- Disable creation in parent consult/read-only mode.
+- Open the approved related edit form.
+- Reload the lookup only after confirmed persistence.
+- Select the returned stable Id/code.
+- Preserve parent form state and validation.
 
-## Backend Requirements
+## Dependencies and validation
 
-- Ensure the API provides lookup data with code and name fields.
-- If the related maintenance does not exist yet, use `$nuansystem-backend-crud` and `$nuansystem-sql-standards` to create the missing backend and SQL support.
+- Clear invalid child selections when a parent lookup changes.
+- Ignore stale async loads and preserve valid edit selections.
+- Keep backend validation and company isolation authoritative.
+- Validate create/clear permissions, refresh/selection, null semantics, dependent filters, Designer behavior, build, and errors.
