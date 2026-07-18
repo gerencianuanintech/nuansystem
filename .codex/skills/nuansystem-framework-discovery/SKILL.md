@@ -199,7 +199,9 @@ Low confidence blocks shared or high-risk changes.
 
 ## Step 9 — Produce the Discovery Record
 
-Use this exact structure for medium/high-risk work:
+Use this exact structure for medium/high-risk work.
+
+Evidence references must use repository-relative paths and symbols so the record remains portable across machines, worktrees, GitHub, and Codex environments. Do not emit machine-specific absolute paths such as `C:\\...` or `E:\\...` unless the user explicitly requests local clickable links for the current checkout.
 
 ```text
 Discovery Record
@@ -280,7 +282,7 @@ Discovery passes only when:
 - classification and risk are explicit;
 - applicable engineering core documents were read;
 - source contracts, not just filenames, were inspected;
-- representative evidence is repository-backed;
+- representative evidence is repository-backed and cited with portable repository-relative paths;
 - corporate frontend candidates were evaluated;
 - cross-layer siblings were considered;
 - reuse/extension/creation decision is justified;
