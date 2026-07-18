@@ -30,8 +30,8 @@ Status values:
 
 - **Location:** `src/Frontend/NuanSystem.WinForms.Forms/Common/BaseGridCrudListForm.cs`
 - **Status:** Active/preferred for standard grid-based CRUD lists.
-- **Responsibility:** Supplies the corporate CRUD list lifecycle over DevExpress grid infrastructure.
-- **Contract observed:** exposes `GridControl` and `GridView`; supports typed data binding and selection; implements edit, copy, delete, consult, and history hooks; supports column configuration/personalization and Excel/PDF/JSON/XML export.
+- **Responsibility:** Supplies the corporate CRUD list lifecycle through a designer-owned `NuanDataGridControl`.
+- **Contract observed:** `BaseGridCrudListForm.Designer.cs` creates `NuanDataGridControl`; the base form exposes its inner `GridControl` and `GridView`, supports typed data binding and selection, implements edit, copy, delete, consult, and history hooks, and provides column configuration/personalization plus Excel/PDF/JSON/XML export.
 - **Use when:** a maintenance list has standard CRUD commands, selection, permissions, export, and configurable columns.
 - **Do not use when:** the screen is an operational transaction, document editor, dashboard, or workflow whose lifecycle is not CRUD.
 - **Extension rule:** derive a feature form and override documented hooks such as grid configuration and CRUD operations. Do not fork the base lifecycle.
@@ -92,7 +92,7 @@ Status values:
 - **Responsibility:** Corporate grid user control with pagination, find panel, multi-selection, selection checkboxes, column configuration, status badges, export, and column customization.
 - **Contract observed:** exposes inner `GridControl`/`GridView`; `SetData<T>`, focused/selected row helpers, `ConfigureColumns`, `SetStatusBadgeProvider`, `ApplyStandardGridStyle`, and `ExportVisibleColumns`.
 - **Use when:** a feature needs a reusable grid surface outside the inherited standard CRUD list or needs the control's paging/search/selection contract.
-- **Do not use when:** `BaseGridCrudListForm` already owns the complete standard CRUD list lifecycle; do not nest duplicate frameworks without evidence.
+- **Do not use when:** `BaseGridCrudListForm` already owns the complete standard CRUD list lifecycle and already contains this control internally; do not add a second `NuanDataGridControl` without evidence.
 - **Representative consumers:**
   - `src/Frontend/NuanSystem.WinForms.Forms/Sync/SyncMonitorForm.Designer.cs`
   - `src/Frontend/NuanSystem.WinForms.Forms/Sync/SyncOutboxDetailForm.Designer.cs`
