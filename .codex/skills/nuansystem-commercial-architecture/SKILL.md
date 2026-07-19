@@ -17,8 +17,9 @@ description: Guide NuanSystem architecture as a configurable multi-business comm
 
 ## Decisions
 
-- Use `$nuansystem-backend-crud` for maintenance modules.
-- Use `$nuansystem-operational-usecase` for flows that affect stock, money, prices, purchases, cash, documents, or audit-sensitive state.
+- Use `$nuansystem-backend-architecture` as the backend orchestrator.
+- Through that orchestrator, use `$nuansystem-backend-crud` for maintenance modules.
+- Through that orchestrator, use `$nuansystem-operational-usecase` for flows that affect stock, money, prices, purchases, cash, documents, workflow, synchronization, or external state.
 - Use `$nuansystem-business-capabilities` when rules may differ between supermarket, hardware store, distributor, condiments shop, services-with-inventory, or other businesses.
 - Use `$nuansystem-sql-standards` for SQL scripts, stored procedures, seed data, and audit tables.
 - Use `$nuansystem-winforms-devexpress` for desktop screens.

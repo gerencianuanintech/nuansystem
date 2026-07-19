@@ -157,7 +157,64 @@ Status values:
   - `src/Frontend/NuanSystem.WinForms.Services/Security/Menus/MenuClient.cs`
 - **Antipatterns:** `new HttpClient()` in forms/feature clients, manual JWT or company headers, duplicated serialization/error handling, or direct backend resource access.
 
-## 7. Framework selection matrix
+## 7. Backend application and persistence framework
+
+### 7.1 Messaging abstractions
+
+- **Location:** `src/Backend/NuanSystem.Application/Abstractions/Messaging`.
+- **Status:** Active/authoritative for Application commands, queries, and handlers.
+- **Responsibility:** `ICommand<T>`, `IQuery<T>`, and handler contracts dispatched through MediatR.
+- **Use when:** implementing a backend use case or read model.
+- **Boundary:** Application contracts must not depend on HTTP, Dapper, claims, WinForms, or provider-specific types.
+- **Representative consumers:** Geography commands/queries and PurchaseOrders workflow handlers.
+
+### 7.2 `Result<T>` and API errors
+
+- **Locations:** `src/Backend/NuanSystem.Application/Common/Models` and `src/Backend/NuanSystem.Shared/Responses`.
+- **Status:** Active/authoritative for expected business, validation, and not-found outcomes.
+- **Responsibility:** Stable success/failure contracts and field-aware `ApiError` values mapped by the API.
+- **Use when:** a handler can produce an expected non-success outcome.
+- **Do not use when:** hiding unexpected infrastructure exceptions or fabricating success.
+- **Antipatterns:** new result type, endpoint-local error schema, raw SQL/SAP exception returned to clients.
+
+### 7.3 Trusted company context and tenant connection
+
+- **Locations:**
+  - `src/Backend/NuanSystem.Application/Abstractions/Tenancy`
+  - `src/Backend/NuanSystem.Api/Middleware/CompanyContextMiddleware.cs`
+  - `src/Backend/NuanSystem.Persistence/Connections/TenantConnectionFactory.cs`
+- **Status:** Active/authoritative for company-scoped backend work.
+- **Responsibility:** Validate user/company access and resolve the active tenant connection.
+- **Use when:** reading or writing tenant data.
+- **Boundary:** request DTOs and frontend headers do not become trusted company context by themselves.
+
+### 7.4 `ITransactionRunner` / `SqlTransactionRunner`
+
+- **Locations:**
+  - `src/Backend/NuanSystem.Application/Abstractions/Data/ITransactionRunner.cs`
+  - `src/Backend/NuanSystem.Persistence/Transactions/SqlTransactionRunner.cs`
+- **Status:** Active for multi-write tenant transactions.
+- **Responsibility:** Execute Application-defined units of work on one tenant connection/transaction with commit/rollback.
+- **Use when:** multiple local writes must succeed or fail together.
+- **Do not use when:** wrapping a remote SAP/HTTP call inside an open SQL transaction.
+
+### 7.5 Endpoint authorization
+
+- **Location:** `src/Backend/NuanSystem.Api/Extensions/EndpointAuthorizationExtensions.cs`.
+- **Status:** Active/authoritative for `RequirePermission` and `RequireFormOperation`.
+- **Responsibility:** Enforce backend permissions and form operations after authentication/company context.
+- **Boundary:** frontend menu/button visibility is not authorization.
+- **Representative consumers:** Geography and BusinessPartner endpoints.
+
+### 7.6 Dapper stored-procedure repositories
+
+- **Locations:** `src/Backend/NuanSystem.Persistence/Repositories`.
+- **Status:** Active SQL Server persistence pattern.
+- **Responsibility:** Map Application repository contracts to tenant/master connections and stored procedures using `CommandDefinition` and cancellation.
+- **Representative consumers:** `GeographyRepository`, `BusinessPartnerRepository`, and `PurchaseOrderRepository`.
+- **Boundary:** procedure names, Dapper, `CommandType`, and SQL-provider details remain in Persistence.
+
+## 8. Framework selection matrix
 
 | Need | Preferred component | Important boundary |
 |---|---|---|
@@ -171,8 +228,14 @@ Status values:
 | Typography | `AppTypography` | One source of truth |
 | Form styling | `FormStyler` | Must not build layout |
 | API transport | `INuanApiClient` / `NuanApiClient` | No direct SQL/SAP from frontend |
+| Application use case | Messaging abstractions | No HTTP/Dapper/provider types |
+| Expected backend outcome | `Result<T>` / `ApiError` | No raw infrastructure errors |
+| Tenant data access | Trusted company context + `ITenantConnectionFactory` | Never trust request company directly |
+| Multi-write tenant unit | `ITransactionRunner` | No remote calls inside SQL transaction |
+| Endpoint authorization | `RequirePermission` / `RequireFormOperation` | UI visibility is not security |
+| SQL Server persistence | Dapper stored-procedure repository | Procedure names stay in Persistence |
 
-## 8. Extension gate
+## 9. Extension gate
 
 Before extending a shared component, document:
 
@@ -185,7 +248,7 @@ Before extending a shared component, document:
 - rollback or migration need;
 - catalog and knowledge-graph updates.
 
-## 9. Catalog maintenance gate
+## 10. Catalog maintenance gate
 
 A framework change is incomplete until:
 

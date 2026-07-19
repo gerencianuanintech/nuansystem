@@ -42,6 +42,8 @@ Entity/contract
   -> Tests and SQL contract
 ```
 
+Apply `$nuansystem-backend-architecture` and `$nuansystem-backend-crud` to the backend portion, then load endpoint, validation, persistence, tenant-security, SQL, and testing skills for the affected layers.
+
 ### Frontend defaults
 
 - List derives from `BaseGridCrudListForm`.
@@ -126,6 +128,8 @@ Actor + command
   -> observable result
   -> retry/reversal/recovery behavior
 ```
+
+Apply `$nuansystem-operational-usecase` with the specialized backend skills. A CRUD handler is not an acceptable substitute for posting, receiving, transferring, approving, canceling, reversing, or synchronizing.
 
 ### Frontend role
 

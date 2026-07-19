@@ -205,7 +205,79 @@ Form -X-> SAP DI API/Service Layer
 Feature client -X-> manual JWT/company header
 ```
 
-## 5. Standard CRUD relationship graph
+## 5. Backend framework graph
+
+### 5.1 Application dispatch and result
+
+```text
+Minimal API endpoint
+  -> ISender
+       -> ICommand<T> / IQuery<T>
+            -> handler
+                 -> Result<T>
+                      -> ToHttpResult()
+```
+
+Impact rule: changing messaging or result contracts requires inspecting handlers, pipeline behaviors, endpoint mapping, frontend error deserialization, and tests.
+
+### 5.2 Tenant data path
+
+```text
+Authorization: Bearer
+  + X-Company-Code
+  -> CompanyContextMiddleware
+       -> validated user/company access
+       -> trusted ICompanyContext
+            -> ITenantConnectionFactory
+                 -> tenant-scoped repository/procedure
+```
+
+Forbidden edge: request DTO/company header `-X->` direct trusted connection selection.
+
+### 5.3 Repository and SQL path
+
+```text
+Application handler
+  -> Application repository interface
+       -> Persistence Dapper repository
+            -> CommandDefinition + CancellationToken
+            -> stored procedure
+                 -> constraints/audit/logical delete/transaction
+```
+
+Representative paths:
+
+- `Application/Features/Geography` -> `Persistence/Repositories/Geography/GeographyRepository.cs`.
+- `Application/Features/BusinessPartners` -> `Persistence/Repositories/BusinessPartnerRepository.cs`.
+- `Application/Features/Purchasing/PurchaseOrders` -> `Persistence/Repositories/Purchasing/PurchaseOrderRepository.cs`.
+
+### 5.4 Transaction path
+
+```text
+Application operational handler
+  -> ITransactionRunner
+       -> SqlTransactionRunner
+            -> one tenant connection + transaction
+            -> transaction-aware repository writes
+            -> commit or rollback
+```
+
+Remote SAP/HTTP processing must not run inside the open SQL transaction. Persist durable intent/outbox and process externally when required.
+
+### 5.5 Backend authorization and audit
+
+```text
+Endpoint
+  -> RequirePermission / RequireFormOperation
+  -> ClaimsPrincipal.GetAuditUser()
+  -> command
+  -> handler/repository
+  -> audit columns/history source
+```
+
+Impact rule: a new action requires aligned permission/FormKey/action values in backend, Master security data, frontend navigation/action visibility, and allowed/denied tests.
+
+## 6. Standard CRUD relationship graph
 
 ```text
 Administrative entity
@@ -301,7 +373,7 @@ Persist the code, not the display text or selected index. Do not provide related
 
 The list grid must include `IdentificationTypeCode`/its resolved display label and `IdentificationNumber`. The edit form must place the identification-type combo immediately before the identification editor, with both controls declared explicitly in `CarrierEditForm.Designer.cs`.
 
-## 6. Operational relationship graph
+## 7. Operational relationship graph
 
 ```text
 User intent
@@ -319,7 +391,7 @@ User intent
 
 Any stock, money, pricing, cash, document, or synchronization edge routes to `PATTERN-CATALOG.md` P3/P4/P8 and the operational skill, not generic CRUD.
 
-## 7. Change impact traversal
+## 8. Change impact traversal
 
 For a changed node, traverse:
 
@@ -331,7 +403,7 @@ For a changed node, traverse:
 
 Record the search terms and resulting paths. Do not rely solely on this static graph.
 
-## 8. Graph maintenance rules
+## 9. Graph maintenance rules
 
 Update this graph when:
 
@@ -349,6 +421,6 @@ A graph update must:
 - include impact rules for high-risk shared components;
 - remain consistent with Framework and Pattern Catalogs.
 
-## 9. Known scope of Iteration 1
+## 10. Iteration scope
 
-This initial graph is intentionally strongest for the WinForms framework because frontend consistency is the first implementation priority. Backend, SQL, SAP, BEAS, Android, and domain-specific graphs require subsequent repository-backed catalog iterations. Their absence here is a documented pending expansion, not permission to invent their architecture.
+The graph now covers the Iteration 1 engineering core, Iteration 2 WinForms framework, and Iteration 3 backend foundations. SAP, BEAS, Android, and deeper domain-specific graphs still require subsequent repository-backed iterations. Their incomplete coverage is not permission to invent architecture.
