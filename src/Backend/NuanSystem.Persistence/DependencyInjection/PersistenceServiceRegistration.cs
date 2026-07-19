@@ -63,6 +63,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IAuthService, SqlServerAuthService>();
         services.AddScoped<IUserSecurityStateService, UserSecurityStateService>();
         services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
+        services.AddScoped<ICarrierRepository, CarrierRepository>();
         services.AddScoped<IFinancialCatalogRepository, FinancialCatalogRepository>();
         services.AddScoped<IGeographyRepository, GeographyRepository>();
         services.AddScoped<IGeneralInventoryCatalogRepository, GeneralInventoryCatalogRepository>();

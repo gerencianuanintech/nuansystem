@@ -1,40 +1,40 @@
 # WinForms UI Checklist
 
-## New Form Intake
+This compatibility checklist supports older links from the WinForms orchestrator. The specialized skills are authoritative:
 
-- Ask for the destination folder/module name before creating a new form unless the user already provided it.
-- Ask how the form should appear in the menu unless the user already provided parent menu, label, `FormKey`, and operations.
-- Create the form and menu/security registration together when requested.
+- `$nuansystem-winforms-forms` for lifecycle and form boundaries.
+- `$nuansystem-winforms-controls` for corporate components.
+- `$nuansystem-winforms-designer` for `.Designer.cs`.
+- `$nuansystem-winforms-layout` for geometry and density.
+- `$nuansystem-winforms-grids` and `$nuansystem-winforms-lookups` for data surfaces.
+- `$nuansystem-winforms-navigation-security` for FormKey, menu, permissions, and company security.
 
-## Services
+## Intake
 
-- Add an interface in `NuanSystem.WinForms.Services`.
-- Implement calls through `INuanApiClient`.
-- Use `GetAsync`, `PostAsync`, `PutAsync`, and `DeleteAsync` with route paths only.
-- Keep request/response records in a `Models` folder.
+- Run Framework Discovery before implementation.
+- Infer routine folder, naming, title, standard operations, and menu placement from the closest module when evidence is clear.
+- Ask only when a missing decision materially changes product identity, destructive semantics, workflow, new top-level navigation, or default access policy.
+- Build a vertical affected-layer map; do not assume a new screen is frontend-only.
 
-## ViewModels
+## Services and ViewModels
 
-- Inherit existing base view model classes where nearby modules do.
-- Keep selected item, list state, loading state, and validation messages outside the form where possible.
-- Use async methods and pass `CancellationToken` when the existing pattern supports it.
+- Add/extend typed clients through `INuanApiClient`.
+- Keep request/response models in the established module area.
+- Keep selected/list/draft, busy, and UI validation state in a ViewModel when the local lifecycle benefits.
+- Preserve cancellation and consistent error presentation.
 
 ## Forms
 
-- Use DevExpress controls and approved prefixes.
-- Apply `FormStyler` and `BrandResources`.
-- Wire buttons to base form operations where available.
-- Use `RunWithBusyStateAsync` for async CRUD operations.
-- Use consult/read-only mode for view-only actions.
-- Keep the form folder, view model folder, service folder, and menu `FormKey` aligned.
-
-## Lookup/Search Lookup Controls
-
-- For `LookUpEdit` or `SearchLookUpEdit` bound to another table, show `Codigo` and `Nombre` columns.
-- Add a create-related option only when the user has create permission for that related maintenance.
-- Refresh the lookup and select the new record after successful related creation.
+- Select the lifecycle before the base form.
+- Reuse corporate controls, typography, brand resources, and base forms.
+- Keep visual structure in `.Designer.cs` and behavior in the main partial class.
+- Complete read-only, busy, empty, error, and permission states.
+- Keep folder, service, ViewModel, FormKey, menu, API authorization, and grid personalization aligned.
 
 ## Validation
 
-- Build the touched frontend project when practical.
-- Manually inspect designer/code-built layouts for text clipping, missing anchoring, and inconsistent fonts.
+- Build the touched frontend project/solution.
+- Run targeted tests.
+- Inspect Designer initialization and open Visual Studio Designer when available.
+- Validate clipping, resizing, tab order, permissions, company context, loading/errors, and navigation.
+- Report every check as Validated, Not validated, Not applicable, or Blocked.

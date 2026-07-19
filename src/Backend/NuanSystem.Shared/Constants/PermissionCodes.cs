@@ -14,6 +14,8 @@ public static class PermissionCodes
     public const string AuditRead = "SECURITY.AUDIT.READ";
     public const string BusinessPartnersRead = "CATALOG.BUSINESSPARTNERS.READ";
     public const string BusinessPartnersManage = "CATALOG.BUSINESSPARTNERS.MANAGE";
+    public const string CarriersRead = "CATALOG.CARRIERS.READ";
+    public const string CarriersManage = "CATALOG.CARRIERS.MANAGE";
     public const string CustomersRead = BusinessPartnersRead;
     public const string CustomersManage = BusinessPartnersManage;
     public const string SuppliersRead = BusinessPartnersRead;
@@ -171,6 +173,8 @@ public static class PermissionCodes
         AuditRead,
         BusinessPartnersRead,
         BusinessPartnersManage,
+        CarriersRead,
+        CarriersManage,
         GeneralSupplierSupplierGroupsRead,
         GeneralSupplierSupplierGroupsManage,
         GeneralSupplierSupplierClassesRead,

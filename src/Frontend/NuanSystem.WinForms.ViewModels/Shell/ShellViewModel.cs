@@ -133,6 +133,7 @@ public sealed class ShellViewModel
             new("Contabilidad", "Plan de cuentas", "Plan de cuentas contable", "chart-of-accounts", [PermissionCodes.AccountingRead, PermissionCodes.AccountingManage]),
             new("Catalogos", "Clientes", "Mantenimiento empresarial de clientes", "customers", [PermissionCodes.BusinessPartnersRead, PermissionCodes.BusinessPartnersManage]),
             new("Catalogos", "Proveedores", "Mantenimiento empresarial de proveedores", "suppliers", [PermissionCodes.BusinessPartnersRead, PermissionCodes.BusinessPartnersManage]),
+            new("Catalogos", "Transportistas", "Mantenimiento independiente de transportistas", "carriers", [PermissionCodes.CarriersRead, PermissionCodes.CarriersManage]),
             new("General Proveedores", "Grupos de proveedor", "Clasificacion principal de proveedores", "supplier-groups", [PermissionCodes.GeneralSupplierSupplierGroupsRead, PermissionCodes.GeneralSupplierSupplierGroupsManage]),
             new("General Proveedores", "Clases de proveedor", "Clasificacion operativa de proveedores", "supplier-classes", [PermissionCodes.GeneralSupplierSupplierClassesRead, PermissionCodes.GeneralSupplierSupplierClassesManage]),
             new("General Proveedores", "Actividades economicas", "Actividades economicas de proveedores", "economic-activities", [PermissionCodes.GeneralSupplierEconomicActivitiesRead, PermissionCodes.GeneralSupplierEconomicActivitiesManage]),

@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem Backend Endpoints"
+  short_description: "Minimal APIs y autorización de NuanSystem"
+  default_prompt: "Use $nuansystem-backend-endpoints to build secure NuanSystem Minimal API endpoints."

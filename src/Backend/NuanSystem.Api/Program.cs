@@ -126,6 +126,7 @@ try
 
     app.MapAccountingEndpoints();
     app.MapBusinessPartnerEndpoints();
+    app.MapCarrierEndpoints();
     app.MapFinancialCatalogEndpoints();
     app.MapGeneralSupplierEndpoints();
     app.MapGeographyEndpoints();

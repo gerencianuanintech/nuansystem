@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem Backend Validation"
+  short_description: "Validación e invariantes backend de NuanSystem"
+  default_prompt: "Use $nuansystem-backend-validation to define NuanSystem validation and business errors."

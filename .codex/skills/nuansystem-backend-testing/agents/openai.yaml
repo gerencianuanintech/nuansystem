@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem Backend Testing"
+  short_description: "Pruebas backend y contratos NuanSystem"
+  default_prompt: "Use $nuansystem-backend-testing to validate a NuanSystem backend vertical slice."

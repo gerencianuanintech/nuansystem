@@ -1,0 +1,5 @@
+interface:
+  display_name: "NuanSystem Navigation Security"
+  short_description: "Navegación, FormKey y permisos del frontend"
+  default_prompt: "Use $nuansystem-winforms-navigation-security to wire a NuanSystem screen into menus, FormKey navigation, operation permissions, and company-aware security."
+

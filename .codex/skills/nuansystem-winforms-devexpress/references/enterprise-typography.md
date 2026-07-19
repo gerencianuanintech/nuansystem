@@ -31,7 +31,7 @@ Do not change the official font unless the user explicitly asks for a project-wi
 ## ERP Density
 
 - Standard single-line editors in dense ERP forms use `Size = new Size(width, 22)`.
-- Vertically stacked field rows use a 26 px top-to-top cadence.
+- Treat row spacing as layout geometry governed by `$nuansystem-winforms-layout`; compact CRUD edit forms currently use a 28 px top-to-top cadence, which leaves 6 px visible space between 22 px single-line editors.
 - Apply this to `TextEdit`, `SearchLookUpEdit`, `LookUpEdit`, `DateEdit`, and `ComboBoxEdit` unless a local form family has a documented exception.
 - Main titles must be visually larger than section titles; section titles must not compete with screen titles.
 

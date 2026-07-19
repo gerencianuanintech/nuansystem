@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem Backend Persistence"
+  short_description: "Repositorios Dapper y transacciones NuanSystem"
+  default_prompt: "Use $nuansystem-backend-persistence to implement tenant-aware NuanSystem persistence."

@@ -1,0 +1,5 @@
+interface:
+  display_name: "NuanSystem WinForms Controls"
+  short_description: "Controles corporativos WinForms de NuanSystem"
+  default_prompt: "Use $nuansystem-winforms-controls to select, configure, or extend the correct NuanSystem corporate WinForms controls."
+

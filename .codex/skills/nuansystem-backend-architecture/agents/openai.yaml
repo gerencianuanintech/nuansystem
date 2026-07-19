@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem Backend Architecture"
+  short_description: "Orquestador de arquitectura backend de NuanSystem"
+  default_prompt: "Use $nuansystem-backend-architecture to classify and implement a complete NuanSystem backend change."

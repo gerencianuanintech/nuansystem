@@ -1,57 +1,113 @@
 ---
 name: nuansystem-backend-crud
-description: Build or modify NuanSystem backend CRUD features for administrative maintenance modules, API endpoints, Application commands/queries/handlers/validators, repository contracts, Persistence repositories, permission codes, multi-company behavior, audit user fields, and Dapper stored-procedure integration. Use for administrative CRUD tasks touching src/Backend, minimal APIs, MediatR-style CQRS, tenant-aware data access, or backend module normalization. For processes affecting stock, money, prices, purchases, cash, or documents, use nuansystem-operational-usecase instead.
+description: Build, modify, or review complete NuanSystem administrative CRUD backend verticals with independent domain ownership, Application commands/queries/DTOs, validators, repository contracts, Dapper Persistence, SQL procedures, Minimal API endpoints, permissions, tenant scope, audit, lookups, tests, and sync impact. Use for maintained masters/configuration; switch to nuansystem-operational-usecase for stock, money, pricing, cash, documents, workflow, sync, or external-state operations.
 ---
 
 # NuanSystem Backend CRUD
 
-## Workflow
+## Authority and activation
 
-1. Read `README.md`, `docs/ARCHITECTURE.md`, `docs/ARQUITECTURA-COMERCIAL.md`, and the closest existing feature before editing.
-2. Confirm the request is administrative CRUD. If it affects stock, money, prices, purchases, cash, or document state, switch to `$nuansystem-operational-usecase`.
-3. Keep dependency direction: `Api -> Application -> Domain`, `Application` defines contracts, `Persistence` implements repositories, `Infrastructure` implements technical services.
-4. Model the feature under `src/Backend/NuanSystem.Application/Features/{Module}` with `Commands`, `Queries`, `Dtos`, and validators.
-5. Add repository contracts to `Application/Abstractions` or the feature folder following nearby modules; implement them in `Persistence/Repositories`.
-6. Use Dapper only through stored procedures with `CommandType.StoredProcedure`; do not add inline CRUD SQL in repositories.
-7. Register new services in the existing dependency injection registration file for the owning project.
-8. Add or update minimal API endpoints in `src/Backend/NuanSystem.Api/Endpoints/{Module}Endpoints.cs`; keep `Program.cs` as composition.
-9. Protect endpoints with `RequirePermission(PermissionCodes.X)` or `RequireFormOperation(formKey, action)` as appropriate.
-10. Preserve multi-company flow: tenant data must resolve through `ITenantConnectionFactory` and the active company context. Do not connect WinForms or API endpoints directly to tenant databases.
-11. Pass audit user data from JWT/API context into commands and repository data objects for create, update, and delete operations.
+Follow `$nuansystem-backend-architecture` and run `$nuansystem-framework-discovery` first. Activate endpoint, validation, persistence, tenant-security, SQL, and testing skills for the affected layers.
 
-## Backend Shape
+```text
+Changes stock, money, prices, cash, documents, workflow, sync, or external state?
+  -> stop CRUD routing and use $nuansystem-operational-usecase
+Otherwise administers an independent master/configuration?
+  -> continue with this skill
+```
 
-- Commands and queries implement `ICommand<TResponse>` or `IQuery<TResponse>` from `Application/Abstractions/Messaging`.
-- Handlers return `Result<T>` and keep business decisions in Application, not in Api.
-- Validators use FluentValidation and should mirror field limits used by SQL scripts and DTOs.
-- Repositories return DTOs or simple data objects already established by the feature. Avoid leaking persistence-only types upward.
-- Delete operations are logical deletes when the table has audit columns.
-- Use `CancellationToken` on async paths.
+## Preserve ownership
 
-## Auxiliary Master Rules
+An existing feature with similar fields is a lifecycle reference, not permission to reuse its entity, repository, API, SQL, sync, or forms. Preserve explicit independent masters as independent vertical contracts.
 
-- Administrable auxiliary masters must be implemented as independent backend features, not as helper arrays inside another feature.
-- Each auxiliary master requires its own module/feature folder, DTOs, commands, queries, validators, repository contract, SQL Server Persistence repository, API endpoints, permission codes, and lookup query.
-- Parent modules may reference auxiliary masters by stable Id/code values and consume lookup endpoints, but must not contain CRUD handlers for those auxiliary masters unless they are the owning module.
-- Use a shared descriptor approach only to remove repetitive CRUD boilerplate; the descriptor must still preserve independent routes, permissions, forms, tables, and stored procedures per auxiliary master.
-- Do not use hard-coded lookup values in backend handlers for catalogs that users can maintain, vary by company, or need permissions.
-- When a consuming form has a `+` selector action, the backend must expose create permission and create endpoint for the owning auxiliary master.
+## Required vertical
 
-## API Error Rules
+```text
+Domain/entity or explicit contract when behavior requires it
+  -> Application DTOs
+  -> list/detail/lookup queries and handlers
+  -> create/update/delete commands and handlers
+  -> FluentValidation
+  -> repository interface and save data records
+  -> Dapper Persistence repository
+  -> tenant/master SQL table and procedures
+  -> Minimal API route group and authorization
+  -> permission/menu/form-operation registration
+  -> typed frontend consumer
+  -> tests
+  -> sync/integration impact verification
+```
 
-- Do not return raw exceptions from endpoints.
-- Handlers must return `Result<T>` with business errors.
-- Unexpected exceptions must be handled by the global exception middleware.
-- Validation failures must return a consistent validation response.
-- Use stable error codes for frontend handling.
-- Controllers or endpoints must not contain business logic.
-- Controllers or endpoints must only receive request, call MediatR/use case, and return response.
-- Do not expose SQL errors directly to the frontend.
-- Do not expose stack traces in production.
+Do not create Domain types mechanically when the repository's approved pattern keeps a simple catalog contract in Application. Do create/extend Domain when the master owns meaningful pure behavior or invariants.
 
-## References
+## Application contract
 
-- Load `references/module-checklist.md` before implementing a new maintenance module.
-- Use `$nuansystem-commercial-architecture` when deciding module boundaries or names.
-- Use `$nuansystem-sql-standards` for database scripts or stored procedures.
-- Use `$nuansystem-winforms-devexpress` when the task also touches the desktop UI.
+- Use feature folders under `Application/Features/{Owner}` with the nearby naming convention.
+- Use explicit DTOs for list, detail, lookup, history, and save needs; do not duplicate solely to rename fields.
+- Commands/queries implement the existing messaging abstractions and handlers return `Result<T>`.
+- Normalize values before existence checks and persistence.
+- Use stable `ApiError` codes for duplicate, not-found, invalid relationship, or forbidden state.
+- Pass `CancellationToken` end to end.
+- Keep SQL, HTTP, claims, WinForms, and provider types out of Application.
+
+## CRUD behavior
+
+### Create
+
+Validate shape, normalize, verify authoritative uniqueness/relationships, persist, reload the authoritative DTO when required, publish only approved sync events, and return the created contract.
+
+### Update
+
+Validate id/input, reload or verify existence, normalize, check uniqueness excluding the current id, persist with audit identity, handle zero affected rows, and return the updated authoritative contract.
+
+### Delete
+
+Define physical versus logical semantics explicitly. Maintenance masters normally use logical deletion with delete audit fields. Verify dependencies or approved delete rules; do not silently delete another aggregate through a specialized view.
+
+### List/detail/lookup
+
+- Lists and lookups exclude logically deleted data and respect active/company rules.
+- Detail returns a not-found failure through the handler.
+- Lookup contracts are bounded and owned by the independent master.
+- Pagination/filtering must be server-side when volume or security semantics require it.
+
+## Auxiliary masters
+
+Each administrable auxiliary master owns its own Application feature, DTOs, handlers, validator, repository, table/procedures, routes, permissions, lookup, frontend maintenance, and tests. A parent consumes stable Id/code values; it does not own the catalog CRUD.
+
+Fixed closed enumerations may remain code sets when they are non-administrable and do not vary by company. Persist stable codes and defend the set in Application and SQL.
+
+## Audit, tenant, permissions, and sync
+
+- Obtain audit identity from authenticated claims at the endpoint.
+- Resolve tenant data through trusted company context and `ITenantConnectionFactory`.
+- Enforce read/manage or form-operation authorization in backend.
+- Keep FormKey/action/permission constants and Master security scripts aligned.
+- Search sync publishers, apply handlers, outbox/inbox, full-entity sources, and integration mappings before classifying sync as unchanged.
+- Do not enroll a new master into synchronization without explicit source-of-truth and distribution requirements.
+
+## Representative references
+
+- Simple CRUD: `Application/Features/Geography`, `GeographyRepository.cs`, `GeographyEndpoints.cs`.
+- Descriptor/configurable catalogs: TaxCatalogs, after confirming descriptor ownership fits.
+- Complex master: BusinessPartners, as aggregate evidence only.
+
+## Antipatterns
+
+- Endpoint-first or table-first implementation without vertical discovery.
+- Generic catalog endpoint/form for unrelated domain owners.
+- Inline SQL or stored-procedure names in Application.
+- UI-only uniqueness/authorization.
+- Audit user or company accepted from the request.
+- Copying another master's sync behavior automatically.
+- Creating only list/create while leaving edit/delete/history/contracts partial.
+
+## Completion checklist
+
+- [ ] Ownership, fields, uniqueness, delete, scope, permissions, audit, and sync decisions are explicit.
+- [ ] Full vertical contracts align.
+- [ ] Validation and SQL constraints match.
+- [ ] All endpoints are authorized.
+- [ ] Tenant isolation and audit identity are trusted.
+- [ ] Create/update/delete/list/detail/lookup and failure tests exist.
+- [ ] Relevant builds/tests and review gates are reported.
