@@ -1,4 +1,4 @@
 interface:
   display_name: "NuanSystem Operational Use Case"
-  short_description: "Casos operativos transaccionales"
-  default_prompt: "Implementa o revisa un caso operativo de NuanSystem que afecta stock, dinero, precios, compras, caja o documentos usando reglas de dominio, transacciones y auditoria."
+  short_description: "Procesos transaccionales seguros de NuanSystem"
+  default_prompt: "Use $nuansystem-operational-usecase to design and implement a transactional NuanSystem business operation."
