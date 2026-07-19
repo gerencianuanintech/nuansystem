@@ -22,7 +22,7 @@ Use `$nuansystem-winforms-designer` for serialized editors and popup views.
 Standard related catalog with clear/create behavior?
   -> NuanLookupEdit.
 Small fixed enum/list with no related maintenance?
-  -> established simple editor pattern.
+  -> direct closed LookUpEdit using the approved fixed-catalog contract.
 Large searchable dataset or multi-column discovery need?
   -> inspect approved SearchLookUpEdit/GridLookUpEdit pattern.
 No fitting pattern?
@@ -30,6 +30,17 @@ No fitting pattern?
 ```
 
 Do not add an external plus button when `NuanLookupEdit` already provides the corporate create action.
+
+## Fixed closed catalog contract
+
+Use a direct `LookUpEdit` only for a small approved set that has no independent maintenance or remote lifecycle.
+
+- Declare the editor in `.Designer.cs` with an explicit combo button and `TextEditStyle = TextEditStyles.DisableTextEditor`.
+- Bind a typed local list with separate stable code and visible text.
+- Set `ValueMember` to the persisted code and `DisplayMember` to readable text; never persist `SelectedIndex` or the caption.
+- Do not expose free text, clear, related-create, refresh, or an API lookup endpoint unless the product contract later introduces that lifecycle.
+- Enforce the same closed set in backend validation and the database when it is a persisted business contract.
+- Use `CarrierEditForm` as the approved example: SRI codes `04`, `05`, and `06` are local fixed values and remain independent from BusinessPartners.
 
 ## Binding contract
 
@@ -114,10 +125,12 @@ Do not filter only by display text or mutable labels.
 - N+1 API calls per displayed lookup row.
 - Leaving an invalid child value after parent changes.
 - Popup views with inconsistent fonts or editable columns.
+- A fixed catalog that accepts free text or persists its visible caption/index.
 
 ## Completion checklist
 
 - [ ] Correct selector/control and stable value contract were selected.
+- [ ] Fixed catalogs are closed in the Designer and enforced consistently by frontend, backend, and database.
 - [ ] Code/name display and null semantics are explicit.
 - [ ] Create/clear actions respect permission, read-only mode, refresh, and identity.
 - [ ] Dependent and async behavior handles stale/invalid selections.

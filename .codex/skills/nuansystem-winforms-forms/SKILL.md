@@ -55,6 +55,7 @@ Treat a representative form as a UX/lifecycle reference, not as the requested en
 - Configure data with `SetGridData`, visible columns in `ConfigureGridColumns`, and selected records through typed selection helpers.
 - Use the same `FormKey` for navigation, operation access, and column settings.
 - Open a concrete edit form for create/edit/consult rather than a generic end-user catalog editor.
+- For an explicitly independent master, create its own typed client, ViewModel, list form, edit form, FormKey, permissions, SQL contract, audit, and tests; reuse framework infrastructure but no concrete form from another domain.
 
 ## Standard edit/consult
 
@@ -128,6 +129,7 @@ Own authorization, tenant, business rules, authoritative validation/calculation,
 
 - CRUD list: `Geography/Cities/CitiesForm.cs`, `Security/Roles/RolesForm.cs`.
 - CRUD edit: `Geography/Countries/CountryEditForm.cs`, `Security/Roles/RoleEditForm.cs`.
+- Validated independent CRUD vertical: `Carriers/CarriersForm.cs` and `Carriers/CarrierEditForm.cs`.
 - Complex supplier editor: `BusinessPartners/SupplierEditForm.cs`.
 - Monitor: `Sync/SyncMonitorForm.Designer.cs`.
 

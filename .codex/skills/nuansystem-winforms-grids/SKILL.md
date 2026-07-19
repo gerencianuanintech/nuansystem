@@ -55,6 +55,8 @@ For every visible column define deliberately:
 
 Hide internal IDs, tenant keys, audit internals, tokens, raw integration payloads, and technical fields unless the screen explicitly requires them.
 
+For coded fixed catalogs, display the approved readable label and the business value users need to identify the record. Keep the raw code available only when it has user-facing meaning or is needed for filtering/export; do not expose persistence-only codes accidentally.
+
 ## Formatting
 
 - Use `AppTypography` for headers, rows, footer, and filter presentation.
@@ -111,6 +113,7 @@ Hide internal IDs, tenant keys, audit internals, tokens, raw integration payload
 - `SyncMonitorForm.Designer.cs` for monitor grids and KPIs.
 - `SyncOutboxDetailForm.Designer.cs` for a feature detail grid.
 - `CitiesForm.cs`, `SupplierGroupsForm.cs`, and `RolesForm.cs` for CRUD-derived grids.
+- `CarriersForm.cs` for an independent CRUD grid that presents identification type and identification number without inheriting BusinessPartners UI.
 
 ## Antipatterns
 

@@ -38,7 +38,7 @@ Use kebab-case following nearby values. Never introduce aliases or casing variat
 
 1. Discover the closest menu/security slice.
 2. Determine domain folder, visible label, parent menu, display order, `FormKey`, operations, and default access.
-3. Add/update idempotent Master data for form, menu, operations, role-menu access, and approved default role access.
+3. Add/update idempotent Master data for API `Permissions`, approved `RolePermissions`, form, menu, operations, role-menu access, and approved default role access.
 4. Protect API endpoints through the established form-operation authorization path.
 5. Register typed clients/ViewModels/forms in `Program.cs` as required.
 6. Add the navigation/factory mapping used by `MainForm`/`ShellViewModel`.
@@ -76,10 +76,14 @@ Use it for current authenticated user, active company, access token exposure to 
 ## Master SQL
 
 - Use a new versioned, idempotent script; do not rewrite historical deployment scripts for new features.
+- Seed every permission code required by endpoint policies in `Permissions`; registering a policy constant in code does not create the database permission or add it to JWT claims.
+- Add approved default-role mappings in `RolePermissions` separately from `SecurityRoleFormOperations`; menu/form access cannot satisfy an endpoint permission policy.
 - Insert/update `SecurityForms`, `SecurityMenus`, operations, and role mappings using established keys and guards.
 - Keep menu codes in the established `MENU.{PARENT}.{ITEM}` family.
 - Do not silently grant default roles beyond the approved policy.
 - Preserve existing IDs/relationships on re-execution.
+- If an incomplete script already ran in an environment, correct the source script for clean installations and add a later idempotent repair script for deployed installations.
+- After granting a new API permission, require a new login/token before runtime validation; an existing JWT does not acquire newly inserted claims.
 
 ## Multi-company boundary
 
@@ -109,6 +113,7 @@ Standard CRUD permissions fit?
 - Different `FormKey` in SQL, API, factory, and grid settings.
 - Hard-coded menu trees that bypass dynamic navigation.
 - Default ADMIN grants assumed without policy evidence.
+- Form/menu/operation seeds without the API `Permissions` and approved `RolePermissions` required by `RequirePermission`.
 - Manual auth/company headers.
 - Form service-location instead of DI registration.
 - Non-idempotent security seed or rewritten historical script.
@@ -117,6 +122,7 @@ Standard CRUD permissions fit?
 
 - [ ] One stable `FormKey` is used end-to-end.
 - [ ] Form/menu/operations/role mappings are complete and idempotent.
+- [ ] Endpoint permission codes exist in `Permissions`, approved roles have `RolePermissions`, and runtime testing uses a freshly issued token.
 - [ ] DI and shell navigation resolve the screen.
 - [ ] UI permissions and backend authorization align.
 - [ ] Related creation and read-only paths are secured.

@@ -79,6 +79,8 @@ Validation environment:
 - [ ] Authentication is required where appropriate.
 - [ ] Backend authorization exists; UI visibility alone is not security.
 - [ ] Form, operation, and field permissions are preserved.
+- [ ] Endpoint policy codes exist in `Permissions`, approved roles have `RolePermissions`, and form-operation grants are not mistaken for API permission grants.
+- [ ] Runtime authorization after a new permission grant was tested with a freshly issued token.
 - [ ] Active company/tenant context is propagated through approved infrastructure.
 - [ ] Queries and writes are isolated by the correct company scope.
 - [ ] Audit identity and company are authoritative.
@@ -92,6 +94,7 @@ Validation environment:
 - [ ] Standard edit/consult uses `BaseEditForm` or the deviation is justified.
 - [ ] Standard actions use `NuanActionButton`.
 - [ ] Related catalog lookup uses `NuanLookupEdit` when its contract fits.
+- [ ] A direct `LookUpEdit` is used only for a small fixed catalog with no related maintenance; it persists a stable code and is closed against free text.
 - [ ] Reusable grid requirements use `NuanDataGridControl` when appropriate.
 - [ ] KPI summaries use `NuanKpiCardControl`.
 - [ ] Colors/logo use `BrandResources`.
@@ -107,6 +110,8 @@ Validation environment:
 - [ ] `InitializeComponent` remains serialization-friendly.
 - [ ] `BeginInit`/`EndInit`, `SuspendLayout`/`ResumeLayout`, disposal, and component ownership are balanced.
 - [ ] Runtime code binds data/behavior rather than reconstructing layout.
+- [ ] Compact CRUD rows follow the approved 28 px top-to-top cadence (6 px visible gap for 22 px editors), unless a documented form-family exception applies.
+- [ ] A post-Designer semantic diff preserves required editor properties and contains only intentional `.resx`/serialization changes.
 - [ ] Naming follows the existing form family.
 - [ ] Read-only/consult mode covers all editable actions.
 - [ ] Loading, empty, error, and disabled states are visible.

@@ -75,6 +75,7 @@ Direct DevExpress controls may be used when they are the established low-level b
 - Preserve base-form inherited controls and modifiers.
 - Keep event wiring consistent with nearby Designer files.
 - Do not split `InitializeComponent` across hidden helpers.
+- For a direct closed `LookUpEdit`, serialize the combo button and `TextEditStyle = TextEditStyles.DisableTextEditor` explicitly; do not rely on design-time defaults.
 
 ### Layout
 
@@ -143,8 +144,9 @@ No reliable base?
 6. Verify permission/read-only/data-binding implications.
 7. Build the affected frontend projects.
 8. Inspect the final Designer file for balanced initialization/layout.
-9. Open the form in Visual Studio Designer when the environment supports it.
-10. Execute frontend gates in `.codex/REVIEW-CHECKLIST.md`.
+9. After opening/saving in Visual Studio Designer, review the semantic diff: preserve intended `.resx` creation but restore required properties the serializer removed or reset.
+10. Open the form in Visual Studio Designer when the environment supports it.
+11. Execute frontend gates in `.codex/REVIEW-CHECKLIST.md`.
 
 ## High-risk shared Designer changes
 
@@ -170,6 +172,7 @@ Do not:
 - mutate control hierarchy from async loading;
 - fix one screen by changing a shared control default without consumer review;
 - claim the Designer opens because the project compiles.
+- accept a Designer-generated diff without checking closed-editor behavior, inherited controls, tab order, resources, and established layout cadence.
 
 ## Validation evidence
 
@@ -190,6 +193,7 @@ Build success does not prove Designer success. Static inspection does not prove 
 - [ ] Designer declarations and initialization are explicit.
 - [ ] Layout ownership remains in `.Designer.cs`.
 - [ ] Initialization/layout/disposal calls are balanced.
+- [ ] A post-Designer semantic diff confirms required editor behavior and intentional `.resx` changes.
 - [ ] Corporate typography/resources are reused.
 - [ ] Runtime code contains behavior, not hidden layout.
 - [ ] Permissions and read-only behavior are addressed.

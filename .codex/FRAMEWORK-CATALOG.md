@@ -85,7 +85,15 @@ Status values:
   - `src/Frontend/NuanSystem.WinForms.Forms/Security/Users/UserEditForm.Designer.cs`
 - **Antipatterns:** ad hoc plus button beside every lookup, duplicate clear-button logic, or creation without permission checks.
 
-### 4.3 `NuanDataGridControl`
+### 4.3 Direct closed `LookUpEdit`
+
+- **Status:** Approved low-level pattern for a small fixed catalog; not a replacement for `NuanLookupEdit`.
+- **Use when:** values are an approved local/contractual set with no related maintenance, remote loading, create, clear, or refresh lifecycle.
+- **Contract:** serialize the combo button and `TextEditStyle = DisableTextEditor`, bind typed code/display values, and persist the stable code rather than caption/index.
+- **Representative consumer:** `src/Frontend/NuanSystem.WinForms.Forms/Carriers/CarrierEditForm.Designer.cs` for SRI identification-type codes `04`, `05`, and `06`.
+- **Antipatterns:** free text, duplicated related-create controls, persistence by caption/index, or frontend-only enforcement of a persisted closed set.
+
+### 4.4 `NuanDataGridControl`
 
 - **Location:** `src/Frontend/NuanSystem.WinForms.Controls/Grids/NuanDataGridControl.cs`
 - **Status:** Active/preferred for reusable feature grids.
@@ -98,7 +106,7 @@ Status values:
   - `src/Frontend/NuanSystem.WinForms.Forms/Sync/SyncOutboxDetailForm.Designer.cs`
 - **Antipatterns:** new grid wrapper, feature-local pagination/export framework, or bypassing its public contract to reproduce behavior.
 
-### 4.4 `NuanKpiCardControl`
+### 4.5 `NuanKpiCardControl`
 
 - **Location:** `src/Frontend/NuanSystem.WinForms.Controls/Kpi/NuanKpiCardControl.cs`
 - **Status:** Active/specialized for KPI summaries.
@@ -222,6 +230,7 @@ Status values:
 | Standard CRUD edit/consult | `BaseEditForm` | Backend remains authoritative |
 | Standard action button | `NuanActionButton` | Configure semantic kind first |
 | Related catalog lookup | `NuanLookupEdit` | Enforce create permission and refresh |
+| Small fixed closed catalog | direct `LookUpEdit` | No related maintenance; persist stable code and disable free text |
 | Reusable feature grid | `NuanDataGridControl` | Avoid duplicating base CRUD grid lifecycle |
 | KPI summary | `NuanKpiCardControl` | Presentation, not editable data |
 | Colors/logo | `BrandResources` | No local corporate literals |

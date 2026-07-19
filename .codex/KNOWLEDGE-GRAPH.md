@@ -426,3 +426,5 @@ A graph update must:
 ## 10. Iteration scope
 
 The graph now covers the Iteration 1 engineering core, Iteration 2 WinForms framework, and Iteration 3 backend foundations. SAP, BEAS, Android, and deeper domain-specific graphs still require subsequent repository-backed iterations. Their incomplete coverage is not permission to invent architecture.
+
+`Transportistas` is the validated Iteration 2 pilot: solution build, automated tests, tenant/master SQL execution, renewed-token authorization, runtime CRUD, closed identification selector, Designer serialization, and approved compact vertical spacing were exercised. Its evidence promotes only the documented reusable framework patterns; its business identity remains independent.

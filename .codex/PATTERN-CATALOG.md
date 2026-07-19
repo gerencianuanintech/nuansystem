@@ -59,6 +59,7 @@ Apply `$nuansystem-backend-architecture` and `$nuansystem-backend-crud` to the b
 - General supplier catalogs: `SupplierGroupsForm` and related edit form family.
 - Security: `RolesForm` / `RoleEditForm`.
 - Financial catalogs: `BranchesForm` / `BranchEditForm`.
+- Validated independent master: `CarriersForm` / `CarrierEditForm`, with its own backend, SQL, security, typed client, ViewModel, forms, audit, and tests and no BusinessPartners ownership.
 
 Select the closest domain and lifecycle; do not choose solely by name.
 
