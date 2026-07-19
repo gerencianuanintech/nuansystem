@@ -41,6 +41,8 @@ Validation environment:
 - [ ] At least one representative implementation was inspected; two when available for medium/high risk.
 - [ ] The selected pattern is named and justified.
 - [ ] Alternatives and material differences are recorded.
+- [ ] Explicit user-approved domain ownership, independence, and exclusions were preserved.
+- [ ] The selected reference states what may be reused and does not redefine the requested aggregate.
 - [ ] No numeric confidence/similarity score was invented.
 
 **Evidence:** paths/symbols inspected and selection record.
@@ -60,6 +62,7 @@ Validation environment:
 ## 6. Gate R4 — Domain and operational safety
 
 - [ ] CRUD versus operational classification is correct.
+- [ ] Independent masters have their own vertical contract; no unrelated aggregate, table, API, sync flow, ViewModel, typed client, or concrete form was reused by convenience.
 - [ ] Authoritative state is reloaded before operational decisions.
 - [ ] Stock, money, price, totals, balances, and document state are not trusted from UI input.
 - [ ] State transitions are explicit.

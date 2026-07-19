@@ -250,6 +250,28 @@ RolesForm
 
 Security catalogs require extra authorization/permission inspection; do not copy them as ordinary CRUD without those edges.
 
+### Confirmed boundary — Transportistas (pre-implementation)
+
+`Transportistas` is an independent administrative master. It is not a `BusinessPartner`, supplier subtype, supplier-class-filtered view, or specialization of the `TRA / Transporte` seed. The seed and existing BusinessPartners implementation are not ownership evidence for this feature.
+
+```text
+Transportistas
+  -> own entity/contract
+  -> own Application commands, queries, validation, and DTOs
+  -> own repository and persistence/SQL contract
+  -> own API endpoints and authorization
+  -> own typed frontend client and ViewModel
+  -> own BaseGridCrudListForm-derived list
+  -> own BaseEditForm-derived edit/consult form
+  -> own FormKey, menu, operations, audit, and tests
+
+Transportistas -X-> BusinessPartners entity/repository/API/synchronization
+Transportistas -X-> SupplierEditForm / BusinessPartnersForm reuse
+Transportistas -X-> SupplierClassId or TRA as identity/discriminator
+```
+
+Allowed reuse is framework-level only: CRUD lifecycle, corporate base forms and controls, Designer/layout rules, `INuanApiClient`, session/company propagation, permission infrastructure, and visual resources. Any future relationship between a transportista and a business partner must be a separately approved requirement; it must not be inferred during discovery.
+
 ## 6. Operational relationship graph
 
 ```text

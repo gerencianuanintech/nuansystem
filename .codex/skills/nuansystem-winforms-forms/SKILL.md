@@ -33,6 +33,7 @@ Do not classify by the presence of a grid or Save button.
 Before implementation, determine or infer safely:
 
 - domain and folder;
+- explicit independence, ownership, and non-relationships approved by the user;
 - form class and visible title;
 - lifecycle/pattern;
 - base form or explicit reason for none;
@@ -44,6 +45,8 @@ Before implementation, determine or infer safely:
 - Designer and build validation.
 
 Stop only for product decisions that materially change identity, destructive semantics, fields, permissions, or workflow.
+
+Treat a representative form as a UX/lifecycle reference, not as the requested entity's owner. When the requested master is independent, create its own concrete list/edit forms and typed vertical contract. Reuse corporate base forms and controls, but do not parameterize, filter, subclass, or repurpose another domain's concrete form merely to avoid the independent implementation.
 
 ## Standard CRUD list
 
@@ -133,6 +136,7 @@ Own authorization, tenant, business rules, authoritative validation/calculation,
 - Forcing operational work into CRUD inheritance.
 - Business rules or direct integrations in forms/ViewModels.
 - Generic final-user forms for unrelated administrable catalogs.
+- Reusing a domain-specific concrete form, ViewModel, or typed client for an explicitly independent entity.
 - Form-only persisted changes without vertical contract inspection.
 - Creating `HttpClient` or headers in forms.
 - Starting implementation before form lifecycle and security are known.
@@ -140,6 +144,7 @@ Own authorization, tenant, business rules, authoritative validation/calculation,
 ## Completion checklist
 
 - [ ] Lifecycle/pattern and reference form are explicit.
+- [ ] Domain ownership and the permitted reuse boundary are explicit.
 - [ ] Base form choice is justified.
 - [ ] Form/ViewModel/client/backend responsibilities are preserved.
 - [ ] Corporate controls, layout, Designer, grids/lookups, and security skills were applied.

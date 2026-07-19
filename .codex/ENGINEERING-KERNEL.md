@@ -39,10 +39,11 @@ For small changes, this record may be implicit but the same decisions still appl
 
 1. Restate the concrete outcome.
 2. Separate required behavior from optional improvement.
-3. Identify destructive, external, financial, security, or migration implications.
-4. Discover repository instructions and applicable skills.
-5. Confirm that the target branch and worktree are safe.
-6. When the request targets a named remote branch or the latest remote state, fetch that ref when permitted before comparing commits. Treat `origin/*` as a cached local reference until refreshed. If fetch is unavailable, record **Remote freshness: Not validated** and do not claim that the checkout matches live GitHub.
+3. Record explicit product decisions, domain ownership, exclusions, and relationships the user has approved or rejected.
+4. Identify destructive, external, financial, security, or migration implications.
+5. Discover repository instructions and applicable skills.
+6. Confirm that the target branch and worktree are safe.
+7. When the request targets a named remote branch or the latest remote state, fetch that ref when permitted before comparing commits. Treat `origin/*` as a cached local reference until refreshed. If fetch is unavailable, record **Remote freshness: Not validated** and do not claim that the checkout matches live GitHub.
 
 ### Output
 
@@ -77,6 +78,8 @@ If the work changes stock, money, prices, cash, purchasing, document state, exte
 ### Output
 
 Primary type, domain, affected layers, and initial risk.
+
+Classification must preserve explicit domain ownership captured in K1. Similar fields, seeds, names, forms, or persistence conveniences do not authorize folding an independent concept into an existing aggregate. If ownership is unresolved, mark it as an open product decision instead of selecting the nearest implementation.
 
 ## 5. Stage K3 — DISCOVER
 
@@ -133,6 +136,8 @@ Record:
 - confidence: high, medium, or low.
 
 Do not invent numeric similarity scores.
+
+The selected reference proves a lifecycle or framework pattern only. It does not prove that the requested feature shares the reference's entity, aggregate, table, API, permissions, synchronization, or form. State the permitted reuse boundary explicitly.
 
 ## 7. Stage K5 — PLAN
 
@@ -294,6 +299,18 @@ Check fails
   -> pre-existing? prove with evidence and report
   -> environment blocked? record attempt and blocker
   -> do not relabel failure as success
+```
+
+### Domain ownership versus reference reuse
+
+```text
+Has the user explicitly defined the concept as independent?
+  Yes -> preserve an independent vertical contract.
+         Search existing features only for lifecycle/framework references.
+         Do not reuse their entity, repository, API, persistence, sync, or domain form.
+  No  -> is ownership proven by requirements and repository contracts?
+           Yes -> use the proven owner and record the evidence.
+           No  -> keep ownership open and request/record a product decision.
 ```
 
 ## 14. Kernel invariants

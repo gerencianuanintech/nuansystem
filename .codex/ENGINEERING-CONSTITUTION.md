@@ -103,6 +103,19 @@ Do not finish with TODOs, empty handlers, fake data, disabled validation, swallo
 
 Do not overwrite, reset, rename, stage, or remove unrelated user changes. Keep the change set scoped and reviewable.
 
+### C-16 — Preserve explicit domain ownership
+
+Treat an explicit user-approved product or domain boundary as authoritative for the task. Repository proximity, a similarly named seed, shared fields, or an apparently reusable aggregate may suggest implementation references, but must not redefine the requested entity, its owner, or its persistence model.
+
+Keep these decisions separate:
+
+1. **Domain ownership** — what the concept is and which module owns it.
+2. **Lifecycle pattern** — CRUD, operational, document, dashboard, or another shape.
+3. **Framework reuse** — base forms, controls, transport, security, and visual resources.
+4. **Data relationship** — optional references to other entities, only when explicitly required.
+
+A reference implementation may guide structure and UX without creating inheritance, storage, API, synchronization, or aggregate coupling. If repository evidence appears to contradict an explicit domain decision, report the conflict; do not silently replace the decision with the nearest existing model.
+
 ## 4. Mandatory engineering pipeline
 
 All non-trivial work follows:
@@ -170,6 +183,7 @@ Unless the applicable catalog or an approved architectural decision explicitly p
 - Build a designer-backed form's entire visual tree in runtime helpers.
 - Add inline CRUD SQL to repositories when the established persistence contract requires stored procedures.
 - Duplicate DTOs or validators solely to rename them.
+- Reclassify an explicitly independent entity as an existing aggregate merely because both share fields, terminology, a lookup value, or a convenient form.
 - catch and ignore failures, return fabricated success, or claim unexecuted validation.
 - Modify `master` directly for feature work when a task branch is in scope.
 

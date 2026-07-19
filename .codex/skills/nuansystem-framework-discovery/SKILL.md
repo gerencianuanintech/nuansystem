@@ -51,12 +51,15 @@ Record:
 Outcome:
 Primary work type:
 Domain:
+Explicit domain decisions and exclusions:
 Affected layers:
 Risk:
 Search vocabulary:
 ```
 
 Use the Pattern Catalog classification. Any effect on stock, money, prices, cash, documents, synchronization, or external state is operational.
+
+Preserve user-approved ownership and independence decisions. Discovery may challenge them with concrete conflicts, but must not replace them with a nearby model because reuse appears cheaper.
 
 ## Step 2 — Inspect repository instructions
 
@@ -177,6 +180,14 @@ Recency is only a tie-breaker.
 
 Record alternatives and differences. Never invent numeric similarity scores.
 
+Separate the result into:
+
+- **domain owner** — established by explicit requirements or authoritative contracts;
+- **lifecycle reference** — an implementation with a similar workflow;
+- **framework components** — reusable infrastructure.
+
+Do not infer the domain owner from the lifecycle reference. Shared fields, a lookup seed, a label, or a similar screen do not prove aggregate identity. For an explicitly independent entity, cross-domain examples are reference-only: do not reuse their entity, repository, API, SQL, synchronization, ViewModel, typed client, or domain-specific form.
+
 ## Step 8 — Decide reuse, extension, or creation
 
 ```text
@@ -211,6 +222,7 @@ Discovery Record
 Outcome:
 Work type:
 Domain:
+Explicit domain decisions and exclusions:
 Affected layers:
 Risk:
 
@@ -219,6 +231,10 @@ Evidence inspected:
 
 Selected pattern:
 - <pattern and reference implementation>
+
+Permitted reuse boundary:
+- <framework/lifecycle elements allowed>
+- <domain-specific elements explicitly not reused>
 
 Components to reuse:
 - <component> — <how>
@@ -268,6 +284,8 @@ Do not:
 - create first and search later;
 - search only by exact requested name;
 - treat one match as an approved pattern without opening it;
+- infer aggregate ownership from shared fields, a seed value, naming similarity, or implementation convenience;
+- turn an explicitly independent entity into a filtered view or subtype of a reference entity;
 - copy a form from another lifecycle;
 - use direct DevExpress controls to duplicate a corporate control;
 - create `HttpClient`, SQL, HANA, or SAP access from a form;
@@ -282,6 +300,8 @@ Do not:
 Discovery passes only when:
 
 - classification and risk are explicit;
+- explicit domain decisions and exclusions are preserved;
+- selected references state the permitted reuse boundary and do not redefine ownership;
 - applicable engineering core documents were read;
 - checkout, branch, and remote-freshness claims are backed by an actual fetch or labeled Not validated;
 - source contracts, not just filenames, were inspected;

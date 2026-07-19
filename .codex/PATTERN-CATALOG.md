@@ -60,6 +60,8 @@ Entity/contract
 
 Select the closest domain and lifecycle; do not choose solely by name.
 
+Reference selection does not assign domain ownership. A form or vertical slice from another feature may be used to learn CRUD lifecycle, layout, permissions, or validation structure, but its entity, aggregate, table, repository, endpoints, synchronization, and domain-specific form remain out of scope unless the requirements explicitly establish that relationship.
+
 ### Required decisions
 
 - company/global scope;
@@ -78,6 +80,7 @@ Select the closest domain and lifecycle; do not choose solely by name.
 - local CRUD toolbar;
 - inline SQL where stored procedures are required;
 - business invariants enforced only in `BaseEditForm`.
+- converting an independent master into a specialization of the reference entity to avoid creating its own vertical contract.
 
 ## 4. Pattern P2 — Simple auxiliary catalog
 
