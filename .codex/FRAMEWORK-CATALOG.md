@@ -56,6 +56,16 @@ Status values:
   - `src/Frontend/NuanSystem.WinForms.Forms/Security/Roles/RoleEditForm.cs`
 - **Antipatterns:** duplicate save/read-only framework, form-owned SQL/SAP access, or authoritative business rules in UI validation.
 
+### 3.3 `RecordHistoryForm`
+
+- **Location:** `src/Frontend/NuanSystem.WinForms.Forms/Audit/RecordHistoryForm.cs` and its Designer.
+- **Status:** Active/preferred for record-level audit history opened from CRUD forms.
+- **Responsibility:** Displays audit changes in a read-only grid with refresh, action/user filters, previous/new values, user formatting, and corporate presentation.
+- **Contract:** Accept a title, record description, and an async loader returning `SecurityChangeItem` values.
+- **Use when:** an inherited History action displays field-level changes for a selected record.
+- **Representative consumers:** `SettingsForm`, `SecurityDocumentSeriesForm`, `BusinessPartnersForm`, and `CarriersForm`.
+- **Antipatterns:** history in `XtraMessageBox`, feature-local history grids/forms, arbitrary 20-row truncation, or loading before the shared form owns refresh/error behavior.
+
 ## 4. Corporate controls
 
 ### 4.1 `NuanActionButton`

@@ -92,6 +92,7 @@ Validation environment:
 
 - [ ] Standard CRUD list uses `BaseGridCrudListForm` or the deviation is justified.
 - [ ] Standard edit/consult uses `BaseEditForm` or the deviation is justified.
+- [ ] Record-level CRUD history uses `RecordHistoryForm` and its refresh/filter/error lifecycle rather than a local message or duplicated history UI.
 - [ ] Standard actions use `NuanActionButton`.
 - [ ] Related catalog lookup uses `NuanLookupEdit` when its contract fits.
 - [ ] A direct `LookUpEdit` is used only for a small fixed catalog with no related maintenance; it persists a stable code and is closed against free text.

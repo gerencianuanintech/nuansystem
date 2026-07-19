@@ -56,6 +56,7 @@ Treat a representative form as a UX/lifecycle reference, not as the requested en
 - Use the same `FormKey` for navigation, operation access, and column settings.
 - Open a concrete edit form for create/edit/consult rather than a generic end-user catalog editor.
 - For an explicitly independent master, create its own typed client, ViewModel, list form, edit form, FormKey, permissions, SQL contract, audit, and tests; reuse framework infrastructure but no concrete form from another domain.
+- When the list exposes History, open `RecordHistoryForm` with a typed async loader and map the feature audit response to `SecurityChangeItem`. Do not replace the shared history surface with `XtraMessageBox`, concatenated text, or a feature-local grid.
 
 ## Standard edit/consult
 

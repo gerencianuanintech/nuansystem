@@ -1,7 +1,7 @@
-using System.Text;
-using DevExpress.XtraEditors;
 using NuanSystem.Shared.Constants;
+using NuanSystem.WinForms.Forms.Audit;
 using NuanSystem.WinForms.Forms.Common;
+using NuanSystem.WinForms.Services.Audit.Models;
 using NuanSystem.WinForms.Services.Carriers.Models;
 using NuanSystem.WinForms.Services.GridColumnSettings;
 using NuanSystem.WinForms.Services.Session;
@@ -82,24 +82,35 @@ public sealed partial class CarriersForm : BaseGridCrudListForm
         await LoadDataAsync();
     }
 
-    protected override async Task HistoryAsync()
+    protected override Task HistoryAsync()
     {
-        if (SelectedItem() is not { } item) return;
-        var changes = await viewModel.GetHistoryAsync(item.Id);
-        if (changes.Count == 0)
+        if (SelectedItem() is not { } item)
         {
-            ShowWarning("No existen cambios registrados para el transportista seleccionado.");
-            return;
+            return Task.CompletedTask;
         }
 
-        var text = new StringBuilder();
-        foreach (var change in changes.Take(20))
-        {
-            text.AppendLine($"{change.CreatedAt.ToLocalTime():dd/MM/yyyy HH:mm} | {change.UserName ?? "Sistema"} | {change.Action}");
-            text.AppendLine($"{change.FieldName}: {change.OldValue ?? "-"} -> {change.NewValue ?? "-"}");
-            text.AppendLine();
-        }
-        XtraMessageBox.Show(this, text.ToString(), $"Historial - {item.Code}", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        using var form = new RecordHistoryForm(
+            "Historial de transportista",
+            $"{item.Code} - {item.Name}",
+            async cancellationToken =>
+            {
+                var changes = await viewModel.GetHistoryAsync(item.Id, cancellationToken);
+                return changes.Select(change => new SecurityChangeItem(
+                    0,
+                    "Carrier",
+                    item.Id.ToString(),
+                    change.Action,
+                    change.FieldName,
+                    change.OldValue,
+                    change.NewValue,
+                    change.UserId,
+                    change.UserName,
+                    "API",
+                    change.CreatedAt)).ToList();
+            });
+
+        form.ShowDialog(this);
+        return Task.CompletedTask;
     }
 
     protected override void ConfigureGridColumns()

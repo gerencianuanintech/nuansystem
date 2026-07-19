@@ -43,6 +43,7 @@ public sealed class CarrierAuditChange
     public string FieldName { get; set; } = string.Empty;
     public string? OldValue { get; set; }
     public string? NewValue { get; set; }
+    public int? UserId { get; set; }
     public string? UserName { get; set; }
     public DateTime CreatedAt { get; set; }
 }
