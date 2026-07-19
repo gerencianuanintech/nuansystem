@@ -13,8 +13,9 @@ Follow the engineering core, run `$nuansystem-framework-discovery`, load `$nuans
 - `docs/FRONTEND-DEVEXPRESS-NOMENCLATURA.md`
 - `.codex/skills/nuansystem-winforms-devexpress/references/enterprise-typography.md`
 - the closest approved form and its base/Designer files
+- `src/Frontend/NuanSystem.WinForms.Forms/Carriers/CarrierEditForm.Designer.cs` at commit `bc7e73f6` for the approved compact CRUD vertical rhythm
 
-Do not invent universal pixel values that are not established. Prefer the closest form family. The currently documented dense-editor standards are 22 px editor height and 26 px vertical top-to-top cadence.
+Do not invent universal pixel values that are not established. Prefer the closest form family. For compact CRUD edit forms, use 22 px editor height and a 28 px vertical top-to-top cadence, leaving 6 px of visible vertical space between consecutive single-line editors.
 
 ## Layout workflow
 
@@ -63,7 +64,11 @@ Do not invent universal pixel values that are not established. Prefer the closes
 - Use `AppTypography` and `BrandResources`.
 - Use Segoe UI according to the existing typography reference.
 - Standard dense single-line editors use 22 px height.
-- Standard vertically stacked field rows use a 26 px top-to-top cadence.
+- Compact CRUD field rows use a 28 px top-to-top cadence: `nextY = currentY + 28`.
+- With a 22 px single-line editor, this produces 6 px of visible vertical separation. Do not interpret 28 px as the empty gap.
+- Keep each label vertically aligned with its editor. In the approved `CarrierEditForm` reference, label Y is editor Y + 3 px.
+- Continue the 28 px row origin sequence when control types remain single-line. After a multiline editor, calculate the next control from the multiline editor's actual bottom plus the locally approved section gap; do not force it into a single-line row.
+- Do not compress compact CRUD rows back to 26 px or introduce arbitrary 30/31 px steps unless the selected form family documents an exception.
 - Right-align quantities, counters, percentages, prices, costs, totals, dimensions, and other numeric business values.
 - Do not introduce Tahoma, Arial, Times New Roman, or feature-local font constants.
 - Do not use runtime typography helpers to resize or reposition controls.
@@ -105,6 +110,7 @@ No evidence?
 - [ ] Closest approved layout and base form were inspected.
 - [ ] Hierarchy and geometry are explicit in `.Designer.cs`.
 - [ ] Corporate typography/resources and documented density are used.
+- [ ] Compact CRUD rows use the approved 28 px top-to-top cadence and 6 px visible single-line gap, unless a documented family exception applies.
 - [ ] Resize, minimum size, clipping, overlap, tab order, and numeric alignment were checked.
 - [ ] Read-only, busy, empty, error, and permission states remain usable.
 - [ ] Build and Designer opening are reported separately and truthfully.
