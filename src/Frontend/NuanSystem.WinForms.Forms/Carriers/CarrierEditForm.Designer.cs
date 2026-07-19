@@ -145,9 +145,11 @@ partial class CarrierEditForm
         lueIdentificationType.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         lueIdentificationType.Properties.Appearance.Options.UseFont = true;
         lueIdentificationType.Properties.AutoHeight = false;
+        lueIdentificationType.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueIdentificationType.Properties.NullText = "";
         lueIdentificationType.Properties.ShowFooter = false;
         lueIdentificationType.Properties.ShowHeader = false;
+        lueIdentificationType.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
         lueIdentificationType.Size = new Size(330, 22);
         lueIdentificationType.TabIndex = 2;
         // 
