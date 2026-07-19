@@ -1,0 +1,156 @@
+using DevExpress.XtraEditors;
+using DevExpress.XtraEditors.Controls;
+
+namespace NuanSystem.WinForms.Forms.Carriers;
+
+partial class CarrierEditForm
+{
+    private System.ComponentModel.IContainer components = null;
+
+    private void InitializeComponent()
+    {
+        lblCode = new LabelControl();
+        txtCode = new TextEdit();
+        lblName = new LabelControl();
+        txtName = new TextEdit();
+        lblIdentificationType = new LabelControl();
+        lueIdentificationType = new LookUpEdit();
+        lblIdentificationNumber = new LabelControl();
+        txtIdentificationNumber = new TextEdit();
+        lblDescription = new LabelControl();
+        memDescription = new MemoEdit();
+        chkIsActive = new CheckEdit();
+        ((System.ComponentModel.ISupportInitialize)txtCode.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)txtName.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueIdentificationType.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)txtIdentificationNumber.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)memDescription.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)chkIsActive.Properties).BeginInit();
+        SuspendLayout();
+        lblCode.Appearance.Font = new Font("Segoe UI", 9F);
+        lblCode.Appearance.Options.UseFont = true;
+        lblCode.Location = new Point(28, 29);
+        lblCode.Name = "lblCode";
+        lblCode.Size = new Size(39, 15);
+        lblCode.Text = "Código";
+        txtCode.Location = new Point(190, 26);
+        txtCode.Name = "txtCode";
+        txtCode.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        txtCode.Properties.Appearance.Options.UseFont = true;
+        txtCode.Properties.AutoHeight = false;
+        txtCode.Properties.MaxLength = 50;
+        txtCode.Size = new Size(330, 22);
+        txtCode.TabIndex = 0;
+        lblName.Appearance.Font = new Font("Segoe UI", 9F);
+        lblName.Appearance.Options.UseFont = true;
+        lblName.Location = new Point(28, 60);
+        lblName.Name = "lblName";
+        lblName.Size = new Size(44, 15);
+        lblName.Text = "Nombre";
+        txtName.Location = new Point(190, 57);
+        txtName.Name = "txtName";
+        txtName.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        txtName.Properties.Appearance.Options.UseFont = true;
+        txtName.Properties.AutoHeight = false;
+        txtName.Properties.MaxLength = 150;
+        txtName.Size = new Size(330, 22);
+        txtName.TabIndex = 1;
+        lblIdentificationType.Appearance.Font = new Font("Segoe UI", 9F);
+        lblIdentificationType.Appearance.Options.UseFont = true;
+        lblIdentificationType.Location = new Point(28, 91);
+        lblIdentificationType.Name = "lblIdentificationType";
+        lblIdentificationType.Size = new Size(120, 15);
+        lblIdentificationType.Text = "Tipo de identificacion";
+        lueIdentificationType.Location = new Point(190, 88);
+        lueIdentificationType.Name = "lueIdentificationType";
+        lueIdentificationType.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        lueIdentificationType.Properties.Appearance.Options.UseFont = true;
+        lueIdentificationType.Properties.AutoHeight = false;
+        lueIdentificationType.Properties.Buttons.AddRange(new EditorButton[] { new(ButtonPredefines.Combo) });
+        lueIdentificationType.Properties.NullText = "";
+        lueIdentificationType.Properties.ShowFooter = false;
+        lueIdentificationType.Properties.ShowHeader = false;
+        lueIdentificationType.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
+        lueIdentificationType.Size = new Size(330, 22);
+        lueIdentificationType.TabIndex = 2;
+        lblIdentificationNumber.Appearance.Font = new Font("Segoe UI", 9F);
+        lblIdentificationNumber.Appearance.Options.UseFont = true;
+        lblIdentificationNumber.Location = new Point(28, 122);
+        lblIdentificationNumber.Name = "lblIdentificationNumber";
+        lblIdentificationNumber.Size = new Size(76, 15);
+        lblIdentificationNumber.Text = "Identificación";
+        txtIdentificationNumber.Location = new Point(190, 119);
+        txtIdentificationNumber.Name = "txtIdentificationNumber";
+        txtIdentificationNumber.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        txtIdentificationNumber.Properties.Appearance.Options.UseFont = true;
+        txtIdentificationNumber.Properties.AutoHeight = false;
+        txtIdentificationNumber.Properties.MaxLength = 30;
+        txtIdentificationNumber.Size = new Size(330, 22);
+        txtIdentificationNumber.TabIndex = 3;
+        lblDescription.Appearance.Font = new Font("Segoe UI", 9F);
+        lblDescription.Appearance.Options.UseFont = true;
+        lblDescription.Location = new Point(28, 153);
+        lblDescription.Name = "lblDescription";
+        lblDescription.Size = new Size(62, 15);
+        lblDescription.Text = "Descripcion";
+        memDescription.Location = new Point(190, 150);
+        memDescription.Name = "memDescription";
+        memDescription.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        memDescription.Properties.Appearance.Options.UseFont = true;
+        memDescription.Properties.MaxLength = 500;
+        memDescription.Size = new Size(330, 70);
+        memDescription.TabIndex = 4;
+        chkIsActive.EditValue = true;
+        chkIsActive.Location = new Point(186, 229);
+        chkIsActive.Name = "chkIsActive";
+        chkIsActive.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        chkIsActive.Properties.Appearance.Options.UseFont = true;
+        chkIsActive.Properties.Caption = "Activo";
+        chkIsActive.Size = new Size(75, 20);
+        chkIsActive.TabIndex = 5;
+        AutoScaleDimensions = new SizeF(7F, 15F);
+        AutoScaleMode = AutoScaleMode.Font;
+        ClientSize = new Size(560, 330);
+        Controls.Add(lblCode);
+        Controls.Add(txtCode);
+        Controls.Add(lblName);
+        Controls.Add(txtName);
+        Controls.Add(lblIdentificationType);
+        Controls.Add(lueIdentificationType);
+        Controls.Add(lblIdentificationNumber);
+        Controls.Add(txtIdentificationNumber);
+        Controls.Add(lblDescription);
+        Controls.Add(memDescription);
+        Controls.Add(chkIsActive);
+        Font = new Font("Segoe UI", 9F);
+        MinimumSize = new Size(560, 369);
+        Name = "CarrierEditForm";
+        Text = "Transportista";
+        ((System.ComponentModel.ISupportInitialize)txtCode.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)txtName.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueIdentificationType.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)txtIdentificationNumber.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)memDescription.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)chkIsActive.Properties).EndInit();
+        ResumeLayout(false);
+        PerformLayout();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) components?.Dispose();
+        base.Dispose(disposing);
+    }
+
+    private LabelControl lblCode;
+    private TextEdit txtCode;
+    private LabelControl lblName;
+    private TextEdit txtName;
+    private LabelControl lblIdentificationType;
+    private LookUpEdit lueIdentificationType;
+    private LabelControl lblIdentificationNumber;
+    private TextEdit txtIdentificationNumber;
+    private LabelControl lblDescription;
+    private MemoEdit memDescription;
+    private CheckEdit chkIsActive;
+}

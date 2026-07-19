@@ -2,6 +2,7 @@ using NuanSystem.WinForms.Forms.Audit;
 using NuanSystem.WinForms.Forms.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.Forms.Auth;
 using NuanSystem.WinForms.Forms.BusinessPartners;
+using NuanSystem.WinForms.Forms.Carriers;
 using NuanSystem.WinForms.Forms.ConfigurationCompanies;
 using NuanSystem.WinForms.Forms.Documents.SecurityDocumentSeries;
 using NuanSystem.WinForms.Forms.OperationalCatalogs;
@@ -79,6 +80,7 @@ using NuanSystem.WinForms.Services.Configuration;
 using NuanSystem.WinForms.Services.Documents.SecurityDocumentSeries;
 using NuanSystem.WinForms.Services.OperationalCatalogs;
 using NuanSystem.WinForms.Services.BusinessPartners;
+using NuanSystem.WinForms.Services.Carriers;
 using NuanSystem.WinForms.Services.Http;
 using NuanSystem.WinForms.Services.GridColumnSettings;
 using NuanSystem.WinForms.Services.FinancialCatalogs.Catalogs;
@@ -106,6 +108,7 @@ using NuanSystem.WinForms.ViewModels.Audit;
 using NuanSystem.WinForms.ViewModels.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.ViewModels.Auth;
 using NuanSystem.WinForms.ViewModels.BusinessPartners;
+using NuanSystem.WinForms.ViewModels.Carriers;
 using NuanSystem.WinForms.ViewModels.Companies;
 using NuanSystem.WinForms.ViewModels.ConfigurationCompanies;
 using NuanSystem.WinForms.ViewModels.ConfigurationSettings;
@@ -233,6 +236,7 @@ internal sealed class FrontendComposition : IDisposable
     private readonly ConfigurationCompanyClient configurationCompanyClient;
     private readonly ConfigurationSettingClient configurationSettingClient;
     private readonly BusinessPartnerClient businessPartnerClient;
+    private readonly CarrierClient carrierClient;
     private readonly ChartOfAccountClient chartOfAccountClient;
     private readonly FinancialCatalogClient financialCatalogClient;
     private readonly TaxCatalogClient taxCatalogClient;
@@ -280,6 +284,7 @@ internal sealed class FrontendComposition : IDisposable
         configurationCompanyClient = new ConfigurationCompanyClient(apiClient);
         configurationSettingClient = new ConfigurationSettingClient(apiClient);
         businessPartnerClient = new BusinessPartnerClient(apiClient);
+        carrierClient = new CarrierClient(apiClient);
         chartOfAccountClient = new ChartOfAccountClient(apiClient);
         financialCatalogClient = new FinancialCatalogClient(apiClient);
         taxCatalogClient = new TaxCatalogClient(apiClient);
@@ -348,6 +353,7 @@ internal sealed class FrontendComposition : IDisposable
             CreateSecurityTransactionalFieldAccessForm,
             CreateCustomersForm,
             CreateSuppliersForm,
+            CreateCarriersForm,
             CreateChartOfAccountsForm,
             CreateSupplierGroupsForm,
             CreateSupplierClassesForm,
@@ -423,6 +429,11 @@ internal sealed class FrontendComposition : IDisposable
             "Proveedores",
             CreateGeneralSupplierMaintenanceForm,
             geographyClient);
+    }
+
+    public CarriersForm CreateCarriersForm()
+    {
+        return new CarriersForm(new CarriersViewModel(carrierClient), session, gridColumnSettingsClient);
     }
 
     private Form? CreateGeneralSupplierMaintenanceForm(string formKey)

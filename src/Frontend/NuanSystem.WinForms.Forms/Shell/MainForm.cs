@@ -9,6 +9,7 @@ using DevExpress.XtraTab;
 using NuanSystem.WinForms.Forms.Audit;
 using NuanSystem.WinForms.Forms.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.Forms.BusinessPartners;
+using NuanSystem.WinForms.Forms.Carriers;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Forms.ConfigurationCompanies;
 using NuanSystem.WinForms.Forms.Documents.SecurityDocumentSeries;
@@ -86,6 +87,7 @@ public sealed class MainForm : RibbonForm
     private readonly Func<SecurityTransactionalFieldAccessForm> securityTransactionalFieldAccessFormFactory;
     private readonly Func<BusinessPartnersForm> customersFormFactory;
     private readonly Func<BusinessPartnersForm> suppliersFormFactory;
+    private readonly Func<CarriersForm> carriersFormFactory;
     private readonly Func<ChartOfAccountsForm> chartOfAccountsFormFactory;
     private readonly Func<SupplierGroupsForm> supplierGroupsFormFactory;
     private readonly Func<SupplierClassesForm> supplierClassesFormFactory;
@@ -176,6 +178,7 @@ public sealed class MainForm : RibbonForm
         securityTransactionalFieldAccessFormFactory = null!;
         customersFormFactory = null!;
         suppliersFormFactory = null!;
+        carriersFormFactory = null!;
         chartOfAccountsFormFactory = null!;
         supplierGroupsFormFactory = null!;
         supplierClassesFormFactory = null!;
@@ -238,6 +241,7 @@ public sealed class MainForm : RibbonForm
         Func<SecurityTransactionalFieldAccessForm> securityTransactionalFieldAccessFormFactory,
         Func<BusinessPartnersForm> customersFormFactory,
         Func<BusinessPartnersForm> suppliersFormFactory,
+        Func<CarriersForm> carriersFormFactory,
         Func<ChartOfAccountsForm> chartOfAccountsFormFactory,
         Func<SupplierGroupsForm> supplierGroupsFormFactory,
         Func<SupplierClassesForm> supplierClassesFormFactory,
@@ -297,6 +301,7 @@ public sealed class MainForm : RibbonForm
         this.securityTransactionalFieldAccessFormFactory = securityTransactionalFieldAccessFormFactory;
         this.customersFormFactory = customersFormFactory;
         this.suppliersFormFactory = suppliersFormFactory;
+        this.carriersFormFactory = carriersFormFactory;
         this.chartOfAccountsFormFactory = chartOfAccountsFormFactory;
         this.supplierGroupsFormFactory = supplierGroupsFormFactory;
         this.supplierClassesFormFactory = supplierClassesFormFactory;
@@ -1769,6 +1774,7 @@ public sealed class MainForm : RibbonForm
             "security-field-access-transactional" => securityTransactionalFieldAccessFormFactory(),
             "customers" => customersFormFactory(),
             "suppliers" => suppliersFormFactory(),
+            "carriers" => carriersFormFactory(),
             "chart-of-accounts" => chartOfAccountsFormFactory(),
             "supplier-groups" => supplierGroupsFormFactory(),
             "supplier-classes" => supplierClassesFormFactory(),

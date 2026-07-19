@@ -15,7 +15,7 @@ public static class CarrierEndpoints
     {
         var group = app.MapGroup("/api/carriers");
 
-        group.MapGet("/", async (ISender sender, CancellationToken cancellationToken) =>
+        group.MapGet("", async (ISender sender, CancellationToken cancellationToken) =>
             (await sender.Send(new GetCarriersQuery(), cancellationToken)).ToHttpResult())
             .RequirePermission(PermissionCodes.CarriersRead)
             .RequireFormOperation(FormKey, "refresh");
@@ -34,7 +34,7 @@ public static class CarrierEndpoints
             .RequirePermission(PermissionCodes.CarriersRead)
             .RequireFormOperation(FormKey, "history");
 
-        group.MapPost("/", async (SaveCarrierRequest request, ISender sender, ClaimsPrincipal user, CancellationToken cancellationToken) =>
+        group.MapPost("", async (SaveCarrierRequest request, ISender sender, ClaimsPrincipal user, CancellationToken cancellationToken) =>
         {
             var auditUser = user.GetAuditUser();
             var command = new CreateCarrierCommand(request.Code, request.Name, request.IdentificationTypeCode, request.IdentificationNumber, request.Description, request.IsActive, auditUser.UserId, auditUser.UserName);
