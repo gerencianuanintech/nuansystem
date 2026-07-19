@@ -322,13 +322,13 @@ RolesForm
 
 Security catalogs require extra authorization/permission inspection; do not copy them as ordinary CRUD without those edges.
 
-### Confirmed boundary — Transportistas (pre-implementation)
+### Implemented boundary — Transportistas
 
 `Transportistas` is an independent administrative master. It is not a `BusinessPartner`, supplier subtype, supplier-class-filtered view, or specialization of the `TRA / Transporte` seed. The seed and existing BusinessPartners implementation are not ownership evidence for this feature.
 
 ```text
 Transportistas
-  -> own entity/contract
+  -> own tenant table and contracts (without a Domain entity)
        -> Id
        -> Code
        -> Name
@@ -352,6 +352,8 @@ Transportistas -X-> SupplierClassId or TRA as identity/discriminator
 
 Allowed reuse is framework-level only: CRUD lifecycle, corporate base forms and controls, Designer/layout rules, `INuanApiClient`, session/company propagation, permission infrastructure, and visual resources. Any future relationship between a transportista and a business partner must be a separately approved requirement; it must not be inferred during discovery.
 
+The implemented vertical is rooted at `Application/Features/Carriers`, `Persistence/Repositories/CarrierRepository.cs`, `Api/Endpoints/CarrierEndpoints.cs`, the tenant SQL scripts `106`/`107`, and the frontend `Carriers` folders. It deliberately has no Domain entity, SAP mapping, synchronization event, outbox publisher, or BusinessPartners dependency.
+
 #### Transportista identification contract
 
 Identification belongs to the independent `Transportistas` vertical. It must not reference or reuse `BusinessPartnerIdentificationTypes`, BusinessPartners lookups, DTOs, repositories, endpoints, or forms.
@@ -369,7 +371,7 @@ The edit form must expose `IdentificationTypeCode` as a non-editable-options com
 | `04` | RUC |
 | `06` | Pasaporte |
 
-Persist the code, not the display text or selected index. Do not provide related-create, clear, or free-text behavior for the type. The backend must reject any code outside `04`, `05`, and `06`; the database contract must enforce the same closed set. Keep identifier normalization and type-specific format validation in the Transportistas Application/backend contract, not only in WinForms.
+Persist the code, not the display text or selected index. Do not provide related-create, clear, or free-text behavior for the type. The backend must reject any code outside `04`, `05`, and `06`; the database contract must enforce the same closed set. The approved contract requires a non-empty identifier of at most 30 characters and does not infer type-specific checksum validation or uniqueness; either rule requires a separate business decision.
 
 The list grid must include `IdentificationTypeCode`/its resolved display label and `IdentificationNumber`. The edit form must place the identification-type combo immediately before the identification editor, with both controls declared explicitly in `CarrierEditForm.Designer.cs`.
 
