@@ -42,6 +42,7 @@ For small changes, this record may be implicit but the same decisions still appl
 3. Identify destructive, external, financial, security, or migration implications.
 4. Discover repository instructions and applicable skills.
 5. Confirm that the target branch and worktree are safe.
+6. When the request targets a named remote branch or the latest remote state, fetch that ref when permitted before comparing commits. Treat `origin/*` as a cached local reference until refreshed. If fetch is unavailable, record **Remote freshness: Not validated** and do not claim that the checkout matches live GitHub.
 
 ### Output
 

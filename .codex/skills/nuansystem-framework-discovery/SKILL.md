@@ -66,7 +66,9 @@ Before source search:
 2. Read the engineering core documents above.
 3. Identify applicable skills.
 4. Confirm branch/worktree state and unrelated changes.
-5. Note read-only or generated areas.
+5. If the task names a remote branch or requires its latest state, fetch that ref when permitted and compare `HEAD` with the refreshed remote-tracking commit. A local `origin/*` ref is cached evidence and does not prove live remote freshness.
+6. If remote refresh cannot be performed, record `Remote freshness: Not validated` and avoid claiming that local and live GitHub state match.
+7. Note read-only or generated areas.
 
 ## Step 3 — Search exact and semantic evidence
 
@@ -281,6 +283,7 @@ Discovery passes only when:
 
 - classification and risk are explicit;
 - applicable engineering core documents were read;
+- checkout, branch, and remote-freshness claims are backed by an actual fetch or labeled Not validated;
 - source contracts, not just filenames, were inspected;
 - representative evidence is repository-backed and cited with portable repository-relative paths;
 - corporate frontend candidates were evaluated;
