@@ -257,6 +257,14 @@ Security catalogs require extra authorization/permission inspection; do not copy
 ```text
 Transportistas
   -> own entity/contract
+       -> Id
+       -> Code
+       -> Name
+       -> IdentificationTypeCode
+       -> IdentificationNumber
+       -> Description
+       -> IsActive
+       -> audit and logical deletion
   -> own Application commands, queries, validation, and DTOs
   -> own repository and persistence/SQL contract
   -> own API endpoints and authorization
@@ -271,6 +279,27 @@ Transportistas -X-> SupplierClassId or TRA as identity/discriminator
 ```
 
 Allowed reuse is framework-level only: CRUD lifecycle, corporate base forms and controls, Designer/layout rules, `INuanApiClient`, session/company propagation, permission infrastructure, and visual resources. Any future relationship between a transportista and a business partner must be a separately approved requirement; it must not be inferred during discovery.
+
+#### Transportista identification contract
+
+Identification belongs to the independent `Transportistas` vertical. It must not reference or reuse `BusinessPartnerIdentificationTypes`, BusinessPartners lookups, DTOs, repositories, endpoints, or forms.
+
+Persist these required fields:
+
+- `IdentificationTypeCode` — two-character SRI code.
+- `IdentificationNumber` — entered identification value.
+
+The edit form must expose `IdentificationTypeCode` as a non-editable-options combo with exactly:
+
+| Code | Visible value |
+|---|---|
+| `05` | Cédula |
+| `04` | RUC |
+| `06` | Pasaporte |
+
+Persist the code, not the display text or selected index. Do not provide related-create, clear, or free-text behavior for the type. The backend must reject any code outside `04`, `05`, and `06`; the database contract must enforce the same closed set. Keep identifier normalization and type-specific format validation in the Transportistas Application/backend contract, not only in WinForms.
+
+The list grid must include `IdentificationTypeCode`/its resolved display label and `IdentificationNumber`. The edit form must place the identification-type combo immediately before the identification editor, with both controls declared explicitly in `CarrierEditForm.Designer.cs`.
 
 ## 6. Operational relationship graph
 
