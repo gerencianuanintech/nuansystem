@@ -1,23 +1,58 @@
-# SQL Script Checklist
+# SQL Change Checklist
 
-## Table
+## 1. Discovery and ownership
 
-- Define `Id int IDENTITY(1,1)` unless a nearby module establishes another key.
-- Define business unique indexes with `WHERE IsDeleted = 0`.
-- Add default constraints for `CreatedAt` and `IsDeleted`.
-- Use `nvarchar` lengths consistent with validators and DTOs.
-- Add nullable SAP columns only when the module needs SAP mapping.
+- [ ] Read the stored-procedure, audit, commercial, and tenancy rules applicable to the change.
+- [ ] Scan all `database/sql` filenames and select the next valid numeric prefix.
+- [ ] Classify the object as Master, tenant, shared tenant foundation, operational, or forward repair.
+- [ ] Name prerequisite scripts and deployment order.
+- [ ] Inspect the Application contract, Persistence repository, endpoint, frontend consumer, and tests.
 
-## Procedures
+## 2. Table/schema
 
-- Start each procedure with `SET NOCOUNT ON;`.
-- Use `CREATE OR ALTER PROCEDURE`.
-- Do not return deleted rows from list/detail procedures.
-- Use `@ExcluirId int = NULL` for uniqueness checks used by create and update validators.
-- Return scalar values expected by repositories: created `Id`, count, or affected row count.
+- [ ] Primary key and identity/global identity semantics are explicit.
+- [ ] Required/optional fields, SQL types, lengths, precision, and defaults match C#.
+- [ ] Foreign keys and ownership stay inside the correct database boundary.
+- [ ] Business uniqueness is protected; logical-delete filtering is intentional.
+- [ ] Closed code sets and non-blank requirements have check constraints when authoritative.
+- [ ] UTC audit fields and logical-delete fields follow the approved standard.
+- [ ] Indexes support real list, lookup, uniqueness, history, and operational access paths.
+- [ ] SAP/external fields remain optional and are not local identity unless explicitly required.
 
-## C# Alignment
+## 3. Procedures and Dapper
 
-- Repository constants must match SQL procedure names exactly.
-- Dapper parameter object property names must match SQL parameters.
-- Validators must match SQL required fields and max lengths.
+- [ ] Use `SET NOCOUNT ON`; use `SET XACT_ABORT ON` for explicit transactions.
+- [ ] Use `CREATE OR ALTER PROCEDURE`.
+- [ ] List/detail/existence/lookup exclude deleted rows according to the contract.
+- [ ] Active lookup behavior is explicit.
+- [ ] Create returns the new id; update/delete return the exact scalar/row semantics expected by the repository.
+- [ ] Parameter names, nullability, sizes, and result aliases map exactly to Dapper contracts.
+- [ ] Repository uses `CommandType.StoredProcedure` and propagates cancellation.
+- [ ] No procedure name or SQL-provider type leaks into Application.
+
+## 4. Audit and transactions
+
+- [ ] Audit user comes from authenticated backend identity, not request authority.
+- [ ] Detailed history uses the approved domain audit table.
+- [ ] Data change and detailed audit commit or roll back together.
+- [ ] Update history records only changed fields when that is the established contract.
+- [ ] Logical delete records state/audit consistently.
+- [ ] Multi-write operational work has one explicit transaction boundary.
+- [ ] No SQL transaction remains open during SAP/HTTP/external calls.
+
+## 5. Security and tenancy
+
+- [ ] Tenant scripts do not query/write Master; Master scripts do not assume tenant objects.
+- [ ] API `Permissions` and `RolePermissions` are created for secured endpoints.
+- [ ] `SecurityForms`, menus, and form operations align when the feature is navigable.
+- [ ] Permission codes, FormKey, action keys, endpoint policies, and frontend constants match.
+- [ ] Runtime authorization is tested with a renewed token after permission changes.
+
+## 6. Evolution and evidence
+
+- [ ] Script is safely rerunnable and does not duplicate data/grants.
+- [ ] Existing installations receive a forward migration/hotfix rather than silent history edits.
+- [ ] Backfill, compatibility window, destructive risk, and recovery are explicit.
+- [ ] Static SQL checks distinguish syntax/contract inspection from real execution.
+- [ ] Exact executed scripts, target databases, commands/tools, and results are recorded.
+- [ ] Build/tests cover affected handlers, repositories/contracts, permissions, and regressions.
