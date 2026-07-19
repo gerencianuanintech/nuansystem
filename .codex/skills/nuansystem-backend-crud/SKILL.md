@@ -88,6 +88,7 @@ Fixed closed enumerations may remain code sets when they are non-administrable a
 
 ## Representative references
 
+- Validated full independent master: `Application/Features/Carriers`, `ICarrierRepository`, `CarrierRepository`, `CarrierEndpoints`, tenant scripts `106`/`107`, Master scripts `108`/`109`, and Carrier tests. Reuse lifecycle only; Transportistas remains its own owner.
 - Simple CRUD: `Application/Features/Geography`, `GeographyRepository.cs`, `GeographyEndpoints.cs`.
 - Descriptor/configurable catalogs: TaxCatalogs, after confirming descriptor ownership fits.
 - Complex master: BusinessPartners, as aggregate evidence only.

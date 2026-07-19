@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem API Errors"
+  short_description: "Normaliza errores y logging del backend"
+  default_prompt: "Use $nuansystem-api-error-logging para revisar el contrato de errores, middleware y trazabilidad de la API."

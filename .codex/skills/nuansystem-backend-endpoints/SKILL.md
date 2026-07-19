@@ -53,6 +53,7 @@ UI visibility is not authorization. Read, create, update, delete, history, retry
 ## Result and status handling
 
 - Use the repository's `Result<T>` and `ToHttpResult` behavior.
+- The current shared `ToHttpResult()` maps every failed `Result<T>` to HTTP 400. Do not claim 404/409 semantics unless the shared mapper is deliberately evolved with all consumers/tests.
 - Return stable business/validation error codes from Application.
 - Let global exception handling own unexpected exceptions.
 - Do not return raw exceptions, SQL messages, stack traces, or integration credentials.

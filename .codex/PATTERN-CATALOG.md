@@ -231,6 +231,8 @@ A sequence of tabs is not automatically a wizard.
 
 Endpoint shape follows the Application use case, not the screen layout. Preserve validation, authorization, tenant context, cancellation, consistent errors, and response contracts.
 
+Use `ICommand<T>`/`IQuery<T>`, their project handler abstractions, `Result<T>`, `ApiResponse<T>`, and `ToHttpResult()`. The current mapper returns HTTP 400 for failed results; status-code changes are shared API migrations, not endpoint-local improvisation.
+
 ### Frontend
 
 Create or extend a typed feature client that depends on `INuanApiClient`. Forms consume the feature service/client; they do not create `HttpClient`, attach JWT/company headers, or deserialize transport errors ad hoc.

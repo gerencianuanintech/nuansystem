@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem Database Providers"
+  short_description: "Aisla proveedores de base de datos"
+  default_prompt: "Use $nuansystem-database-provider-compatibility para revisar una decision de proveedor sin inventar soporte no implementado."

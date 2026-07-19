@@ -1,204 +1,79 @@
 ---
 name: nuansystem-api-error-logging
-description: Define and implement NuanSystem API error handling, Result<T>, ApiErrorResponse, ProblemDetails, validation errors, global exception middleware, Serilog structured logging, TraceId correlation, SQL/SAP error normalization, and production-safe frontend messages. Use when touching API responses, exception handling, logging, middleware, handlers, validation, or frontend error contracts.
+description: Implement or review NuanSystem Result, ApiResponse, ApiError, FluentValidation failures, GlobalExceptionMiddleware, audit error logging, SQL/SAP exception classification, TraceIdentifier correlation, and production-safe API messages. Use when changing backend failures, HTTP error mapping, exception middleware, logging, validation responses, audit error records, or frontend error contracts.
 ---
 
-# NuanSystem API Error Logging
+# NuanSystem API Errors and Logging
 
-## Response Standard
+## Authoritative contracts
 
-All API errors must use a stable response shape that WinForms can deserialize and present clearly:
+Inspect before editing:
 
-```csharp
-public sealed class ApiErrorResponse
-{
-    public required string Code { get; init; }
-    public required string Message { get; init; }
-    public string? Detail { get; init; }
-    public string? TraceId { get; init; }
-    public IReadOnlyList<ApiFieldError> Errors { get; init; } = [];
-}
+- `Application/Common/Models/Result.cs`
+- `Shared/Responses/ApiResponse.cs`
+- `Shared/Responses/ApiError.cs`
+- `Api/Extensions/ResultExtensions.cs`
+- `Application/Common/Behaviors/ValidationBehavior.cs`
+- `Application/Common/Exceptions/ApplicationValidationException.cs`
+- `Api/Middleware/GlobalExceptionMiddleware.cs`
 
-public sealed class ApiFieldError
-{
-    public required string Field { get; init; }
-    public required string Message { get; init; }
-}
+Do not introduce `ApiErrorResponse`, `ProblemDetails`, a second `Error` record, or a parallel result type unless a separately approved migration updates every consumer.
+
+## Expected versus unexpected failures
+
+```text
+Expected validation shape failure
+  -> FluentValidation -> ValidationBehavior -> ApplicationValidationException -> 400 ApiResponse
+Expected business/not-found/conflict outcome
+  -> Result<T>.Failure(message, ApiError[]) -> ToHttpResult()
+Unexpected SQL/SAP/infrastructure/programming exception
+  -> GlobalExceptionMiddleware -> safe classified ApiResponse + technical server/audit log
 ```
 
-Example JSON:
+`ToHttpResult()` currently maps failed `Result<T>` values to HTTP 400. Do not claim 404/409 behavior that the shared mapper does not implement. Any status-code refinement is a cross-cutting API contract change requiring frontend/test inspection.
 
-```json
-{
-  "code": "CUSTOMER_ALREADY_EXISTS",
-  "message": "Ya existe un cliente con el mismo codigo.",
-  "detail": null,
-  "traceId": "00-abc123",
-  "errors": []
-}
+## Error rules
+
+- Use stable, feature-owned `ApiError.Code` values and the exact input field name when field feedback is useful.
+- Keep user messages clear in Spanish and technical details out of production responses.
+- Do not return raw SQL messages, SAP payloads, stack traces, connection strings, tokens, passwords, or encrypted secrets.
+- Do not catch expected failures in every endpoint; keep endpoints transport-thin.
+- Do not convert an unexpected persistence failure into fabricated success or a misleading business error.
+- Preserve `context.TraceIdentifier` in classified technical error detail and audit records.
+
+## Logging and audit
+
+`GlobalExceptionMiddleware` logs unexpected failures through `ILogger`, attempts to persist an audit error through `IAuditLogRepository`, classifies known SQL/SAP cases, and returns a safe `ApiResponse<object>`.
+
+- Log structured properties rather than concatenated secret-bearing strings.
+- Record operation identity, route, company code, user, trace id, and safe context when available.
+- Keep audit logging best-effort: a failure to write the error audit must not hide the original failure.
+- Never log request bodies or parameters wholesale when they can contain credentials or personal data.
+- Development-only technical detail must remain guarded by environment checks.
+
+## Change-impact tree
+
+```text
+Change Result<T>/ApiResponse/ApiError?
+  -> inspect every handler, ToHttpResult, frontend deserializer, and contract test
+Change exception classification?
+  -> inspect SQL/SAP wrappers, middleware tests, status/message expectations, and audit logging
+Change validation mapping?
+  -> inspect validators, ValidationBehavior, frontend field matching, and tests
 ```
 
-## Rules
+## Representative evidence
 
-- Handlers must return `Result<T>` for business errors.
-- Validation failures must return structured field errors.
-- Unexpected exceptions must pass through global exception middleware/handler.
-- Do not add repetitive `try/catch` blocks to every endpoint.
-- Do not return `ex.Message` directly in production.
-- Do not expose SQL errors, SAP stack traces, connection strings, tokens, or credentials to the frontend.
-- Each relevant error must have a stable code for frontend handling and support diagnostics.
-- Include `TraceId` in error responses and logs.
-- Frontend messages must be clear in Spanish and not require technical interpretation by the user.
+- Business errors: `Application/Features/Carriers/Commands/CarrierCommandHandlers.cs`.
+- Validation conversion: `Application/Common/Behaviors/ValidationBehavior.cs`.
+- SQL/SAP classification: `Api/Middleware/GlobalExceptionMiddleware.cs`.
+- HTTP mapping: `Api/Extensions/ResultExtensions.cs`.
 
-## Result Pattern
+## Completion gate
 
-```csharp
-public sealed record Error(string Code, string Message, string? Detail = null);
-
-public class Result<T>
-{
-    public bool IsSuccess { get; }
-    public T? Value { get; }
-    public Error? Error { get; }
-
-    public static Result<T> Success(T value) => new(true, value, null);
-    public static Result<T> Failure(string code, string message, string? detail = null) =>
-        new(false, default, new Error(code, message, detail));
-
-    private Result(bool isSuccess, T? value, Error? error)
-    {
-        IsSuccess = isSuccess;
-        Value = value;
-        Error = error;
-    }
-}
-```
-
-Business example:
-
-```csharp
-if (await _customers.ExistsByCodeAsync(command.Code, cancellationToken))
-{
-    return Result<CreateCustomerResponse>.Failure(
-        "CUSTOMER_ALREADY_EXISTS",
-        "Ya existe un cliente con el mismo codigo.");
-}
-```
-
-## Global Exception Handler
-
-Use one global handler that logs unexpected failures and returns a production-safe response:
-
-```csharp
-public sealed class GlobalExceptionHandler : IExceptionHandler
-{
-    private readonly ILogger<GlobalExceptionHandler> _logger;
-    private readonly IHostEnvironment _environment;
-
-    public GlobalExceptionHandler(
-        ILogger<GlobalExceptionHandler> logger,
-        IHostEnvironment environment)
-    {
-        _logger = logger;
-        _environment = environment;
-    }
-
-    public async ValueTask<bool> TryHandleAsync(
-        HttpContext httpContext,
-        Exception exception,
-        CancellationToken cancellationToken)
-    {
-        var traceId = Activity.Current?.Id ?? httpContext.TraceIdentifier;
-
-        _logger.LogError(exception,
-            "Unhandled API error. TraceId: {TraceId}, Path: {Path}",
-            traceId,
-            httpContext.Request.Path);
-
-        var response = new ApiErrorResponse
-        {
-            Code = "UNEXPECTED_ERROR",
-            Message = "Ocurrio un error inesperado. Intente nuevamente o contacte soporte.",
-            Detail = _environment.IsDevelopment() ? exception.Message : null,
-            TraceId = traceId
-        };
-
-        httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
-        return true;
-    }
-}
-```
-
-## Program.cs
-
-```csharp
-builder.Host.UseSerilog((context, services, configuration) =>
-{
-    configuration
-        .ReadFrom.Configuration(context.Configuration)
-        .ReadFrom.Services(services)
-        .Enrich.FromLogContext()
-        .Enrich.WithProperty("Application", "NuanSystem.Api");
-});
-
-builder.Services.AddProblemDetails();
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-
-var app = builder.Build();
-
-app.UseSerilogRequestLogging();
-app.UseExceptionHandler();
-```
-
-## Serilog Configuration
-
-```json
-{
-  "Serilog": {
-    "MinimumLevel": {
-      "Default": "Information",
-      "Override": {
-        "Microsoft": "Warning",
-        "System": "Warning"
-      }
-    },
-    "WriteTo": [
-      {
-        "Name": "File",
-        "Args": {
-          "path": "logs/nuansystem-api-.log",
-          "rollingInterval": "Day",
-          "retainedFileCountLimit": 30
-        }
-      }
-    ],
-    "Enrich": [ "FromLogContext" ]
-  }
-}
-```
-
-## Logging Rules
-
-- Log critical business operations: login, company selection, permission changes, document posting/cancellation, stock movements, cash movements, SAP sync attempts.
-- Log SAP integration with `CompanyCode`, local document id/type, status, `TraceId`, and SAP identifiers when available.
-- Log SQL failures with procedure name and safe parameter context only; never include raw connection strings or secrets.
-- Use structured properties instead of string concatenation:
-
-```csharp
-_logger.LogInformation(
-    "Posting document {DocumentType} {DocumentId} for company {CompanyCode}",
-    document.Type,
-    document.Id,
-    company.CompanyCode);
-```
-
-## Error Categories
-
-- Validation: `VALIDATION_ERROR`, status 400, field-level errors.
-- Business: stable domain code, status 400 or 409 depending on conflict.
-- Authentication: `AUTHENTICATION_REQUIRED` or `INVALID_CREDENTIALS`, status 401.
-- Authorization: `ACCESS_DENIED`, status 403.
-- Not found: `{ENTITY}_NOT_FOUND`, status 404.
-- SQL/infrastructure: `DATABASE_ERROR`, status 500, safe message.
-- SAP: `SAP_SYNC_FAILED`, status 502/500 depending on operation contract, safe message plus logged technical detail.
+- [ ] Existing response/result contracts are reused or migration scope is explicit.
+- [ ] Expected and unexpected failures follow different paths.
+- [ ] Codes, fields, user messages, status behavior, and consumers align.
+- [ ] Secrets and raw technical data cannot reach clients/logs.
+- [ ] Trace/audit behavior survives the failure path.
+- [ ] Targeted validation/middleware/client tests and build are reported.

@@ -1,163 +1,67 @@
 ---
 name: nuansystem-database-provider-compatibility
-description: Keep NuanSystem SQL Server-first persistence compatible with future MySQL support by isolating provider-specific SQL, repository implementations, connection factories, DatabaseProvider, CompanyContext, scripts, stored procedure contracts, and dialect differences. Use when designing persistence, tenant connections, database scripts, repositories, or provider-specific behavior.
+description: Preserve NuanSystem SQL Server-first persistence boundaries while keeping future database providers isolated behind Application contracts. Use when changing DatabaseEngine, company connection resolution, ITenantConnectionFactory, Dapper repositories, provider-specific SQL, database scripts, or proposing MySQL support.
 ---
 
 # NuanSystem Database Provider Compatibility
 
-## Core Rules
+## Current truth
 
-- SQL Server is the primary supported engine.
-- MySQL is a future provider and must not break SQL Server design.
-- Isolate provider differences inside Persistence and `database/{provider}` scripts.
-- Application consumes repository interfaces, never provider implementations.
-- Domain does not know SQL Server, MySQL, stored procedure names, Dapper, EF Core, or connection classes.
-- Do not leak SQL Server syntax into Application or Domain.
-- Do not use stored procedure names directly in handlers.
-- Keep repository contracts stable regardless of provider.
-- Always use parameters. Do not build unsafe dynamic SQL.
+- `Domain/Tenancy/DatabaseEngine.cs` declares `SqlServer` and `MySql`.
+- `Persistence/Connections/TenantConnectionFactory.cs` implements SQL Server through `Microsoft.Data.SqlClient`.
+- MySQL currently throws `NotSupportedException`; it is an architectural placeholder, not a supported provider.
+- Production SQL scripts currently live under legacy `database/sql` and use SQL Server stored procedures.
 
-## Folder Layout
+Never document or generate a working MySQL repository, dialect, package, connection class, or deployment script as if it already exists.
 
-```text
-database
-├── sqlserver
-│   ├── master
-│   └── tenant
-└── mysql
-    ├── master
-    └── tenant
-```
+## Boundaries
 
-Provider-specific C# belongs in Persistence:
+- Domain may name the provider enum but must not know Dapper, connections, procedures, or SQL syntax.
+- Application defines repository and transaction contracts without provider types.
+- Persistence selects provider implementations and owns connection/procedure behavior.
+- SQL Server scripts may use `CREATE OR ALTER`, `DATETIME2`, `SYSUTCDATETIME`, `SCOPE_IDENTITY`, filtered indexes, and other SQL Server features.
+- Do not reduce SQL Server correctness to a lowest-common-denominator dialect for hypothetical portability.
+
+## Decision tree
 
 ```text
-Persistence
-├── Connection
-│   ├── ICompanyConnectionFactory.cs
-│   └── CompanyConnectionFactory.cs
-├── Repositories
-│   ├── SqlServerCustomerRepository.cs
-│   └── MySqlCustomerRepository.cs
-└── Dialects
-    └── ISqlDialect.cs
+Ordinary feature on current production platform?
+  -> implement SQL Server contract under current repository/script conventions
+Explicit approved MySQL implementation?
+  -> define parity requirements, provider packages, connection factory behavior,
+     provider-specific repositories/scripts, migration/tests, and deployment evidence
+No explicit MySQL requirement?
+  -> keep MySQL unsupported and do not add speculative abstractions
 ```
 
-## Provider Context
+## Provider change gate
 
-```csharp
-public enum DatabaseProvider
-{
-    SqlServer = 1,
-    MySql = 2
-}
+Before enabling a new provider, document and validate:
 
-public sealed record CompanyContext(
-    int CompanyId,
-    string CompanyCode,
-    DatabaseProvider DatabaseProvider,
-    string ConnectionString);
-```
+- supported features and excluded modules;
+- Master and tenant connection resolution;
+- secret protection and connection testing;
+- repository/procedure parity;
+- transaction/isolation semantics;
+- types, precision, UTC timestamps, identity retrieval, filtered uniqueness, and error mapping;
+- schema initialization/migration order;
+- integration and rollback tests.
 
-The trusted `CompanyContext` must be resolved from the backend master database after validating `X-Company-Code` and user-company access.
+Keep Application contracts stable only when semantics truly match. Separate implementations are preferred when SQL differs materially.
 
-## Connection Factory
+## Antipatterns
 
-```csharp
-public interface ICompanyConnectionFactory
-{
-    Task<DbConnection> CreateOpenConnectionAsync(
-        CompanyContext companyContext,
-        CancellationToken cancellationToken);
-}
+- Invented `CompanyConnectionFactory` or `DatabaseProvider` replacing actual contracts in documentation only.
+- Inline provider switches in handlers/endpoints.
+- SQL Server and MySQL syntax in one script.
+- Claiming provider support because an enum value exists.
+- Adding dialect interfaces without two real consumers and tests.
+- Passing raw connection strings through commands or frontend requests.
 
-public sealed class CompanyConnectionFactory : ICompanyConnectionFactory
-{
-    public async Task<DbConnection> CreateOpenConnectionAsync(
-        CompanyContext companyContext,
-        CancellationToken cancellationToken)
-    {
-        DbConnection connection = companyContext.DatabaseProvider switch
-        {
-            DatabaseProvider.SqlServer => new SqlConnection(companyContext.ConnectionString),
-            DatabaseProvider.MySql => new MySqlConnection(companyContext.ConnectionString),
-            _ => throw new InvalidOperationException("Unsupported database provider.")
-        };
+## Completion gate
 
-        await connection.OpenAsync(cancellationToken);
-        return connection;
-    }
-}
-```
-
-## Repository Contracts
-
-Application defines the contract:
-
-```csharp
-public interface ICustomerRepository
-{
-    Task<CustomerDto?> GetByIdAsync(int id, CancellationToken cancellationToken);
-    Task<IReadOnlyList<CustomerListItemDto>> GetListAsync(CustomerListFilter filter, CancellationToken cancellationToken);
-    Task<int> CreateAsync(CreateCustomerData data, CancellationToken cancellationToken);
-    Task<bool> UpdateAsync(UpdateCustomerData data, CancellationToken cancellationToken);
-}
-```
-
-SQL Server CRUD implementations must use stored procedures:
-
-```csharp
-public sealed class SqlServerCustomerRepository : ICustomerRepository
-{
-    private const string CreateProcedure = "SP_NA_POST_CUSTOMER_CREAR";
-
-    public async Task<int> CreateAsync(CreateCustomerData data, CancellationToken cancellationToken)
-    {
-        using var connection = await _connectionFactory.CreateOpenConnectionAsync(_companyContext.Current, cancellationToken);
-        return await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(CreateProcedure, data, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken));
-    }
-}
-```
-
-Future MySQL implementation must keep the same contract and should use equivalent stored procedures or the approved provider-specific persistence mechanism:
-
-```csharp
-public sealed class MySqlCustomerRepository : ICustomerRepository
-{
-    public async Task<int> CreateAsync(CreateCustomerData data, CancellationToken cancellationToken)
-    {
-        const string sql = "CALL SP_NA_POST_CUSTOMER_CREAR(@Code, @Name, @CreatedByUserId);";
-        using var connection = await _connectionFactory.CreateOpenConnectionAsync(_companyContext.Current, cancellationToken);
-        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(sql, data, cancellationToken: cancellationToken));
-    }
-}
-```
-
-## SQL Server-Specific Features
-
-These are allowed only in SQL Server scripts or SQL Server persistence implementation:
-
-- `DATETIME2`
-- `SYSUTCDATETIME()`
-- `SCOPE_IDENTITY()`
-- `@@ROWCOUNT`
-- `CREATE OR ALTER`
-- `NVARCHAR(MAX)`
-- SQL Server stored procedure syntax
-
-If MySQL support is added, create equivalent scripts under `database/mysql` instead of weakening SQL Server scripts.
-
-## Dialect Guidance
-
-Use `ISqlDialect` only when a small formatting difference is unavoidable. Prefer separate repository implementations when SQL differs materially:
-
-```csharp
-public interface ISqlDialect
-{
-    string CurrentUtcDateExpression { get; }
-    string LimitOffset(int take, int skip);
-}
-```
-
-Do not introduce dialect abstractions into Application unless the use case is genuinely provider-neutral and not persistence-specific.
+- [ ] Current provider support is stated truthfully.
+- [ ] Provider-specific details remain in Persistence/scripts.
+- [ ] Master/tenant connection and secret boundaries are preserved.
+- [ ] SQL Server behavior is not weakened.
+- [ ] Any new provider has executable parity and isolation evidence.

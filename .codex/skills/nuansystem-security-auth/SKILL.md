@@ -1,165 +1,79 @@
 ---
 name: nuansystem-security-auth
-description: Define and review NuanSystem security, authentication, authorization, JWT, refresh tokens, roles, permissions, module/company permissions, X-Company-Code validation, password hashing, secret protection, and multi-company access isolation. Use when touching login, users, roles, permissions, claims, company access, security middleware, API authorization, WinForms session security, or production secret handling.
+description: Implement or review NuanSystem authentication and credential lifecycle: login, JWT creation/validation, permission claims, security stamp revocation, password hashing/change requirements, user state, company access bootstrap, secret protection, HTTPS, and production configuration. Use when changing AuthEndpoints, JwtTokenService, SqlServerAuthService, password flows, authentication middleware, claims, signing keys, or credential storage.
 ---
 
-# NuanSystem Security Auth
+# NuanSystem Security Authentication
 
-## Core Rules
+## Scope
 
-- Authenticate users with username/password only through the backend API.
-- Issue a JWT access token that identifies the user; include only claims needed for authorization and correlation.
-- Use refresh tokens only from the backend flow and store them revocably with expiration, device/session metadata, and audit fields.
-- Require `Authorization: Bearer {token}` from WinForms for authenticated endpoints.
-- Require `X-Company-Code` when an endpoint uses tenant/company data.
-- Validate `X-Company-Code` against the master database on every company-scoped request.
-- Validate that the authenticated user is assigned to the requested company.
-- Block inactive users, inactive companies, inactive roles, and revoked refresh tokens.
-- Authorize operations in backend using role/module/company permissions; never trust permissions sent by WinForms.
-- Keep business data isolated by company and prevent cross-company access at middleware, Application, and Persistence boundaries.
-- Never use `CompanyCode` sent by the frontend without validating it against master company configuration.
-- Never store passwords in plain text. Use ASP.NET Core Identity password hashing or a strong PBKDF2/Argon2/bcrypt implementation.
-- Encrypt or protect sensitive credentials: tenant connection strings, SAP credentials, refresh tokens if persisted, and integration secrets.
-- Do not include passwords, tokens, connection strings, SAP credentials, or raw secret values in logs.
-- Do not return sensitive details in authentication, authorization, or validation errors.
-- Force HTTPS in production and reject token usage over insecure channels.
+This skill owns authentication and credential lifecycle. Use `$nuansystem-backend-multitenancy-security` for tenant isolation, endpoint permissions, form operations, audit identity, and Master/tenant ownership.
 
-## Recommended Tables
+Inspect the real flow:
 
-- `Users`: identity, username, email, password hash, active/locked state, audit fields.
-- `Roles`: role code/name, active state.
-- `Permissions`: stable permission code, module, operation, description.
-- `UserRoles`: user-role assignment.
-- `Companies`: company code, status, database provider, connection reference, SAP settings reference.
-- `UserCompanies`: user-company assignment and default company flag.
-- `RolePermissions`: permission grants per role.
-- `RefreshTokens`: token hash, user, company optional, expires/revoked dates, device metadata, created IP.
+- `Api/Endpoints/AuthEndpoints.cs`
+- `Persistence/Security/SqlServerAuthService.cs`
+- `Infrastructure/Authentication/JwtTokenService.cs`
+- `Infrastructure/Authentication/Pbkdf2PasswordHasher.cs`
+- `Api/Extensions/ServiceCollectionExtensions.cs`
+- `Api/Middleware/RequiredPasswordChangeMiddleware.cs`
+- `Application/Features/Auth/Commands/ChangePasswordCommandHandler.cs`
+- `Persistence/Security/UserSecurityStateService.cs`
 
-## JWT Claims
+## Authentication flow
 
-Recommended claims:
-
-```csharp
-public static class NuanClaimTypes
-{
-    public const string UserId = "sub";
-    public const string UserName = "preferred_username";
-    public const string DisplayName = "name";
-    public const string SessionId = "sid";
-    public const string CompanyCodes = "nuan:companies";
-    public const string SecurityStamp = "nuan:security_stamp";
-}
+```text
+credentials -> SqlServerAuthService verifies active user/password
+  -> roles/permissions/companies loaded from Master
+  -> JwtTokenService issues signed access token
+  -> JwtBearer validates issuer/audience/signature/lifetime
+  -> security stamp/current user state revalidated
+  -> RequiredPasswordChangeMiddleware restricts forced-change sessions
 ```
 
-Do not put tenant connection strings, SAP credentials, full permission lists, or mutable company configuration in the JWT. Permissions can change before the token expires; the backend must re-check critical permissions against the current store or a safe server-side cache.
+Do not invent refresh-token behavior as active unless the executable flow proves it. A table or initializer alone is not evidence that issuance, rotation, revocation, and client use are complete.
 
-## Permission Constants
+## Rules
 
-Use stable permission codes and reuse them across endpoints, menu registration, and seed data:
+- Hash passwords only through `IPasswordHasher`; never store or log plaintext.
+- Load JWT signing material from approved environment/local secret configuration; production validation must reject missing/weak configuration.
+- Keep tokens, password hashes, connection credentials, SAP credentials, and encryption keys out of repository files, responses, screenshots, and logs.
+- Include only claims used by the implemented authorization/session flow.
+- Treat permission claims as a snapshot: changes require a renewed token unless the server-side authorization path rechecks current storage.
+- Preserve security-stamp invalidation and inactive/deleted user checks.
+- Keep forced password change restricted to the approved endpoint until a new token is issued.
+- Enforce HTTPS and production-safe Swagger/configuration behavior.
 
-```csharp
-public static class PermissionCodes
-{
-    public const string CustomersRead = "Customers.Read";
-    public const string CustomersCreate = "Customers.Create";
-    public const string CustomersUpdate = "Customers.Update";
-    public const string CustomersDelete = "Customers.Delete";
-    public const string SapSyncRetry = "Integrations.Sap.SyncRetry";
-    public const string SecurityUsersManage = "Security.Users.Manage";
-}
+## Company and authorization boundary
+
+Authentication identifies the user and allowed bootstrap data. `X-Company-Code` remains untrusted until `CompanyContextMiddleware` validates the user-company relationship. Endpoint access still requires backend permission/form-operation enforcement.
+
+Never place connection strings, mutable configuration, or full secrets in JWT claims.
+
+## Change-impact tree
+
+```text
+Claims/token lifetime/signing changed?
+  -> inspect token service, JWT validation, ApiSession/frontend renewal, security stamp, tests
+Password policy/hash changed?
+  -> inspect create/update user, change-password flow, existing hash compatibility, tests
+Permissions changed?
+  -> inspect Master Permissions + RolePermissions, JWT issuance, endpoint policy, renewed-token runtime test
 ```
 
-## Company Access Validation
+## Antipatterns
 
-Create a backend service that resolves the active company from `X-Company-Code`, validates user access, and exposes a trusted company context:
+- Hard-coded signing/encryption key.
+- Frontend-decided authorization.
+- Permission added only to form operations but absent from `Permissions`/`RolePermissions`.
+- Security change tested with a stale token and reported as failed configuration.
+- New refresh-token API documented without complete persistence, rotation, revocation, and client support.
+- Raw password/token in structured log properties.
 
-```csharp
-public sealed record CompanyAccessContext(
-    int CompanyId,
-    string CompanyCode,
-    string DatabaseName,
-    DatabaseProvider DatabaseProvider,
-    bool SapEnabled);
+## Completion gate
 
-public interface ICompanyAccessService
-{
-    Task<Result<CompanyAccessContext>> ValidateAccessAsync(
-        int userId,
-        string companyCode,
-        CancellationToken cancellationToken);
-}
-```
-
-Example validation rules:
-
-```csharp
-public async Task<Result<CompanyAccessContext>> ValidateAccessAsync(
-    int userId,
-    string companyCode,
-    CancellationToken cancellationToken)
-{
-    if (string.IsNullOrWhiteSpace(companyCode))
-        return Result.Failure<CompanyAccessContext>("COMPANY_REQUIRED", "Debe seleccionar una empresa.");
-
-    var company = await _masterRepository.GetCompanyByCodeAsync(companyCode, cancellationToken);
-    if (company is null || !company.IsActive)
-        return Result.Failure<CompanyAccessContext>("COMPANY_NOT_AVAILABLE", "La empresa no esta disponible.");
-
-    var hasAccess = await _masterRepository.UserHasCompanyAccessAsync(userId, company.Id, cancellationToken);
-    if (!hasAccess)
-        return Result.Failure<CompanyAccessContext>("COMPANY_ACCESS_DENIED", "No tiene acceso a la empresa seleccionada.");
-
-    return Result.Success(new CompanyAccessContext(
-        company.Id,
-        company.Code,
-        company.DatabaseName,
-        company.DatabaseProvider,
-        company.SapEnabled));
-}
-```
-
-## Authorization Helper
-
-Use endpoint filters, policies, or helpers that evaluate backend permissions:
-
-```csharp
-public interface IPermissionAuthorizationService
-{
-    Task<bool> HasPermissionAsync(
-        int userId,
-        string permissionCode,
-        int? companyId,
-        CancellationToken cancellationToken);
-}
-
-public static class AuthorizationExtensions
-{
-    public static RouteHandlerBuilder RequireNuanPermission(
-        this RouteHandlerBuilder builder,
-        string permissionCode)
-    {
-        return builder.RequireAuthorization(policy =>
-            policy.Requirements.Add(new PermissionRequirement(permissionCode)));
-    }
-}
-```
-
-Permission checks for company-scoped endpoints must include the active company id. Global administrative endpoints must explicitly document when no company is required.
-
-## Frontend Responsibilities
-
-- Send `Authorization: Bearer {token}` automatically through `NuanApiClient`.
-- Send `X-Company-Code` automatically after company selection.
-- Store access tokens only in memory unless a specific secure persistence requirement is approved.
-- Clear token, refresh token, selected company, cached permissions, and menu state on logout.
-- Hide UI actions based on server-provided permissions for usability only; backend authorization remains mandatory.
-
-## Production Security Checklist
-
-- HTTPS enabled and HTTP redirected or rejected.
-- JWT signing keys loaded from environment variables or a secret store.
-- Connection strings protected outside repository files.
-- SAP credentials stored encrypted or in a secret provider.
-- Swagger protected or disabled in production.
-- Serilog filters prevent secret leakage.
-- Password reset, lockout, and refresh-token revocation events are audited.
+- [ ] Login, token validation, user state, security stamp, and forced-change behavior remain coherent.
+- [ ] Secrets and passwords follow approved protection boundaries.
+- [ ] Company context and endpoint authorization remain separate and enforced.
+- [ ] Permission changes are tested with a newly issued token.
+- [ ] Authentication and negative-path tests plus affected build are reported.
