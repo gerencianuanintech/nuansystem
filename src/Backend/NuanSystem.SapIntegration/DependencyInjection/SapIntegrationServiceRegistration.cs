@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using NuanSystem.SapIntegration.Abstractions;
 using NuanSystem.SapIntegration.Clients;
 using NuanSystem.SapIntegration.Clients.DiApi;
@@ -16,14 +17,31 @@ namespace NuanSystem.SapIntegration.DependencyInjection;
 
 public static class SapIntegrationServiceRegistration
 {
-    public static IServiceCollection AddSapIntegrationServices(this IServiceCollection services)
+    public static IServiceCollection AddSapIntegrationServices(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        bool allowUnsafeServerCertificates = false)
     {
+        var sectionName = SapServiceLayerTransportOptions.SectionName;
+        var transport = new SapServiceLayerTransportOptions
+        {
+            HttpTimeoutSeconds = int.TryParse(configuration[$"{sectionName}:HttpTimeoutSeconds"], out var timeout)
+                ? timeout
+                : 100,
+            IgnoreSslErrors = bool.TryParse(configuration[$"{sectionName}:IgnoreSslErrors"], out var ignoreSslErrors)
+                && ignoreSslErrors
+        };
+        if (transport.IgnoreSslErrors && !allowUnsafeServerCertificates)
+        {
+            throw new InvalidOperationException(
+                "ServiceLayer:IgnoreSslErrors solo puede activarse explícitamente en un entorno de desarrollo.");
+        }
+
         services.AddHttpClient("SapServiceLayer")
-            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-            {
-                // SAP sessions are scoped explicitly per request to avoid cross-company cookie reuse.
-                UseCookies = false
-            });
+            .ConfigureHttpClient(client =>
+                client.Timeout = TimeSpan.FromSeconds(Math.Clamp(transport.HttpTimeoutSeconds, 5, 600)))
+            .ConfigurePrimaryHttpMessageHandler(() =>
+                SapServiceLayerHttpMessageHandlerFactory.Create(transport.IgnoreSslErrors));
         services.AddScoped<SapServiceLayerClient>();
         services.AddScoped<SapDiApiClient>();
         services.AddScoped<ISapClientFactory, SapClientFactory>();

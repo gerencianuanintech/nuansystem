@@ -22,7 +22,8 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddNuanSystemServices(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
@@ -131,7 +132,9 @@ public static class ServiceCollectionExtensions
             .AddApplicationServices()
             .AddInfrastructureServices()
             .AddPersistenceServices(configuration)
-            .AddSapIntegrationServices();
+            .AddSapIntegrationServices(
+                configuration,
+                allowUnsafeServerCertificates: environment.IsDevelopment());
 
         return services;
     }

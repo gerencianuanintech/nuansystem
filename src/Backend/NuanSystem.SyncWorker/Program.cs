@@ -54,7 +54,9 @@ try
                 .AddApplicationServices()
                 .AddInfrastructureServices()
                 .AddPersistenceServices(context.Configuration)
-                .AddSapIntegrationServices();
+                .AddSapIntegrationServices(
+                    context.Configuration,
+                    allowUnsafeServerCertificates: context.HostingEnvironment.IsDevelopment());
 
             services.AddHostedService<SapSyncWorker>();
             services.AddHostedService<SapRetryWorker>();
