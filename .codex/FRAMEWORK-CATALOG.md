@@ -306,7 +306,7 @@ These are related but non-interchangeable pipelines. Route through `$nuansystem-
 
 ### Implemented queue; remote processing not operative
 
-The tenant queue, attempts, audit, Application contracts, endpoints, permissions and optimistic concurrency are implemented in code. Deployment evidence still requires executing scripts `115` and `116`. XML storage, monitor, provider client, claim loop and `NuanSystem.SriWorker` remain target contracts only.
+The tenant queue, attempts, audit, Application contracts, endpoints, permissions and optimistic concurrency are implemented and runtime-validated. Scripts `115`/`116` were installed idempotently in Master and the three DEMO tenants; concurrency, `rowversion`, audit, JWT and forbidden access were exercised. XML storage, monitor, provider client, claim loop and `NuanSystem.SriWorker` remain target contracts only.
 
 The first pilot direction is approved: query and download by access key for previously authorized documents. `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md` owns its functional boundary. Queue implementation does not prove provider, XML download or end-to-end processing.
 

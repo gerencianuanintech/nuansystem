@@ -18,9 +18,19 @@
 - `/api/sri/documents` endpoints use the granular view/enqueue/cancel/reprocess permissions.
 - The initial evidence-backed types are invoice `01`, credit note `04`, and withholding document `07`; real samples are not committed.
 
+## Runtime validation evidence
+
+- Script `116` is installed idempotently in `NuanSystem_Master`; script `115` is installed idempotently in `NuanSystem_DEMO`, `NuanSystem_DEMO_REMIGIO`, and `NuanSystem_DEMO_CANARIS`.
+- Schema histories, all queue objects, the unique `(Environment, AccessKey)` index, six procedures, six permissions, and ADMIN grants were verified without duplicates.
+- A renewed ADMIN JWT contained all SRI permissions; a real user without them received HTTP 403.
+- Two simultaneous enqueue calls returned the same queue Id and one database row.
+- Pending cancellation, stale `rowversion`, invalid repeated cancellation, and reprocess rules for `Failed`/`DeadLetter` were verified through the API.
+- Audit recorded enqueue, cancel, and reprocess actions; no attempts or XML were created without a worker.
+- Validation passed 17 SRI tests and the full 411-test suite; the API and ephemeral users were removed afterward.
+- `NuanSystem_DEMO` is enabled for the Production pilot. Remigio and Canaris remain disabled.
+
 ## Still not implemented
 
-- Scripts 115/116 are not considered deployed until executed and verified in their target databases.
 - No XML/document store, provider, monitor form, or `NuanSystem.SriWorker` project exists.
 - No production SRI provider/client, certificate flow, environment selection, or end-to-end authorization/download flow exists.
 - Payload/XML permissions are reserved but have no endpoint in Phase 5.2.

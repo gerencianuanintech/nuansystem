@@ -3,7 +3,7 @@
 ## Decision Record
 
 - **Estado de la decision:** Aprobada por el propietario del proyecto.
-- **Estado de implementacion:** Fase 5.2 implementada en codigo; scripts y validacion en base real pendientes.
+- **Estado de implementacion:** Fase 5.2 desplegada y validada en Master y tres bases tenant; proveedor, worker, XML y E2E SRI pendientes.
 - **Fecha:** 2026-07-20.
 - **Direccion:** Consulta y descarga por clave de acceso de comprobantes previamente autorizados.
 - **Excluido:** generacion, firma, recepcion, envio para autorizacion, anulacion y scraping del portal web.

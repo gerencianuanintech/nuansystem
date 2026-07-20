@@ -487,7 +487,7 @@ TenantFeatureCodes.SriDocuments + TenantIntegrationCodes.Sri
   -> protected Master tenant configuration (implemented; disabled by default)
   -> capturer submits approved minimum contract [API implemented]
   -> Application/API enqueue/query/cancel/reprocess [implemented]
-  -> tenant SRI queue + attempts + audit [script implemented; deployment pending]
+  -> tenant SRI queue + attempts + audit [deployed and runtime-validated]
   -> document/XML reference [planned]
   -> NuanSystem.SriWorker claim/lease [planned]
   -> approved SRI provider + XML processing [planned]

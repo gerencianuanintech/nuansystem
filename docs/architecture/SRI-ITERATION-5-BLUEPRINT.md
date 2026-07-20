@@ -2,7 +2,7 @@
 
 ## Estado
 
-**Fase 5.2 implementada en codigo y pendiente de despliegue.** Existe el contrato Application/API, repositorio Dapper y los scripts versionados de cola y permisos. Todavia no existen proveedor SRI, almacenamiento XML ni `NuanSystem.SriWorker`; por tanto no hay procesamiento remoto ni validacion end-to-end.
+**Fase 5.2 desplegada y validada en base real.** Cola SQL, Application/API, permisos, idempotencia, concurrencia, auditoria y JWT renovado fueron comprobados en el piloto. Todavia no existen proveedor SRI, almacenamiento XML ni `NuanSystem.SriWorker`; por tanto no hay procesamiento remoto ni validacion end-to-end SRI.
 
 ## Discovery Record
 
@@ -77,11 +77,13 @@ La arquitectura base propone `Pending`, `Validating`, `Submitted`, `Authorized`,
 
 La direccion aprobada es consulta y descarga por clave de acceso de comprobantes previamente autorizados. El contrato autoritativo es `SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. Proveedor/ambiente, storage XML, retencion y limites operativos deben cerrarse antes de habilitar las fases de worker y almacenamiento. No existe procesamiento remoto todavia.
 
-### 5.2 Cola durable - implementada, despliegue pendiente
+### 5.2 Cola durable - desplegada y validada
 
 Se implementaron contratos Application, repositorio Dapper, endpoints protegidos, scripts `115_tenant_sri_document_queue.sql` y `116_master_sri_document_queue_security.sql`, validacion de clave/ambiente, idempotencia `(Environment, AccessKey)`, auditoria y concurrencia por `rowversion`. El catalogo inicial comprobado con muestras reales autorizadas comprende factura `01`, nota de credito `04` y comprobante de retencion `07`.
 
-Los XML reales usados para discovery no forman parte del repositorio. Los scripts no se consideran aplicados hasta ejecutarlos y comprobarlos en Master/tenant; los permisos no se consideran activos en una sesion hasta renovar el JWT. Esta fase no crea proveedor, worker, XML storage ni endpoint de descarga.
+Los XML reales usados para discovery no forman parte del repositorio. El 2026-07-20 se ejecutaron dos veces, sin error ni duplicados, el script `116` en `NuanSystem_Master` y el script `115` en `NuanSystem_DEMO`, `NuanSystem_DEMO_REMIGIO` y `NuanSystem_DEMO_CANARIS`. Se validaron 17 pruebas SRI, 411 pruebas de solucion, enqueue concurrente con una sola identidad, `rowversion`, transiciones manuales, auditoria, permisos ADMIN, rechazo HTTP 403 y JWT renovado.
+
+`NuanSystem_DEMO` queda habilitada para el piloto en `Production`; Remigio y Canaris conservan SRI deshabilitado. La API y los usuarios efimeros de validacion fueron retirados al terminar. Esta fase no crea proveedor, worker, XML storage ni endpoint de descarga.
 
 ### 5.3 Worker y proveedor
 

@@ -9,7 +9,7 @@ description: Design, implement, or review the tenant-scoped durable queue used t
 
 Obey this order: `ENGINEERING-CONSTITUTION.md` > `ENGINEERING-KERNEL.md` > catalogs and knowledge graph > framework discovery and operational-use-case skills > this skill > local implementation.
 
-Read `references/contract-status.md` before proposing changes. For the approved first pilot, also read `../../../docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. Phase 5.2 contains queue code and versioned scripts, but deployment, provider, worker and XML storage remain separate evidence gates. Never infer remote processing from the existence of the queue.
+Read `references/contract-status.md` before proposing changes. For the approved first pilot, also read `../../../docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. Phase 5.2 queue deployment and runtime behavior are validated; provider, worker, XML storage and end-to-end SRI remain separate evidence gates. Never infer remote processing from the validated queue.
 
 ## Boundary
 
