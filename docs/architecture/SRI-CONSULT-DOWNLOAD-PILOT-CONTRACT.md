@@ -3,7 +3,7 @@
 ## Decision Record
 
 - **Estado de la decision:** Aprobada por el propietario del proyecto.
-- **Estado de implementacion:** Fase 5.2 desplegada y validada. Fase 5.3 implementada y probada en codigo; script `117`, worker y proveedor aun no desplegados ni validados E2E.
+- **Estado de implementacion:** Fase 5.2 desplegada y validada. Persistencia SQL de Fase 5.3 desplegada y validada en tres tenants; worker/proveedor runtime y E2E pendientes.
 - **Fecha:** 2026-07-20.
 - **Direccion:** Consulta y descarga por clave de acceso de comprobantes previamente autorizados.
 - **Excluido:** generacion, firma, recepcion, envio para autorizacion, anulacion y scraping del portal web.
@@ -139,11 +139,10 @@ El tamano maximo es 5 MiB. No existe purga automatica ni eliminacion manual apro
 
 ## Pendientes para despliegue y Fase 5.4
 
-1. Ejecutar y verificar script `117` en los tenants piloto autorizados.
-2. Validar dos workers, lease vencido, reinicio, retry y almacenamiento idempotente en base real.
-3. Realizar una consulta al ambiente oficial de pruebas solo con autorizacion expresa y evidencia no sensible.
-4. Implementar descarga XML protegida, auditoria de descarga y monitor WinForms.
-5. Definir la retencion antes de introducir cualquier eliminacion.
-6. Ampliar, si se aprueba, el catalogo inicial: `SourceType` (`NuanSystem`, `Txt`, `SapAddOn`, `Manual`, `ExternalApi`) y comprobantes `01`, `04`, `07`.
+1. Validar arranque deshabilitado, habilitacion controlada, cancelacion, reinicio y dos instancias reales del worker sin efectuar una llamada SRI.
+2. Realizar una consulta al ambiente oficial de pruebas solo con autorizacion expresa y evidencia no sensible.
+3. Implementar descarga XML protegida, auditoria de descarga y monitor WinForms.
+4. Definir la retencion antes de introducir cualquier eliminacion.
+5. Ampliar, si se aprueba, el catalogo inicial: `SourceType` (`NuanSystem`, `Txt`, `SapAddOn`, `Manual`, `ExternalApi`) y comprobantes `01`, `04`, `07`.
 
 Estos pendientes bloquean declarar operativo o E2E el flujo, no la revision del codigo de Fase 5.3.

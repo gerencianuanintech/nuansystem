@@ -2,7 +2,18 @@
 
 ## Estado y limite
 
-Este runbook aplica a la Fase 5.3 implementada. No autoriza por si mismo ejecutar scripts, habilitar el worker, llamar al SRI ni operar en Production. Cada accion requiere el alcance explicito del propietario.
+Este runbook aplica a la Fase 5.3 implementada. El script `117` ya fue desplegado y SQL-validado en los tres tenants piloto. El documento no autoriza por si mismo habilitar el worker, llamar al SRI ni operar en Production; cada accion restante requiere alcance explicito del propietario.
+
+## Evidencia SQL cerrada el 2026-07-20
+
+- script `117` ejecutado dos veces sin duplicados en `NuanSystem_DEMO`, `NuanSystem_DEMO_REMIGIO` y `NuanSystem_DEMO_CANARIS`;
+- `NuanSystem_Master` sin version ni objetos de tenant;
+- claim concurrente exclusivo y filtrado por ambiente;
+- recuperacion de lease vencido y proteccion contra propietario ajeno;
+- almacenamiento `Authorized` atomico, repeticion idempotente y conflicto SHA-256 estable;
+- rechazo SQL de contenido mayor de 5 MiB;
+- fixtures eliminados y working tree limpio;
+- worker deshabilitado, cero procesos y cero llamadas al SRI.
 
 ## Precondiciones
 
@@ -15,14 +26,12 @@ Este runbook aplica a la Fase 5.3 implementada. No autoriza por si mismo ejecuta
 
 ## Orden de despliegue
 
-1. Ejecutar `117_tenant_sri_worker_and_document_store.sql` solo en tenants aprobados.
-2. Confirmar `SchemaHistory = 20260720.117`, tabla, indices, FKs y cuatro procedimientos.
-3. Mantener `SriWorker:Enabled=false`; iniciar el proceso y comprobar configuracion/health sin claims ni llamadas remotas.
-4. Insertar o reutilizar un trabajo de ambiente Test aprobado sin exponer la clave en logs.
-5. Habilitar una sola instancia y verificar claim, intento, lease, resultado y auditoria.
-6. Validar reinicio/lease vencido y luego dos instancias con un trabajo controlado.
-7. Validar respuesta repetida, checksum e identidad unica sin duplicar XML.
-8. Deshabilitar el worker al cerrar la ventana y conservar evidencia saneada.
+1. Mantener `SriWorker:Enabled=false`; iniciar el proceso y comprobar configuracion/health sin claims ni llamadas remotas.
+2. Preparar un trabajo controlado cuya llamada de red permanezca bloqueada o sustituida por un proveedor local de prueba aprobado.
+3. Habilitar una sola instancia y verificar claim, intento, cancelacion y apagado controlado.
+4. Validar reinicio y luego dos instancias sin duplicar claims ni intentos.
+5. Deshabilitar el worker al cerrar la ventana y conservar evidencia saneada.
+6. Solicitar autorizacion separada antes de cualquier round trip al ambiente oficial Test.
 
 ## Evidencia minima
 

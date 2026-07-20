@@ -2,7 +2,7 @@
 
 ## Estado
 
-**Fase 5.2 desplegada y validada; Fase 5.3 implementada en codigo y pruebas.** Cola SQL, Application/API, permisos, idempotencia, concurrencia, auditoria y JWT renovado fueron comprobados en base real. El proveedor oficial de consulta, `NuanSystem.SriWorker`, claims/leases y almacenamiento XML tenant ya existen en codigo/script `117`, pero no se han desplegado ni ejecutado contra el SRI; por tanto todavia no hay validacion end-to-end.
+**Fase 5.2 desplegada y validada; persistencia SQL de Fase 5.3 desplegada y validada.** Cola, Application/API, permisos, idempotencia, concurrencia, auditoria, claims/leases y almacenamiento XML tenant fueron comprobados en base real. El proveedor oficial y `NuanSystem.SriWorker` existen y superan pruebas automatizadas, pero el worker permanece deshabilitado y no se ha llamado al SRI; por tanto todavia no hay validacion operativa ni end-to-end.
 
 ## Discovery Record
 
@@ -85,11 +85,11 @@ Los XML reales usados para discovery no forman parte del repositorio. El 2026-07
 
 `NuanSystem_DEMO` queda habilitada para el piloto en `Production`; Remigio y Canaris conservan SRI deshabilitado. La API y los usuarios efimeros de validacion fueron retirados al terminar. Esta fase no crea proveedor, worker, XML storage ni endpoint de descarga.
 
-### 5.3 Worker, proveedor y almacenamiento XML - implementado; despliegue pendiente
+### 5.3 Worker, proveedor y almacenamiento XML - SQL validado; runtime pendiente
 
 Se implementaron `NuanSystem.SriWorker`, proveedor SOAP de `AutorizacionComprobantesOffline`, resolucion multiempresa, claims atomicos, lease de 120 segundos, recuperacion de leases, lote 10, concurrencia 2, timeout 30 segundos, cinco intentos tecnicos, backoff con jitter y cierre `NotFound` tras tres respuestas o 30 minutos. El XML autorizado se valida contra tipo, clave, RUC y ambiente y se almacena en la base tenant con SHA-256 y limite de 5 MiB. TLS es estricto y las URLs aceptadas se restringen a los hosts oficiales.
 
-La compilacion del worker termino con 0 errores/advertencias y 33 pruebas SRI superaron. No se ejecuto `117`, no se habilito el worker y no se hicieron llamadas reales al SRI. El despliegue y la validacion de concurrencia/reinicio/proveedor siguen pendientes.
+La compilacion del worker termino con 0 errores/advertencias y 33 pruebas SRI superaron. El script `117` se ejecuto dos veces sin duplicados en `NuanSystem_DEMO`, `NuanSystem_DEMO_REMIGIO` y `NuanSystem_DEMO_CANARIS`; Master permanecio intacta. En SQL real pasaron claim concurrente, filtro de ambiente, lease vencido, rechazo de propietario ajeno, autorizacion atomica, repeticion idempotente, conflicto SHA-256, limite de 5 MiB y limpieza de fixtures. El worker no fue habilitado y no hubo llamadas al SRI. Runtime del worker y proveedor oficial siguen pendientes.
 
 ### 5.4 Almacenamiento y monitor
 

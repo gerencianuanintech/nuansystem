@@ -10,9 +10,9 @@
 
 - `src/Backend/NuanSystem.SriWorker` owns the bounded BackgroundService and official offline authorization SOAP adapter.
 - `SriWorkerRepository` resolves enabled companies from Master and all queue mutations through tenant stored procedures.
-- `117_tenant_sri_worker_and_document_store.sql` defines atomic claims, expiring-lease recovery, attempt completion and the immutable tenant XML store.
+- `117_tenant_sri_worker_and_document_store.sql` defines atomic claims, expiring-lease recovery, attempt completion and the immutable tenant XML store. It is deployed idempotently in `NuanSystem_DEMO`, `NuanSystem_DEMO_REMIGIO` and `NuanSystem_DEMO_CANARIS`.
 - The implementation supports Test and Production endpoints with strict TLS, remains disabled by default and has not made a real SRI call during development.
-- Script `117` must be deployed and verified in each pilot tenant before the worker can be enabled.
+- Script `117` and its SQL concurrency/integrity contract are verified in the three pilot tenants. This evidence does not authorize enabling the worker or calling the SRI.
 
 ## Approved first pilot
 
@@ -31,4 +31,4 @@ The approved provider is the SRI offline authorization service. XML is stored in
 
 Do not promote evidence from a lower level as proof of a higher one.
 
-Current evidence reaches level 2. Database concurrency/recovery, worker lifecycle against a deployed tenant and official non-production round trip remain pending.
+Current evidence reaches level 3: build/tests plus deployed database concurrency, environment isolation, lease recovery, lease ownership, atomic authorization, idempotency, checksum conflict and 5 MiB rejection. Worker lifecycle against a deployed tenant and an official non-production round trip remain pending.
