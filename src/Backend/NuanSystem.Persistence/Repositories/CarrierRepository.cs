@@ -41,16 +41,22 @@ public sealed class CarrierRepository(ITenantConnectionFactory connectionFactory
         return count > 0;
     }
 
-    public async Task<int> CreateAsync(CreateCarrierData data, CancellationToken cancellationToken = default)
+    public async Task<CreateCarrierResult> CreateAsync(CreateCarrierData data, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<int>(Command("dbo.SP_NA_POST_CARRIERS_CREAR", data, cancellationToken));
+        var result = await connection.ExecuteScalarAsync<int>(Command("dbo.SP_NA_POST_CARRIERS_CREAR", data, cancellationToken));
+        return result < 0
+            ? new CreateCarrierResult(null, DuplicateCode: true)
+            : new CreateCarrierResult(result, DuplicateCode: false);
     }
 
-    public async Task<bool> UpdateAsync(UpdateCarrierData data, CancellationToken cancellationToken = default)
+    public async Task<UpdateCarrierResult> UpdateAsync(UpdateCarrierData data, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<int>(Command("dbo.SP_NA_PUT_CARRIERS_ACTUALIZAR", data, cancellationToken)) > 0;
+        var result = await connection.ExecuteScalarAsync<int>(Command("dbo.SP_NA_PUT_CARRIERS_ACTUALIZAR", data, cancellationToken));
+        return result < 0
+            ? new UpdateCarrierResult(Updated: false, DuplicateCode: true)
+            : new UpdateCarrierResult(Updated: result > 0, DuplicateCode: false);
     }
 
     public async Task<bool> DeleteAsync(DeleteCarrierData data, CancellationToken cancellationToken = default)

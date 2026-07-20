@@ -29,7 +29,9 @@ public sealed class CarrierCommandValidatorTests
         var result = new CreateCarrierCommandValidator().Validate(command);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(error => error.PropertyName == nameof(CreateCarrierCommand.IdentificationTypeCode));
+        result.Errors.Should().Contain(error =>
+            error.PropertyName == nameof(CreateCarrierCommand.IdentificationTypeCode) &&
+            error.ErrorCode == "CARRIER_IDENTIFICATION_TYPE_INVALID");
     }
 
     [Fact]
@@ -40,7 +42,9 @@ public sealed class CarrierCommandValidatorTests
         var result = new CreateCarrierCommandValidator().Validate(command);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(error => error.PropertyName == nameof(CreateCarrierCommand.IdentificationNumber));
+        result.Errors.Should().Contain(error =>
+            error.PropertyName == nameof(CreateCarrierCommand.IdentificationNumber) &&
+            error.ErrorCode == "CARRIER_IDENTIFICATION_MAX_LENGTH");
     }
 
     [Fact]
@@ -51,7 +55,9 @@ public sealed class CarrierCommandValidatorTests
         var result = new UpdateCarrierCommandValidator().Validate(command);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(error => error.PropertyName == nameof(UpdateCarrierCommand.Id));
+        result.Errors.Should().Contain(error =>
+            error.PropertyName == nameof(UpdateCarrierCommand.Id) &&
+            error.ErrorCode == "CARRIER_ID_INVALID");
     }
 
     private static CreateCarrierCommand ValidCreateCommand() =>

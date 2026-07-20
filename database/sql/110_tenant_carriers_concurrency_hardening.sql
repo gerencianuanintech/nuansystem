@@ -1,94 +1,42 @@
-/* Maestro tenant independiente de Transportistas. No depende de BusinessPartners, SAP ni Sync. */
+/*
+    Ejecutar en cada base tenant despues de 106 y 107.
+    Endurece Transportistas para instalaciones donde 107 ya fue aplicado:
+    - evita exito/auditoria falsos en update/delete concurrentes;
+    - convierte la colision concurrente de Code en resultado -1;
+    - agrega checks de Code/Name no vacios.
+*/
 IF OBJECT_ID(N'dbo.Carriers', N'U') IS NULL
-BEGIN
-    CREATE TABLE dbo.Carriers
-    (
-        Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_Carriers PRIMARY KEY,
-        Code nvarchar(50) NOT NULL,
-        Name nvarchar(150) NOT NULL,
-        IdentificationTypeCode nvarchar(2) NOT NULL,
-        IdentificationNumber nvarchar(30) NOT NULL,
-        Description nvarchar(500) NULL,
-        IsActive bit NOT NULL CONSTRAINT DF_Carriers_IsActive DEFAULT 1,
-        CreatedByUserId int NULL,
-        CreatedByUserName nvarchar(120) NULL,
-        CreatedAt datetime2(0) NOT NULL CONSTRAINT DF_Carriers_CreatedAt DEFAULT SYSUTCDATETIME(),
-        UpdatedByUserId int NULL,
-        UpdatedByUserName nvarchar(120) NULL,
-        UpdatedAt datetime2(0) NULL,
-        IsDeleted bit NOT NULL CONSTRAINT DF_Carriers_IsDeleted DEFAULT 0,
-        DeletedByUserId int NULL,
-        DeletedByUserName nvarchar(120) NULL,
-        DeletedAt datetime2(0) NULL,
-        CONSTRAINT CK_Carriers_Code_NotBlank CHECK (LEN(LTRIM(RTRIM(Code))) > 0),
-        CONSTRAINT CK_Carriers_Name_NotBlank CHECK (LEN(LTRIM(RTRIM(Name))) > 0),
-        CONSTRAINT CK_Carriers_IdentificationTypeCode CHECK (IdentificationTypeCode IN (N'04', N'05', N'06')),
-        CONSTRAINT CK_Carriers_IdentificationNumber_NotBlank CHECK (LEN(LTRIM(RTRIM(IdentificationNumber))) > 0)
-    );
-END;
+    THROW 51010, 'Debe ejecutar primero 107_tenant_carriers.sql.', 1;
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.Carriers') AND name = N'UX_Carriers_Code_ActiveRecord')
-    CREATE UNIQUE INDEX UX_Carriers_Code_ActiveRecord ON dbo.Carriers (Code) WHERE IsDeleted = 0;
-GO
-
-CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_CARRIERS_LISTAR
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT Id, Code, Name, IdentificationTypeCode, IdentificationNumber, Description, IsActive,
-           CreatedByUserId, CreatedByUserName, CreatedAt, UpdatedByUserId, UpdatedByUserName, UpdatedAt
+IF EXISTS
+(
+    SELECT 1
     FROM dbo.Carriers
-    WHERE IsDeleted = 0
-    ORDER BY Name, Code;
-END;
+    WHERE LEN(LTRIM(RTRIM(Code))) = 0
+       OR LEN(LTRIM(RTRIM(Name))) = 0
+)
+    THROW 51011, 'Existen transportistas con codigo o nombre vacio. Corrija esos registros antes de continuar.', 1;
 GO
 
-CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_CARRIERS_LOOKUP
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT Id, Code, Name, IsActive
-    FROM dbo.Carriers
-    WHERE IsDeleted = 0 AND IsActive = 1
-    ORDER BY Name, Code;
-END;
+IF NOT EXISTS
+(
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID(N'dbo.Carriers')
+      AND name = N'CK_Carriers_Code_NotBlank'
+)
+    ALTER TABLE dbo.Carriers WITH CHECK
+        ADD CONSTRAINT CK_Carriers_Code_NotBlank CHECK (LEN(LTRIM(RTRIM(Code))) > 0);
 GO
 
-CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_CARRIERS_BUSCARPORID
-    @Id int
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT Id, Code, Name, IdentificationTypeCode, IdentificationNumber, Description, IsActive,
-           CreatedByUserId, CreatedByUserName, CreatedAt, UpdatedByUserId, UpdatedByUserName, UpdatedAt
-    FROM dbo.Carriers
-    WHERE Id = @Id AND IsDeleted = 0;
-END;
-GO
-
-CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_CARRIERSBUSCARPORCODIGO
-    @Code nvarchar(50),
-    @ExcluirId int = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT COUNT(1)
-    FROM dbo.Carriers
-    WHERE Code = @Code AND IsDeleted = 0 AND (@ExcluirId IS NULL OR Id <> @ExcluirId);
-END;
-GO
-
-CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_CARRIERS_HISTORIAL
-    @Id int
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT RecordId, [Action], FieldName, OldValue, NewValue, UserId, UserName, CreatedAt
-    FROM dbo.AuditCatalogChanges
-    WHERE EntityName = N'Carrier' AND RecordId = CONVERT(nvarchar(80), @Id)
-    ORDER BY CreatedAt DESC, Id DESC;
-END;
+IF NOT EXISTS
+(
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID(N'dbo.Carriers')
+      AND name = N'CK_Carriers_Name_NotBlank'
+)
+    ALTER TABLE dbo.Carriers WITH CHECK
+        ADD CONSTRAINT CK_Carriers_Name_NotBlank CHECK (LEN(LTRIM(RTRIM(Name))) > 0);
 GO
 
 CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_CARRIERS_CREAR
@@ -198,6 +146,7 @@ BEGIN
         (N'Description', CONVERT(nvarchar(max), @OldDescription), CONVERT(nvarchar(max), @Description)),
         (N'IsActive', CONVERT(nvarchar(max), CONVERT(int, @OldIsActive)), CONVERT(nvarchar(max), CONVERT(int, @IsActive)))) changes(FieldName, OldValue, NewValue)
     WHERE ISNULL(OldValue, N'') <> ISNULL(NewValue, N'');
+
     COMMIT TRANSACTION;
     SELECT 1;
     END TRY
@@ -237,6 +186,7 @@ BEGIN
     VALUES
         (N'Carrier', CONVERT(nvarchar(80), @Id), N'DELETE', N'IsActive', CONVERT(nvarchar(max), CONVERT(int, @OldIsActive)), N'0', @AuditUserId, @AuditUserName),
         (N'Carrier', CONVERT(nvarchar(80), @Id), N'DELETE', N'IsDeleted', N'0', N'1', @AuditUserId, @AuditUserName);
+
     COMMIT TRANSACTION;
     SELECT 1;
 END;
