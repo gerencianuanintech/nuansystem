@@ -67,9 +67,11 @@ The validated independent-master sequence is:
 - `106_tenant_catalog_audit_foundation.sql` creates `AuditCatalogChanges`;
 - `107_tenant_carriers.sql` creates Carriers, CRUD/history procedures, constraints, and transactional audit;
 - `108_master_carriers_security.sql` registers menu/form/permissions;
-- `109_master_carriers_permission_hotfix.sql` repairs installations where security was executed before API permission grants.
+- `109_master_carriers_permission_hotfix.sql` repairs installations where security was executed before API permission grants;
+- `110_tenant_carriers_concurrency_hardening.sql` is the forward tenant repair for nonblank checks, locked write decisions, affected-row verification, and stable duplicate results;
+- `111_master_carriers_operations_hardening.sql` is the forward Master repair that restricts automatic grants to the real corporate CRUD/grid actions without overwriting intentionally modified permissions.
 
-This sequence is evidence for deployment dependencies and forward-only repair, not a generic domain template.
+Fresh installations receive the hardened definitions from `107`/`108`; existing installations must apply `110`/`111` instead of editing execution history. This sequence is evidence for deployment dependencies and forward-only repair, not a generic domain template.
 
 ## Idempotency and forward evolution
 
