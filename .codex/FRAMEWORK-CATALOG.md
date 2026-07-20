@@ -281,3 +281,19 @@ A framework change is incomplete until:
 - the Knowledge Graph reflects dependencies;
 - applicable skills route to the updated component;
 - validation evidence is recorded.
+
+## Iteration 4 integration framework
+
+### SAP transport
+
+`NuanSystem.SapIntegration` owns SAP adapters. `SapIntegrationMode`, `ISapClientFactory`, registered Service Layer clients, DI API, HANA adapters, typed readers, and `ISapDocumentSender` are implemented entry points. Application owns use cases; API owns HTTP/permissions; WinForms never calls SAP directly.
+
+### SAP synchronization runtime
+
+`Application/Features/SapSync` and `NuanSystem.SyncWorker` own scheduled SAP synchronization through company context, entity settings, handlers, lock, log, watermark, retry policy, heartbeat, and bounded loops. `SapOutboxWorker` and `SapSyncJobRunner.RunOutboxAsync` remain incomplete and are not approved export implementations.
+
+### Matriz-Sucursal runtime
+
+`Application/Features/Sync` and `NuanSystem.MasterBranchSyncWorker` own internal replication: catalog/profile -> durable `SyncOutbox` -> routing/policy -> targets -> expiring claim -> entity applier -> target/aggregate status -> `SyncAudit` and manual recovery.
+
+These are related but non-interchangeable pipelines. Route through `$nuansystem-sap-business-one`, `$nuansystem-sap-sync-orchestration`, or `$nuansystem-master-branch-sync` as applicable.

@@ -332,3 +332,32 @@ A pattern is correctly applied only when:
 - state/transaction/security semantics are explicit;
 - representative evidence is named;
 - applicable review gates pass.
+
+## Pattern P9 — SAP source ingestion
+
+Use when SAP Business One is authoritative for a local master or document.
+
+```text
+company SAP settings/session
+  -> typed SAP reader/preview
+  -> Application import handler
+  -> mapping/external identity + validation
+  -> idempotent tenant persistence
+  -> log/watermark after durable success
+```
+
+For scheduled execution, add lock, heartbeat, retry classification, and worker orchestration through `$nuansystem-sap-sync-orchestration`. Add Matriz-Sucursal only as a separately justified downstream stage.
+
+## Pattern P10 — Matriz-Sucursal durable replication
+
+```text
+authoritative local change/full source
+  -> entity/profile/dependencies
+  -> durable SyncOutbox
+  -> routing/distribution decisions
+  -> independent branch targets
+  -> idempotent applier
+  -> audit, retry, DeadLetter, manual recovery
+```
+
+An entity is not operative until producer and applier both exist. Documents also require operational transaction and routing rules.

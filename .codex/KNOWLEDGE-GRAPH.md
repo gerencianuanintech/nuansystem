@@ -425,8 +425,48 @@ A graph update must:
 - include impact rules for high-risk shared components;
 - remain consistent with Framework and Pattern Catalogs.
 
-## 10. Iteration scope
+## 10. Integration and synchronization graph
 
-The graph covers the Iteration 1 engineering core, Iteration 2 WinForms framework, and Iteration 3 backend contract set. The backend contract set uses the actual messaging/result/error pipeline, SQL Server-only runtime support, authentication flow, tenant connection, Dapper procedures, and validated Carriers vertical. SAP, BEAS, Android, and deeper domain-specific graphs still require subsequent repository-backed iterations. Their incomplete coverage is not permission to invent architecture.
+### 10.1 SAP transport and ingestion
+
+```text
+TenantIntegration / SAP company settings
+  -> SapIntegrationMode -> SapIntegrationServiceRegistration
+  -> typed Service Layer/HANA reader or ISapClientFactory
+  -> Application/Features/SapSync use case
+  -> tenant mapping/persistence
+  -> /api/sap + SapRead/SapManage
+```
+
+### 10.2 SAP scheduled synchronization
+
+```text
+NuanSystem.SyncWorker -> active SAP companies -> company context
+  -> enabled settings -> SapSyncOrchestrator
+  -> lock -> ISapSyncEntityHandler -> log/watermark -> unlock
+  -> heartbeat + bounded retry policy
+```
+
+`SapOutboxWorker` and `SapSyncJobRunner.RunOutboxAsync` are incomplete nodes. `Both` does not prove complete bidirectional delivery.
+
+### 10.3 Matriz-Sucursal replication
+
+```text
+SyncMasterBranchEntityCatalog + SyncProfiles
+  -> SyncEventPublisher -> SyncOutbox
+  -> routing/distribution -> target per branch
+  -> MasterBranchSyncWorkerProcessor
+  -> dispatcher/entity applier
+  -> target states -> aggregate state
+  -> SyncAudit / retry / release lock / DeadLetter
+```
+
+Dependencies include Countries -> Provinces -> Cities, ItemGroups -> Item, PriceLists -> Currencies, and PurchaseOrder references. A catalog entry without producer or applier is a capability gap, not an active path.
+
+Forbidden: WinForms-to-SAP, MasterBranchSyncWorker-to-SAP session, SAP outbox substituted by `SyncOutbox`, skeleton/NotImplemented called complete, or Transportistas synchronized without an approved requirement.
+
+## 11. Iteration scope
+
+The graph covers the Iteration 1 core, Iteration 2 WinForms framework, Iteration 3 backend contracts, and Iteration 4 repository-backed SAP/Matriz-Sucursal boundaries. BEAS, Android, and deeper domain graphs remain future work. SAP ERP-to-SAP outbox delivery remains incomplete in current source; documentation does not promote it.
 
 `Transportistas` is the validated Iteration 2 pilot: solution build, automated tests, tenant/master SQL execution, renewed-token authorization, runtime CRUD, closed identification selector, Designer serialization, and approved compact vertical spacing were exercised. Its evidence promotes only the documented reusable framework patterns; its business identity remains independent.

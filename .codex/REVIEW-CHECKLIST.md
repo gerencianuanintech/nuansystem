@@ -225,4 +225,20 @@ Decision: Accept | Revise | Blocked
 - **Accept** only when all applicable gates are Validated and residual risk is understood.
 - **Revise** when any applicable gate fails.
 - **Blocked** when required evidence cannot be obtained and safe completion is impossible.
+
+## 17. Iteration 4 integration evidence
+
+For SAP or synchronization work, R10 also requires:
+
+- [ ] SAP transport and Matriz-Sucursal replication are separate stages.
+- [ ] Company/session isolation and credential redaction are verified.
+- [ ] Entity registration agrees with handler/producer/applier, DI, SQL, settings, and tests.
+- [ ] Locks have owner, timeout, release, and expired-lock recovery.
+- [ ] Watermarks advance only after durable success.
+- [ ] Per-target and aggregate replication states cannot contradict each other.
+- [ ] Retryable, ignored, and terminal/DeadLetter outcomes are bounded and distinct.
+- [ ] Skeleton, disabled, `NotImplemented`, and pilot paths are not called production-complete.
+- [ ] Manual recovery requires permission, reason, and audit.
+
+External SAP connectivity not exercised must be reported `Not validated`.
 - “Not validated” is never equivalent to “Validated.”
