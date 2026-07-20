@@ -22,6 +22,7 @@ public sealed class PaymentTermSyncContractTests
     {
         var tenant = File.ReadAllText(Path.Combine(RepoRoot(), "database", "sql", "112_tenant_sap_payment_terms_sync.sql"));
         var master = File.ReadAllText(Path.Combine(RepoRoot(), "database", "sql", "113_master_payment_terms_sync_registration.sql"));
+        var masterConfiguration = File.ReadAllText(Path.Combine(RepoRoot(), "database", "sql", "114_master_payment_terms_sync_configuration.sql"));
 
         tenant.Should().Contain("SP_NA_POST_BUSINESSPARTNERPAYMENTTERMS_IMPORTARSAP");
         tenant.Should().Contain("UX_BusinessPartnerPaymentTerms_ExternalRef");
@@ -32,6 +33,9 @@ public sealed class PaymentTermSyncContractTests
         master.Should().Contain("N'PaymentTerms'");
         master.Should().Contain("N'BusinessPartnerPaymentTerms'");
         master.Should().Contain("c.IsMaster=1");
+        masterConfiguration.Should().Contain("dbo.SyncEntityConfigurations");
+        masterConfiguration.Should().Contain("N'BusinessPartnerPaymentTerms'");
+        masterConfiguration.Should().Contain("CONVERT(bit, 0)");
     }
 
     private static string RepoRoot()

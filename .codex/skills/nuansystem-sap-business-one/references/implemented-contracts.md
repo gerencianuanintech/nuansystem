@@ -31,3 +31,5 @@ Use this map to accelerate discovery; open current source and consumers before r
 ## Payment terms
 
 `PaymentTermsTypes` is imported Full through `SapPaymentTermImportService` with external identity `SAP_B1` + `GroupNumber`, then distributed as `BusinessPartnerPaymentTerms`. Read `docs/architecture/SAP-PAYMENT-TERMS-SYNC.md` before changing representability, identity, seed coexistence, deactivation, or reconciliation behavior.
+
+The named `SapServiceLayer` client must honor `ServiceLayer:IgnoreSslErrors` only when the host explicitly confirms `Development`. Never persist SAP credentials or enable the unsafe certificate validator in production; install the trusted Service Layer certificate chain instead.

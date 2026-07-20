@@ -50,7 +50,25 @@ Meses adicionales, varias cuotas o días negativos producen un conflicto visible
 - Importación tenant: `SP_NA_POST_BUSINESSPARTNERPAYMENTTERMS_IMPORTARSAP` en script `112`.
 - Publicación/lectura Full: `SyncEventPublisher` y `PaymentTermFullEntitySource`.
 - Aplicación en sucursal: `ReferenceCatalogSyncEventApplier` y `ReferenceCatalogSyncApplyRepository`.
-- Registro Master: script `113`.
+- Registro Master: scripts `113` y reparación forward-only `114`.
+
+## Transporte TLS
+
+El cliente nombrado `SapServiceLayer` aplica `ServiceLayer:HttpTimeoutSeconds`. La opción `ServiceLayer:IgnoreSslErrors=true` conecta explícitamente `HttpClientHandler.DangerousAcceptAnyServerCertificateValidator`, pero solo se admite cuando el host confirma ambiente `Development`.
+
+Esta opción es exclusivamente diagnóstica para certificados internos o autofirmados. Producción debe confiar en la CA/cadena correcta del Service Layer; no se permite desactivar globalmente la validación TLS ni guardar credenciales SAP en `appsettings.json` versionado.
+
+## Activación controlada
+
+Los scripts registran capacidad, no habilitan distribución automáticamente:
+
+1. Ejecutar `112` en la base tenant de la Matriz y en cada Sucursal para mantener el mismo esquema e índices de identidad externa.
+2. Ejecutar `113` y después `114` en `NuanSystem_Master`.
+3. Configurar un perfil activo `MasterToBranch` de modo `Incremental`, incluir `BusinessPartnerPaymentTerms`, seleccionar cada Sucursal destino y usar distribución `All`.
+4. Habilitar `BusinessPartnerPaymentTerms` en `MasterBranchSyncWorker:EnabledEntityAppliers`.
+5. Para una prueba real, establecer `MasterBranchSyncWorker:Enabled=true`, `SkeletonMode=false` y reiniciar el worker. Restaurar el modo seguro al terminar la ventana de validación.
+
+`114` inserta `SyncEntityConfigurations` con `IsEnabled=0`; la activación requiere una decisión administrativa o un perfil activo. No crea perfiles ni habilita workers porque hacerlo automáticamente podría distribuir datos a sucursales no aprobadas.
 
 ## Quality gates
 
@@ -59,5 +77,5 @@ Meses adicionales, varias cuotas o días negativos producen un conflicto visible
 - Los conflictos de representación y de identidad deben quedar visibles en el resultado.
 - El payload debe conservar `Days`, `IsCredit`, `ExternalSystem` y `ExternalCode`.
 - El aplicador debe operar por `GlobalId` y mantener idempotencia Inbox/Audit.
-- No se considera validado en runtime hasta ejecutar `112` en la Matriz tenant, `113` en `NuanSystem_Master`, una lectura real de SAP y una entrega real a una sucursal.
+- No se considera validado en runtime hasta ejecutar `112` en Matriz y sucursales, `113`/`114` en `NuanSystem_Master`, una lectura real de SAP y una entrega real a una sucursal.
 - El endurecimiento genérico de reintentos SAP queda fuera de este alcance y requiere una decisión transversal posterior.

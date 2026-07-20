@@ -28,6 +28,7 @@ La compatibilidad futura con MySQL se trabajara desde abstracciones de persisten
 | `101_tenant_sap_purchase_order_import.sql` | Tenant | Agrega identidad, version SAP y estado de enrutamiento a ordenes de compra. |
 | `112_tenant_sap_payment_terms_sync.sql` | Tenant | Importacion idempotente SAP B1 y aplicacion por GlobalId de condiciones de pago. |
 | `113_master_payment_terms_sync_registration.sql` | Master | Registra PaymentTerms SAPToErp y activa el contrato Matriz-Sucursal. |
+| `114_master_payment_terms_sync_configuration.sql` | Master | Completa SyncEntityConfigurations sin activar perfiles ni workers. |
 | `102_purchase_order_warehouse_routing.sql` | Master | Configura rutas de ordenes por bodega para el piloto DEMO. |
 | `103_tenant_purchase_order_sync.sql` | Tenant | Agrega auditoria de decisiones de enrutamiento. |
 | `104_master_demo_purchase_order_pilot_profile.sql` | Master | Completa dependencias y PurchaseOrder en el perfil piloto DEMO. |
