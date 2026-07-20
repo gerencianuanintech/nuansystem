@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem SAP Business One"
+  short_description: "Gobierna transporte e integracion SAP B1"
+  default_prompt: "Use $nuansystem-sap-business-one to classify and design a tenant-safe SAP Business One integration using implemented repository contracts."
