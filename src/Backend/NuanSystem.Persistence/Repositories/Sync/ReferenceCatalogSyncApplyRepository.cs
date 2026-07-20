@@ -83,7 +83,9 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
                 "CurrencyCode,AppliesTo,IsDefault,", "@CurrencyCode,@AppliesTo,@IsDefault,"),
             "BusinessPartnerPaymentTerms" => BuildUpsertSql(table, "Id",
                 "Days=@Days,IsCredit=@IsCredit,",
-                "Days,IsCredit,", "@Days,@IsCredit,", allowCodeReconciliation: false),
+                "Days,IsCredit,", "@Days,@IsCredit,",
+                allowCodeReconciliation: false,
+                includeDescription: false),
             _ => throw new InvalidOperationException($"Catalogo de referencia no soportado: {table}.")
         };
         return connection.ExecuteScalarAsync<int>(new CommandDefinition(sql, new
@@ -113,11 +115,15 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
         string updateExtra,
         string insertExtra,
         string valuesExtra,
-        bool allowCodeReconciliation = true)
+        bool allowCodeReconciliation = true,
+        bool includeDescription = true)
     {
         var codeResolution = allowCodeReconciliation
             ? $"IF @Id IS NULL SELECT @Id={id} FROM dbo.{table} WITH(UPDLOCK,HOLDLOCK) WHERE Code=@Code;"
             : $"IF @Id IS NULL AND EXISTS(SELECT 1 FROM dbo.{table} WITH(UPDLOCK,HOLDLOCK) WHERE Code=@Code AND IsDeleted=0) THROW 51114, 'El codigo local ya existe y no se adopta automaticamente durante la sincronizacion.', 1;";
+        var descriptionColumn = includeDescription ? "Description," : string.Empty;
+        var descriptionValue = includeDescription ? "@Description," : string.Empty;
+        var descriptionUpdate = includeDescription ? "Description=@Description," : string.Empty;
 
         return $"""
         DECLARE @Id int;
@@ -125,12 +131,12 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
         {codeResolution}
         IF @Id IS NULL
         BEGIN
-          INSERT dbo.{table}(GlobalId,Code,Name,Description,{insertExtra}IsActive,IsDeleted,ExternalSystem,ExternalCode,CreatedAt,CreatedByUserName)
-          VALUES(@GlobalId,@Code,@Name,@Description,{valuesExtra}@IsActive,@IsDeleted,@ExternalSystem,@ExternalCode,@CreatedAt,N'MasterBranchSyncWorker');
+          INSERT dbo.{table}(GlobalId,Code,Name,{descriptionColumn}{insertExtra}IsActive,IsDeleted,ExternalSystem,ExternalCode,CreatedAt,CreatedByUserName)
+          VALUES(@GlobalId,@Code,@Name,{descriptionValue}{valuesExtra}@IsActive,@IsDeleted,@ExternalSystem,@ExternalCode,@CreatedAt,N'MasterBranchSyncWorker');
           SET @Id=CONVERT(int,SCOPE_IDENTITY());
         END
         ELSE
-          UPDATE dbo.{table} SET GlobalId=@GlobalId,Code=@Code,Name=@Name,Description=@Description,{updateExtra}IsActive=@IsActive,
+          UPDATE dbo.{table} SET GlobalId=@GlobalId,Code=@Code,Name=@Name,{descriptionUpdate}{updateExtra}IsActive=@IsActive,
           IsDeleted=@IsDeleted,ExternalSystem=@ExternalSystem,ExternalCode=@ExternalCode,UpdatedAt=@UpdatedAt,UpdatedByUserName=N'MasterBranchSyncWorker'
           WHERE {id}=@Id;
         SELECT @Id;

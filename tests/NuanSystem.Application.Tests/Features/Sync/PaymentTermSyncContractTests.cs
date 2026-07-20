@@ -18,6 +18,18 @@ public sealed class PaymentTermSyncContractTests
     }
 
     [Fact]
+    public void BranchApply_DoesNotRequireDescriptionColumnForPaymentTerms()
+    {
+        var repository = File.ReadAllText(Path.Combine(RepoRoot(),
+            "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync",
+            "ReferenceCatalogSyncApplyRepository.cs"));
+
+        repository.Should().Contain("includeDescription: false");
+        repository.Should().Contain("var descriptionColumn = includeDescription");
+        repository.Should().Contain("var descriptionUpdate = includeDescription");
+    }
+
+    [Fact]
     public void ForwardScripts_KeepSapAndMasterBranchContractsExplicit()
     {
         var tenant = File.ReadAllText(Path.Combine(RepoRoot(), "database", "sql", "112_tenant_sap_payment_terms_sync.sql"));
