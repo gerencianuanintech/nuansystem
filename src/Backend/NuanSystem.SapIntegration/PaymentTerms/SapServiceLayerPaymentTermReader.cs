@@ -18,7 +18,7 @@ public sealed class SapServiceLayerPaymentTermReader(SapServiceLayerQueryClient 
         return rows.Select(Map).OrderBy(item => item.GroupNumber).ToArray();
     }
 
-    private static SapPaymentTermRecord Map(JsonElement row)
+    internal static SapPaymentTermRecord Map(JsonElement row)
     {
         var groupNumber = ReadInt(row, "GroupNumber");
         var name = ReadString(row, "PaymentTermsGroupName");
@@ -34,7 +34,11 @@ public sealed class SapServiceLayerPaymentTermReader(SapServiceLayerQueryClient 
     }
 
     private static int ReadInt(JsonElement row, string name) =>
-        row.TryGetProperty(name, out var value) && value.TryGetInt32(out var number) ? number : 0;
+        row.TryGetProperty(name, out var value) &&
+        value.ValueKind == JsonValueKind.Number &&
+        value.TryGetInt32(out var number)
+            ? number
+            : 0;
 
     private static string ReadString(JsonElement row, string name) =>
         row.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
