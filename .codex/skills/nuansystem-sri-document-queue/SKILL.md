@@ -9,7 +9,7 @@ description: Design, implement, or review the tenant-scoped durable queue used t
 
 Obey this order: `ENGINEERING-CONSTITUTION.md` > `ENGINEERING-KERNEL.md` > catalogs and knowledge graph > framework discovery and operational-use-case skills > this skill > local implementation.
 
-Read `references/contract-status.md` before proposing changes. For the approved first pilot, also read `../../../docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. The repository currently contains SRI capability/configuration flags and target architecture, but no operative SRI queue. Never describe a planned table, endpoint, state, or worker as implemented.
+Read `references/contract-status.md` before proposing changes. For the approved first pilot, also read `../../../docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. Phase 5.2 contains queue code and versioned scripts, but deployment, provider, worker and XML storage remain separate evidence gates. Never infer remote processing from the existence of the queue.
 
 ## Boundary
 
@@ -51,7 +51,7 @@ Does the request capture or track SRI work?
 
 1. Persist intent before any remote SRI operation.
 2. Scope every row and query to the resolved tenant; preserve branch context when relevant.
-3. Use a database-enforced idempotency key derived from an approved business identity. Do not assume `AccessKey` alone until its scope is approved.
+3. For the approved pilot, enforce tenant-local uniqueness on `(Environment, AccessKey)` in the database.
 4. Store source type and immutable source reference so retries cannot create a second logical job.
 5. Treat payload, XML, credentials, authorization messages, and logs according to explicit privacy and retention rules.
 6. Define transitions as a state machine; reject illegal transitions atomically.
@@ -62,9 +62,9 @@ Does the request capture or track SRI work?
 11. SQL scripts must be versioned, idempotent, forward-safe, indexed for claim/query paths, and compatible with repository/Dapper contracts.
 12. Monitoring UI reads API projections only; it never calls SQL or SRI directly.
 
-## Planned state contract
+## Approved Phase 5.2 state contract
 
-The architecture currently proposes `Pending`, `Validating`, `Submitted`, `Authorized`, `Rejected`, `DownloadPending`, `Downloaded`, `Processed`, `Failed`, `RetryScheduled`, and `DeadLetter`. Treat these names as provisional until the selected provider flow is approved. Document the actor and precondition for every transition before implementing it.
+The queue uses `Pending`, `Querying`, `RetryScheduled`, `Authorized`, `NotFound`, `Failed`, `DeadLetter`, and `Cancelled`. Phase 5.2 exposes only `Pending|RetryScheduled -> Cancelled` and `Failed|DeadLetter -> Pending`; worker-owned transitions are reserved for Phase 5.3. Do not add arbitrary status editing.
 
 ## Forbidden patterns
 

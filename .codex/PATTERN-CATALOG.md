@@ -364,7 +364,7 @@ An entity is not operative until producer and applier both exist. Documents also
 
 ## Pattern P11 — SRI durable document processing
 
-Use only after the SRI pilot direction and security/storage policies are approved.
+Use the queue portion for the approved pilot. Provider, worker and storage portions require their remaining policies and evidence.
 
 ```text
 authorized capturer
@@ -377,7 +377,7 @@ authorized capturer
   -> protected API projection and WinForms monitor
 ```
 
-Split responsibilities between `$nuansystem-sri-document-queue` and `$nuansystem-sri-worker`. The pattern is **planned, not operative**, until a queue, provider, storage, worker, and end-to-end evidence exist.
+Split responsibilities between `$nuansystem-sri-document-queue` and `$nuansystem-sri-worker`. The durable queue portion is implemented in Phase 5.2 but is not deployed merely because scripts exist. Provider, storage, worker and end-to-end processing remain non-operative.
 
 ### Antipatterns
 

@@ -3,7 +3,7 @@
 ## Decision Record
 
 - **Estado de la decision:** Aprobada por el propietario del proyecto.
-- **Estado de implementacion:** No iniciada.
+- **Estado de implementacion:** Fase 5.2 implementada en codigo; scripts y validacion en base real pendientes.
 - **Fecha:** 2026-07-20.
 - **Direccion:** Consulta y descarga por clave de acceso de comprobantes previamente autorizados.
 - **Excluido:** generacion, firma, recepcion, envio para autorizacion, anulacion y scraping del portal web.
@@ -120,7 +120,7 @@ Los limites concretos de intentos, tiempos y ventana funcional se configuran y s
 
 ## Almacenamiento XML
 
-Para no fijar prematuramente infraestructura, el contrato exige `ISriDocumentStorage` con referencia inmutable e integridad. La eleccion entre tenant DB y storage externo queda pendiente antes de Fase 5.2. Ningun consumidor conoce el proveedor fisico.
+Para no fijar prematuramente infraestructura, el contrato exige `ISriDocumentStorage` con referencia inmutable e integridad. La eleccion entre tenant DB y storage externo queda pendiente antes de Fase 5.4. Ningun consumidor conoce el proveedor fisico.
 
 No se implementa purga automatica hasta aprobar retencion legal/operativa. La ausencia de una politica de purga no autoriza borrado manual ni almacenamiento sin limites de tamano.
 
@@ -137,12 +137,12 @@ No se implementa purga automatica hasta aprobar retencion legal/operativa. La au
 9. Logs y auditoria no exponen XML ni clave completa.
 10. Solo un recorrido real contra ambiente oficial aprobado permite marcar E2E como validado.
 
-## Pendientes antes de Fase 5.2
+## Pendientes para Fases 5.3 y 5.4
 
 1. Elegir almacenamiento fisico del XML.
 2. Aprobar retencion, tamano maximo y politica de purga.
 3. Aprobar proveedor/endpoints y ambiente oficial de validacion.
 4. Aprobar limites de retry, ventana funcional y expiracion de lease.
-5. Confirmar catalogo inicial de `SourceType` y tipos de comprobante soportados.
+5. Ampliar, si se aprueba, el catalogo inicial ya cerrado para Fase 5.2: `SourceType` (`NuanSystem`, `Txt`, `SapAddOn`, `Manual`, `ExternalApi`) y comprobantes `01`, `04`, `07`.
 
-Hasta resolverlos, el contrato funcional esta aprobado pero la implementacion SQL/provider permanece bloqueada.
+Estos pendientes bloquean proveedor, worker y almacenamiento XML, pero no la cola durable de Fase 5.2. La implementacion del proveedor permanece bloqueada hasta cerrarlos.

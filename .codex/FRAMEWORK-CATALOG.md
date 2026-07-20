@@ -302,13 +302,13 @@ These are related but non-interchangeable pipelines. Route through `$nuansystem-
 
 ### Implemented foundation
 
-`TenantFeatureCodes.SriDocuments`, `TenantIntegrationCodes.Sri`, `database/sql/062_master_tenant_configuration.sql`, and protected tenant-integration configuration are the only implemented SRI foundation at Iteration 5 start. Both capability and integration are disabled by default.
+`TenantFeatureCodes.SriDocuments`, `TenantIntegrationCodes.Sri`, protected tenant integration configuration, Application queue contracts, Dapper repository, protected API endpoints, and scripts `115`/`116` form the implemented Phase 5.2 foundation. Capability and integration remain disabled by default.
 
-### Planned, not operative
+### Implemented queue; remote processing not operative
 
-The durable tenant SRI queue, attempts, XML store, Application contracts, endpoints, permissions, monitor, provider client, and `NuanSystem.SriWorker` are target contracts only. Their design authority is `docs/architecture/SRI-ITERATION-5-BLUEPRINT.md`.
+The tenant queue, attempts, audit, Application contracts, endpoints, permissions and optimistic concurrency are implemented in code. Deployment evidence still requires executing scripts `115` and `116`. XML storage, monitor, provider client, claim loop and `NuanSystem.SriWorker` remain target contracts only.
 
-The first pilot direction is approved: query and download by access key for previously authorized documents. `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md` owns its functional boundary. This decision does not promote any planned framework node to implemented status.
+The first pilot direction is approved: query and download by access key for previously authorized documents. `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md` owns its functional boundary. Queue implementation does not prove provider, XML download or end-to-end processing.
 
 | Need | Skill/owner | Boundary |
 |---|---|---|
