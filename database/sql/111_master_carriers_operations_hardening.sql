@@ -11,7 +11,8 @@ INSERT @AllowedActions (ActionKey)
 VALUES
     (N'refresh'), (N'create'), (N'update'), (N'delete'), (N'consult'), (N'copy'), (N'history'),
     (N'customize-columns'), (N'customizecolumns'),
-    (N'exportexcel'), (N'exportpdf'), (N'exportjson'), (N'exportxml');
+    (N'export-excel'), (N'exportexcel'), (N'export-pdf'), (N'exportpdf'),
+    (N'export-json'), (N'exportjson'), (N'export-xml'), (N'exportxml');
 
 IF @AdminRoleId IS NOT NULL AND @FormId IS NOT NULL
 BEGIN

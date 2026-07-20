@@ -105,7 +105,9 @@ BEGIN
       AND LOWER(LTRIM(RTRIM(operation.ActionKey))) IN
       (
           N'refresh', N'create', N'update', N'delete', N'consult', N'copy', N'history',
-          N'customize-columns', N'customizecolumns', N'exportexcel', N'exportpdf', N'exportjson', N'exportxml'
+          N'customize-columns', N'customizecolumns',
+          N'export-excel', N'exportexcel', N'export-pdf', N'exportpdf',
+          N'export-json', N'exportjson', N'export-xml', N'exportxml'
       )
       AND NOT EXISTS
     (SELECT 1 FROM dbo.SecurityRoleFormOperations existing WHERE existing.RoleId = @AdminRoleId AND existing.FormId = @FormId AND existing.OperationId = operation.Id);
