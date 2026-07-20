@@ -37,6 +37,8 @@ Entity constants include `Suppliers`, `Items`, and `PurchaseOrders`; warehouse i
 
 Never present ERP-to-SAP outbox delivery as complete until executable code and tests replace those markers.
 
+The generic SAP inbox retry path is also incomplete. A new SAP-to-ERP Full import may initially use an idempotent, safely rerunnable command plus logs/reconciliation; rebuilding generic payload replay and manual SAP recovery is a separate hardening scope unless the approved use case explicitly requires durable per-record retry.
+
 ## Design record
 
 ```text
@@ -63,6 +65,7 @@ Current gaps:
 - Advance watermark only after durable local success.
 - Retry only classified transient errors with bounded exponential backoff and max attempts.
 - Expose terminal failure for reconciliation/manual recovery.
+- Do not silently expand a new entity import into a rewrite of generic retry infrastructure. Record the limitation and choose rerunnable Full reconciliation or an explicitly approved durable-retry scope.
 - Emit safe structured logs and heartbeat; caught failure cannot appear successful.
 - Honor cancellation in loops, calls, delays, and shutdown.
 - Do not claim actual parallelism from option names; verify execution code.

@@ -61,6 +61,7 @@ Security/SQL migration:
 - Apply idempotently at the branch using the established transaction/inbox/audit boundary.
 - Distinguish retryable dependency/technical failures, ignored routing, and terminal `DeadLetter`.
 - Require permission and reason for retry, dead-letter reset, or expired-lock release.
+- Reuse exact permission constants and values: `SyncOutboxView` (`SYNC.OUTBOX.VIEW`), `SyncOutboxRetry` (`SYNC.OUTBOX.RETRY`), `SyncOutboxRetryDeadLetter` (`SYNC.OUTBOX.RETRY_DEADLETTER`), and `SyncOutboxReleaseLock` (`SYNC.OUTBOX.RELEASE_LOCK`).
 - `SkeletonMode.ObserveOnly` does not claim; other skeleton modes are dry-run/ignore, not real application.
 - An entity is operative only when producer and applier exist and are enabled/configured.
 - Update catalog, dependency planner, producer, payload, dispatcher/applier, SQL, profiles/security, tests, and graph together.

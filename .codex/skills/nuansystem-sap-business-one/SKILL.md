@@ -34,6 +34,8 @@ Do not select a transport from preference. Inspect active company configuration 
 - Typed readers exist for suppliers, warehouses, items, and purchase orders.
 - HANA query/connection abstractions belong to Integration, never frontend or Application shortcuts.
 - `/api/sap/*` dispatches Application use cases and requires `SapRead` or `SapManage`.
+- Existing item and warehouse imports persist `ExternalSystem = "SAP_B1"`; reuse that exact identifier unless a migration explicitly changes the cross-vertical convention.
+- Permission values are `SAP.SYNC.READ` and `SAP.SYNC.MANAGE` through `PermissionCodes.SapRead` and `PermissionCodes.SapManage`.
 
 Read `references/implemented-contracts.md` before design.
 
@@ -62,7 +64,7 @@ Tests/SQL scripts:
 - Create sessions per company/request through registered clients. Never share cookies/authenticated state across companies.
 - Map SAP payloads in Integration/Application contracts, not endpoints or WinForms.
 - Preview remains read-only; import commands own local writes and authoritative validation.
-- Persist stable SAP identifiers/version data required for idempotency before claiming success.
+- Persist stable SAP identifiers/version data required for idempotency before claiming success. Do not shorten `SAP_B1` to `SAP` in new mappings.
 - Keep remote calls outside open SQL transactions. Persist durable intent when delivery must survive failure.
 - Propagate cancellation and use bounded reads/timeouts.
 - Log safe correlation, entity, company, status, counts, and error class; never passwords, cookies, or sensitive payloads.
