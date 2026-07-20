@@ -81,6 +81,9 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
             "PriceLists" => BuildUpsertSql(table, "PriceListId",
                 "CurrencyCode=@CurrencyCode,AppliesTo=@AppliesTo,IsDefault=@IsDefault,",
                 "CurrencyCode,AppliesTo,IsDefault,", "@CurrencyCode,@AppliesTo,@IsDefault,"),
+            "BusinessPartnerPaymentTerms" => BuildUpsertSql(table, "Id",
+                "Days=@Days,IsCredit=@IsCredit,",
+                "Days,IsCredit,", "@Days,@IsCredit,", allowCodeReconciliation: false),
             _ => throw new InvalidOperationException($"Catalogo de referencia no soportado: {table}.")
         };
         return connection.ExecuteScalarAsync<int>(new CommandDefinition(sql, new
@@ -93,6 +96,8 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
             CurrencyCode = Required(payload.CurrencyCode ?? "USD", 10),
             AppliesTo = Required(payload.AppliesTo ?? "All", 30),
             payload.IsDefault,
+            Days = payload.Days ?? 0,
+            IsCredit = payload.IsCredit ?? false,
             IsActive = isActive,
             IsDeleted = isDeleted,
             ExternalSystem = Optional(payload.ExternalSystem, 50),
@@ -102,10 +107,22 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
         }, transaction, cancellationToken: cancellationToken));
     }
 
-    private static string BuildUpsertSql(string table, string id, string updateExtra, string insertExtra, string valuesExtra) => $"""
+    private static string BuildUpsertSql(
+        string table,
+        string id,
+        string updateExtra,
+        string insertExtra,
+        string valuesExtra,
+        bool allowCodeReconciliation = true)
+    {
+        var codeResolution = allowCodeReconciliation
+            ? $"IF @Id IS NULL SELECT @Id={id} FROM dbo.{table} WITH(UPDLOCK,HOLDLOCK) WHERE Code=@Code;"
+            : $"IF @Id IS NULL AND EXISTS(SELECT 1 FROM dbo.{table} WITH(UPDLOCK,HOLDLOCK) WHERE Code=@Code AND IsDeleted=0) THROW 51114, 'El codigo local ya existe y no se adopta automaticamente durante la sincronizacion.', 1;";
+
+        return $"""
         DECLARE @Id int;
         SELECT @Id={id} FROM dbo.{table} WITH(UPDLOCK,HOLDLOCK) WHERE GlobalId=@GlobalId;
-        IF @Id IS NULL SELECT @Id={id} FROM dbo.{table} WITH(UPDLOCK,HOLDLOCK) WHERE Code=@Code;
+        {codeResolution}
         IF @Id IS NULL
         BEGIN
           INSERT dbo.{table}(GlobalId,Code,Name,Description,{insertExtra}IsActive,IsDeleted,ExternalSystem,ExternalCode,CreatedAt,CreatedByUserName)
@@ -118,6 +135,7 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
           WHERE {id}=@Id;
         SELECT @Id;
         """;
+    }
 
     private static async Task RecordErrorAsync(SqlConnection connection, SyncEventApplyContext context, string message)
     {
@@ -137,6 +155,7 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
         SyncMasterBranchEntityCodes.Taxes => "Taxes",
         SyncMasterBranchEntityCodes.UnitOfMeasures => "UnitOfMeasures",
         SyncMasterBranchEntityCodes.PriceLists => "PriceLists",
+        SyncMasterBranchEntityCodes.BusinessPartnerPaymentTerms => "BusinessPartnerPaymentTerms",
         _ => throw new InvalidOperationException($"Entidad de referencia no soportada: {entityCode}.")
     };
 

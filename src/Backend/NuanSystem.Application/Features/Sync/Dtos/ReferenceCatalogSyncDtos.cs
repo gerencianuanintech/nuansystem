@@ -13,7 +13,9 @@ public sealed record ReferenceCatalogSyncPayload(
     string? ExternalSystem,
     string? ExternalCode,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    int? Days = null,
+    bool? IsCredit = null);
 
 public sealed record ReferenceCatalogSyncApplyResult(
     bool Applied,

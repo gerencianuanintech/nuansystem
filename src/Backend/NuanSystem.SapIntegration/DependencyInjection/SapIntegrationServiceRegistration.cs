@@ -10,6 +10,7 @@ using NuanSystem.SapIntegration.Warehouses;
 using NuanSystem.SapIntegration.Items;
 using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.SapIntegration.ServiceLayer;
+using NuanSystem.SapIntegration.PaymentTerms;
 
 namespace NuanSystem.SapIntegration.DependencyInjection;
 
@@ -34,6 +35,7 @@ public static class SapIntegrationServiceRegistration
         services.AddScoped<SapServiceLayerQueryClient>();
         services.AddScoped<ISapPurchaseOrderReader, SapServiceLayerPurchaseOrderReader>();
         services.AddScoped<ISapDocumentSender, SapDocumentSender>();
+        services.AddScoped<ISapPaymentTermReader, SapServiceLayerPaymentTermReader>();
 
         return services;
     }
