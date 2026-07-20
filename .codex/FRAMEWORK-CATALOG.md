@@ -297,3 +297,21 @@ A framework change is incomplete until:
 `Application/Features/Sync` and `NuanSystem.MasterBranchSyncWorker` own internal replication: catalog/profile -> durable `SyncOutbox` -> routing/policy -> targets -> expiring claim -> entity applier -> target/aggregate status -> `SyncAudit` and manual recovery.
 
 These are related but non-interchangeable pipelines. Route through `$nuansystem-sap-business-one`, `$nuansystem-sap-sync-orchestration`, or `$nuansystem-master-branch-sync` as applicable.
+
+## Iteration 5 SRI framework
+
+### Implemented foundation
+
+`TenantFeatureCodes.SriDocuments`, `TenantIntegrationCodes.Sri`, `database/sql/062_master_tenant_configuration.sql`, and protected tenant-integration configuration are the only implemented SRI foundation at Iteration 5 start. Both capability and integration are disabled by default.
+
+### Planned, not operative
+
+The durable tenant SRI queue, attempts, XML store, Application contracts, endpoints, permissions, monitor, provider client, and `NuanSystem.SriWorker` are target contracts only. Their design authority is `docs/architecture/SRI-ITERATION-5-BLUEPRINT.md`.
+
+| Need | Skill/owner | Boundary |
+|---|---|---|
+| Capture, enqueue, query, reprocess, queue SQL, monitor | `$nuansystem-sri-document-queue` | API/Application persist intent; no remote SRI work |
+| Claim, provider call, XML, retry, dead letter, health | `$nuansystem-sri-worker` | Dedicated worker only; no commercial-document ownership |
+| Tenant capability and secrets | Master tenant configuration | Disabled by default; sensitive values remain protected |
+
+SRI must not reuse SAP handlers/outbox, `SyncOutbox`, `NuanSystem.SyncWorker`, or `NuanSystem.MasterBranchSyncWorker`. Existing worker patterns are evidence for hosting and reliability techniques only.

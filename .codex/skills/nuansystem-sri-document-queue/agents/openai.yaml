@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem SRI Document Queue"
+  short_description: "Design tenant-safe SRI document queues"
+  default_prompt: "Use $nuansystem-sri-document-queue to design a durable SRI document queue for NuanSystem."

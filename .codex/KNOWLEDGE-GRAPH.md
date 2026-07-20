@@ -480,8 +480,24 @@ This path is operative after forward scripts `112` and `113`. It accepts only ex
 
 Forbidden: WinForms-to-SAP, MasterBranchSyncWorker-to-SAP session, SAP outbox substituted by `SyncOutbox`, skeleton/NotImplemented called complete, or Transportistas synchronized without an approved requirement.
 
+### 10.5 SRI electronic documents (target graph)
+
+```text
+TenantFeatureCodes.SriDocuments + TenantIntegrationCodes.Sri
+  -> protected Master tenant configuration (implemented; disabled by default)
+  -> capturer (NuanSystem/TXT/SAP AddOn/form/API) [planned]
+  -> Application/API enqueue [planned]
+  -> tenant SRI queue + attempts + document/XML reference [planned]
+  -> NuanSystem.SriWorker claim/lease [planned]
+  -> approved SRI provider + XML processing [planned]
+  -> protected API query/reprocess/download [planned]
+  -> WinForms monitor through NuanApiClient [planned]
+```
+
+The SRI graph has no edge to `SyncOutbox`, SAP outbox, `NuanSystem.SyncWorker`, or `NuanSystem.MasterBranchSyncWorker`. Capturers stop after durable enqueue. Only the dedicated SRI worker performs remote processing. See `docs/architecture/SRI-ITERATION-5-BLUEPRINT.md`.
+
 ## 11. Iteration scope
 
-The graph covers the Iteration 1 core, Iteration 2 WinForms framework, Iteration 3 backend contracts, and Iteration 4 repository-backed SAP/Matriz-Sucursal boundaries. BEAS, Android, and deeper domain graphs remain future work. SAP ERP-to-SAP outbox delivery remains incomplete in current source; documentation does not promote it.
+The graph covers the Iteration 1 core, Iteration 2 WinForms framework, Iteration 3 backend contracts, Iteration 4 repository-backed SAP/Matriz-Sucursal boundaries, and the Iteration 5 SRI target boundary. BEAS, Android, and deeper domain graphs remain future work. SAP ERP-to-SAP outbox delivery and all SRI operational nodes identified as planned remain incomplete; documentation does not promote them.
 
 `Transportistas` is the validated Iteration 2 pilot: solution build, automated tests, tenant/master SQL execution, renewed-token authorization, runtime CRUD, closed identification selector, Designer serialization, and approved compact vertical spacing were exercised. Its evidence promotes only the documented reusable framework patterns; its business identity remains independent.
