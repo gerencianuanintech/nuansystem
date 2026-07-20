@@ -44,7 +44,7 @@ public sealed class SapPurchaseOrderPilotIntegrationTests(ITestOutputHelper outp
             }).Build();
         var services=new ServiceCollection();
         services.AddSingleton<IConfiguration>(config);services.AddLogging();
-        services.AddApplicationServices().AddInfrastructureServices().AddPersistenceServices(config).AddSapIntegrationServices();
+        services.AddApplicationServices().AddInfrastructureServices().AddPersistenceServices(config).AddSapIntegrationServices(config);
         services.Configure<MasterBranchSyncWorkerOptions>(config.GetSection(MasterBranchSyncWorkerOptions.SectionName));
         services.AddScoped<ISyncEntityEventApplier,CountrySyncEventApplier>();services.AddScoped<ISyncEntityEventApplier,ProvinceSyncEventApplier>();
         services.AddScoped<ISyncEntityEventApplier,CitySyncEventApplier>();services.AddScoped<ISyncEntityEventApplier,CurrencySyncEventApplier>();

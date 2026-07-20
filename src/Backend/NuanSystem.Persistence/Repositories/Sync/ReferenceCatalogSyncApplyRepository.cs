@@ -81,6 +81,11 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
             "PriceLists" => BuildUpsertSql(table, "PriceListId",
                 "CurrencyCode=@CurrencyCode,AppliesTo=@AppliesTo,IsDefault=@IsDefault,",
                 "CurrencyCode,AppliesTo,IsDefault,", "@CurrencyCode,@AppliesTo,@IsDefault,"),
+            "BusinessPartnerPaymentTerms" => BuildUpsertSql(table, "Id",
+                "Days=@Days,IsCredit=@IsCredit,",
+                "Days,IsCredit,", "@Days,@IsCredit,",
+                allowCodeReconciliation: false,
+                includeDescription: false),
             _ => throw new InvalidOperationException($"Catalogo de referencia no soportado: {table}.")
         };
         return connection.ExecuteScalarAsync<int>(new CommandDefinition(sql, new
@@ -93,6 +98,8 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
             CurrencyCode = Required(payload.CurrencyCode ?? "USD", 10),
             AppliesTo = Required(payload.AppliesTo ?? "All", 30),
             payload.IsDefault,
+            Days = payload.Days ?? 0,
+            IsCredit = payload.IsCredit ?? false,
             IsActive = isActive,
             IsDeleted = isDeleted,
             ExternalSystem = Optional(payload.ExternalSystem, 50),
@@ -102,22 +109,39 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
         }, transaction, cancellationToken: cancellationToken));
     }
 
-    private static string BuildUpsertSql(string table, string id, string updateExtra, string insertExtra, string valuesExtra) => $"""
+    private static string BuildUpsertSql(
+        string table,
+        string id,
+        string updateExtra,
+        string insertExtra,
+        string valuesExtra,
+        bool allowCodeReconciliation = true,
+        bool includeDescription = true)
+    {
+        var codeResolution = allowCodeReconciliation
+            ? $"IF @Id IS NULL SELECT @Id={id} FROM dbo.{table} WITH(UPDLOCK,HOLDLOCK) WHERE Code=@Code;"
+            : $"IF @Id IS NULL AND EXISTS(SELECT 1 FROM dbo.{table} WITH(UPDLOCK,HOLDLOCK) WHERE Code=@Code AND IsDeleted=0) THROW 51114, 'El codigo local ya existe y no se adopta automaticamente durante la sincronizacion.', 1;";
+        var descriptionColumn = includeDescription ? "Description," : string.Empty;
+        var descriptionValue = includeDescription ? "@Description," : string.Empty;
+        var descriptionUpdate = includeDescription ? "Description=@Description," : string.Empty;
+
+        return $"""
         DECLARE @Id int;
         SELECT @Id={id} FROM dbo.{table} WITH(UPDLOCK,HOLDLOCK) WHERE GlobalId=@GlobalId;
-        IF @Id IS NULL SELECT @Id={id} FROM dbo.{table} WITH(UPDLOCK,HOLDLOCK) WHERE Code=@Code;
+        {codeResolution}
         IF @Id IS NULL
         BEGIN
-          INSERT dbo.{table}(GlobalId,Code,Name,Description,{insertExtra}IsActive,IsDeleted,ExternalSystem,ExternalCode,CreatedAt,CreatedByUserName)
-          VALUES(@GlobalId,@Code,@Name,@Description,{valuesExtra}@IsActive,@IsDeleted,@ExternalSystem,@ExternalCode,@CreatedAt,N'MasterBranchSyncWorker');
+          INSERT dbo.{table}(GlobalId,Code,Name,{descriptionColumn}{insertExtra}IsActive,IsDeleted,ExternalSystem,ExternalCode,CreatedAt,CreatedByUserName)
+          VALUES(@GlobalId,@Code,@Name,{descriptionValue}{valuesExtra}@IsActive,@IsDeleted,@ExternalSystem,@ExternalCode,@CreatedAt,N'MasterBranchSyncWorker');
           SET @Id=CONVERT(int,SCOPE_IDENTITY());
         END
         ELSE
-          UPDATE dbo.{table} SET GlobalId=@GlobalId,Code=@Code,Name=@Name,Description=@Description,{updateExtra}IsActive=@IsActive,
+          UPDATE dbo.{table} SET GlobalId=@GlobalId,Code=@Code,Name=@Name,{descriptionUpdate}{updateExtra}IsActive=@IsActive,
           IsDeleted=@IsDeleted,ExternalSystem=@ExternalSystem,ExternalCode=@ExternalCode,UpdatedAt=@UpdatedAt,UpdatedByUserName=N'MasterBranchSyncWorker'
           WHERE {id}=@Id;
         SELECT @Id;
         """;
+    }
 
     private static async Task RecordErrorAsync(SqlConnection connection, SyncEventApplyContext context, string message)
     {
@@ -137,6 +161,7 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
         SyncMasterBranchEntityCodes.Taxes => "Taxes",
         SyncMasterBranchEntityCodes.UnitOfMeasures => "UnitOfMeasures",
         SyncMasterBranchEntityCodes.PriceLists => "PriceLists",
+        SyncMasterBranchEntityCodes.BusinessPartnerPaymentTerms => "BusinessPartnerPaymentTerms",
         _ => throw new InvalidOperationException($"Entidad de referencia no soportada: {entityCode}.")
     };
 

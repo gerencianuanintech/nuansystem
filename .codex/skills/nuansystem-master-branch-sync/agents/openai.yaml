@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem Master Branch Sync"
+  short_description: "Gobierna sincronizacion Matriz-Sucursal"
+  default_prompt: "Use $nuansystem-master-branch-sync to design or review Master-to-Branch replication using the implemented profiles, routing, outbox targets, appliers, retries, audit, and worker contracts."

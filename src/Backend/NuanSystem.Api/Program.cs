@@ -42,7 +42,7 @@ try
         return;
     }
 
-    builder.Services.AddNuanSystemServices(builder.Configuration);
+    builder.Services.AddNuanSystemServices(builder.Configuration, builder.Environment);
 
     var app = builder.Build();
 

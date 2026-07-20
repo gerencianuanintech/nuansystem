@@ -1,0 +1,35 @@
+# Implemented SAP contracts
+
+Use this map to accelerate discovery; open current source and consumers before relying on behavior.
+
+## Transport
+
+- `src/Backend/NuanSystem.Domain/Tenancy/SapIntegrationMode.cs`
+- `src/Backend/NuanSystem.SapIntegration/Abstractions/ISapClient.cs`
+- `src/Backend/NuanSystem.SapIntegration/Abstractions/ISapClientFactory.cs`
+- `src/Backend/NuanSystem.SapIntegration/Clients/SapClientFactory.cs`
+- `src/Backend/NuanSystem.SapIntegration/DependencyInjection/SapIntegrationServiceRegistration.cs`
+
+## Readers/senders
+
+- `Suppliers/SapSupplierReader.cs`
+- `Warehouses/SapServiceLayerWarehouseReader.cs`
+- `Items/SapServiceLayerItemReader.cs`
+- `PaymentTerms/SapServiceLayerPaymentTermReader.cs`
+- `ServiceLayer/SapServiceLayerPurchaseOrderReader.cs`
+- `Documents/SapDocumentSender.cs`
+- `Clients/ServiceLayer/SapServiceLayerClient.cs`
+- `Clients/DiApi/SapDiApiClient.cs`
+- `Hana/SapHanaQueryClient.cs`
+
+## Application/API/database
+
+- `src/Backend/NuanSystem.Application/Features/SapSync`
+- `src/Backend/NuanSystem.Api/Endpoints/SapEndpoints.cs`
+- SQL `048`, `049`, `050`, `089`, `095`, `096`, `101`, `112`, and `113`.
+
+## Payment terms
+
+`PaymentTermsTypes` is imported Full through `SapPaymentTermImportService` with external identity `SAP_B1` + `GroupNumber`, then distributed as `BusinessPartnerPaymentTerms`. Read `docs/architecture/SAP-PAYMENT-TERMS-SYNC.md` before changing representability, identity, seed coexistence, deactivation, or reconciliation behavior.
+
+The named `SapServiceLayer` client must honor `ServiceLayer:IgnoreSslErrors` only when the host explicitly confirms `Development`. Never persist SAP credentials or enable the unsafe certificate validator in production; install the trusted Service Layer certificate chain instead.

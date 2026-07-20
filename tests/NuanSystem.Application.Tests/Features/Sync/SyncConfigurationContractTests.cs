@@ -301,6 +301,7 @@ public sealed class SyncConfigurationContractTests
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Cities).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Currencies).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.ItemGroups).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.BusinessPartnerPaymentTerms).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative("CustomCatalog").Should().BeFalse();
         SyncMasterBranchEntityCodes.InitialCatalog.Select(item => item.EntityCode).Should().BeEquivalentTo(
             "Countries",

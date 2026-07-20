@@ -37,6 +37,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<ISapWarehouseImportService, SapWarehouseImportService>();
         services.AddScoped<ISapItemImportService, SapItemImportService>();
         services.AddScoped<ISapPurchaseOrderImportService, SapPurchaseOrderImportService>();
+        services.AddScoped<ISapPaymentTermImportService, SapPaymentTermImportService>();
         services.AddScoped<ISapSyncOrchestrator, SapSyncOrchestrator>();
         services.AddScoped<ISapSyncJobRunner, SapSyncJobRunner>();
         services.AddScoped<ISapSyncLockService, SapSyncLockService>();
@@ -47,6 +48,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<ISapSyncEntityHandler, SapSupplierSyncHandler>();
         services.AddScoped<ISapSyncEntityHandler, SapItemSyncHandler>();
         services.AddScoped<ISapSyncEntityHandler, SapPurchaseOrderSyncHandler>();
+        services.AddScoped<ISapSyncEntityHandler, SapPaymentTermSyncHandler>();
         services.AddScoped<ITenantFeatureService, TenantFeatureService>();
         services.AddScoped<ITenantIntegrationService, TenantIntegrationService>();
         services.AddScoped<IEntityOwnershipService, EntityOwnershipService>();

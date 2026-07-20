@@ -14,7 +14,8 @@ public sealed class ReferenceCatalogSyncEventApplier(IReferenceCatalogSyncApplyR
     {
         SyncMasterBranchEntityCodes.Taxes,
         SyncMasterBranchEntityCodes.UnitOfMeasures,
-        SyncMasterBranchEntityCodes.PriceLists
+        SyncMasterBranchEntityCodes.PriceLists,
+        SyncMasterBranchEntityCodes.BusinessPartnerPaymentTerms
     };
 
     public bool CanApply(string entityName) => Supported.Contains(entityName);

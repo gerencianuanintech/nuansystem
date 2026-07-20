@@ -182,7 +182,7 @@ public sealed class SyncProfileValidationServiceTests
     }
 
     [Fact]
-    public async Task ValidateAsync_AllowsDraftWithNonOperativeEntityAndWarns()
+    public async Task ValidateAsync_AllowsInactiveProfileWithOperativePaymentTerms()
     {
         var service = CreateService();
 
@@ -192,7 +192,7 @@ public sealed class SyncProfileValidationServiceTests
             userId: 1);
 
         result.IsValid.Should().BeTrue();
-        result.Warnings.Select(warning => warning.Code).Should().Contain("SyncEntityDraftOnly");
+        result.Warnings.Select(warning => warning.Code).Should().NotContain("SyncEntityDraftOnly");
     }
 
     [Fact]
@@ -270,8 +270,7 @@ public sealed class SyncProfileValidationServiceTests
             { ValidRequest() with { Schedule = new SaveSyncScheduleRequest { ScheduleType = "Interval" } }, "SyncScheduleIntervalRequired" },
             { ValidRequest() with { Schedule = new SaveSyncScheduleRequest { ScheduleType = "Daily" } }, "SyncScheduleDailyTimeRequired" },
             { ValidRequest() with { Schedule = new SaveSyncScheduleRequest { ScheduleType = "Manual", TimeZoneId = "Invalid/Zone" } }, "SyncScheduleTimeZoneInvalid" },
-            { ValidRequest() with { Entities = [Entity("Warehouse", 10, [2]) with { KeyField = "Code;DROP" }] }, "SyncTechnicalFieldExecutable" },
-            { ValidRequest() with { Entities = [Entity("BusinessPartnerPaymentTerms", 50, [2])] }, "SyncEntityNotOperative" }
+            { ValidRequest() with { Entities = [Entity("Warehouse", 10, [2]) with { KeyField = "Code;DROP" }] }, "SyncTechnicalFieldExecutable" }
         };
 
         return data;

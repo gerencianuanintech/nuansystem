@@ -30,6 +30,13 @@ public sealed class PriceListFullEntitySource(ICompanyResolver resolver) : ISync
         ReferenceCatalogFullSource.ReadAsync(resolver, context, EntityCode, cancellationToken);
 }
 
+public sealed class PaymentTermFullEntitySource(ICompanyResolver resolver) : ISyncFullEntitySource
+{
+    public string EntityCode => SyncMasterBranchEntityCodes.BusinessPartnerPaymentTerms;
+    public Task<SyncSourcePage> ReadPageAsync(SyncSourceReadContext context, CancellationToken cancellationToken = default) =>
+        ReferenceCatalogFullSource.ReadAsync(resolver, context, EntityCode, cancellationToken);
+}
+
 internal static class ReferenceCatalogFullSource
 {
     public static async Task<SyncSourcePage> ReadAsync(ICompanyResolver resolver, SyncSourceReadContext context, string entityCode, CancellationToken cancellationToken)
@@ -39,6 +46,7 @@ internal static class ReferenceCatalogFullSource
             SyncMasterBranchEntityCodes.Taxes => ("Taxes", "Id", "Description,Rate,CAST(NULL AS nvarchar(10)) CurrencyCode,CAST(NULL AS nvarchar(30)) AppliesTo,CAST(0 AS bit) IsDefault"),
             SyncMasterBranchEntityCodes.UnitOfMeasures => ("UnitOfMeasures", "Id", "Description,CAST(NULL AS decimal(18,6)) Rate,CAST(NULL AS nvarchar(10)) CurrencyCode,CAST(NULL AS nvarchar(30)) AppliesTo,CAST(0 AS bit) IsDefault"),
             SyncMasterBranchEntityCodes.PriceLists => ("PriceLists", "PriceListId", "Description,CAST(NULL AS decimal(18,6)) Rate,CurrencyCode,AppliesTo,IsDefault"),
+            SyncMasterBranchEntityCodes.BusinessPartnerPaymentTerms => ("BusinessPartnerPaymentTerms", "Id", "CAST(NULL AS nvarchar(500)) Description,CAST(NULL AS decimal(18,6)) Rate,CAST(NULL AS nvarchar(10)) CurrencyCode,CAST(NULL AS nvarchar(30)) AppliesTo,CAST(0 AS bit) IsDefault,Days,IsCredit"),
             _ => throw new InvalidOperationException($"Fuente Full no soportada: {entityCode}.")
         };
         var sql = $"""
@@ -57,7 +65,7 @@ internal static class ReferenceCatalogFullSource
         var limit = GetPageLimit(context);
         var records = rows.Take(limit).Select(row => new SyncSourceRecord(row.GlobalId, row.Code, row.IsActive,
             new ReferenceCatalogSyncPayload(row.GlobalId,row.Code,row.Name,row.Description,row.Rate,row.CurrencyCode,row.AppliesTo,row.IsDefault,
-                row.IsActive,row.ExternalSystem,row.ExternalCode,row.CreatedAt,row.UpdatedAt))).ToArray();
+                row.IsActive,row.ExternalSystem,row.ExternalCode,row.CreatedAt,row.UpdatedAt,row.Days,row.IsCredit))).ToArray();
         return new(records, records.LastOrDefault()?.EntityKey, rows.Count > limit);
     }
 
@@ -71,5 +79,5 @@ internal static class ReferenceCatalogFullSource
 
     private sealed record Row(int Id, Guid GlobalId, string Code, string Name, string? Description, decimal? Rate,
         string? CurrencyCode, string? AppliesTo, bool IsDefault, bool IsActive, string? ExternalSystem, string? ExternalCode,
-        DateTime CreatedAt, DateTime? UpdatedAt);
+        DateTime CreatedAt, DateTime? UpdatedAt, int? Days = null, bool? IsCredit = null);
 }

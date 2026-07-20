@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem SAP Sync"
+  short_description: "Orquesta sincronizacion SAP y workers"
+  default_prompt: "Use $nuansystem-sap-sync-orchestration to design or review a tenant-aware SAP synchronization flow using the implemented locks, logs, watermarks, handlers, retries, and workers."

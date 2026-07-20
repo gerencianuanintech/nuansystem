@@ -51,7 +51,7 @@ public static class SyncMasterBranchEntityCodes
         new(Currencies, Currencies, "Monedas", true, true, true, true, true, true, "Catalogo tenant con publicacion incremental, fuente Full y aplicador idempotente por GlobalId.", 40),
         new(Taxes, Taxes, "Impuestos", true, true, true, true, true, true, "Catalogo tributario con fuente Full y aplicador idempotente por GlobalId.", 45),
         new(UnitOfMeasures, UnitOfMeasures, "Unidades de medida", true, true, true, true, true, true, "Catalogo de unidades con fuente Full y aplicador idempotente por GlobalId.", 50),
-        new(BusinessPartnerPaymentTerms, BusinessPartnerPaymentTerms, "Condiciones de pago", true, false, false, false, false, false, "Catalogo tenant definido en 024_tenant_business_partners.sql. Sin productor/aplicador Master-Branch operativo.", 50),
+        new(BusinessPartnerPaymentTerms, BusinessPartnerPaymentTerms, "Condiciones de pago", true, true, true, true, true, true, "Catalogo tenant con importacion SAP Full, fuente Full y aplicador idempotente por GlobalId.", 50),
         new(SupplierGroups, SupplierGroups, "Grupos de proveedor", true, false, false, false, false, false, "Catalogo tenant definido en 026_tenant_general_supplier_catalogs.sql. Sin productor/aplicador Master-Branch operativo.", 60),
         new(SupplierClasses, SupplierClasses, "Clases de proveedor", true, false, false, false, false, false, "Catalogo tenant definido en 026_tenant_general_supplier_catalogs.sql. Sin productor/aplicador Master-Branch operativo.", 70),
         new(EconomicActivities, EconomicActivities, "Actividades economicas", true, false, false, false, false, false, "Catalogo tenant definido en 026_tenant_general_supplier_catalogs.sql. Sin productor/aplicador Master-Branch operativo.", 80),
@@ -60,9 +60,9 @@ public static class SyncMasterBranchEntityCodes
         new(BusinessPartner, BusinessPartner, "Socios de negocio", true, true, true, true, true, true, "Productor BusinessPartnerSyncPublisher y aplicador BusinessPartnerSyncApplyRepository existentes; alcance limitado, no BusinessPartners completos.", 200),
         new(ItemGroups, ItemGroups, "Grupos de articulos", true, true, true, true, true, true, "Catalogo maestro con productor incremental, fuente Full y aplicador idempotente por GlobalId.", 205),
         new(Item, Item, "Articulos", true, true, true, true, true, true, "Productor ItemSyncPublisher y aplicador ItemSyncApplyRepository existentes; alcance maestro limitado.", 210, Dependencies: [ItemGroups]),
-        new(Warehouse, Warehouse, "Almacenes", true, true, true, true, true, true, "Productor WarehouseSyncPublisher y aplicador WarehouseSyncApplyRepository existentes.", 220)
-        ,new(PriceLists, PriceLists, "Listas de precios", true, true, true, true, true, true, "Catalogo comercial con fuente Full y aplicador idempotente por GlobalId.", 230, Dependencies: [Currencies])
-        ,new(PurchaseOrder, PurchaseOrder, "Ordenes de compra", true, true, true, true, true, true, "Documento operativo con enrutamiento por bodega, Outbox/Inbox y aplicacion transaccional.", 300, Dependencies: [Currencies, Taxes, UnitOfMeasures, BusinessPartner, Item, Warehouse, PriceLists])
+        new(Warehouse, Warehouse, "Almacenes", true, true, true, true, true, true, "Productor WarehouseSyncPublisher y aplicador WarehouseSyncApplyRepository existentes.", 220),
+        new(PriceLists, PriceLists, "Listas de precios", true, true, true, true, true, true, "Catalogo comercial con fuente Full y aplicador idempotente por GlobalId.", 230, Dependencies: [Currencies]),
+        new(PurchaseOrder, PurchaseOrder, "Ordenes de compra", true, true, true, true, true, true, "Documento operativo con enrutamiento por bodega, Outbox/Inbox y aplicacion transaccional.", 300, Dependencies: [Currencies, Taxes, UnitOfMeasures, BusinessPartner, Item, Warehouse, PriceLists])
     ];
 
     private static readonly IReadOnlyDictionary<string, SyncMasterBranchEntityCatalogItem> CatalogByCode =

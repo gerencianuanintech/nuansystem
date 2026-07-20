@@ -166,6 +166,19 @@ When SAP Business One, BEAS, synchronization, or an external service is involved
 
 Frontend-to-external-system direct calls are not candidates.
 
+Classify evidence into separate pipelines:
+
+```text
+SAP transport/query/import/document send
+  -> $nuansystem-sap-business-one
+Scheduled SAP handler/lock/log/watermark/retry/heartbeat
+  -> $nuansystem-sap-sync-orchestration
+NuanSystem Master-to-Branch profile/outbox/target/applier
+  -> $nuansystem-master-branch-sync
+```
+
+Search explicit `NotImplemented`, skeleton, disabled, pilot, producer, and applier markers. A table, option, endpoint, or catalog row does not prove an operative end-to-end path.
+
 ## Step 7 — Select the reference pattern
 
 Rank evidence by:
