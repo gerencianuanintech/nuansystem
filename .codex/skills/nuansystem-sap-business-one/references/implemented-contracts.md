@@ -15,6 +15,7 @@ Use this map to accelerate discovery; open current source and consumers before r
 - `Suppliers/SapSupplierReader.cs`
 - `Warehouses/SapServiceLayerWarehouseReader.cs`
 - `Items/SapServiceLayerItemReader.cs`
+- `PaymentTerms/SapServiceLayerPaymentTermReader.cs`
 - `ServiceLayer/SapServiceLayerPurchaseOrderReader.cs`
 - `Documents/SapDocumentSender.cs`
 - `Clients/ServiceLayer/SapServiceLayerClient.cs`
@@ -25,4 +26,8 @@ Use this map to accelerate discovery; open current source and consumers before r
 
 - `src/Backend/NuanSystem.Application/Features/SapSync`
 - `src/Backend/NuanSystem.Api/Endpoints/SapEndpoints.cs`
-- SQL `048`, `049`, `050`, `089`, `095`, `096`, and `101`.
+- SQL `048`, `049`, `050`, `089`, `095`, `096`, `101`, `112`, and `113`.
+
+## Payment terms
+
+`PaymentTermsTypes` is imported Full through `SapPaymentTermImportService` with external identity `SAP_B1` + `GroupNumber`, then distributed as `BusinessPartnerPaymentTerms`. Read `docs/architecture/SAP-PAYMENT-TERMS-SYNC.md` before changing representability, identity, seed coexistence, deactivation, or reconciliation behavior.

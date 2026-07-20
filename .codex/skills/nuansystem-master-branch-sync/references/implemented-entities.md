@@ -4,11 +4,13 @@ The runtime catalog is `Application/Features/Sync/Configuration/SyncMasterBranch
 
 ## Operative examples
 
-Countries -> Provinces -> Cities; Currencies; Taxes; UnitOfMeasures; PriceLists; limited BusinessPartner; ItemGroups -> Item; Warehouse; and PurchaseOrder with reference dependencies/branch routing.
+Countries -> Provinces -> Cities; Currencies; Taxes; UnitOfMeasures; PriceLists; BusinessPartnerPaymentTerms; limited BusinessPartner; ItemGroups -> Item; Warehouse; and PurchaseOrder with reference dependencies/branch routing.
+
+`BusinessPartnerPaymentTerms` is operative through `PaymentTermFullEntitySource`, `ReferenceCatalogSyncEventApplier`, and `ReferenceCatalogSyncApplyRepository`. Its approved upstream source is SAP B1 `PaymentTermsTypes`; read `docs/architecture/SAP-PAYMENT-TERMS-SYNC.md` and the SAP synchronization skill before changing that pipeline. Tenant script `112` and Master script `113` activate its database contracts.
 
 ## Declared but non-operative examples
 
-Payment terms, supplier groups/classes, economic activities, zones, and supply methods have no operative producer/applier. Configuration alone cannot activate them.
+Supplier groups/classes, economic activities, zones, and supply methods have no operative producer/applier. Configuration alone cannot activate them.
 
 ## Runtime paths
 
@@ -17,4 +19,4 @@ Payment terms, supplier groups/classes, economic activities, zones, and supply m
 - monitor/manual actions: `Application/Features/Sync/Queries` and `Commands`
 - worker/appliers: `NuanSystem.MasterBranchSyncWorker`
 - API: `SyncEndpoints.cs`, `SyncConfigurationEndpoints.cs`, `SyncEntityDefinitionEndpoints.cs`
-- SQL: `064` through `105`; inspect installers `074`/`075` and verifier `076`.
+- SQL: `064` through `105`, plus forward contracts such as `112`/`113`; inspect installers `074`/`075` and verifier `076`.

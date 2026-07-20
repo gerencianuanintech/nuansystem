@@ -463,6 +463,21 @@ SyncMasterBranchEntityCatalog + SyncProfiles
 
 Dependencies include Countries -> Provinces -> Cities, ItemGroups -> Item, PriceLists -> Currencies, and PurchaseOrder references. A catalog entry without producer or applier is a capability gap, not an active path.
 
+### 10.4 Condiciones de Pago SAP B1 → Matriz → Sucursal
+
+```text
+SAP B1 PaymentTermsTypes
+  -> SapServiceLayerPaymentTermReader
+  -> SapPaymentTermImportService
+  -> SP_NA_POST_BUSINESSPARTNERPAYMENTTERMS_IMPORTARSAP
+  -> BusinessPartnerPaymentTerms (SAP_B1 + GroupNumber; stable GlobalId)
+  -> SyncOutbox or PaymentTermFullEntitySource
+  -> ReferenceCatalogSyncEventApplier
+  -> branch BusinessPartnerPaymentTerms
+```
+
+This path is operative after forward scripts `112` and `113`. It accepts only exactly representable day-based, single-payment terms; conflicts remain visible, local seeds are not adopted automatically, and snapshot absence does not deactivate rows. Read `docs/architecture/SAP-PAYMENT-TERMS-SYNC.md` for the authoritative contract.
+
 Forbidden: WinForms-to-SAP, MasterBranchSyncWorker-to-SAP session, SAP outbox substituted by `SyncOutbox`, skeleton/NotImplemented called complete, or Transportistas synchronized without an approved requirement.
 
 ## 11. Iteration scope

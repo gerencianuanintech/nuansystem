@@ -6,5 +6,6 @@
 - handlers: `Application/Features/SapSync/Handlers`
 - workers/options: `NuanSystem.SyncWorker/Workers` and `Options`
 - storage: SQL `049_master_sap_sync_worker.sql` and `050_tenant_sap_sync_worker.sql`
+- operative payment-terms handler: `SapPaymentTermSyncHandler` (`PaymentTerms`, Full `SapToErp`), with tenant/master activation in SQL `112`/`113`
 
 Explicit `NotImplemented` results are architectural evidence, not ignorable TODOs.
