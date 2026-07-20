@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem MediatR CQRS"
+  short_description: "Implementa casos de uso CQRS reales"
+  default_prompt: "Use $nuansystem-mediatr-cqrs para implementar o revisar un caso de uso Application con los contratos reales del proyecto."

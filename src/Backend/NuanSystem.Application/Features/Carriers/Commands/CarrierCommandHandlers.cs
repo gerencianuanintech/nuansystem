@@ -16,7 +16,7 @@ public sealed class CreateCarrierCommandHandler(ICarrierRepository repository) :
             return DuplicateCode(request.Code);
         }
 
-        var id = await repository.CreateAsync(new CreateCarrierData(
+        var createResult = await repository.CreateAsync(new CreateCarrierData(
             code,
             request.Name.Trim(),
             request.IdentificationTypeCode.Trim(),
@@ -25,6 +25,14 @@ public sealed class CreateCarrierCommandHandler(ICarrierRepository repository) :
             request.IsActive,
             request.AuditUserId,
             NormalizeOptional(request.AuditUserName)), cancellationToken);
+
+        if (createResult.DuplicateCode)
+        {
+            return DuplicateCode(request.Code);
+        }
+
+        var id = createResult.Id
+            ?? throw new InvalidOperationException("El transportista fue creado sin devolver un identificador valido.");
 
         var created = await repository.GetByIdAsync(id, cancellationToken)
             ?? throw new InvalidOperationException("El transportista fue creado pero no pudo consultarse.");
@@ -56,7 +64,7 @@ public sealed class UpdateCarrierCommandHandler(ICarrierRepository repository) :
             return CreateCarrierCommandHandler.DuplicateCode(request.Code);
         }
 
-        var updated = await repository.UpdateAsync(new UpdateCarrierData(
+        var updateResult = await repository.UpdateAsync(new UpdateCarrierData(
             request.Id,
             code,
             request.Name.Trim(),
@@ -67,7 +75,12 @@ public sealed class UpdateCarrierCommandHandler(ICarrierRepository repository) :
             request.AuditUserId,
             CreateCarrierCommandHandler.NormalizeOptional(request.AuditUserName)), cancellationToken);
 
-        if (!updated)
+        if (updateResult.DuplicateCode)
+        {
+            return CreateCarrierCommandHandler.DuplicateCode(request.Code);
+        }
+
+        if (!updateResult.Updated)
         {
             return NotFound(request.Id);
         }

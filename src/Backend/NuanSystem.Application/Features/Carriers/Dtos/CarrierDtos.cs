@@ -55,5 +55,7 @@ public sealed class CarrierAuditChangeDto
 }
 
 public sealed record CreateCarrierData(string Code, string Name, string IdentificationTypeCode, string IdentificationNumber, string? Description, bool IsActive, int? AuditUserId, string? AuditUserName);
+public sealed record CreateCarrierResult(int? Id, bool DuplicateCode);
+public sealed record UpdateCarrierResult(bool Updated, bool DuplicateCode);
 public sealed record UpdateCarrierData(int Id, string Code, string Name, string IdentificationTypeCode, string IdentificationNumber, string? Description, bool IsActive, int? AuditUserId, string? AuditUserName);
 public sealed record DeleteCarrierData(int Id, int? AuditUserId, string? AuditUserName);

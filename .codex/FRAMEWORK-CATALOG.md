@@ -193,6 +193,7 @@ Status values:
 - **Responsibility:** Stable success/failure contracts and field-aware `ApiError` values mapped by the API.
 - **Use when:** a handler can produce an expected non-success outcome.
 - **Do not use when:** hiding unexpected infrastructure exceptions or fabricating success.
+- **Current HTTP behavior:** `ResultExtensions.ToHttpResult()` returns HTTP 200 for success and HTTP 400 for every failed `Result<T>`; do not assume 404/409 mapping without a deliberate shared-contract migration.
 - **Antipatterns:** new result type, endpoint-local error schema, raw SQL/SAP exception returned to clients.
 
 ### 7.3 Trusted company context and tenant connection
@@ -205,6 +206,7 @@ Status values:
 - **Responsibility:** Validate user/company access and resolve the active tenant connection.
 - **Use when:** reading or writing tenant data.
 - **Boundary:** request DTOs and frontend headers do not become trusted company context by themselves.
+- **Provider status:** `TenantConnectionFactory` implements SQL Server. `DatabaseEngine.MySql` exists but currently throws `NotSupportedException`; enum presence is not provider support.
 
 ### 7.4 `ITransactionRunner` / `SqlTransactionRunner`
 
@@ -253,6 +255,8 @@ Status values:
 | Multi-write tenant unit | `ITransactionRunner` | No remote calls inside SQL transaction |
 | Endpoint authorization | `RequirePermission` / `RequireFormOperation` | UI visibility is not security |
 | SQL Server persistence | Dapper stored-procedure repository | Procedure names stay in Persistence |
+| Authentication | `SqlServerAuthService` + `JwtTokenService` + JWT bearer validation | Renew token after claim-based permission changes |
+| Unexpected API failure | `GlobalExceptionMiddleware` | Safe client response; technical detail stays in server/audit logs |
 
 ## 9. Extension gate
 

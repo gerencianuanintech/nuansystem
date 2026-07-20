@@ -100,7 +100,16 @@ BEGIN
     INSERT dbo.SecurityRoleFormOperations (RoleId, FormId, OperationId, IsAllowed, CreatedByUserName, CreatedAt)
     SELECT @AdminRoleId, @FormId, operation.Id, 1, N'Sistema', SYSUTCDATETIME()
     FROM dbo.SecurityOperations operation
-    WHERE operation.IsDeleted = 0 AND operation.IsActive = 1 AND NOT EXISTS
+    WHERE operation.IsDeleted = 0
+      AND operation.IsActive = 1
+      AND LOWER(LTRIM(RTRIM(operation.ActionKey))) IN
+      (
+          N'refresh', N'create', N'update', N'delete', N'consult', N'copy', N'history',
+          N'customize-columns', N'customizecolumns',
+          N'export-excel', N'exportexcel', N'export-pdf', N'exportpdf',
+          N'export-json', N'exportjson', N'export-xml', N'exportxml'
+      )
+      AND NOT EXISTS
     (SELECT 1 FROM dbo.SecurityRoleFormOperations existing WHERE existing.RoleId = @AdminRoleId AND existing.FormId = @FormId AND existing.OperationId = operation.Id);
 END;
 GO

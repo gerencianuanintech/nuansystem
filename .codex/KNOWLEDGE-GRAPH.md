@@ -352,7 +352,9 @@ Transportistas -X-> SupplierClassId or TRA as identity/discriminator
 
 Allowed reuse is framework-level only: CRUD lifecycle, corporate base forms and controls, Designer/layout rules, `INuanApiClient`, session/company propagation, permission infrastructure, and visual resources. Any future relationship between a transportista and a business partner must be a separately approved requirement; it must not be inferred during discovery.
 
-The implemented vertical is rooted at `Application/Features/Carriers`, `Persistence/Repositories/CarrierRepository.cs`, `Api/Endpoints/CarrierEndpoints.cs`, the tenant SQL scripts `106`/`107`, and the frontend `Carriers` folders. It deliberately has no Domain entity, SAP mapping, synchronization event, outbox publisher, or BusinessPartners dependency.
+The implemented vertical is rooted at `Application/Features/Carriers`, `Persistence/Repositories/CarrierRepository.cs`, `Api/Endpoints/CarrierEndpoints.cs`, tenant audit foundation `106`, tenant feature script `107`, forward tenant hardening `110`, Master security scripts `108`/`109`, forward Master operation hardening `111`, and the frontend `Carriers` folders. It deliberately has no Domain entity, SAP mapping, synchronization event, outbox publisher, or BusinessPartners dependency.
+
+`110` and `111` are required forward repairs for environments where `106`-`109` were already executed. `110` adds nonblank database checks, locks write decisions inside their transactions, verifies affected rows, and maps concurrent unique-code collisions to the repository result contract. `111` limits automatic ADMIN grants to the operations actually supported by the corporate CRUD grid while preserving intentionally modified grants.
 
 #### Transportista identification contract
 
@@ -425,6 +427,6 @@ A graph update must:
 
 ## 10. Iteration scope
 
-The graph now covers the Iteration 1 engineering core, Iteration 2 WinForms framework, and Iteration 3 backend foundations. SAP, BEAS, Android, and deeper domain-specific graphs still require subsequent repository-backed iterations. Their incomplete coverage is not permission to invent architecture.
+The graph covers the Iteration 1 engineering core, Iteration 2 WinForms framework, and Iteration 3 backend contract set. The backend contract set uses the actual messaging/result/error pipeline, SQL Server-only runtime support, authentication flow, tenant connection, Dapper procedures, and validated Carriers vertical. SAP, BEAS, Android, and deeper domain-specific graphs still require subsequent repository-backed iterations. Their incomplete coverage is not permission to invent architecture.
 
 `Transportistas` is the validated Iteration 2 pilot: solution build, automated tests, tenant/master SQL execution, renewed-token authorization, runtime CRUD, closed identification selector, Designer serialization, and approved compact vertical spacing were exercised. Its evidence promotes only the documented reusable framework patterns; its business identity remains independent.

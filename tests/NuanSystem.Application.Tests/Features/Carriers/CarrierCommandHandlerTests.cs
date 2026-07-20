@@ -14,7 +14,7 @@ public sealed class CarrierCommandHandlerTests
     public async Task Create_NormalizesCodeAndPersistsIndependentCarrier()
     {
         _repository.ExistsByCodeAsync("TR-001", null, Arg.Any<CancellationToken>()).Returns(false);
-        _repository.CreateAsync(Arg.Any<CreateCarrierData>(), Arg.Any<CancellationToken>()).Returns(42);
+        _repository.CreateAsync(Arg.Any<CreateCarrierData>(), Arg.Any<CancellationToken>()).Returns(new CreateCarrierResult(42, false));
         _repository.GetByIdAsync(42, Arg.Any<CancellationToken>()).Returns(Carrier(42, "TR-001"));
         var handler = new CreateCarrierCommandHandler(_repository);
 
@@ -50,6 +50,22 @@ public sealed class CarrierCommandHandlerTests
     }
 
     [Fact]
+    public async Task Create_ReturnsStableError_WhenDatabaseDetectsConcurrentDuplicate()
+    {
+        _repository.ExistsByCodeAsync("TR-001", null, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.CreateAsync(Arg.Any<CreateCarrierData>(), Arg.Any<CancellationToken>()).Returns(new CreateCarrierResult(null, true));
+        var handler = new CreateCarrierCommandHandler(_repository);
+
+        var result = await handler.Handle(
+            new CreateCarrierCommand("TR-001", "Transportes Uno", "04", "1790012345001", null, true, 7, "admin"),
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "CARRIER_DUPLICATED_CODE" && error.Field == "Code");
+        await _repository.DidNotReceive().GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Update_ReturnsNotFound_WhenCarrierDoesNotExist()
     {
         _repository.GetByIdAsync(99, Arg.Any<CancellationToken>()).Returns((CarrierDetailDto?)null);
@@ -62,6 +78,23 @@ public sealed class CarrierCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Errors.Should().ContainSingle(error => error.Code == "CARRIER_NOT_FOUND");
         await _repository.DidNotReceive().UpdateAsync(Arg.Any<UpdateCarrierData>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Update_ReturnsStableError_WhenDatabaseDetectsConcurrentDuplicate()
+    {
+        _repository.GetByIdAsync(42, Arg.Any<CancellationToken>()).Returns(Carrier(42, "TR-001"));
+        _repository.ExistsByCodeAsync("TR-002", 42, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.UpdateAsync(Arg.Any<UpdateCarrierData>(), Arg.Any<CancellationToken>())
+            .Returns(new UpdateCarrierResult(Updated: false, DuplicateCode: true));
+        var handler = new UpdateCarrierCommandHandler(_repository);
+
+        var result = await handler.Handle(
+            new UpdateCarrierCommand(42, "TR-002", "Transportes Uno", "04", "1790012345001", null, true, 7, "admin"),
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "CARRIER_DUPLICATED_CODE" && error.Field == "Code");
     }
 
     [Fact]

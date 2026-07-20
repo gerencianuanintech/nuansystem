@@ -32,12 +32,16 @@ Shared/backend infrastructure?
 
 Activate as applicable:
 
+- `$nuansystem-mediatr-cqrs`
 - `$nuansystem-backend-endpoints`
 - `$nuansystem-backend-validation`
 - `$nuansystem-backend-persistence`
 - `$nuansystem-backend-multitenancy-security`
 - `$nuansystem-backend-testing`
+- `$nuansystem-api-error-logging`
+- `$nuansystem-security-auth`
 - `$nuansystem-sql-standards`
+- `$nuansystem-database-provider-compatibility`
 - `$nuansystem-business-capabilities`
 - `$nuansystem-sap-business-one`
 
@@ -61,6 +65,7 @@ Domain/entity or contract
 
 Representative evidence:
 
+- Validated independent CRUD: `Features/Carriers`, `CarrierRepository.cs`, `CarrierEndpoints.cs`, and SQL scripts `106` through `109`.
 - CRUD lifecycle: `Features/Geography` and `GeographyEndpoints.cs`.
 - Configurable catalog lifecycle: `Features/TaxCatalogs` and `TaxCatalogRepository.cs`.
 - Complex aggregate: `Features/BusinessPartners`.
@@ -128,6 +133,7 @@ Infrastructure/Integrations -> Application contracts
 - Do not return Dapper rows, exceptions, or claims objects as domain contracts.
 - Do not let endpoints implement uniqueness, authorization, calculations, or state transitions.
 - Do not create a generic repository, generic endpoint, or descriptor merely to reduce file count without proving a stable shared contract.
+- Do not describe proposed types or provider support as implemented; verify exact symbols and executable paths first.
 
 ## Completion gate
 

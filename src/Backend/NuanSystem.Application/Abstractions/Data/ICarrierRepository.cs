@@ -9,7 +9,7 @@ public interface ICarrierRepository : IRepository
     Task<CarrierDetailDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<CarrierAuditChangeDto>> GetHistoryAsync(int id, CancellationToken cancellationToken = default);
     Task<bool> ExistsByCodeAsync(string code, int? excludingId = null, CancellationToken cancellationToken = default);
-    Task<int> CreateAsync(CreateCarrierData data, CancellationToken cancellationToken = default);
-    Task<bool> UpdateAsync(UpdateCarrierData data, CancellationToken cancellationToken = default);
+    Task<CreateCarrierResult> CreateAsync(CreateCarrierData data, CancellationToken cancellationToken = default);
+    Task<UpdateCarrierResult> UpdateAsync(UpdateCarrierData data, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(DeleteCarrierData data, CancellationToken cancellationToken = default);
 }

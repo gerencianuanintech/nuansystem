@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem Authentication"
+  short_description: "Protege autenticacion y credenciales"
+  default_prompt: "Use $nuansystem-security-auth para implementar o revisar login, JWT, contrasenas y secretos."
