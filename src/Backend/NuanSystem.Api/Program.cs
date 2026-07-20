@@ -123,6 +123,7 @@ try
     app.MapSyncEndpoints();
     app.MapSyncConfigurationEndpoints();
     app.MapSyncEntityDefinitionEndpoints();
+    app.MapSriDocumentEndpoints();
 
     app.MapAccountingEndpoints();
     app.MapBusinessPartnerEndpoints();
