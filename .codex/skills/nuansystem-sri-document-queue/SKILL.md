@@ -9,7 +9,7 @@ description: Design, implement, or review the tenant-scoped durable queue used t
 
 Obey this order: `ENGINEERING-CONSTITUTION.md` > `ENGINEERING-KERNEL.md` > catalogs and knowledge graph > framework discovery and operational-use-case skills > this skill > local implementation.
 
-Read `references/contract-status.md` before proposing changes. The repository currently contains SRI capability/configuration flags and target architecture, but no operative SRI queue. Never describe a planned table, endpoint, state, or worker as implemented.
+Read `references/contract-status.md` before proposing changes. For the approved first pilot, also read `../../../docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. The repository currently contains SRI capability/configuration flags and target architecture, but no operative SRI queue. Never describe a planned table, endpoint, state, or worker as implemented.
 
 ## Boundary
 

@@ -12,6 +12,12 @@
 - No approved provider endpoint/certificate workflow, queue lease procedure, XML store, or SRI attempt history exists.
 - The architecture in `docs/architecture/SRI-DOCUMENTS-WORKER.md` and `SRI-ITERATION-5-BLUEPRINT.md` is the design authority until code is introduced.
 
+## Approved first pilot
+
+The worker will eventually query and download previously authorized documents by access key. It will not generate, sign, submit, or cancel electronic documents. The approved state machine and evidence gates are in `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`.
+
+The provider/environment, physical XML storage, retention, and operational retry/lease limits remain unresolved and block implementation, not contract documentation.
+
 ## Validation hierarchy
 
 1. static contract review;

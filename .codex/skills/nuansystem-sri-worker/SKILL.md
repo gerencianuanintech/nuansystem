@@ -9,7 +9,7 @@ description: Design, implement, or review the dedicated NuanSystem background wo
 
 Obey: Constitution > Kernel > catalogs/knowledge graph > framework discovery and operational-use-case skills > this skill > implementation.
 
-Read `references/worker-contracts.md`. `NuanSystem.SriWorker` does not currently exist. Existing workers are lifecycle references only and must not be relabeled or extended across their ownership boundaries.
+Read `references/worker-contracts.md`. For the approved first pilot, also read `../../../docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. `NuanSystem.SriWorker` does not currently exist. Existing workers are lifecycle references only and must not be relabeled or extended across their ownership boundaries.
 
 ## Exclusive boundary
 

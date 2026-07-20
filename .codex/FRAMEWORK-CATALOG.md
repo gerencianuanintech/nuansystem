@@ -308,6 +308,8 @@ These are related but non-interchangeable pipelines. Route through `$nuansystem-
 
 The durable tenant SRI queue, attempts, XML store, Application contracts, endpoints, permissions, monitor, provider client, and `NuanSystem.SriWorker` are target contracts only. Their design authority is `docs/architecture/SRI-ITERATION-5-BLUEPRINT.md`.
 
+The first pilot direction is approved: query and download by access key for previously authorized documents. `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md` owns its functional boundary. This decision does not promote any planned framework node to implemented status.
+
 | Need | Skill/owner | Boundary |
 |---|---|---|
 | Capture, enqueue, query, reprocess, queue SQL, monitor | `$nuansystem-sri-document-queue` | API/Application persist intent; no remote SRI work |

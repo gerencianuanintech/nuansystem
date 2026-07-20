@@ -60,9 +60,9 @@ La arquitectura base propone `Pending`, `Validating`, `Submitted`, `Authorized`,
 
 ## Fases de ejecucion
 
-### 5.1 Contrato funcional y seguridad
+### 5.1 Contrato funcional y seguridad — direccion aprobada
 
-Decidir direccion piloto, proveedor/ambiente, identidad idempotente, storage XML, retencion, privacidad, limites y relacion con documento local. Entregable: ADR/contrato aprobado, sin procesamiento remoto.
+La direccion aprobada es consulta y descarga por clave de acceso de comprobantes previamente autorizados. El contrato autoritativo es `SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. Proveedor/ambiente, storage XML, retencion y limites operativos deben cerrarse antes de Fase 5.2. No existe procesamiento remoto todavia.
 
 ### 5.2 Cola durable
 
@@ -82,7 +82,7 @@ Ejecutar captura -> cola -> claim -> proveedor no productivo -> persistencia XML
 
 ## Decisiones requeridas antes de 5.1
 
-1. Primer piloto: envio/autorizacion saliente o consulta/descarga de documentos ya autorizados.
+1. **Resuelto:** consulta/descarga de documentos ya autorizados por clave de acceso.
 2. Proveedor y ambiente oficial de pruebas SRI.
 3. Almacenamiento XML: base de datos, archivos o storage externo.
 4. Alcance exacto de `AccessKey` y clave de idempotencia.

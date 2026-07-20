@@ -15,6 +15,12 @@
 - No production SRI provider/client, certificate flow, environment selection, or end-to-end authorization/download flow exists.
 - Proposed state names and fields are architecture candidates, not database contracts.
 
+## Approved pilot direction
+
+The first pilot is query and download by access key for previously authorized documents. Emission, signing, submission, cancellation, and portal scraping are excluded. Its functional contract, identity, states, security rules, and unresolved infrastructure decisions live in `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`.
+
+This approval does not implement the queue. XML storage, retention, official validation environment, and operational limits remain pending before Phase 5.2.
+
 ## Evidence rule
 
 Search the current repository before every task. If implementation advances, update this reference in the same change. A document or test double is not proof that a production path exists.

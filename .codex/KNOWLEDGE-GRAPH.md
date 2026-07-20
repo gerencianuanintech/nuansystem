@@ -496,6 +496,8 @@ TenantFeatureCodes.SriDocuments + TenantIntegrationCodes.Sri
 
 The SRI graph has no edge to `SyncOutbox`, SAP outbox, `NuanSystem.SyncWorker`, or `NuanSystem.MasterBranchSyncWorker`. Capturers stop after durable enqueue. Only the dedicated SRI worker performs remote processing. See `docs/architecture/SRI-ITERATION-5-BLUEPRINT.md`.
 
+The approved pilot traverses only `Environment + AccessKey -> authorization lookup -> immutable authorized XML`. Generation, signing, submission, cancellation, and portal scraping have no edge in this pilot. All operational nodes remain planned; see `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`.
+
 ## 11. Iteration scope
 
 The graph covers the Iteration 1 core, Iteration 2 WinForms framework, Iteration 3 backend contracts, Iteration 4 repository-backed SAP/Matriz-Sucursal boundaries, and the Iteration 5 SRI target boundary. BEAS, Android, and deeper domain graphs remain future work. SAP ERP-to-SAP outbox delivery and all SRI operational nodes identified as planned remain incomplete; documentation does not promote them.
