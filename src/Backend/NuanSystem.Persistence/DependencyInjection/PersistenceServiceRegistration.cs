@@ -6,6 +6,7 @@ using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.Application.Abstractions.SapSync;
 using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Abstractions.Sri;
 using NuanSystem.Persistence.Connections;
 using NuanSystem.Persistence.Options;
 using NuanSystem.Persistence.Repositories;
@@ -65,6 +66,8 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
         services.AddScoped<ICarrierRepository, CarrierRepository>();
         services.AddScoped<ISriDocumentQueueRepository, SriDocumentQueueRepository>();
+        services.AddScoped<ISriWorkerCompanyRepository, SriWorkerRepository>();
+        services.AddScoped<ISriWorkerQueueRepository, SriWorkerRepository>();
         services.AddScoped<IFinancialCatalogRepository, FinancialCatalogRepository>();
         services.AddScoped<IGeographyRepository, GeographyRepository>();
         services.AddScoped<IGeneralInventoryCatalogRepository, GeneralInventoryCatalogRepository>();
