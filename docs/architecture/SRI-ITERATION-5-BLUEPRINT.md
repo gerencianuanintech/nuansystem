@@ -2,7 +2,7 @@
 
 ## Estado
 
-**Fase 5.2 desplegada y validada en base real.** Cola SQL, Application/API, permisos, idempotencia, concurrencia, auditoria y JWT renovado fueron comprobados en el piloto. Todavia no existen proveedor SRI, almacenamiento XML ni `NuanSystem.SriWorker`; por tanto no hay procesamiento remoto ni validacion end-to-end SRI.
+**Fase 5.2 desplegada y validada; Fase 5.3 implementada en codigo y pruebas.** Cola SQL, Application/API, permisos, idempotencia, concurrencia, auditoria y JWT renovado fueron comprobados en base real. El proveedor oficial de consulta, `NuanSystem.SriWorker`, claims/leases y almacenamiento XML tenant ya existen en codigo/script `117`, pero no se han desplegado ni ejecutado contra el SRI; por tanto todavia no hay validacion end-to-end.
 
 ## Discovery Record
 
@@ -11,7 +11,7 @@
 - **Propiedad:** Master configura capacidades/secretos; la base tenant conserva la operacion y trazabilidad de cada empresa.
 - **Evidencia existente:** `SRI_DOCUMENTS`, integracion `SRI`, configuracion protegida y ambos deshabilitados por defecto en `062_master_tenant_configuration.sql`.
 - **Referencias de ciclo de vida:** `NuanSystem.SyncWorker` y `NuanSystem.MasterBranchSyncWorker`, sin reutilizar sus colas ni sus responsabilidades.
-- **Ausencias confirmadas al inicio:** tablas, repositorios, API, permisos, formularios, almacenamiento XML, cliente SRI y worker dedicados. Fase 5.2 ya cubre las primeras cuatro piezas en codigo/scripts; las restantes siguen ausentes.
+- **Ausencias confirmadas al inicio:** tablas, repositorios, API, permisos, formularios, almacenamiento XML, cliente SRI y worker dedicados. Fases 5.2/5.3 cubren cola, API, permisos, proveedor, worker y XML store; monitor y descarga protegida siguen pendientes.
 
 ### Evidencia XML real revisada para Fase 5.2
 
@@ -75,7 +75,7 @@ La arquitectura base propone `Pending`, `Validating`, `Submitted`, `Authorized`,
 
 ### 5.1 Contrato funcional y seguridad — direccion aprobada
 
-La direccion aprobada es consulta y descarga por clave de acceso de comprobantes previamente autorizados. El contrato autoritativo es `SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. Proveedor/ambiente, storage XML, retencion y limites operativos deben cerrarse antes de habilitar las fases de worker y almacenamiento. No existe procesamiento remoto todavia.
+La direccion aprobada es consulta y descarga por clave de acceso de comprobantes previamente autorizados. El contrato autoritativo es `SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. Las siete reglas operativas de proveedor, storage, tamano, retencion, TLS, retry y limites fueron aprobadas el 2026-07-20. No existe procesamiento remoto habilitado todavia.
 
 ### 5.2 Cola durable - desplegada y validada
 
@@ -85,13 +85,15 @@ Los XML reales usados para discovery no forman parte del repositorio. El 2026-07
 
 `NuanSystem_DEMO` queda habilitada para el piloto en `Production`; Remigio y Canaris conservan SRI deshabilitado. La API y los usuarios efimeros de validacion fueron retirados al terminar. Esta fase no crea proveedor, worker, XML storage ni endpoint de descarga.
 
-### 5.3 Worker y proveedor
+### 5.3 Worker, proveedor y almacenamiento XML - implementado; despliegue pendiente
 
-Crear `NuanSystem.SriWorker` con hosting, claims, leases, cancelacion, concurrencia acotada, clasificacion de fallas, retry/backoff, dead letter, health y observabilidad. El proveedor real requiere ambiente no productivo y politica de certificados/secretos aprobada.
+Se implementaron `NuanSystem.SriWorker`, proveedor SOAP de `AutorizacionComprobantesOffline`, resolucion multiempresa, claims atomicos, lease de 120 segundos, recuperacion de leases, lote 10, concurrencia 2, timeout 30 segundos, cinco intentos tecnicos, backoff con jitter y cierre `NotFound` tras tres respuestas o 30 minutos. El XML autorizado se valida contra tipo, clave, RUC y ambiente y se almacena en la base tenant con SHA-256 y limite de 5 MiB. TLS es estricto y las URLs aceptadas se restringen a los hosts oficiales.
+
+La compilacion del worker termino con 0 errores/advertencias y 33 pruebas SRI superaron. No se ejecuto `117`, no se habilito el worker y no se hicieron llamadas reales al SRI. El despliegue y la validacion de concurrencia/reinicio/proveedor siguen pendientes.
 
 ### 5.4 Almacenamiento y monitor
 
-Implementar abstraccion XML, integridad, acceso protegido y monitor WinForms mediante `NuanApiClient` y framework corporativo. La UI no modifica estados arbitrariamente.
+Completar descarga XML protegida, auditoria de acceso y monitor WinForms mediante `NuanApiClient` y framework corporativo. La UI no modifica estados arbitrariamente y no recibe rutas fisicas ni acceso SQL.
 
 ### 5.5 Validacion end-to-end
 
@@ -100,10 +102,10 @@ Ejecutar captura -> cola -> claim -> proveedor no productivo -> persistencia XML
 ## Decisiones requeridas antes de 5.1
 
 1. **Resuelto:** consulta/descarga de documentos ya autorizados por clave de acceso.
-2. Proveedor y ambiente oficial de pruebas SRI.
-3. Almacenamiento XML: base de datos, archivos o storage externo.
+2. **Resuelto:** servicio offline oficial, con Test y Production configurables y validacion real solo bajo autorizacion.
+3. **Resuelto:** XML en base tenant, inmutable, SHA-256, 5 MiB y sin purga automatica.
 4. Alcance exacto de `AccessKey` y clave de idempotencia.
-5. Retencion, privacidad, tamano maximo y permisos de payload/XML.
+5. **Parcialmente resuelto:** 5 MiB, TLS/log redaction y sin eliminacion; descarga/auditoria de acceso se completa en 5.4.
 6. Relacion con tipos e identidad de documentos comerciales locales.
 
 ## Quality gates

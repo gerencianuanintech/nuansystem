@@ -304,11 +304,13 @@ These are related but non-interchangeable pipelines. Route through `$nuansystem-
 
 `TenantFeatureCodes.SriDocuments`, `TenantIntegrationCodes.Sri`, protected tenant integration configuration, Application queue contracts, Dapper repository, protected API endpoints, and scripts `115`/`116` form the implemented Phase 5.2 foundation. Capability and integration remain disabled by default.
 
-### Implemented queue; remote processing not operative
+### Implemented queue and Phase 5.3 worker baseline
 
-The tenant queue, attempts, audit, Application contracts, endpoints, permissions and optimistic concurrency are implemented and runtime-validated. Scripts `115`/`116` were installed idempotently in Master and the three DEMO tenants; concurrency, `rowversion`, audit, JWT and forbidden access were exercised. XML storage, monitor, provider client, claim loop and `NuanSystem.SriWorker` remain target contracts only.
+The tenant queue, attempts, audit, Application contracts, endpoints, permissions and optimistic concurrency are implemented and runtime-validated. Scripts `115`/`116` were installed idempotently in Master and the three DEMO tenants; concurrency, `rowversion`, audit, JWT and forbidden access were exercised.
 
-The first pilot direction is approved: query and download by access key for previously authorized documents. `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md` owns its functional boundary. Queue implementation does not prove provider, XML download or end-to-end processing.
+`NuanSystem.SriWorker`, `SriAuthorizationProvider`, `SriWorkerRepository`, and tenant script `117` implement the Phase 5.3 code baseline: exact official HTTPS endpoints, bounded claim/lease processing, recovery, persisted retry/dead-letter outcomes, integrity validation, and immutable XML storage with SHA-256 and a 5 MiB limit. The worker is disabled by default. Script `117`, database concurrency, worker lifecycle and an official non-production round trip are not yet deployed/validated, so remote processing is not operational.
+
+The first pilot direction is approved: query and download by access key for previously authorized documents. `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md` owns its functional boundary. Unit/contract tests do not prove provider availability, deployed claims, XML download authorization or end-to-end processing.
 
 | Need | Skill/owner | Boundary |
 |---|---|---|

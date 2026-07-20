@@ -3,7 +3,7 @@
 ## Decision Record
 
 - **Estado de la decision:** Aprobada por el propietario del proyecto.
-- **Estado de implementacion:** Fase 5.2 desplegada y validada en Master y tres bases tenant; proveedor, worker, XML y E2E SRI pendientes.
+- **Estado de implementacion:** Fase 5.2 desplegada y validada. Fase 5.3 implementada y probada en codigo; script `117`, worker y proveedor aun no desplegados ni validados E2E.
 - **Fecha:** 2026-07-20.
 - **Direccion:** Consulta y descarga por clave de acceso de comprobantes previamente autorizados.
 - **Excluido:** generacion, firma, recepcion, envio para autorizacion, anulacion y scraping del portal web.
@@ -116,13 +116,13 @@ El parser crea metadatos de consulta, pero los bytes originales son la evidencia
 - Credencial/configuracion ausente o TLS invalido: falla tecnica visible; nunca se omite seguridad.
 - Intentos tecnicos agotados: `DeadLetter`.
 
-Los limites concretos de intentos, tiempos y ventana funcional se configuran y se aprueban antes de habilitar el worker.
+Limites aprobados: cinco intentos tecnicos, timeout de 30 segundos, backoff exponencial con jitter, lease de 120 segundos y tres respuestas sin autorizacion dentro de una ventana de 30 minutos antes de `NotFound`.
 
 ## Almacenamiento XML
 
-Para no fijar prematuramente infraestructura, el contrato exige `ISriDocumentStorage` con referencia inmutable e integridad. La eleccion entre tenant DB y storage externo queda pendiente antes de Fase 5.4. Ningun consumidor conoce el proveedor fisico.
+La decision aprobada almacena el XML autorizado en la base tenant. `SriAuthorizedDocuments` conserva identidad unica por cola y por `(Environment, AccessKey)`, metadatos de autorizacion, intento, bytes XML, content type, tamano y SHA-256. La transicion a `Authorized` y el almacenamiento ocurren en la misma transaccion.
 
-No se implementa purga automatica hasta aprobar retencion legal/operativa. La ausencia de una politica de purga no autoriza borrado manual ni almacenamiento sin limites de tamano.
+El tamano maximo es 5 MiB. No existe purga automatica ni eliminacion manual aprobada hasta definir retencion legal/operativa.
 
 ## Quality gates del piloto
 
@@ -137,12 +137,13 @@ No se implementa purga automatica hasta aprobar retencion legal/operativa. La au
 9. Logs y auditoria no exponen XML ni clave completa.
 10. Solo un recorrido real contra ambiente oficial aprobado permite marcar E2E como validado.
 
-## Pendientes para Fases 5.3 y 5.4
+## Pendientes para despliegue y Fase 5.4
 
-1. Elegir almacenamiento fisico del XML.
-2. Aprobar retencion, tamano maximo y politica de purga.
-3. Aprobar proveedor/endpoints y ambiente oficial de validacion.
-4. Aprobar limites de retry, ventana funcional y expiracion de lease.
-5. Ampliar, si se aprueba, el catalogo inicial ya cerrado para Fase 5.2: `SourceType` (`NuanSystem`, `Txt`, `SapAddOn`, `Manual`, `ExternalApi`) y comprobantes `01`, `04`, `07`.
+1. Ejecutar y verificar script `117` en los tenants piloto autorizados.
+2. Validar dos workers, lease vencido, reinicio, retry y almacenamiento idempotente en base real.
+3. Realizar una consulta al ambiente oficial de pruebas solo con autorizacion expresa y evidencia no sensible.
+4. Implementar descarga XML protegida, auditoria de descarga y monitor WinForms.
+5. Definir la retencion antes de introducir cualquier eliminacion.
+6. Ampliar, si se aprueba, el catalogo inicial: `SourceType` (`NuanSystem`, `Txt`, `SapAddOn`, `Manual`, `ExternalApi`) y comprobantes `01`, `04`, `07`.
 
-Estos pendientes bloquean proveedor, worker y almacenamiento XML, pero no la cola durable de Fase 5.2. La implementacion del proveedor permanece bloqueada hasta cerrarlos.
+Estos pendientes bloquean declarar operativo o E2E el flujo, no la revision del codigo de Fase 5.3.

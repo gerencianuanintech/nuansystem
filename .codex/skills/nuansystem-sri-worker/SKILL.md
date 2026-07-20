@@ -9,7 +9,7 @@ description: Design, implement, or review the dedicated NuanSystem background wo
 
 Obey: Constitution > Kernel > catalogs/knowledge graph > framework discovery and operational-use-case skills > this skill > implementation.
 
-Read `references/worker-contracts.md`. For the approved first pilot, also read `../../../docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. `NuanSystem.SriWorker` does not currently exist. Existing workers are lifecycle references only and must not be relabeled or extended across their ownership boundaries.
+Read `references/worker-contracts.md`. For the approved first pilot, also read `../../../docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. `NuanSystem.SriWorker` and tenant script `117` implement the Phase 5.3 baseline. Existing workers remain lifecycle references only and must not be relabeled or extended across their ownership boundaries.
 
 ## Exclusive boundary
 
@@ -33,6 +33,16 @@ Before implementation, establish:
 10. evidence required for local, non-production, and production validation.
 
 Missing provider or security policy blocks provider implementation, not architecture documentation.
+
+## Approved Phase 5.3 operating contract
+
+1. Use only the official offline authorization lookup operation; generation, signing, submission, cancellation and portal scraping are excluded.
+2. Store an authorized XML in the tenant database with authorization metadata, immutable queue identity, SHA-256, content type, byte size and producing attempt.
+3. Reject responses or XML larger than 5 MiB. Do not implement automatic or manual deletion until retention is separately approved.
+4. Keep the worker disabled by default. Approved defaults are batch `10`, concurrency `2`, lease `120s`, provider timeout `30s` and maximum `5` technical attempts.
+5. Use persisted exponential backoff with deterministic jitter. Three no-authorization responses or expiry of the 30-minute functional window finish as `NotFound`.
+6. Require strict TLS and exact HTTPS endpoints under `celcer.sri.gob.ec` for Test and `cel.sri.gob.ec` for Production. Never add certificate-validation bypasses.
+7. Support both configured environments, but never perform a real SRI call or enable the worker without explicit deployment/validation authority.
 
 ## Processing pipeline
 
@@ -61,7 +71,9 @@ The loop must be bounded, cancellation-aware, restart-safe, and safe with multip
 9. Store XML only through the approved abstraction; persist checksum, content type, size, and immutable reference.
 10. Redact credentials, tokens, certificates, XML, and taxpayer data from routine logs.
 11. Expose health, heartbeat, throughput, latency, failure class, queue age, lease recovery, and dead-letter metrics.
-12. Treat `IgnoreSslErrors` or equivalent bypasses as non-production diagnostics, never as an accepted security design.
+12. Treat `IgnoreSslErrors`, custom accept-all callbacks, proxy bypasses or equivalent certificate-validation omissions as forbidden.
+13. Validate the returned authorization, inner document type, access key, issuer RUC and environment before persisting any XML.
+14. Mask access keys in ordinary logs and use generic transport/provider messages; full XML never belongs in logs.
 
 ## Forbidden patterns
 
@@ -72,6 +84,8 @@ The loop must be bounded, cancellation-aware, restart-safe, and safe with multip
 - Marking authorized/downloaded before durable evidence is stored.
 - Logging full XML or secrets.
 - Treating provider mocks, compile success, or a single happy path as end-to-end validation.
+- Making the worker enabled by default, calling a non-official host, or accepting an arbitrary provider URL from a request.
+- Marking `Authorized` before the XML, checksum and attempt are committed in the same tenant transaction.
 
 ## Quality gates
 
