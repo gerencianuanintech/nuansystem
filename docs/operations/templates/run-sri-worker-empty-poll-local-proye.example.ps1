@@ -47,6 +47,15 @@ if ([string]::IsNullOrWhiteSpace($localSettings.ConnectionStrings.SqlServerAdmin
     [string]::IsNullOrWhiteSpace($localSettings.Security.EncryptionKey)) {
     throw "SqlServerAdmin y Security:EncryptionKey son obligatorios en appsettings.Local.json."
 }
+$sqlServerAdmin = [string]$localSettings.ConnectionStrings.SqlServerAdmin
+if ($sqlServerAdmin -match "COLOCA_AQUI|<|>" -or
+    $sqlServerAdmin -notmatch "(?i)(^|;)\s*(Server|Data Source)\s*=" -or
+    $sqlServerAdmin -notmatch "(?i)(^|;)\s*(Database|Initial Catalog)\s*=") {
+    throw "ConnectionStrings:SqlServerAdmin conserva un placeholder o no tiene formato de cadena SQL Server. Copie el valor local real sin imprimirlo."
+}
+if ([string]$localSettings.Security.EncryptionKey -match "COLOCA_AQUI|<|>") {
+    throw "Security:EncryptionKey conserva el placeholder. Copie la clave local real sin imprimirla."
+}
 if ($localSettings.SqlConnectionPolicy.Encrypt -ne $true -or
     $localSettings.SqlConnectionPolicy.TrustServerCertificate -ne $false) {
     throw "La prueba exige Encrypt=true y TrustServerCertificate=false."
