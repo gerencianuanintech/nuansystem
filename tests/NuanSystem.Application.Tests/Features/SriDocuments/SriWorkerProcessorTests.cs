@@ -27,6 +27,21 @@ public sealed class SriWorkerProcessorTests
     }
 
     [Fact]
+    public async Task ProcessOnce_DoesNotReadOrClaim_WhenStoppingClosedTheGate()
+    {
+        var gate=new SriWorkerRuntimeState();
+        gate.StopClaims();
+        var monitor=Substitute.For<IOptionsMonitor<SriWorkerOptions>>();
+        monitor.CurrentValue.Returns(EnabledOptions());
+        var processor=new SriWorkerProcessor(_companies,_queue,_provider,gate,monitor,_logger);
+
+        (await processor.ProcessOnceAsync()).Should().Be(0);
+
+        await _companies.DidNotReceive().GetEnabledCompaniesAsync(Arg.Any<CancellationToken>());
+        await _queue.DidNotReceive().ClaimAsync(Arg.Any<int>(),Arg.Any<string>(),Arg.Any<string>(),Arg.Any<int>(),Arg.Any<int>(),Arg.Any<int>(),Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task ProcessOnce_PersistsAuthorizedXmlAndHash()
     {
         var job = Job(attempt: 1);
