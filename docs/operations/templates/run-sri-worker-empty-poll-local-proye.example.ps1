@@ -36,7 +36,13 @@ if (-not (Test-Path -LiteralPath $localSettingsPath)) {
     throw "Falta appsettings.Local.json ignorado por Git con SqlServerAdmin y Security:EncryptionKey."
 }
 
-$localSettings = Get-Content -Raw -LiteralPath $localSettingsPath | ConvertFrom-Json
+$localSettingsRaw = Get-Content -Raw -LiteralPath $localSettingsPath
+try {
+    $localSettings = $localSettingsRaw | ConvertFrom-Json
+}
+catch {
+    throw "appsettings.Local.json no es un documento JSON valido. Debe contener un objeto exterior con ConnectionStrings, Security y SqlConnectionPolicy. No pegue solamente el bloque SqlConnectionPolicy."
+}
 if ([string]::IsNullOrWhiteSpace($localSettings.ConnectionStrings.SqlServerAdmin) -or
     [string]::IsNullOrWhiteSpace($localSettings.Security.EncryptionKey)) {
     throw "SqlServerAdmin y Security:EncryptionKey son obligatorios en appsettings.Local.json."
