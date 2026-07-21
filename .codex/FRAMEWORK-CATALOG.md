@@ -312,6 +312,10 @@ The tenant queue, attempts, audit, Application contracts, endpoints, permissions
 
 The first pilot direction is approved: query and download by access key for previously authorized documents. `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md` owns its functional boundary. Phase 5.5 adds tenant script `118`, Master script `119`, safe monitor projections, protected byte download, per-access audit, typed frontend transport and `SriDocumentMonitorForm`. These contracts are implemented, deployed and validated with real permissions, tenant isolation, API download, integrity/audit checks and Visual Studio Designer review. Detailed sanitized evidence lives in `docs/operations/SRI-DOCUMENT-MONITOR.md`.
 
+### Iteration 6 operational contracts
+
+`Application/Features/Operations` owns the shared `WorkerHeartbeat` contract and health evaluator; SAP Sync consumes it without owning it. Master script `120` evolves the existing table forward-only while preserving legacy `InstanceName` writes, and tenant script `121` exposes the SRI queue summary required by heartbeat. `NuanSystem.SriWorker` reports lifecycle/cycles, closes claims before shutdown, detects a duplicate local identity and emits safe structured/Event Log events. The protected SRI health endpoint and the existing `SriDocumentMonitorForm` expose only safe projections. These contracts and parameterized service templates are implemented but SQL/SCM/runtime/Designer evidence remains pending; they do not constitute production approval.
+
 | Need | Skill/owner | Boundary |
 |---|---|---|
 | Capture, enqueue, query, reprocess, queue SQL, monitor | `$nuansystem-sri-document-queue` | API/Application persist intent; no remote SRI work |

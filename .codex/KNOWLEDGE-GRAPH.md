@@ -500,20 +500,22 @@ The SRI graph has no edge to `SyncOutbox`, SAP outbox, `NuanSystem.SyncWorker`, 
 
 The approved pilot traverses only `Environment + AccessKey -> authorization lookup -> immutable authorized XML`. Generation, signing, submission, cancellation, and portal scraping have no edge in this pilot. Queue/worker/XML runtime, one expressly authorized Production round trip and the Phase 5.5 protected download/monitor are validated. See `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md` and `docs/operations/SRI-DOCUMENT-MONITOR.md`.
 
-Iteration 6 adds a proposed operational-hardening relationship, not an implemented runtime path:
+Iteration 6 adds implemented code/schema contracts, but not an executed deployment/runtime path:
 
 ```text
-NuanSystem.SriWorker Generic Host + UseWindowsService [existing]
-  -> shared Master WorkerHeartbeat evolution [proposed]
-  -> protected health/metrics/alert projections [proposed]
-  -> Windows Service identity, secrets, TLS and ACL contract [proposed]
-  -> backup/restore, deployment and rollback gates [proposed]
+NuanSystem.SriWorker Generic Host + UseWindowsService [implemented]
+  -> shared Master WorkerHeartbeat evolution [script 120 created; not executed]
+  -> tenant operational summary [script 121 created; not executed]
+  -> protected health + WinForms projection [implemented; runtime pending]
+  -> lifecycle/gate/mutex/safe events [implemented; runtime pending]
+  -> Windows Service identity, external config, TLS and ACL templates [implemented; not executed]
+  -> backup/restore, deployment and rollback gates [documented; not executed]
 ```
 
-The design is governed by `docs/architecture/SRI-ITERATION-6-OPERATIONS-BLUEPRINT.md`; procedures are separated into `docs/operations/SRI-WORKER-OPERATIONS.md`. `WorkerHeartbeat` is existing lifecycle evidence but its current Application/Persistence contracts are SAP-scoped. Do not create a parallel SRI heartbeat or report the proposed shared evolution as implemented before a forward-safe migration and runtime evidence exist.
+The design is governed by `docs/architecture/SRI-ITERATION-6-OPERATIONS-BLUEPRINT.md`; procedures are in `docs/operations/SRI-WORKER-OPERATIONS.md`. `WorkerHeartbeat` remains the single shared Master surface and its Application/Persistence contracts now live under `Operations`; SAP compatibility is retained. Do not report SQL, Windows Service, permissions, health UI, backup/restore or runtime as validated until their explicit deployment gates execute.
 
 ## 11. Iteration scope
 
-The graph covers the Iteration 1 core, Iteration 2 WinForms framework, Iteration 3 backend contracts, Iteration 4 repository-backed SAP/Matriz-Sucursal boundaries, Iteration 5 through the deployed and validated Phase 5.5 contracts, and the non-implemented Iteration 6 operational-hardening proposal. BEAS, Android, production approval of the SRI worker, and deeper domain graphs remain future work.
+The graph covers the Iteration 1 core, Iteration 2 WinForms framework, Iteration 3 backend contracts, Iteration 4 repository-backed SAP/Matriz-Sucursal boundaries, Iteration 5 through the deployed and validated Phase 5.5 contracts, and the statically implemented but not runtime-deployed Iteration 6 operational contracts. BEAS, Android, production approval of the SRI worker, and deeper domain graphs remain future work.
 
 `Transportistas` is the validated Iteration 2 pilot: solution build, automated tests, tenant/master SQL execution, renewed-token authorization, runtime CRUD, closed identification selector, Designer serialization, and approved compact vertical spacing were exercised. Its evidence promotes only the documented reusable framework patterns; its business identity remains independent.

@@ -2,9 +2,9 @@
 
 ## Estado
 
-**Runbook propuesto para Iteracion 6; no ejecutado ni aprobado para produccion.**
+**Runbook de implementacion tecnica inicial de Iteracion 6; no ejecutado ni aprobado para produccion.**
 
-Este documento describe como debera operarse `NuanSystem.SriWorker` una vez aprobadas e implementadas las decisiones de [SRI-ITERATION-6-OPERATIONS-BLUEPRINT.md](../architecture/SRI-ITERATION-6-OPERATIONS-BLUEPRINT.md). No autoriza instalar el servicio, ejecutar SQL, habilitar tenants, consultar al SRI, alterar XML ni modificar colas.
+Las decisiones bloqueantes fueron aprobadas para preparar codigo, scripts y plantillas. Este documento no autoriza instalar el servicio, crear la cuenta, ejecutar SQL, habilitar tenants, consultar al SRI, alterar XML ni modificar colas.
 
 La evidencia historica de Fases 5.3/5.4 se conserva en [SRI-WORKER-DEPLOYMENT.md](../architecture/SRI-WORKER-DEPLOYMENT.md). No repetir ese recorrido sin nueva autorizacion.
 
@@ -31,7 +31,20 @@ La evidencia historica de Fases 5.3/5.4 se conserva en [SRI-WORKER-DEPLOYMENT.md
 | Soporte funcional | Clasifica queue/retry/DeadLetter y coordina reproceso | Reprocesar masivamente o alterar XML. |
 | Desarrollo | Entrega artefactos, diagnostica defectos y forward-fixes | Operar produccion sin cambio aprobado. |
 
-La matriz RACI y contactos reales estan pendientes.
+El soporte piloto es en horario laboral y sin datos personales de contacto. Objetivos internos no contractuales: reconocer Critical en 30 minutos laborales, iniciar diagnostico en 60 minutos y decidir rollback/escalamiento en 120 minutos. No existe cobertura 24x7 aprobada.
+
+## Decisiones aprobadas del piloto
+
+- Windows x64 en entorno actual y Windows Server compatible; no se declara un host productivo.
+- Cuenta local dedicada `NuanSriWorkerSvc`, preparada por Infraestructura; las plantillas no crean la cuenta ni conceden `Log on as a service`.
+- Una instancia inicial. El mutex detecta duplicado local y el health alerta otra identidad SRI activa; claims/leases conservan compatibilidad multiinstancia futura.
+- Configuracion/secretos fuera de Git/releases en `%ProgramData%\NuanSystem\SriWorker\config`, ACL Administrators + servicio. Se reutilizan `AesSecretProtector` y proveedores de configuracion; no se integra vault externo.
+- Canales: logs estructurados, Windows Event Log para inicio/fallo temprano/Critical, API protegida y pestaña del monitor WinForms. Sin correo, Teams, Slack, SMS ni webhooks.
+- RPO 15 minutos y RTO 4 horas son objetivos piloto no contractuales hasta validacion real.
+- XML y auditorias se retienen indefinidamente; no hay purge, archive ni borrado.
+- DBA/Infra son propietarios de certificados. Umbrales 30/14 dias; SQL server, trust cliente, HTTPS SRI y firma son fronteras distintas.
+- Primer runtime: `NuanSystem_DEMO`, ambiente Production ya configurado, `Enabled=false` y cero llamadas SRI. Remigio/Canaris quedan fuera.
+- Ventana manual off-hours de 60 minutos con freeze, backup, deploy, smoke, observacion y rollback.
 
 ## Inventario por ambiente
 
@@ -73,7 +86,7 @@ Si un gate falla, detener el cambio. No relajar TLS, secretos, permisos o backup
 
 ## Instalacion inicial propuesta
 
-Este procedimiento es un contrato; los comandos de automatizacion se crearan y revisaran en la fase de implementacion.
+Las plantillas parametrizadas, no ejecutadas, estan en `docs/operations/templates/sri-worker`. Son ejemplos revisables, no un instalador productivo.
 
 1. Copiar el artefacto verificado a un directorio de release versionado.
 2. Aplicar ACL: lectura/ejecucion a la cuenta; escritura solo en logs/diagnosticos.
@@ -276,6 +289,6 @@ Registrar:
 - procesos finales y estado `Enabled`;
 - resultado `Validado`, `Fallido`, `Bloqueado` o `No ejecutado` por gate.
 
-## Escalamiento pendiente
+## Pendientes antes del runtime
 
-Antes de usar este runbook deben completarse: contactos, horario, severidades, SLA, canal primario/secundario, autoridad para detener, autoridad para reprocesar, RPO/RTO, retencion, tenant/ambiente piloto y ventana de mantenimiento.
+Faltan host concreto, contactos organizacionales, despliegue SQL/SCM/ACL real, permisos con JWT renovado, backup/restore ejecutado, validacion de certificados, prueba de lifecycle/health, Designer visual y upgrade/rollback. Cualquier llamada real al SRI o habilitacion del worker requiere autorizacion separada.

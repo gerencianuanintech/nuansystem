@@ -2,10 +2,10 @@
 
 ## Estado y autoridad
 
-- **Estado del documento:** diseno propuesto; no constituye aprobacion productiva.
+- **Estado del documento:** decisiones bloqueantes aprobadas e implementacion tecnica inicial; no constituye aprobacion productiva.
 - **Alcance:** Discovery, arquitectura y contrato operativo de `NuanSystem.SriWorker`.
-- **Implementacion runtime:** no iniciada.
-- **SQL, servicios Windows y canales externos:** no creados ni ejecutados por esta fase.
+- **Implementacion runtime:** contratos y plantillas implementados; despliegue y prueba runtime no ejecutados.
+- **SQL, servicios Windows y canales externos:** scripts `120`/`121` creados pero no ejecutados; no se creo cuenta/servicio/certificado ni canal externo.
 - **Autoridad:** `ENGINEERING-CONSTITUTION` > `ENGINEERING-KERNEL` > catalogos y grafo > skills aplicables > implementacion.
 
 Este blueprint parte de la Iteracion 5 validada. No autoriza nuevas llamadas al SRI, no amplia el piloto de consulta de autorizaciones, no cambia la retencion actual y no permite habilitar permanentemente el worker. Los procedimientos operativos propuestos viven en [`../operations/SRI-WORKER-OPERATIONS.md`](../operations/SRI-WORKER-OPERATIONS.md); la evidencia historica de Fases 5.3/5.4 permanece en [SRI-WORKER-DEPLOYMENT.md](SRI-WORKER-DEPLOYMENT.md).
@@ -36,7 +36,7 @@ Este blueprint parte de la Iteracion 5 validada. No autoriza nuevas llamadas al 
 - El XML autorizado no se elimina automaticamente mientras no exista politica aprobada.
 - No se reutilizan colas, handlers ni estados de SAP o Sync Master/Sucursal.
 
-**Affected layers:** hosting del worker, Infrastructure/Persistence futuros, Master y tenant SQL futuros, API/monitor futuros, seguridad, observabilidad, despliegue y documentacion. En esta fase solo cambia documentacion.
+**Affected layers:** Application/Persistence compartidos, hosting SRI Worker, Master y tenant SQL forward-only, API/monitor, seguridad, observabilidad, despliegue y documentacion.
 
 **Risk:** alto para la implementacion futura; bajo para el cambio documental actual.
 
@@ -64,7 +64,7 @@ Este blueprint parte de la Iteracion 5 validada. No autoriza nuevas llamadas al 
 - Nuevo pipeline de observabilidad paralelo: duplica `WorkerHeartbeat`, health API, Serilog y monitor existentes.
 - Mutex de sistema como garantia global: solo protege un host y no sirve para alta disponibilidad multi-host.
 
-**Gaps/new code futuros:** contrato de heartbeat desacoplado de SAP, vista health segura, snapshots operativos, eventos de alerta, empaquetado/automatizacion del servicio y pruebas de recuperacion. No se implementan aqui.
+**Implementado:** contrato de heartbeat desacoplado de SAP, vista health segura, resumen tenant, eventos operativos, lifecycle/gate/mutex, configuracion externa y plantillas parametrizadas. Siguen pendientes despliegue SQL/SCM, pruebas runtime, backup/restore, certificados y canales externos.
 
 **Differences/constraints:** el heartbeat existente solo contiene instancia, empresa, ultimo beat, estado, trabajo y version; la unicidad actual es solo por instancia. El SRI Worker no emite heartbeat, no expone health propio, no renueva leases durante una llamada y no tiene pipeline productivo validado.
 
@@ -99,16 +99,16 @@ Se aplicaron `nuansystem-framework-discovery`, `nuansystem-commercial-architectu
 | Capa | Estado de esta fase | Evidencia/accion futura |
 |---|---|---|
 | Domain | Verificada sin cambios | SRI sigue fuera de `Domain`. |
-| Application | Verificada sin cambios | Extraer futuro contrato operativo generico fuera de `SapSync`. |
-| Persistence | Verificada sin cambios | Evolucion forward-safe de heartbeat y consultas operativas. |
-| API | Verificada sin cambios | Proponer health protegido y proyecciones sin secretos. |
-| Database Master | Verificada sin cambios | Plano de control futuro; ningun script creado. |
-| Database tenant | Verificada sin cambios | Cola/XML/auditoria siguen siendo fuentes autoritativas. |
-| Worker | Verificada sin cambios | Hosting existente; faltan heartbeat, drain y gates productivos. |
-| Frontend | Verificada sin cambios | Monitor futuro consume API; nunca SQL/SRI. |
-| Security | Verificada sin cambios | Permisos y secretos requieren decisiones e implementacion posterior. |
-| Tests | Verificada sin cambios | Linea base se valida; no hay evidencia runtime de Iteracion 6. |
-| Documentacion | Cambio | Blueprint, runbook y rutas de conocimiento. |
+| Application | Cambio implementado | Contrato/evaluador operacional generico fuera de `SapSync`. |
+| Persistence | Cambio implementado | Repositorio compartido por procedimientos y resumen tenant seguro. |
+| API | Cambio implementado | Health SRI protegido y sin secretos. |
+| Database Master | Script creado, no ejecutado | `120` evoluciona heartbeat y seguridad forward-only. |
+| Database tenant | Script creado, no ejecutado | `121` agrega solo resumen operacional; cola/XML/auditoria siguen autoritativos. |
+| Worker | Cambio implementado | Heartbeat, lifecycle, gate, mutex, shutdown y eventos. |
+| Frontend | Cambio implementado | Pestaña health en el monitor existente; solo API. |
+| Security | Cambio implementado estaticamente | Permiso, config externa/TLS y ACL en plantillas; runtime pendiente. |
+| Tests | Cambio | Unitarios/contrato; runtime productivo sigue pendiente. |
+| Documentacion | Cambio | Blueprint, runbook y plantillas. |
 
 ## Infraestructura reutilizable y brechas
 
@@ -208,7 +208,7 @@ Un detalle por tenant se consulta bajo permiso desde las proyecciones tenant o, 
 | `Disabled` | Instancia viva con procesamiento explicitamente deshabilitado. |
 | `Unknown` | No existe evidencia suficiente, version no reconocida o registro nunca observado. |
 
-### Umbrales iniciales no aprobados
+### Umbrales iniciales aprobados para el piloto
 
 | Indicador | Warning/Degraded | Error/Unhealthy |
 |---|---:|---:|
@@ -222,7 +222,7 @@ Un detalle por tenant se consulta bajo permiso desde las proyecciones tenant o, 
 | Certificado SQL/SRI observado | <= 30 dias | <= 14 dias o vencido |
 | Almacenamiento libre | < 20 % | < 10 % |
 
-Estos valores son puntos de partida. Deben ajustarse con volumen, frecuencia, SLA y ventana operativa reales.
+Estos valores son configurables y aprobados como baseline del piloto; deben calibrarse con evidencia real antes de produccion.
 
 ### Vista operativa requerida
 
@@ -270,7 +270,7 @@ Canales candidatos:
 3. API/WinForms: consulta protegida de estado/eventos.
 4. Correo, Teams u otro webhook: adaptadores futuros, solo con aprobacion de propietario, destinatarios, secretos, rate limits y escalamiento.
 
-Ningun canal externo se selecciona ni implementa en esta fase.
+Los canales aprobados inicialmente son logs estructurados, Windows Event Log para arranque/fallo temprano/Critical, API protegida y WinForms. Correo, Teams, Slack, SMS y webhooks quedan fuera de alcance.
 
 ## TLS y certificados
 
@@ -378,29 +378,29 @@ Todos son obligatorios y requieren evidencia ejecutada:
 
 Hasta completar todos los gates, el estado es **No apto para produccion**; una prueba de Iteracion 5 no sustituye estas evidencias.
 
-## Matriz de decisiones pendientes
+## Matriz de decisiones aprobadas
 
-| # | Decision | Recomendacion | Alternativas | Riesgos e informacion faltante | Impacto | Bloquea |
-|---:|---|---|---|---|---|---|
-| 1 | SO y host | Windows Server soportado, host dedicado o pool controlado | VM compartida, contenedor Windows | Version, dominio, patching, CPU/RAM/disco/red | Instalacion, ACL, certificados, HA | Si |
-| 2 | Cuenta | gMSA si AD lo permite; si no, cuenta dedicada | LocalService, NetworkService, local/dominio | AD/gMSA, SQL auth, politica de rotacion | Secrets, SQL, red, ACL | Si |
-| 3 | Instancias/HA | Una instancia inicial; HA tras prueba dual | Activo-activo, activo-pasivo | Volumen, SLA, hosts y allowlist | Claims, heartbeat, soporte | Si |
-| 4 | Secrets | Proveedor corporativo; Integrated Security donde sea posible | DPAPI, Credential Manager, vault, variables | Plataforma disponible y responsables | Arranque, rotacion, recuperacion | Si |
-| 5 | Heartbeat | Evolucionar `WorkerHeartbeat` en Master | Nueva tabla generica, infraestructura externa | Consumidores SAP, cardinalidad, migration | SQL/API/monitor compartidos | Si |
-| 6 | Umbrales health | Adoptar baseline y calibrar en piloto | SLA personalizados por tenant | Volumen/frecuencia real | Estados y alertas | Si |
-| 7 | Alertas | Logs + Event Log + monitor; canal externo posterior | Correo, Teams, webhook | Canal corporativo, destinatarios, rate limits | Soporte y secretos | No para codigo base; si para produccion |
-| 8 | Soporte | Guardia y escalamiento documentados | Horario laboral, 24x7 | Equipo, contactos y SLA | Respuesta a Critical | Si |
-| 9 | RPO/RTO | 15 min / 4 h iniciales | Mayor/menor exigencia | Recovery model, storage, presupuesto | Backup/restore/HA | Si |
-| 10 | Retencion | Mantener indefinida hasta dictamen legal | Anos, archivo, compresion, purga | Fuente legal vigente, coste/volumen | SQL, backups, API historica | Si para purga; no para hardening sin purga |
-| 11 | Certificados | Ownership DBA/Infra con avisos 30/14 dias | Herramienta corporativa | CA, inventario, responsables | TLS y continuidad | Si |
-| 12 | Piloto | Un tenant y ambiente Test/consulta aprobados | Production u otros tenants | Tenant, datos y autorizacion expresa | Smoke/runtime | Si |
-| 13 | Ventana | Ventana con freeze, backups y observacion | Blue/green o rolling futuro | Horarios y responsables | Downtime/rollback | Si |
-| 14 | Despliegue | Artefactos versionados + servicio detenido + forward SQL | MSI, herramienta corporativa, pipeline | CI/CD, firma y repositorio de artefactos | Repetibilidad/auditoria | Si |
+| # | Decision aprobada | Aplicacion en esta fase |
+|---:|---|---|
+| 1 | Piloto Windows x64/Windows Server compatible; sin host productivo declarado | Hosting y plantillas, sin instalacion real. |
+| 2 | Cuenta local dedicada `NuanSriWorkerSvc`, sin crearla ni conceder logon | Parametro obligatorio y ACL en plantilla. |
+| 3 | Singleton piloto; claims/leases compatibles con futuro multiinstancia | Mutex local, identidad compuesta y alerta por segundo heartbeat activo. |
+| 4 | Secrets fuera de release/Git bajo ProgramData; vault futuro | Fuente JSON externa, ACL documentada y `AesSecretProtector` existente. |
+| 5 | Evolucion forward-safe de `dbo.WorkerHeartbeat` | Script `120`, contratos Operations y compatibilidad SAP. |
+| 6 | Baseline de health configurable | API/evaluador con 90/180 s, 10/30 min, 5/20, 30/14 dias y 20/10%. |
+| 7 | Logs, Event Log critico, API y WinForms | Implementados sin canales externos. |
+| 8 | Soporte en horario laboral, Critical visible | Runbook con roles y objetivos no contractuales. |
+| 9 | RPO 15 min/RTO 4 h piloto | Documentado; pendiente de restore real. |
+| 10 | Retencion indefinida | Sin purge, archive ni endpoints destructivos. |
+| 11 | Certificados propiedad DBA/Infra | Solo observacion/umbrales; sin operaciones de certificado. |
+| 12 | `NuanSystem_DEMO`, Production existente, worker disabled, cero SRI | Contrato de futura validacion; no ejecutado en esta fase. |
+| 13 | Ventana manual off-hours de 60 minutos | Secuencia freeze/backup/deploy/smoke/observe/rollback documentada. |
+| 14 | Artefactos versionados, service stopped, config externa y forward SQL | Plantillas install/start/stop/update/rollback/uninstall; no MSI/pipeline. |
 
 ## Affected-layer y quality review de esta fase
 
 - **Validado:** Discovery, ownership SRI, infraestructura existente, separacion SAP/Sync, contratos SQL 115-119 y documentacion de Iteracion 5.
 - **Diseno propuesto:** servicio, identidad, heartbeat/health, metricas, alertas, TLS, backup, retencion, despliegue y gates.
 - **Decision aprobada existente:** TLS estricto, worker deshabilitado por defecto, tenant XML inmutable sin purga, piloto solo de consulta.
-- **Pendiente:** las 14 decisiones anteriores y toda evidencia productiva de Iteracion 6.
-- **Fuera de alcance:** implementar codigo/SQL, instalar servicio/certificados/cuentas, levantar procesos, consultar SRI, modificar XML o bases y crear canales externos.
+- **Pendiente:** despliegue SQL, instalacion/ACL/SCM reales, runtime, permisos con JWT, Designer visual, backup/restore, certificados y upgrade/rollback ejecutados.
+- **Fuera de alcance:** ejecutar scripts, instalar servicio/certificados/cuentas, levantar procesos, consultar SRI, modificar XML o bases, crear canales externos, purge o HA.
