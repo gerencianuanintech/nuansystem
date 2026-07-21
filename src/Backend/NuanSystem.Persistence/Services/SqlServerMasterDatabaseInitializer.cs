@@ -782,6 +782,12 @@ END;
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
         }
 
+        scriptPath = FindDatabaseScriptPath("119_master_sri_document_monitor_security.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
         scriptPath = FindDatabaseScriptPath("019_master_inventory_items_security.sql");
         if (scriptPath is not null)
         {
