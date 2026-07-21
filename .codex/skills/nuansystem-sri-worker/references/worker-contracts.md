@@ -32,3 +32,5 @@ The approved provider is the SRI offline authorization service. XML is stored in
 Do not promote evidence from a lower level as proof of a higher one.
 
 Current evidence reaches level 3: build/tests plus deployed database concurrency, environment isolation, lease recovery, lease ownership, atomic authorization, idempotency, checksum conflict and 5 MiB rejection. Worker lifecycle against a deployed tenant and an official non-production round trip remain pending.
+
+The disabled host lifecycle is validated. Empty enabled polling from Codex is not valid evidence because the process runs as `CodexSandboxOffline` and cannot negotiate the local SQL TLS context. Repeat that validation from a normal Windows PowerShell console with `docs/operations/templates/run-sri-worker-empty-poll-local-proye.example.ps1`; never weaken SQL TLS to make the sandbox pass.

@@ -15,6 +15,14 @@ Este runbook aplica a la Fase 5.3 implementada. El script `117` ya fue desplegad
 - fixtures eliminados y working tree limpio;
 - worker deshabilitado, cero procesos y cero llamadas al SRI.
 
+## Evidencia de hosting y bloqueo de contexto
+
+El arranque con `Enabled=false` fue validado: inicio, cancelacion, salida con codigo 0, cero conexiones, cero claims y cero procesos residuales. El intento temporal con `Enabled=true` iniciado desde Codex se bloqueo antes del primer ciclo al abrir Master mediante `Microsoft.Data.SqlClient`.
+
+El proceso se ejecuto como `Proyectos\CodexSandboxOffline`. Este mismo limite de Schannel/contexto ya esta documentado para otros workers: una consola normal del usuario Windows puede conectar mientras el proceso aislado de Codex no adquiere la capacidad TLS requerida. No cambiar codigo, `Encrypt`, `TrustServerCertificate` ni certificados para compensar el sandbox.
+
+Usar `docs/operations/templates/run-sri-worker-empty-poll-local-proye.example.ps1` desde una consola PowerShell normal. La plantilla rechaza el contexto de Codex, exige `Encrypt=true` y `TrustServerCertificate=false`, no imprime secretos y habilita el worker solo durante el proceso manual.
+
 ## Precondiciones
 
 1. Rama y commit aprobados; working tree limpio.
@@ -27,11 +35,11 @@ Este runbook aplica a la Fase 5.3 implementada. El script `117` ya fue desplegad
 ## Orden de despliegue
 
 1. Mantener `SriWorker:Enabled=false`; iniciar el proceso y comprobar configuracion/health sin claims ni llamadas remotas.
-2. Preparar un trabajo controlado cuya llamada de red permanezca bloqueada o sustituida por un proveedor local de prueba aprobado.
-3. Habilitar una sola instancia y verificar claim, intento, cancelacion y apagado controlado.
-4. Validar reinicio y luego dos instancias sin duplicar claims ni intentos.
-5. Deshabilitar el worker al cerrar la ventana y conservar evidencia saneada.
-6. Solicitar autorizacion separada antes de cualquier round trip al ambiente oficial Test.
+2. Confirmar nuevamente que no existan filas elegibles, locks ni intentos nuevos.
+3. Ejecutar desde PowerShell normal la plantilla de polling vacio durante al menos dos ciclos y detener con Ctrl+C.
+4. Confirmar Master/tenant resolution, cero claims, cero intentos, cero locks y cero conexiones al SRI.
+5. Conservar `Enabled=false` en toda configuracion persistida y guardar evidencia saneada.
+6. Solicitar autorizacion separada antes de preparar un trabajo y efectuar cualquier round trip al ambiente oficial Test.
 
 ## Evidencia minima
 
