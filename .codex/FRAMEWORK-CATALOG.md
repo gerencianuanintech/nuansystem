@@ -310,7 +310,7 @@ The tenant queue, attempts, audit, Application contracts, endpoints, permissions
 
 `NuanSystem.SriWorker`, `SriAuthorizationProvider`, `SriWorkerRepository`, and tenant script `117` implement the Phase 5.3 baseline: exact official HTTPS endpoints, bounded claim/lease processing, recovery, persisted retry/dead-letter outcomes, integrity validation, and immutable XML storage with SHA-256 and a 5 MiB limit. Script `117` is deployed idempotently in the three DEMO tenants; concurrent claim, environment isolation, lease recovery/ownership, atomic authorization, repeated response, checksum conflict and oversize rejection passed in real SQL. The worker remains disabled. Worker lifecycle and an official non-production round trip are not yet validated, so remote processing is not operational.
 
-The first pilot direction is approved: query and download by access key for previously authorized documents. `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md` owns its functional boundary. Unit/contract tests do not prove provider availability, deployed claims, XML download authorization or end-to-end processing.
+The first pilot direction is approved: query and download by access key for previously authorized documents. `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md` owns its functional boundary. Phase 5.5 adds tenant script `118`, Master script `119`, safe monitor projections, protected byte download, per-access audit, typed frontend transport and `SriDocumentMonitorForm`. These contracts are implemented and automatically validated but remain pending real SQL deployment, runtime permission/tenant/API validation and Visual Studio Designer review.
 
 | Need | Skill/owner | Boundary |
 |---|---|---|

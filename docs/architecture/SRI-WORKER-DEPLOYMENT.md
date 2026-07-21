@@ -76,3 +76,7 @@ Usar `docs/operations/templates/run-sri-worker-empty-poll-local-proye.example.ps
 ## Rollback operativo
 
 Deshabilitar el worker detiene nuevos claims. No eliminar cola, intentos, auditoria ni XML. Script `117` es forward-only; cualquier correccion de esquema requiere un nuevo script versionado.
+
+## Relacion con Fase 5.5
+
+La descarga protegida lee exclusivamente `SriAuthorizedDocuments` mediante el API tenant y no levanta ni invoca `NuanSystem.SriWorker`. El script tenant `118` agrega proyecciones del monitor y auditoria de acceso reutilizando `AuditSriDocumentChanges`; el script Master `119` registra formulario, menu y operaciones. Desplegar Fase 5.5 no autoriza una nueva consulta al SRI ni alterar la fila de evidencia de Fase 5.4.

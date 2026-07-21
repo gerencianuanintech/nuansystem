@@ -16,7 +16,7 @@
 
 ## Approved first pilot
 
-The worker will eventually query and download previously authorized documents by access key. It will not generate, sign, submit, or cancel electronic documents. The approved state machine and evidence gates are in `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`.
+The worker queries and persists previously authorized documents by access key. Phase 5.5 downloads only those persisted bytes through the API and never calls the worker or SRI. It will not generate, sign, submit, or cancel electronic documents. The approved state machine and evidence gates are in `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`.
 
 The approved provider is the SRI offline authorization service. XML is stored in the tenant database, capped at 5 MiB, with no automatic deletion. Defaults are batch 10, concurrency 2, 120-second lease, 30-second timeout, five technical attempts and three no-authorization responses within a 30-minute window.
 

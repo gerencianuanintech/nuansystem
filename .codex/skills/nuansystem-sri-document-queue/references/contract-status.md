@@ -29,11 +29,12 @@
 - Validation passed 17 SRI tests and the full 411-test suite; the API and ephemeral users were removed afterward.
 - `NuanSystem_DEMO` is enabled for the Production pilot. Remigio and Canaris remain disabled.
 
-## Still not implemented
+## Implemented after Phase 5.2
 
-- No XML/document store, provider, monitor form, or `NuanSystem.SriWorker` project exists.
-- No production SRI provider/client, certificate flow, environment selection, or end-to-end authorization/download flow exists.
-- Payload/XML permissions are reserved but have no endpoint in Phase 5.2.
+- Phase 5.3 added the worker, official provider and immutable XML store; Phase 5.4 validated one authorized Production round trip in `NuanSystem_DEMO`.
+- Phase 5.5 implements safe monitor projections, protected byte download and per-access audit in tenant script `118`, plus Master navigation/security in script `119`.
+- `SriDocumentMonitorForm` uses the typed API client and corporate monitor controls without direct SQL or SRI access.
+- Phase 5.5 deployment, real permission/tenant/API validation and Designer review remain pending and must not be inferred from build/tests.
 
 ## Approved pilot direction
 

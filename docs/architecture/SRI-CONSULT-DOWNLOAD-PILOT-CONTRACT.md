@@ -141,8 +141,19 @@ El tamano maximo es 5 MiB. No existe purga automatica ni eliminacion manual apro
 
 La Fase 5.4 valido habilitacion temporal, recorrido oficial `Production`, persistencia autorizada, integridad, auditoria, liberacion de lease, redaccion, detencion e idempotencia en `NuanSystem_DEMO`. La evidencia detallada no sensible se conserva en `SRI-WORKER-DEPLOYMENT.md`; no debe repetirse la llamada real sin una nueva autorizacion expresa.
 
-1. Implementar descarga XML protegida, auditoria de descarga y monitor WinForms.
+1. Desplegar y validar en runtime la descarga XML protegida, su auditoria y el monitor WinForms implementados en Fase 5.5.
 2. Definir la retencion antes de introducir cualquier eliminacion.
 3. Ampliar, si se aprueba, el catalogo inicial: `SourceType` (`NuanSystem`, `Txt`, `SapAddOn`, `Manual`, `ExternalApi`) y comprobantes `01`, `04`, `07`.
 
 Estos pendientes no invalidan el E2E acotado de Fase 5.4, pero bloquean declarar completa la experiencia operativa de descarga y monitor.
+
+## Contrato implementado en Fase 5.5
+
+- lista y resumen exigen `SRI.DOCUMENTS.VIEW` y usan proyecciones sin clave de acceso;
+- detalle/auditoria exigen `SRI.DOCUMENTS.VIEW_PAYLOAD`; descarga exige `SRI.DOCUMENTS.DOWNLOAD_XML`;
+- inexistencia responde `404`; estado y contenido faltante usan errores funcionales estables;
+- cada exito entrega bytes `application/xml`, nombre seguro y `no-store`, y registra `DownloadXml` sin contenido ni clave;
+- repetir la descarga conserva un solo documento, agrega otra auditoria y mantiene `Authorized`;
+- SQL se resuelve mediante el tenant autenticado y WinForms usa exclusivamente el cliente tipado.
+
+Esto acredita implementacion estatica y automatizada, no scripts instalados, permisos reales, descarga API real ni revision visual.

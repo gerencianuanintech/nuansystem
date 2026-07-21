@@ -2,7 +2,7 @@
 
 ## Estado
 
-**Fases 5.2, 5.3 y 5.4 desplegadas o ejecutadas segun su alcance y validadas.** Cola, Application/API, permisos, idempotencia, concurrencia, auditoria, claims/leases, proveedor oficial y almacenamiento XML tenant fueron comprobados en base real. La Fase 5.4 completo un recorrido end-to-end autorizado contra SRI `Production` en `NuanSystem_DEMO`, con estado final `Authorized`, integridad SHA-256, lease liberado e idempotencia confirmada. El worker permanece deshabilitado por defecto y sin procesos activos. La descarga XML protegida, su auditoria de acceso y el monitor WinForms permanecen pendientes para la Fase 5.5.
+**Fases 5.2, 5.3 y 5.4 desplegadas o ejecutadas segun su alcance y validadas; Fase 5.5 implementada con despliegue pendiente.** Cola, Application/API, permisos, idempotencia, concurrencia, auditoria, claims/leases, proveedor oficial y almacenamiento XML tenant fueron comprobados en base real. La Fase 5.4 completo un recorrido end-to-end autorizado contra SRI `Production` en `NuanSystem_DEMO`. El worker permanece deshabilitado. Fase 5.5 agrega descarga protegida, auditoria de acceso y monitor WinForms sin repetir la llamada real; sus scripts y validaciones runtime/visuales siguen pendientes.
 
 ## Discovery Record
 
@@ -11,7 +11,7 @@
 - **Propiedad:** Master configura capacidades/secretos; la base tenant conserva la operacion y trazabilidad de cada empresa.
 - **Evidencia existente:** `SRI_DOCUMENTS`, integracion `SRI`, configuracion protegida y ambos deshabilitados por defecto en `062_master_tenant_configuration.sql`.
 - **Referencias de ciclo de vida:** `NuanSystem.SyncWorker` y `NuanSystem.MasterBranchSyncWorker`, sin reutilizar sus colas ni sus responsabilidades.
-- **Ausencias confirmadas al inicio:** tablas, repositorios, API, permisos, formularios, almacenamiento XML, cliente SRI y worker dedicados. Fases 5.2/5.3 cubren cola, API, permisos, proveedor, worker y XML store; monitor y descarga protegida siguen pendientes.
+- **Ausencias confirmadas al inicio:** tablas, repositorios, API, permisos, formularios, almacenamiento XML, cliente SRI y worker dedicados. Fases 5.2/5.3 cubrieron cola, API, permisos, proveedor, worker y XML store; Fase 5.5 implementa monitor y descarga protegida.
 
 ### Evidencia XML real revisada para Fase 5.2
 
@@ -95,9 +95,11 @@ La compilacion del worker termino con 0 errores/advertencias y 33 pruebas SRI su
 
 El 2026-07-20 se ejecuto el recorrido autorizado `enqueue -> claim -> proveedor oficial Production -> validacion -> almacenamiento XML -> Authorized` exclusivamente en `NuanSystem_DEMO`. Hubo un solo claim, intento y documento; tamano y SHA-256 coincidieron con el contenido persistido; la auditoria fue completa; el lease se elimino; un segundo ciclo no reclamo la fila terminal ni repitio la llamada; TLS permanecio estricto; no quedaron procesos ni se detectaron defectos. La evidencia saneada y sus limites estan en `SRI-WORKER-DEPLOYMENT.md`.
 
-### 5.5 Descarga protegida y monitor - pendiente
+### 5.5 Descarga protegida y monitor - implementada, despliegue pendiente
 
-Completar descarga XML protegida, auditoria de acceso y monitor WinForms mediante `NuanApiClient` y framework corporativo. La UI no modifica estados arbitrariamente y no recibe rutas fisicas ni acceso SQL. Los escenarios negativos, concurrencia y recuperacion ya cubiertos por pruebas automatizadas y SQL conservan su evidencia propia; una futura prueba de UI/API no debe repetir la llamada real al SRI sin nueva autorizacion.
+Los scripts forward-only `118` (tenant) y `119` (Master), contratos MediatR/Dapper, endpoints protegidos, transporte binario de `INuanApiClient` y `SriDocumentMonitorForm` implementan lista paginada, filtros, resumen, detalle, intentos, auditoria y descarga del XML persistido. La respuesta es `application/xml`, usa nombre `sri-{QueueId}.xml`, incluye `Cache-Control: no-store` y crea un evento `DownloadXml` por cada descarga exitosa sin alterar `Authorized` ni duplicar `SriAuthorizedDocuments`.
+
+La UI es un monitor operacional independiente basado en `NuanDataGridControl`, `NuanKpiCardControl` y `NuanActionButton`; consume solamente la API y guarda bytes mediante `SaveFileDialog`. No muestra XML ni clave de acceso. La implementacion y pruebas automatizadas no ejecutaron SQL, API, worker ni SRI. Permanecen pendientes el despliegue de `118`/`119`, la validacion runtime de permisos/tenant/descarga y la revision visual con Visual Studio Designer.
 
 ## Decisiones requeridas antes de 5.1
 

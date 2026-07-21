@@ -257,5 +257,9 @@ For SRI queue or worker work, R4, R5, R9, R10, R11, and R12 additionally require
 - [ ] Permission changes were checked with a renewed JWT where runtime authorization is claimed.
 - [ ] XML integrity and duplicate prevention were validated at the selected storage boundary.
 - [ ] A real approved non-production SRI round trip exists before end-to-end success is claimed.
+- [ ] Protected XML download returns bytes with `application/xml`, safe filename and `Cache-Control: no-store`.
+- [ ] Every successful download is audited without XML/full access key and without changing `Authorized` or duplicating the document.
+- [ ] Monitor projections omit full access keys and server paths; WinForms uses typed `INuanApiClient` only.
+- [ ] Scripts `118`/`119`, renewed permissions, tenant isolation, API download and Designer opening are reported separately from automated evidence.
 
 At Iteration 5 blueprint stage, implementation gates must be reported `Not validated`, not inferred from architecture documents.
