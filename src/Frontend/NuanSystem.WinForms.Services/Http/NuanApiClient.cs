@@ -51,6 +51,23 @@ public sealed class NuanApiClient : INuanApiClient
         return response.IsSuccessStatusCode;
     }
 
+    public async Task<ApiFileResponse> GetFileAsync(string path, CancellationToken cancellationToken = default)
+    {
+        using var request = CreateRequest(HttpMethod.Get, path);
+        using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            _ = await ReadResponseAsync<object>(response, cancellationToken);
+        }
+
+        var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+            ?? "download.bin";
+        return new ApiFileResponse(content, contentType, Path.GetFileName(fileName));
+    }
+
     private HttpRequestMessage CreateRequest(HttpMethod method, string path)
     {
         var request = new HttpRequestMessage(method, path);

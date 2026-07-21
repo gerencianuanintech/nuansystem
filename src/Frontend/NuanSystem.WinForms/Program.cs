@@ -10,6 +10,7 @@ using NuanSystem.WinForms.Forms.InventoryItems;
 using NuanSystem.WinForms.Forms.Purchasing.PurchaseOrders;
 using NuanSystem.WinForms.Forms.Sap;
 using NuanSystem.WinForms.Forms.Sync;
+using NuanSystem.WinForms.Forms.SriDocuments;
 using NuanSystem.WinForms.Forms.Sync.Configuration;
 using NuanSystem.WinForms.Forms.Sync.EntityDefinitions;
 using NuanSystem.WinForms.Forms.Security.Operations;
@@ -77,6 +78,8 @@ using NuanSystem.WinForms.Services.Companies;
 using NuanSystem.WinForms.Services.ConfigurationCompanies;
 using NuanSystem.WinForms.Services.ConfigurationSettings;
 using NuanSystem.WinForms.Services.Configuration;
+using NuanSystem.WinForms.Services.SriDocuments;
+using NuanSystem.WinForms.ViewModels.SriDocuments;
 using NuanSystem.WinForms.Services.Documents.SecurityDocumentSeries;
 using NuanSystem.WinForms.Services.OperationalCatalogs;
 using NuanSystem.WinForms.Services.BusinessPartners;
@@ -252,6 +255,7 @@ internal sealed class FrontendComposition : IDisposable
     private readonly PurchaseOrderClient purchaseOrderClient;
     private readonly SapClient sapClient;
     private readonly SyncMonitorClient syncMonitorClient;
+    private readonly SriDocumentMonitorClient sriDocumentMonitorClient;
     private readonly SyncConfigurationClient syncConfigurationClient;
     private readonly SyncEntityDefinitionClient syncEntityDefinitionClient;
     private readonly AuditClient auditClient;
@@ -300,6 +304,7 @@ internal sealed class FrontendComposition : IDisposable
         purchaseOrderClient = new PurchaseOrderClient(apiClient);
         sapClient = new SapClient(apiClient);
         syncMonitorClient = new SyncMonitorClient(apiClient);
+        sriDocumentMonitorClient = new SriDocumentMonitorClient(apiClient);
         syncConfigurationClient = new SyncConfigurationClient(apiClient);
         syncEntityDefinitionClient = new SyncEntityDefinitionClient(apiClient);
         auditClient = new AuditClient(apiClient);
@@ -393,6 +398,7 @@ internal sealed class FrontendComposition : IDisposable
             CreatePurchaseOrdersForm,
             CreateSapSyncLogForm,
             CreateSyncMonitorForm,
+            CreateSriDocumentMonitorForm,
             CreateSyncProfileListForm,
             CreateSyncEntityListForm,
             CreateSyncExecutionListForm,
@@ -948,6 +954,16 @@ internal sealed class FrontendComposition : IDisposable
             new SyncOutboxListViewModel(syncMonitorClient),
             new SyncOutboxDetailViewModel(syncMonitorClient, session),
             new SyncAuditViewModel(syncMonitorClient),
+            session);
+    }
+
+    public SriDocumentMonitorForm CreateSriDocumentMonitorForm()
+    {
+        return new SriDocumentMonitorForm(
+            new SriDocumentMonitorViewModel(
+                sriDocumentMonitorClient,
+                session.HasPermission(NuanSystem.Shared.Constants.PermissionCodes.SriDocumentsViewPayload),
+                session.HasPermission(NuanSystem.Shared.Constants.PermissionCodes.SriDocumentsDownloadXml)),
             session);
     }
 
