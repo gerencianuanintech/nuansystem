@@ -34,6 +34,37 @@ public sealed class SriDocumentQueueRepository(ITenantConnectionFactory connecti
         return rows.AsList();
     }
 
+    public async Task<SriDocumentMonitorSummaryDto> GetMonitorSummaryAsync(CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        return await connection.QuerySingleAsync<SriDocumentMonitorSummaryDto>(Command("dbo.SP_NA_GET_SRIDOCUMENTMONITOR_RESUMEN", new { }, cancellationToken));
+    }
+
+    public async Task<IReadOnlyCollection<SriDocumentMonitorListItemDto>> SearchMonitorAsync(SriDocumentMonitorFilter filter, CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        return (await connection.QueryAsync<SriDocumentMonitorListItemDto>(Command("dbo.SP_NA_GET_SRIDOCUMENTMONITOR_LISTAR", filter, cancellationToken))).AsList();
+    }
+
+    public async Task<SriDocumentMonitorDetailDto?> GetMonitorDetailAsync(long queueId, CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync<SriDocumentMonitorDetailDto>(Command("dbo.SP_NA_GET_SRIDOCUMENTMONITOR_BUSCARPORID", new { QueueId = queueId }, cancellationToken));
+    }
+
+    public async Task<IReadOnlyCollection<SriDocumentAuditDto>> GetAuditAsync(long queueId, CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        return (await connection.QueryAsync<SriDocumentAuditDto>(Command("dbo.SP_NA_GET_SRIDOCUMENTMONITOR_AUDITORIA", new { QueueId = queueId }, cancellationToken))).AsList();
+    }
+
+    public async Task<SriAuthorizedXmlPersistenceResult> DownloadAuthorizedXmlAsync(SriAuthorizedXmlDownloadData data, CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        var row = await connection.QuerySingleAsync<SriDownloadRow>(Command("dbo.SP_NA_POST_SRIDOCUMENTAUTORIZADO_DESCARGAR", data, cancellationToken));
+        return new SriAuthorizedXmlPersistenceResult((SriAuthorizedXmlDownloadCode)row.ResultCode, row.DocumentId, data.QueueId, row.XmlContent ?? [], row.ContentType, row.SizeBytes);
+    }
+
     public Task<SriDocumentQueueActionCode> CancelAsync(SriDocumentQueueActionData data, CancellationToken cancellationToken = default) =>
         ExecuteActionAsync("dbo.SP_NA_PATCH_SRIDOCUMENTQUEUE_CANCELAR", data, cancellationToken);
 
@@ -53,5 +84,14 @@ public sealed class SriDocumentQueueRepository(ITenantConnectionFactory connecti
     private sealed class SriEnqueueRow : SriDocumentQueueDetailDto
     {
         public bool IsCreated { get; set; }
+    }
+
+    private sealed class SriDownloadRow
+    {
+        public int ResultCode { get; set; }
+        public long? DocumentId { get; set; }
+        public byte[]? XmlContent { get; set; }
+        public string? ContentType { get; set; }
+        public int SizeBytes { get; set; }
     }
 }

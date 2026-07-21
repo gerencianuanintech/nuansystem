@@ -5,6 +5,7 @@ using NuanSystem.Application.Features.SriDocuments.Commands;
 using NuanSystem.Application.Features.SriDocuments.Dtos;
 using NuanSystem.Application.Features.SriDocuments.Queries;
 using NuanSystem.Shared.Constants;
+using NuanSystem.Shared.Responses;
 
 namespace NuanSystem.Api.Endpoints;
 
@@ -25,6 +26,36 @@ public static class SriDocumentEndpoints
         group.MapGet("/{id:long}/attempts", async (long id, ISender sender, CancellationToken cancellationToken) =>
             (await sender.Send(new GetSriDocumentAttemptsQuery(id), cancellationToken)).ToHttpResult())
             .RequirePermission(PermissionCodes.SriDocumentsView);
+
+        group.MapGet("/monitor/summary", async (ISender sender, CancellationToken cancellationToken) =>
+            (await sender.Send(new GetSriDocumentMonitorSummaryQuery(), cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.SriDocumentsView);
+
+        group.MapGet("/monitor", async (string? environment, string? status, string? documentTypeCode, string? sourceType, DateTime? createdFrom, DateTime? createdTo, string? search, int? page, int? pageSize, ISender sender, CancellationToken cancellationToken) =>
+            (await sender.Send(new SearchSriDocumentMonitorQuery(new SriDocumentMonitorFilter(environment, status, documentTypeCode, sourceType, createdFrom, createdTo, search, page ?? 1, pageSize ?? 50)), cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.SriDocumentsView);
+
+        group.MapGet("/monitor/{id:long}", async (long id, ISender sender, CancellationToken cancellationToken) =>
+            (await sender.Send(new GetSriDocumentMonitorDetailQuery(id), cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.SriDocumentsViewPayload);
+
+        group.MapGet("/monitor/{id:long}/audit", async (long id, ISender sender, CancellationToken cancellationToken) =>
+            (await sender.Send(new GetSriDocumentAuditQuery(id), cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.SriDocumentsViewPayload);
+
+        group.MapGet("/monitor/{id:long}/xml", async (long id, ISender sender, ClaimsPrincipal user, HttpContext httpContext, CancellationToken cancellationToken) =>
+        {
+            var auditUser = user.GetAuditUser();
+            var result = await sender.Send(new DownloadAuthorizedSriXmlCommand(id, auditUser.UserId, auditUser.UserName, Guid.NewGuid()), cancellationToken);
+            if (!result.IsSuccess)
+            {
+                var response = ApiResponse<SriAuthorizedXmlDownloadDto>.Fail(result.Message, result.Errors);
+                return result.Errors.Any(error => error.Code == "SRI_DOCUMENT_NOT_FOUND") ? Results.NotFound(response) : Results.BadRequest(response);
+            }
+
+            httpContext.Response.Headers.CacheControl = "no-store";
+            return Results.File(result.Value!.Content, "application/xml", result.Value.FileName);
+        }).RequirePermission(PermissionCodes.SriDocumentsDownloadXml);
 
         group.MapPost("", async (EnqueueSriDocumentRequest request, ISender sender, ClaimsPrincipal user, CancellationToken cancellationToken) =>
         {

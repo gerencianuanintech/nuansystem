@@ -35,3 +35,29 @@ public sealed class GetSriDocumentAttemptsQueryHandler(ISriDocumentQueueReposito
     public async Task<Result<IReadOnlyCollection<SriDocumentAttemptDto>>> Handle(GetSriDocumentAttemptsQuery request, CancellationToken cancellationToken) =>
         Result<IReadOnlyCollection<SriDocumentAttemptDto>>.Success(await repository.GetAttemptsAsync(request.QueueId, cancellationToken));
 }
+
+public sealed class GetSriDocumentMonitorSummaryQueryHandler(ISriDocumentQueueRepository repository) : IQueryHandler<GetSriDocumentMonitorSummaryQuery, SriDocumentMonitorSummaryDto>
+{
+    public async Task<Result<SriDocumentMonitorSummaryDto>> Handle(GetSriDocumentMonitorSummaryQuery request, CancellationToken cancellationToken) => Result<SriDocumentMonitorSummaryDto>.Success(await repository.GetMonitorSummaryAsync(cancellationToken));
+}
+
+public sealed class SearchSriDocumentMonitorQueryHandler(ISriDocumentQueueRepository repository) : IQueryHandler<SearchSriDocumentMonitorQuery, IReadOnlyCollection<SriDocumentMonitorListItemDto>>
+{
+    public async Task<Result<IReadOnlyCollection<SriDocumentMonitorListItemDto>>> Handle(SearchSriDocumentMonitorQuery request, CancellationToken cancellationToken) => Result<IReadOnlyCollection<SriDocumentMonitorListItemDto>>.Success(await repository.SearchMonitorAsync(request.Filter, cancellationToken));
+}
+
+public sealed class GetSriDocumentMonitorDetailQueryHandler(ISriDocumentQueueRepository repository) : IQueryHandler<GetSriDocumentMonitorDetailQuery, SriDocumentMonitorDetailDto>
+{
+    public async Task<Result<SriDocumentMonitorDetailDto>> Handle(GetSriDocumentMonitorDetailQuery request, CancellationToken cancellationToken)
+    {
+        var value = await repository.GetMonitorDetailAsync(request.QueueId, cancellationToken);
+        return value is null
+            ? Result<SriDocumentMonitorDetailDto>.Failure("Documento SRI no encontrado.", [new ApiError("SRI_DOCUMENT_NOT_FOUND", "El documento SRI no existe.", "QueueId")])
+            : Result<SriDocumentMonitorDetailDto>.Success(value);
+    }
+}
+
+public sealed class GetSriDocumentAuditQueryHandler(ISriDocumentQueueRepository repository) : IQueryHandler<GetSriDocumentAuditQuery, IReadOnlyCollection<SriDocumentAuditDto>>
+{
+    public async Task<Result<IReadOnlyCollection<SriDocumentAuditDto>>> Handle(GetSriDocumentAuditQuery request, CancellationToken cancellationToken) => Result<IReadOnlyCollection<SriDocumentAuditDto>>.Success(await repository.GetAuditAsync(request.QueueId, cancellationToken));
+}
