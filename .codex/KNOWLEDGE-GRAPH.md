@@ -489,19 +489,19 @@ TenantFeatureCodes.SriDocuments + TenantIntegrationCodes.Sri
   -> Application/API enqueue/query/cancel/reprocess [implemented]
   -> tenant SRI queue + attempts + audit [deployed and runtime-validated]
   -> tenant authorized XML + SHA-256 store [script 117 deployed and SQL-validated in three pilot tenants]
-  -> NuanSystem.SriWorker claim/lease/recovery [implemented; runtime validation pending]
+  -> NuanSystem.SriWorker claim/lease/recovery [implemented and runtime-validated for the authorized Production pilot]
   -> official offline authorization provider + XML integrity processing [implemented; one authorized Production round trip validated]
   -> protected API query/reprocess [implemented]
-  -> protected XML download + per-access audit [implemented in Phase 5.5; deployment pending]
-  -> WinForms monitor through typed NuanApiClient [implemented; runtime/Designer review pending]
+  -> protected XML download + per-access audit [implemented, deployed and runtime-validated in Phase 5.5]
+  -> WinForms monitor through typed NuanApiClient [implemented and visually validated]
 ```
 
 The SRI graph has no edge to `SyncOutbox`, SAP outbox, `NuanSystem.SyncWorker`, or `NuanSystem.MasterBranchSyncWorker`. Capturers stop after durable enqueue. Only the dedicated SRI worker performs remote processing. See `docs/architecture/SRI-ITERATION-5-BLUEPRINT.md`.
 
-The approved pilot traverses only `Environment + AccessKey -> authorization lookup -> immutable authorized XML`. Generation, signing, submission, cancellation, and portal scraping have no edge in this pilot. Queue/worker/XML runtime and one expressly authorized Production round trip are validated; Phase 5.5 download/monitor deployment and runtime UI/API evidence remain pending. See `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`.
+The approved pilot traverses only `Environment + AccessKey -> authorization lookup -> immutable authorized XML`. Generation, signing, submission, cancellation, and portal scraping have no edge in this pilot. Queue/worker/XML runtime, one expressly authorized Production round trip and the Phase 5.5 protected download/monitor are validated. See `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md` and `docs/operations/SRI-DOCUMENT-MONITOR.md`.
 
 ## 11. Iteration scope
 
-The graph covers the Iteration 1 core, Iteration 2 WinForms framework, Iteration 3 backend contracts, Iteration 4 repository-backed SAP/Matriz-Sucursal boundaries, and Iteration 5 through the implemented Phase 5.5 contracts. BEAS, Android, and deeper domain graphs remain future work. Phase 5.5 SQL deployment, permission/tenant/API runtime validation and Designer review remain incomplete.
+The graph covers the Iteration 1 core, Iteration 2 WinForms framework, Iteration 3 backend contracts, Iteration 4 repository-backed SAP/Matriz-Sucursal boundaries, and Iteration 5 through the deployed and validated Phase 5.5 contracts. BEAS, Android, and deeper domain graphs remain future work.
 
 `Transportistas` is the validated Iteration 2 pilot: solution build, automated tests, tenant/master SQL execution, renewed-token authorization, runtime CRUD, closed identification selector, Designer serialization, and approved compact vertical spacing were exercised. Its evidence promotes only the documented reusable framework patterns; its business identity remains independent.

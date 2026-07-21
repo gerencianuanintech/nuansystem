@@ -1,5 +1,9 @@
 # Monitor de documentos SRI
 
+## Estado
+
+**Fase 5.5 implementada, desplegada, validada en runtime y visualmente, y aprobada para integracion.** La evidencia detallada de este documento corresponde a la ejecucion controlada del 2026-07-21. No autoriza repetir descargas, llamadas al SRI ni modificaciones sobre la fila protegida.
+
 ## Discovery record
 
 - Arquitectura revisada: Constitution/Kernel, Framework/Pattern Catalogs, Knowledge Graph, Review Checklist y contratos SRI de Iteracion 5.
@@ -7,7 +11,7 @@
 - Referencia frontend: patron P5 Dashboard/Monitor de `SyncMonitorForm`, exclusivamente para ciclo visual y composicion. No se reutilizaron `SyncOutbox`, sus endpoints ni sus workers.
 - Framework reutilizado: MediatR, `Result<T>`, repositorio Dapper tenant, permisos existentes, `INuanApiClient`, `NuanDataGridControl`, `NuanKpiCardControl`, `NuanActionButton`, `FormStyler` y navegacion dinamica por `FormKey`.
 - Gap confirmado: el transporte JSON no podia preservar un archivo binario; se agrego `GetFileAsync` al cliente central sin crear `HttpClient` en la vertical.
-- Scripts seleccionados: `118` tenant y `119` Master, siguientes numeros disponibles. No fueron ejecutados en bases reales.
+- Scripts seleccionados: `118` tenant y `119` Master, siguientes numeros disponibles. Fueron desplegados y verificados idempotentemente en los esquemas autorizados.
 
 ## Alcance
 
@@ -25,12 +29,24 @@
 
 Seleccione un documento `Authorized` con XML disponible, pulse **Descargar XML** y elija una ubicacion en `SaveFileDialog`. El cliente conserva los bytes y no abre el archivo. Cada exito agrega una auditoria `DownloadXml`; repetirlo no duplica el documento ni cambia el estado.
 
-## Despliegue y validacion pendientes
+## Evidencia de despliegue y runtime
 
-1. Aplicar `118_tenant_sri_document_monitor_and_download.sql` en cada tenant autorizado.
-2. Aplicar `119_master_sri_document_monitor_security.sql` en Master y renovar el JWT.
-3. Validar perfiles con/sin vista, detalle y descarga, incluido aislamiento entre dos tenants.
-4. Descargar un XML mediante API y confirmar headers, bytes, auditoria adicional y estado intacto.
-5. Abrir el formulario en Visual Studio Designer y revisar layout, DPI, redimensionamiento y tema.
+- Se tomaron respaldos `COPY_ONLY` de Master y de los tres tenants autorizados y todos superaron `RESTORE VERIFYONLY WITH CHECKSUM`; ningun respaldo forma parte del repositorio.
+- `118_tenant_sri_document_monitor_and_download.sql` se ejecuto dos veces en `NuanSystem_DEMO`, `NuanSystem_DEMO_REMIGIO` y `NuanSystem_DEMO_CANARIS`. Cada base conserva una sola version `20260721.118`, cinco procedimientos y un solo indice de auditoria del monitor.
+- `119_master_sri_document_monitor_security.sql` se ejecuto dos veces en `NuanSystem_Master`. Quedaron una sola version `20260721.119`, un formulario, un menu, tres operaciones y las asignaciones ADMIN esperadas.
+- Todas las conexiones de despliegue y runtime mantuvieron `Encrypt=true`, `TrustServerCertificate=false` y validacion completa del certificado.
+- Un JWT renovado sin formulario ni permisos obtuvo HTTP 403. El perfil de consulta obtuvo HTTP 200 en el monitor y HTTP 403 al descargar. El perfil con los tres permisos obtuvo HTTP 200 al descargar.
+- La misma identidad autenticada consulto Remigio y Canaris sin observar el documento de `NuanSystem_DEMO`; ambos tenants conservaron cero filas operativas SRI.
+- QueueId `10004` se descargo dos veces desde la API como `application/xml`, con `Cache-Control: no-store`, nombre seguro `sri-10004.xml` y 10 027 bytes. El SHA-256 recalculado coincidio con el persistido y mantuvo exactamente 32 bytes; el valor completo no se documenta.
+- Las dos descargas agregaron exactamente dos auditorias `DownloadXml`, con transicion `Authorized -> Authorized`, usuario y `TraceId`. Permanecieron un solo intento, un solo `SriAuthorizedDocuments`, el mismo documento, el mismo estado `Authorized` y cero locks activos.
+- Los casos controlados devolvieron HTTP 404 para documento inexistente, HTTP 400 para estado no autorizado y HTTP 400 para contenido ausente. El fixture de contenido ausente fue eliminado.
+- Los tres usuarios y tres roles temporales fueron eliminados. No quedaron credenciales, JWT, XML descargados, logs de prueba ni configuraciones temporales.
+- `SriDocumentMonitorForm` arranco contra la API local, mostro disponibilidad y fue abierto en Visual Studio Designer. Se revisaron layout, `AutoScaleMode.Font`, tamaño minimo, docking/redimensionamiento, tema corporativo y serializacion sin detectar defectos funcionales.
+- La API, WinForms y `NuanSystem.SriWorker` quedaron detenidos. El worker nunca fue levantado y hubo cero llamadas al SRI.
+- La validacion final obtuvo build con 0 errores y 0 advertencias, y 441 pruebas superadas, 5 omitidas y 0 fallidas.
 
-No se necesita habilitar el worker ni realizar otra llamada al SRI.
+La instancia local de `devenv` que quedo sin ventana principal fue una observacion operativa del entorno y no un defecto del producto.
+
+## Limites conservados
+
+Esta validacion acredita consulta y descarga del XML previamente persistido. No implementa ni valida generacion, firma, envio, autorizacion, anulacion, eliminacion/retencion automatica, procesamiento SAP, consulta del SRI desde WinForms ni descarga de documentos reales pertenecientes a otros tenants.

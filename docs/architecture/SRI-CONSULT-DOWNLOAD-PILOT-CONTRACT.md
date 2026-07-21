@@ -3,7 +3,7 @@
 ## Decision Record
 
 - **Estado de la decision:** Aprobada por el propietario del proyecto.
-- **Estado de implementacion:** Fases 5.2 y 5.3 desplegadas y validadas. Fase 5.4 runtime y end-to-end validada en `NuanSystem_DEMO` contra el ambiente oficial `Production`; evidencia saneada en `SRI-WORKER-DEPLOYMENT.md`. Descarga protegida, auditoria de acceso y monitor permanecen pendientes.
+- **Estado de implementacion:** Fases 5.2 a 5.5 implementadas y validadas segun su alcance. Fase 5.4 completo el recorrido end-to-end en `NuanSystem_DEMO` contra el ambiente oficial `Production`; Fase 5.5 desplego y valido descarga protegida, auditoria de acceso, aislamiento tenant y monitor sin repetir la llamada al SRI. Evidencia saneada en `SRI-WORKER-DEPLOYMENT.md` y [`../operations/SRI-DOCUMENT-MONITOR.md`](../operations/SRI-DOCUMENT-MONITOR.md).
 - **Fecha:** 2026-07-20.
 - **Direccion:** Consulta y descarga por clave de acceso de comprobantes previamente autorizados.
 - **Excluido:** generacion, firma, recepcion, envio para autorizacion, anulacion y scraping del portal web.
@@ -137,15 +137,18 @@ El tamano maximo es 5 MiB. No existe purga automatica ni eliminacion manual apro
 9. Logs y auditoria no exponen XML ni clave completa.
 10. Solo un recorrido real contra ambiente oficial aprobado permite marcar E2E como validado.
 
-## Cierre de Fase 5.4 y pendientes posteriores
+## Cierre de Fases 5.4 y 5.5
 
 La Fase 5.4 valido habilitacion temporal, recorrido oficial `Production`, persistencia autorizada, integridad, auditoria, liberacion de lease, redaccion, detencion e idempotencia en `NuanSystem_DEMO`. La evidencia detallada no sensible se conserva en `SRI-WORKER-DEPLOYMENT.md`; no debe repetirse la llamada real sin una nueva autorizacion expresa.
 
-1. Desplegar y validar en runtime la descarga XML protegida, su auditoria y el monitor WinForms implementados en Fase 5.5.
-2. Definir la retencion antes de introducir cualquier eliminacion.
-3. Ampliar, si se aprueba, el catalogo inicial: `SourceType` (`NuanSystem`, `Txt`, `SapAddOn`, `Manual`, `ExternalApi`) y comprobantes `01`, `04`, `07`.
+La Fase 5.5 desplego `118` en los tres tenants autorizados y `119` en Master, comprobo idempotencia SQL, permisos reales, aislamiento, descarga binaria, integridad, auditoria, estado inmutable y Designer. La evidencia detallada vive en [`../operations/SRI-DOCUMENT-MONITOR.md`](../operations/SRI-DOCUMENT-MONITOR.md).
 
-Estos pendientes no invalidan el E2E acotado de Fase 5.4, pero bloquean declarar completa la experiencia operativa de descarga y monitor.
+Pendientes fuera del cierre de Fase 5.5:
+
+1. Definir la retencion antes de introducir cualquier eliminacion.
+2. Ampliar, si se aprueba, el catalogo inicial: `SourceType` (`NuanSystem`, `Txt`, `SapAddOn`, `Manual`, `ExternalApi`) y comprobantes `01`, `04`, `07`.
+
+Estos pendientes no invalidan el E2E acotado de Fase 5.4 ni la experiencia operativa de consulta/descarga validada en Fase 5.5; permanecen fuera del alcance aprobado.
 
 ## Contrato implementado en Fase 5.5
 
@@ -156,4 +159,4 @@ Estos pendientes no invalidan el E2E acotado de Fase 5.4, pero bloquean declarar
 - repetir la descarga conserva un solo documento, agrega otra auditoria y mantiene `Authorized`;
 - SQL se resuelve mediante el tenant autenticado y WinForms usa exclusivamente el cliente tipado.
 
-Esto acredita implementacion estatica y automatizada, no scripts instalados, permisos reales, descarga API real ni revision visual.
+La ejecucion controlada de Fase 5.5 acredito tambien scripts instalados idempotentemente, permisos reales con JWT renovado, aislamiento tenant, descarga API, integridad, auditoria e inspeccion visual. La evidencia saneada se conserva en [`../operations/SRI-DOCUMENT-MONITOR.md`](../operations/SRI-DOCUMENT-MONITOR.md).

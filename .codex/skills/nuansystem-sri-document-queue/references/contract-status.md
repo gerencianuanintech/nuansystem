@@ -34,13 +34,14 @@
 - Phase 5.3 added the worker, official provider and immutable XML store; Phase 5.4 validated one authorized Production round trip in `NuanSystem_DEMO`.
 - Phase 5.5 implements safe monitor projections, protected byte download and per-access audit in tenant script `118`, plus Master navigation/security in script `119`.
 - `SriDocumentMonitorForm` uses the typed API client and corporate monitor controls without direct SQL or SRI access.
-- Phase 5.5 deployment, real permission/tenant/API validation and Designer review remain pending and must not be inferred from build/tests.
+- Phase 5.5 is deployed in Master and the three authorized tenant schemas. Idempotent SQL, renewed-token permission profiles, tenant isolation, protected API download, byte length/SHA-256 integrity, per-access audit, repeated-download behavior and Visual Studio Designer review were validated without starting the worker or calling the SRI.
+- The detailed sanitized evidence is `docs/operations/SRI-DOCUMENT-MONITOR.md`; retain only this summary in the skill reference.
 
 ## Approved pilot direction
 
 The first pilot is query and download by access key for previously authorized documents. Emission, signing, submission, cancellation, and portal scraping are excluded. Its functional contract, identity, states, security rules, and unresolved infrastructure decisions live in `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`.
 
-The queue contract is now implemented in code. XML storage, retention, official validation environment, and operational limits remain pending before worker/provider phases.
+The queue, worker baseline, immutable tenant XML storage and protected monitor/download are implemented and validated through their approved gates. Automatic retention/deletion and any broader provider operation remain outside the approved pilot.
 
 ## Evidence rule
 
