@@ -2,7 +2,7 @@
 
 ## Estado
 
-**Fase 5.2 desplegada y validada; persistencia SQL de Fase 5.3 desplegada y validada.** Cola, Application/API, permisos, idempotencia, concurrencia, auditoria, claims/leases y almacenamiento XML tenant fueron comprobados en base real. El proveedor oficial y `NuanSystem.SriWorker` existen y superan pruebas automatizadas, pero el worker permanece deshabilitado y no se ha llamado al SRI; por tanto todavia no hay validacion operativa ni end-to-end.
+**Fases 5.2, 5.3 y 5.4 desplegadas o ejecutadas segun su alcance y validadas.** Cola, Application/API, permisos, idempotencia, concurrencia, auditoria, claims/leases, proveedor oficial y almacenamiento XML tenant fueron comprobados en base real. La Fase 5.4 completo un recorrido end-to-end autorizado contra SRI `Production` en `NuanSystem_DEMO`, con estado final `Authorized`, integridad SHA-256, lease liberado e idempotencia confirmada. El worker permanece deshabilitado por defecto y sin procesos activos. La descarga XML protegida, su auditoria de acceso y el monitor WinForms permanecen pendientes para la Fase 5.5.
 
 ## Discovery Record
 
@@ -85,19 +85,19 @@ Los XML reales usados para discovery no forman parte del repositorio. El 2026-07
 
 `NuanSystem_DEMO` queda habilitada para el piloto en `Production`; Remigio y Canaris conservan SRI deshabilitado. La API y los usuarios efimeros de validacion fueron retirados al terminar. Esta fase no crea proveedor, worker, XML storage ni endpoint de descarga.
 
-### 5.3 Worker, proveedor y almacenamiento XML - SQL validado; runtime pendiente
+### 5.3 Worker, proveedor y almacenamiento XML - validada
 
 Se implementaron `NuanSystem.SriWorker`, proveedor SOAP de `AutorizacionComprobantesOffline`, resolucion multiempresa, claims atomicos, lease de 120 segundos, recuperacion de leases, lote 10, concurrencia 2, timeout 30 segundos, cinco intentos tecnicos, backoff con jitter y cierre `NotFound` tras tres respuestas o 30 minutos. El XML autorizado se valida contra tipo, clave, RUC y ambiente y se almacena en la base tenant con SHA-256 y limite de 5 MiB. TLS es estricto y las URLs aceptadas se restringen a los hosts oficiales.
 
-La compilacion del worker termino con 0 errores/advertencias y 33 pruebas SRI superaron. El script `117` se ejecuto dos veces sin duplicados en `NuanSystem_DEMO`, `NuanSystem_DEMO_REMIGIO` y `NuanSystem_DEMO_CANARIS`; Master permanecio intacta. En SQL real pasaron claim concurrente, filtro de ambiente, lease vencido, rechazo de propietario ajeno, autorizacion atomica, repeticion idempotente, conflicto SHA-256, limite de 5 MiB y limpieza de fixtures. El worker no fue habilitado y no hubo llamadas al SRI. Runtime del worker y proveedor oficial siguen pendientes.
+La compilacion del worker termino con 0 errores/advertencias y 33 pruebas SRI superaron. El script `117` se ejecuto dos veces sin duplicados en `NuanSystem_DEMO`, `NuanSystem_DEMO_REMIGIO` y `NuanSystem_DEMO_CANARIS`; Master permanecio intacta. En SQL real pasaron claim concurrente, filtro de ambiente, lease vencido, rechazo de propietario ajeno, autorizacion atomica, repeticion idempotente, conflicto SHA-256, limite de 5 MiB y limpieza de fixtures. La validacion runtime y del proveedor oficial se cerro en Fase 5.4.
 
-### 5.4 Almacenamiento y monitor
+### 5.4 Validacion end-to-end controlada - validada
 
-Completar descarga XML protegida, auditoria de acceso y monitor WinForms mediante `NuanApiClient` y framework corporativo. La UI no modifica estados arbitrariamente y no recibe rutas fisicas ni acceso SQL.
+El 2026-07-20 se ejecuto el recorrido autorizado `enqueue -> claim -> proveedor oficial Production -> validacion -> almacenamiento XML -> Authorized` exclusivamente en `NuanSystem_DEMO`. Hubo un solo claim, intento y documento; tamano y SHA-256 coincidieron con el contenido persistido; la auditoria fue completa; el lease se elimino; un segundo ciclo no reclamo la fila terminal ni repitio la llamada; TLS permanecio estricto; no quedaron procesos ni se detectaron defectos. La evidencia saneada y sus limites estan en `SRI-WORKER-DEPLOYMENT.md`.
 
-### 5.5 Validacion end-to-end
+### 5.5 Descarga protegida y monitor - pendiente
 
-Ejecutar captura -> cola -> claim -> proveedor no productivo -> persistencia XML/resultado -> consulta UI/API, incluyendo duplicado, rechazo, timeout, retry, reinicio, lease vencido, dos workers, permiso y redaccion.
+Completar descarga XML protegida, auditoria de acceso y monitor WinForms mediante `NuanApiClient` y framework corporativo. La UI no modifica estados arbitrariamente y no recibe rutas fisicas ni acceso SQL. Los escenarios negativos, concurrencia y recuperacion ya cubiertos por pruebas automatizadas y SQL conservan su evidencia propia; una futura prueba de UI/API no debe repetir la llamada real al SRI sin nueva autorizacion.
 
 ## Decisiones requeridas antes de 5.1
 
@@ -105,7 +105,7 @@ Ejecutar captura -> cola -> claim -> proveedor no productivo -> persistencia XML
 2. **Resuelto:** servicio offline oficial, con Test y Production configurables y validacion real solo bajo autorizacion.
 3. **Resuelto:** XML en base tenant, inmutable, SHA-256, 5 MiB y sin purga automatica.
 4. Alcance exacto de `AccessKey` y clave de idempotencia.
-5. **Parcialmente resuelto:** 5 MiB, TLS/log redaction y sin eliminacion; descarga/auditoria de acceso se completa en 5.4.
+5. **Parcialmente resuelto:** 5 MiB, TLS/log redaction y sin eliminacion; descarga/auditoria de acceso se completa en 5.5.
 6. Relacion con tipos e identidad de documentos comerciales locales.
 
 ## Quality gates
@@ -117,7 +117,7 @@ Ejecutar captura -> cola -> claim -> proveedor no productivo -> persistencia XML
 - Dos workers no procesan el mismo trabajo; leases vencidos se recuperan.
 - Reintentos son acotados y los terminales quedan visibles/auditados.
 - Secretos, XML y datos tributarios no aparecen en logs ordinarios.
-- Solo una prueba real contra el ambiente SRI aprobado permite declarar E2E validado.
+- La prueba real autorizada de Fase 5.4 valida E2E para `NuanSystem_DEMO` en `Production`; no autoriza repetirla ni generalizarla a otros tenants o ambientes.
 
 ## Skills vinculados
 

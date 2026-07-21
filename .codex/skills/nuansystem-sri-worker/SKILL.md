@@ -99,6 +99,6 @@ Report `Validated`, `Not validated`, or `Not applicable` for:
 - XML integrity, storage, duplicate prevention, and access control;
 - tenant isolation and disabled-capability behavior;
 - health/metrics/audit evidence;
-- real non-production provider round trip when success is claimed.
+- real provider round trip in the explicitly approved environment when end-to-end success is claimed.
 
 Never call Iteration 5 operational until queue, worker, provider, persistence, security, and end-to-end gates all have evidence.

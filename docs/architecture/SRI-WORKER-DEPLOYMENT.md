@@ -2,7 +2,7 @@
 
 ## Estado y limite
 
-Este runbook aplica a la Fase 5.3 implementada. El script `117` ya fue desplegado y SQL-validado en los tres tenants piloto. El documento no autoriza por si mismo habilitar el worker, llamar al SRI ni operar en Production; cada accion restante requiere alcance explicito del propietario.
+Este runbook aplica a la Fase 5.3 implementada y conserva la evidencia operativa de la Fase 5.4. El script `117` fue desplegado y SQL-validado en los tres tenants piloto. La consulta end-to-end autorizada para `NuanSystem_DEMO` se completo el 2026-07-20; este antecedente no autoriza repetirla, habilitar permanentemente el worker ni operar otros tenants. Cada ejecucion futura requiere alcance explicito del propietario.
 
 ## Evidencia SQL cerrada el 2026-07-20
 
@@ -14,6 +14,26 @@ Este runbook aplica a la Fase 5.3 implementada. El script `117` ya fue desplegad
 - rechazo SQL de contenido mayor de 5 MiB;
 - fixtures eliminados y working tree limpio;
 - worker deshabilitado, cero procesos y cero llamadas al SRI.
+
+## Evidencia end-to-end de Fase 5.4 cerrada el 2026-07-20
+
+La validacion controlada se ejecuto en la rama `refactor/codex-skills-v5-sri-worker`, commit `2e4233c30d8383ccb65af26e89b4370329ea1143`, con working tree limpio. Se uso una sola fila preparada mediante el procedimiento oficial de enqueue en `NuanSystem_DEMO`; la evidencia se identifica por `QueueId = 10004` sin registrar la clave de acceso completa ni el XML.
+
+- solo `DEMO` estaba habilitada para SRI y su ambiente configurado era `Production`; `NuanSystem_Master`, Remigio y Canaris no recibieron escrituras durante la prueba;
+- el snapshot previo tenia cero filas elegibles, cero locks, cero intentos y cero documentos autorizados; la clave aprobada no estaba registrada;
+- el worker se habilito exclusivamente mediante configuracion temporal del proceso desde PowerShell normal, con `Encrypt=true`, `TrustServerCertificate=false` y validacion completa del certificado;
+- se consulto una vez el endpoint HTTPS oficial `cel.sri.gob.ec/comprobantes-electronicos-ws/AutorizacionComprobantesOffline` y el proveedor devolvio ambiente `PRODUCCION`;
+- la cola transiciono `Pending -> Querying -> Authorized` con un solo claim, `AttemptCount = 1`, un intento `AuthorizationLookup` cerrado como `Authorized` y un solo registro en `SriAuthorizedDocuments`;
+- `QueueId` y `AttemptId` del documento coincidieron con la ejecucion; `SizeBytes = 10027` coincidio con `DATALENGTH(XmlContent)`;
+- el SHA-256 persistido tenia exactamente 32 bytes y coincidio con `HASHBYTES('SHA2_256', XmlContent)`;
+- la auditoria contenia exactamente `Enqueue`, `Claim` y `Authorized`, con las transiciones esperadas;
+- al finalizar, los campos de lease quedaron nulos, no habia locks activos y no quedaban procesos `NuanSystem.SriWorker`;
+- los logs capturados y el log persistido del worker no contenian la clave completa, XML, credenciales, cadenas de conexion ni secretos;
+- un segundo ciclo controlado mantuvo estado `Authorized`, un intento, un claim, tres auditorias y un documento; produjo cero trabajos procesados y, por tanto, no repitio la consulta al SRI;
+- la primera ejecucion del worker duro 1.673 segundos, el ciclo de idempotencia 6.556 segundos y la ventana completa de validacion y auditoria 172.919 segundos;
+- no se detectaron defectos funcionales, de integridad, tenancy, TLS, redaccion ni ciclo de vida en el alcance ejecutado.
+
+Resultado: la Fase 5.4 queda `Validada` para el recorrido oficial `Production` expresamente autorizado. Esta evidencia no valida nuevas claves, otros tenants, emision, firma, recepcion, anulacion ni ejecucion permanente del worker.
 
 ## Evidencia de hosting y bloqueo de contexto
 

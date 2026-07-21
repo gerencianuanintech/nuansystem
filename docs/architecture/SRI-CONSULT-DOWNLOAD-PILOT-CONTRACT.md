@@ -3,7 +3,7 @@
 ## Decision Record
 
 - **Estado de la decision:** Aprobada por el propietario del proyecto.
-- **Estado de implementacion:** Fase 5.2 desplegada y validada. Persistencia SQL de Fase 5.3 desplegada y validada en tres tenants; worker/proveedor runtime y E2E pendientes.
+- **Estado de implementacion:** Fases 5.2 y 5.3 desplegadas y validadas. Fase 5.4 runtime y end-to-end validada en `NuanSystem_DEMO` contra el ambiente oficial `Production`; evidencia saneada en `SRI-WORKER-DEPLOYMENT.md`. Descarga protegida, auditoria de acceso y monitor permanecen pendientes.
 - **Fecha:** 2026-07-20.
 - **Direccion:** Consulta y descarga por clave de acceso de comprobantes previamente autorizados.
 - **Excluido:** generacion, firma, recepcion, envio para autorizacion, anulacion y scraping del portal web.
@@ -137,12 +137,12 @@ El tamano maximo es 5 MiB. No existe purga automatica ni eliminacion manual apro
 9. Logs y auditoria no exponen XML ni clave completa.
 10. Solo un recorrido real contra ambiente oficial aprobado permite marcar E2E como validado.
 
-## Pendientes para despliegue y Fase 5.4
+## Cierre de Fase 5.4 y pendientes posteriores
 
-1. Validar arranque deshabilitado, habilitacion controlada, cancelacion, reinicio y dos instancias reales del worker sin efectuar una llamada SRI.
-2. Realizar una consulta al ambiente oficial de pruebas solo con autorizacion expresa y evidencia no sensible.
-3. Implementar descarga XML protegida, auditoria de descarga y monitor WinForms.
-4. Definir la retencion antes de introducir cualquier eliminacion.
-5. Ampliar, si se aprueba, el catalogo inicial: `SourceType` (`NuanSystem`, `Txt`, `SapAddOn`, `Manual`, `ExternalApi`) y comprobantes `01`, `04`, `07`.
+La Fase 5.4 valido habilitacion temporal, recorrido oficial `Production`, persistencia autorizada, integridad, auditoria, liberacion de lease, redaccion, detencion e idempotencia en `NuanSystem_DEMO`. La evidencia detallada no sensible se conserva en `SRI-WORKER-DEPLOYMENT.md`; no debe repetirse la llamada real sin una nueva autorizacion expresa.
 
-Estos pendientes bloquean declarar operativo o E2E el flujo, no la revision del codigo de Fase 5.3.
+1. Implementar descarga XML protegida, auditoria de descarga y monitor WinForms.
+2. Definir la retencion antes de introducir cualquier eliminacion.
+3. Ampliar, si se aprueba, el catalogo inicial: `SourceType` (`NuanSystem`, `Txt`, `SapAddOn`, `Manual`, `ExternalApi`) y comprobantes `01`, `04`, `07`.
+
+Estos pendientes no invalidan el E2E acotado de Fase 5.4, pero bloquean declarar completa la experiencia operativa de descarga y monitor.
