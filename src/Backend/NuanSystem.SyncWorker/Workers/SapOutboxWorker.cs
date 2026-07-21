@@ -3,8 +3,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NuanSystem.Application.Abstractions.SapSync;
+using NuanSystem.Application.Abstractions.Operations;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Features.SapSync.Dtos;
+using NuanSystem.Application.Features.Operations;
 using NuanSystem.SyncWorker.Options;
 
 namespace NuanSystem.SyncWorker.Workers;
