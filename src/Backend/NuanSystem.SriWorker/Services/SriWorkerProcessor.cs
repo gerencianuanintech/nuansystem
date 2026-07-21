@@ -9,18 +9,25 @@ public sealed class SriWorkerProcessor(
     ISriWorkerCompanyRepository companyRepository,
     ISriWorkerQueueRepository queueRepository,
     ISriAuthorizationProvider provider,
+    ISriWorkerExecutionGate executionGate,
     IOptionsMonitor<SriWorkerOptions> options,
     ILogger<SriWorkerProcessor> logger) : ISriWorkerProcessor
 {
+    public SriWorkerProcessor(ISriWorkerCompanyRepository companyRepository, ISriWorkerQueueRepository queueRepository,
+        ISriAuthorizationProvider provider, IOptionsMonitor<SriWorkerOptions> options, ILogger<SriWorkerProcessor> logger)
+        : this(companyRepository, queueRepository, provider, new AlwaysOpenExecutionGate(), options, logger) { }
+
     public async Task<int> ProcessOnceAsync(CancellationToken cancellationToken = default)
     {
         var current = options.CurrentValue;
-        if (!current.Enabled) return 0;
+        if (!current.Enabled || !executionGate.CanClaim) return 0;
 
         var processed = 0;
         foreach (var company in await companyRepository.GetEnabledCompaniesAsync(cancellationToken))
         {
+            if (!executionGate.CanClaim || cancellationToken.IsCancellationRequested) break;
             await queueRepository.ReleaseExpiredLeasesAsync(company.CompanyId, current.NormalizedWorkerInstance, current.MaxAttempts, cancellationToken);
+            if (!executionGate.CanClaim || cancellationToken.IsCancellationRequested) break;
             var jobs = await queueRepository.ClaimAsync(company.CompanyId, company.Environment, current.NormalizedWorkerInstance,
                 Math.Clamp(current.BatchSize, 1, 100), Math.Clamp(current.LeaseSeconds, 30, 3600),
                 Math.Clamp(current.MaxAttempts, 1, 20), cancellationToken);
@@ -82,4 +89,10 @@ public sealed class SriWorkerProcessor(
     }
 
     internal static string Mask(string accessKey) => accessKey.Length < 12 ? "********" : $"{accessKey[..4]}*************************************{accessKey[^4..]}";
+
+    private sealed class AlwaysOpenExecutionGate : ISriWorkerExecutionGate
+    {
+        public bool CanClaim => true;
+        public void StopClaims() { }
+    }
 }

@@ -10,6 +10,7 @@ public sealed class SriWorkerOptions
     public int LeaseSeconds { get; init; } = 120;
     public int EmptyQueueDelaySeconds { get; init; } = 10;
     public int ErrorDelaySeconds { get; init; } = 30;
+    public int HeartbeatSeconds { get; init; } = 30;
     public int MaxAttempts { get; init; } = 5;
     public int NotFoundMaxAttempts { get; init; } = 3;
     public int NotFoundWindowMinutes { get; init; } = 30;

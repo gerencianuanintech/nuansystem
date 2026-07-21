@@ -10,6 +10,13 @@ namespace NuanSystem.Persistence.Repositories;
 public sealed class SriWorkerRepository(MasterConnectionFactory masterConnectionFactory, ICompanyResolver companyResolver)
     : ISriWorkerCompanyRepository, ISriWorkerQueueRepository
 {
+    public async Task<SriWorkerOperationalSummary> GetOperationalSummaryAsync(int companyId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await OpenTenantAsync(companyId, cancellationToken);
+        return await connection.QuerySingleAsync<SriWorkerOperationalSummary>(Command(
+            "dbo.SP_NA_GET_SRIWORKER_RESUMENOPERATIVO", new { }, cancellationToken));
+    }
+
     public async Task<IReadOnlyCollection<SriWorkerCompanyDto>> GetEnabledCompaniesAsync(CancellationToken cancellationToken = default)
     {
         const string sql = """

@@ -7,11 +7,15 @@ public interface ISriWorkerCompanyRepository
 
 public interface ISriWorkerQueueRepository
 {
+    Task<SriWorkerOperationalSummary> GetOperationalSummaryAsync(int companyId, CancellationToken cancellationToken = default);
     Task<int> ReleaseExpiredLeasesAsync(int companyId, string workerInstance, int maxAttempts, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<SriClaimedDocumentDto>> ClaimAsync(int companyId, string environment, string workerInstance, int batchSize, int leaseSeconds, int maxAttempts, CancellationToken cancellationToken = default);
     Task<SriWorkerCompletionCode> CompleteAuthorizedAsync(int companyId, SriAuthorizedDocumentData document, CancellationToken cancellationToken = default);
     Task<SriWorkerCompletionCode> CompleteAttemptAsync(int companyId, SriAttemptCompletionData completion, CancellationToken cancellationToken = default);
 }
+
+public sealed record SriWorkerOperationalSummary(long PendingCount, long RetryScheduledCount, long DeadLetterCount,
+    long RecentDeadLetterCount, long ActiveLeaseCount, long ExpiredLeaseCount, DateTime? OldestPendingAtUtc);
 
 public sealed record SriWorkerCompanyDto(int CompanyId, string CompanyCode, string Environment);
 
