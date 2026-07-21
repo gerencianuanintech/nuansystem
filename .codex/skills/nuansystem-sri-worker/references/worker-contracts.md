@@ -20,6 +20,12 @@ The worker queries and persists previously authorized documents by access key. P
 
 The approved provider is the SRI offline authorization service. XML is stored in the tenant database, capped at 5 MiB, with no automatic deletion. Defaults are batch 10, concurrency 2, 120-second lease, 30-second timeout, five technical attempts and three no-authorization responses within a 30-minute window.
 
+## Iteration 6 operational-hardening design
+
+`docs/architecture/SRI-ITERATION-6-OPERATIONS-BLUEPRINT.md` is the proposed source for Windows Service identity, least privilege, secrets, health/heartbeat, metrics, alerts, TLS/certificates, retention alternatives, backup/restore, deployment/rollback and production quality gates. `docs/operations/SRI-WORKER-OPERATIONS.md` contains the corresponding proposed procedures.
+
+This design does not prove implementation or production readiness. The existing generic `dbo.WorkerHeartbeat` and its SAP-scoped contracts are lifecycle evidence to evolve forward-safely; do not create a parallel SRI heartbeat or reuse SAP ownership. Host, account, HA, secret provider, heartbeat persistence, thresholds, alert channel, support, RPO/RTO, retention, certificate ownership, pilot and deployment decisions remain pending owner approval.
+
 ## Validation hierarchy
 
 1. static contract review;

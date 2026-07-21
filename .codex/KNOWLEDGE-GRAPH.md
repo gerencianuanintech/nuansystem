@@ -500,8 +500,20 @@ The SRI graph has no edge to `SyncOutbox`, SAP outbox, `NuanSystem.SyncWorker`, 
 
 The approved pilot traverses only `Environment + AccessKey -> authorization lookup -> immutable authorized XML`. Generation, signing, submission, cancellation, and portal scraping have no edge in this pilot. Queue/worker/XML runtime, one expressly authorized Production round trip and the Phase 5.5 protected download/monitor are validated. See `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md` and `docs/operations/SRI-DOCUMENT-MONITOR.md`.
 
+Iteration 6 adds a proposed operational-hardening relationship, not an implemented runtime path:
+
+```text
+NuanSystem.SriWorker Generic Host + UseWindowsService [existing]
+  -> shared Master WorkerHeartbeat evolution [proposed]
+  -> protected health/metrics/alert projections [proposed]
+  -> Windows Service identity, secrets, TLS and ACL contract [proposed]
+  -> backup/restore, deployment and rollback gates [proposed]
+```
+
+The design is governed by `docs/architecture/SRI-ITERATION-6-OPERATIONS-BLUEPRINT.md`; procedures are separated into `docs/operations/SRI-WORKER-OPERATIONS.md`. `WorkerHeartbeat` is existing lifecycle evidence but its current Application/Persistence contracts are SAP-scoped. Do not create a parallel SRI heartbeat or report the proposed shared evolution as implemented before a forward-safe migration and runtime evidence exist.
+
 ## 11. Iteration scope
 
-The graph covers the Iteration 1 core, Iteration 2 WinForms framework, Iteration 3 backend contracts, Iteration 4 repository-backed SAP/Matriz-Sucursal boundaries, and Iteration 5 through the deployed and validated Phase 5.5 contracts. BEAS, Android, and deeper domain graphs remain future work.
+The graph covers the Iteration 1 core, Iteration 2 WinForms framework, Iteration 3 backend contracts, Iteration 4 repository-backed SAP/Matriz-Sucursal boundaries, Iteration 5 through the deployed and validated Phase 5.5 contracts, and the non-implemented Iteration 6 operational-hardening proposal. BEAS, Android, production approval of the SRI worker, and deeper domain graphs remain future work.
 
 `Transportistas` is the validated Iteration 2 pilot: solution build, automated tests, tenant/master SQL execution, renewed-token authorization, runtime CRUD, closed identification selector, Designer serialization, and approved compact vertical spacing were exercised. Its evidence promotes only the documented reusable framework patterns; its business identity remains independent.
