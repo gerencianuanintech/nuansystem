@@ -23,7 +23,7 @@ public sealed class SriDocumentQueueContractTests
     }
 
     [Fact]
-    public void Api_UsesGranularPermissionsAndDoesNotExposeXmlYet()
+    public void Api_UsesGranularPermissionsForQueueAndProtectedXml()
     {
         var endpoints = ReadSourceFile("src", "Backend", "NuanSystem.Api", "Endpoints", "SriDocumentEndpoints.cs");
 
@@ -31,8 +31,9 @@ public sealed class SriDocumentQueueContractTests
         endpoints.Should().Contain("PermissionCodes.SriDocumentsEnqueue");
         endpoints.Should().Contain("PermissionCodes.SriDocumentsCancel");
         endpoints.Should().Contain("PermissionCodes.SriDocumentsReprocess");
-        endpoints.Should().NotContain("DownloadXml");
-        endpoints.Should().NotContain("ViewPayload");
+        endpoints.Should().Contain("PermissionCodes.SriDocumentsDownloadXml");
+        endpoints.Should().Contain("PermissionCodes.SriDocumentsViewPayload");
+        endpoints.Should().Contain("CacheControl = \"no-store\"");
     }
 
     [Fact]
