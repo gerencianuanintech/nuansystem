@@ -157,6 +157,12 @@ public static class PermissionCodes
     public const string SyncEntitiesCreate = "SYNC.ENTITIES.CREATE";
     public const string SyncEntitiesEdit = "SYNC.ENTITIES.EDIT";
     public const string SyncEntitiesDelete = "SYNC.ENTITIES.DELETE";
+    public const string SriDocumentsView = "SRI.DOCUMENTS.VIEW";
+    public const string SriDocumentsEnqueue = "SRI.DOCUMENTS.ENQUEUE";
+    public const string SriDocumentsCancel = "SRI.DOCUMENTS.CANCEL";
+    public const string SriDocumentsReprocess = "SRI.DOCUMENTS.REPROCESS";
+    public const string SriDocumentsViewPayload = "SRI.DOCUMENTS.VIEW_PAYLOAD";
+    public const string SriDocumentsDownloadXml = "SRI.DOCUMENTS.DOWNLOAD_XML";
     public const string SettingsManage = "SETTINGS.PARAMETERS.MANAGE";
 
     public static readonly IReadOnlyCollection<string> All =
@@ -312,6 +318,12 @@ public static class PermissionCodes
         SyncEntitiesCreate,
         SyncEntitiesEdit,
         SyncEntitiesDelete,
+        SriDocumentsView,
+        SriDocumentsEnqueue,
+        SriDocumentsCancel,
+        SriDocumentsReprocess,
+        SriDocumentsViewPayload,
+        SriDocumentsDownloadXml,
         SettingsManage
     ];
 }

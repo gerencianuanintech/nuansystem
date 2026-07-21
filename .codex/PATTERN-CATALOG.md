@@ -361,3 +361,30 @@ authoritative local change/full source
 ```
 
 An entity is not operative until producer and applier both exist. Documents also require operational transaction and routing rules.
+
+## Pattern P11 — SRI durable document processing
+
+Use the queue portion for the approved pilot. Provider, worker and storage portions require their remaining policies and evidence.
+
+```text
+authorized capturer
+  -> Application/API validates minimum contract
+  -> tenant transaction persists idempotent queue intent
+  -> dedicated SRI worker claims with expiring lease
+  -> approved SRI provider action outside SQL transaction
+  -> XML/result integrity and attempt audit persisted
+  -> legal state transition / bounded retry / DeadLetter
+  -> protected API projection and WinForms monitor
+```
+
+Split responsibilities between `$nuansystem-sri-document-queue` and `$nuansystem-sri-worker`. The durable queue portion is implemented in Phase 5.2 but is not deployed merely because scripts exist. Provider, storage, worker and end-to-end processing remain non-operative.
+
+### Antipatterns
+
+- direct SRI calls from WinForms or a capturer;
+- in-memory queue as source of truth;
+- reusing SAP or Matriz-Sucursal outbox/worker;
+- remote calls inside a SQL transaction;
+- arbitrary status edits or unbounded retry;
+- logging secrets or full XML;
+- calling compile/unit-test evidence an SRI end-to-end validation.

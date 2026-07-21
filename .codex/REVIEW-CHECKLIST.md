@@ -242,3 +242,20 @@ For SAP or synchronization work, R10 also requires:
 
 External SAP connectivity not exercised must be reported `Not validated`.
 - “Not validated” is never equivalent to “Validated.”
+
+## 18. Iteration 5 SRI evidence
+
+For SRI queue or worker work, R4, R5, R9, R10, R11, and R12 additionally require:
+
+- [ ] Pilot direction, provider/environment, idempotency, XML storage, retention, privacy, and document relationship are approved or explicitly blocked.
+- [ ] SRI, SAP, and Matriz-Sucursal use separate queues, workers, and ownership boundaries.
+- [ ] Durable enqueue commits before remote work and enforces tenant isolation plus database uniqueness.
+- [ ] State transitions are explicit, atomic, legal, and concurrency protected.
+- [ ] Claims have owner/expiry/recovery; two workers cannot process one job concurrently.
+- [ ] Remote calls occur outside SQL transactions; retry is bounded and DeadLetter/manual recovery is visible and audited.
+- [ ] Secrets, certificates, XML, payload, and taxpayer data follow redaction/access/retention policy.
+- [ ] Permission changes were checked with a renewed JWT where runtime authorization is claimed.
+- [ ] XML integrity and duplicate prevention were validated at the selected storage boundary.
+- [ ] A real approved non-production SRI round trip exists before end-to-end success is claimed.
+
+At Iteration 5 blueprint stage, implementation gates must be reported `Not validated`, not inferred from architecture documents.

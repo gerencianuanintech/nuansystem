@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem SRI Worker"
+  short_description: "Design reliable SRI background processing"
+  default_prompt: "Use $nuansystem-sri-worker to design or review the NuanSystem SRI worker pipeline."

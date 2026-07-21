@@ -10,6 +10,7 @@ using NuanSystem.Application.Common;
 using NuanSystem.Application.Common.Behaviors;
 using NuanSystem.Application.Features.SapSync.Handlers;
 using NuanSystem.Application.Features.SapSync.Services;
+using NuanSystem.Application.Features.SriDocuments.Services;
 using NuanSystem.Application.Features.Sync.Configuration.Services;
 using NuanSystem.Application.Features.Sync.Execution.Services;
 using NuanSystem.Application.Features.Sync.EntityDefinitions.Services;
@@ -51,6 +52,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<ISapSyncEntityHandler, SapPaymentTermSyncHandler>();
         services.AddScoped<ITenantFeatureService, TenantFeatureService>();
         services.AddScoped<ITenantIntegrationService, TenantIntegrationService>();
+        services.AddScoped<ISriDocumentQueuePolicy, SriDocumentQueuePolicy>();
         services.AddScoped<IEntityOwnershipService, EntityOwnershipService>();
         services.AddSingleton<ISystemClock, SystemClock>();
         services.AddScoped<ISyncEventPublisher, SyncEventPublisher>();

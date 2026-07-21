@@ -297,3 +297,25 @@ A framework change is incomplete until:
 `Application/Features/Sync` and `NuanSystem.MasterBranchSyncWorker` own internal replication: catalog/profile -> durable `SyncOutbox` -> routing/policy -> targets -> expiring claim -> entity applier -> target/aggregate status -> `SyncAudit` and manual recovery.
 
 These are related but non-interchangeable pipelines. Route through `$nuansystem-sap-business-one`, `$nuansystem-sap-sync-orchestration`, or `$nuansystem-master-branch-sync` as applicable.
+
+## Iteration 5 SRI framework
+
+### Implemented foundation
+
+`TenantFeatureCodes.SriDocuments`, `TenantIntegrationCodes.Sri`, protected tenant integration configuration, Application queue contracts, Dapper repository, protected API endpoints, and scripts `115`/`116` form the implemented Phase 5.2 foundation. Capability and integration remain disabled by default.
+
+### Implemented queue and Phase 5.3 worker baseline
+
+The tenant queue, attempts, audit, Application contracts, endpoints, permissions and optimistic concurrency are implemented and runtime-validated. Scripts `115`/`116` were installed idempotently in Master and the three DEMO tenants; concurrency, `rowversion`, audit, JWT and forbidden access were exercised.
+
+`NuanSystem.SriWorker`, `SriAuthorizationProvider`, `SriWorkerRepository`, and tenant script `117` implement the Phase 5.3 baseline: exact official HTTPS endpoints, bounded claim/lease processing, recovery, persisted retry/dead-letter outcomes, integrity validation, and immutable XML storage with SHA-256 and a 5 MiB limit. Script `117` is deployed idempotently in the three DEMO tenants; concurrent claim, environment isolation, lease recovery/ownership, atomic authorization, repeated response, checksum conflict and oversize rejection passed in real SQL. The worker remains disabled. Worker lifecycle and an official non-production round trip are not yet validated, so remote processing is not operational.
+
+The first pilot direction is approved: query and download by access key for previously authorized documents. `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md` owns its functional boundary. Unit/contract tests do not prove provider availability, deployed claims, XML download authorization or end-to-end processing.
+
+| Need | Skill/owner | Boundary |
+|---|---|---|
+| Capture, enqueue, query, reprocess, queue SQL, monitor | `$nuansystem-sri-document-queue` | API/Application persist intent; no remote SRI work |
+| Claim, provider call, XML, retry, dead letter, health | `$nuansystem-sri-worker` | Dedicated worker only; no commercial-document ownership |
+| Tenant capability and secrets | Master tenant configuration | Disabled by default; sensitive values remain protected |
+
+SRI must not reuse SAP handlers/outbox, `SyncOutbox`, `NuanSystem.SyncWorker`, or `NuanSystem.MasterBranchSyncWorker`. Existing worker patterns are evidence for hosting and reliability techniques only.

@@ -337,3 +337,19 @@ Before implementation, report concisely:
 6. blocker or low-confidence decision, if any.
 
 After implementation, the Review Checklist must verify that the discovery decision was actually followed.
+
+## Iteration 5 SRI routing
+
+When electronic SRI documents are involved, classify the requested boundary before opening an integration implementation:
+
+```text
+capture / enqueue / queue SQL / query / permissions / monitor
+  -> $nuansystem-sri-document-queue
+
+claim / SRI provider / certificate / XML / retry / DeadLetter / worker health
+  -> $nuansystem-sri-worker
+```
+
+Always inspect `docs/architecture/SRI-ITERATION-5-BLUEPRINT.md` and the selected skill's reference file. Record whether each discovered node is implemented or merely planned.
+
+Do not route SRI work through `$nuansystem-sap-sync-orchestration`, `$nuansystem-master-branch-sync`, `SyncOutbox`, SAP outbox, `NuanSystem.SyncWorker`, or `NuanSystem.MasterBranchSyncWorker`. Existing workers may only provide lifecycle evidence after their domain-specific ownership is excluded.

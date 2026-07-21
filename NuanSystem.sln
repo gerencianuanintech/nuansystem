@@ -41,6 +41,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuanSystem.SyncWorker", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuanSystem.MasterBranchSyncWorker", "src\Backend\NuanSystem.MasterBranchSyncWorker\NuanSystem.MasterBranchSyncWorker.csproj", "{7F6A2F79-6A5D-495A-B19C-9A4ACBE1CAB2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuanSystem.SriWorker", "src\Backend\NuanSystem.SriWorker\NuanSystem.SriWorker.csproj", "{5C9A1428-74C1-4C42-88A5-EA45CF486115}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -231,6 +233,18 @@ Global
 		{7F6A2F79-6A5D-495A-B19C-9A4ACBE1CAB2}.Release|x64.Build.0 = Release|Any CPU
 		{7F6A2F79-6A5D-495A-B19C-9A4ACBE1CAB2}.Release|x86.ActiveCfg = Release|Any CPU
 		{7F6A2F79-6A5D-495A-B19C-9A4ACBE1CAB2}.Release|x86.Build.0 = Release|Any CPU
+		{5C9A1428-74C1-4C42-88A5-EA45CF486115}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C9A1428-74C1-4C42-88A5-EA45CF486115}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C9A1428-74C1-4C42-88A5-EA45CF486115}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5C9A1428-74C1-4C42-88A5-EA45CF486115}.Debug|x64.Build.0 = Debug|Any CPU
+		{5C9A1428-74C1-4C42-88A5-EA45CF486115}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5C9A1428-74C1-4C42-88A5-EA45CF486115}.Debug|x86.Build.0 = Debug|Any CPU
+		{5C9A1428-74C1-4C42-88A5-EA45CF486115}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C9A1428-74C1-4C42-88A5-EA45CF486115}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C9A1428-74C1-4C42-88A5-EA45CF486115}.Release|x64.ActiveCfg = Release|Any CPU
+		{5C9A1428-74C1-4C42-88A5-EA45CF486115}.Release|x64.Build.0 = Release|Any CPU
+		{5C9A1428-74C1-4C42-88A5-EA45CF486115}.Release|x86.ActiveCfg = Release|Any CPU
+		{5C9A1428-74C1-4C42-88A5-EA45CF486115}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -252,5 +266,6 @@ Global
 		{CAB5CA99-0154-4706-B463-64F887F706EA} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{9B2222D7-1EBC-45A1-B68B-D4BA2F0C0CAB} = {FE360695-3F2B-1049-3887-35FBB5135923}
 		{7F6A2F79-6A5D-495A-B19C-9A4ACBE1CAB2} = {FE360695-3F2B-1049-3887-35FBB5135923}
+		{5C9A1428-74C1-4C42-88A5-EA45CF486115} = {FE360695-3F2B-1049-3887-35FBB5135923}
 	EndGlobalSection
 EndGlobal

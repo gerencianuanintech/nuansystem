@@ -480,8 +480,28 @@ This path is operative after forward scripts `112` and `113`. It accepts only ex
 
 Forbidden: WinForms-to-SAP, MasterBranchSyncWorker-to-SAP session, SAP outbox substituted by `SyncOutbox`, skeleton/NotImplemented called complete, or Transportistas synchronized without an approved requirement.
 
+### 10.5 SRI electronic documents
+
+```text
+TenantFeatureCodes.SriDocuments + TenantIntegrationCodes.Sri
+  -> protected Master tenant configuration (implemented; disabled by default)
+  -> capturer submits approved minimum contract [API implemented]
+  -> Application/API enqueue/query/cancel/reprocess [implemented]
+  -> tenant SRI queue + attempts + audit [deployed and runtime-validated]
+  -> tenant authorized XML + SHA-256 store [script 117 deployed and SQL-validated in three pilot tenants]
+  -> NuanSystem.SriWorker claim/lease/recovery [implemented; runtime validation pending]
+  -> official offline authorization provider + XML integrity processing [implemented; real round trip pending]
+  -> protected API query/reprocess [implemented]
+  -> protected XML download [planned]
+  -> WinForms monitor through NuanApiClient [planned]
+```
+
+The SRI graph has no edge to `SyncOutbox`, SAP outbox, `NuanSystem.SyncWorker`, or `NuanSystem.MasterBranchSyncWorker`. Capturers stop after durable enqueue. Only the dedicated SRI worker performs remote processing. See `docs/architecture/SRI-ITERATION-5-BLUEPRINT.md`.
+
+The approved pilot traverses only `Environment + AccessKey -> authorization lookup -> immutable authorized XML`. Generation, signing, submission, cancellation, and portal scraping have no edge in this pilot. Queue and XML storage SQL are deployed and concurrency/integrity validated; worker/provider runtime and the official service round trip remain pending. See `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`.
+
 ## 11. Iteration scope
 
-The graph covers the Iteration 1 core, Iteration 2 WinForms framework, Iteration 3 backend contracts, and Iteration 4 repository-backed SAP/Matriz-Sucursal boundaries. BEAS, Android, and deeper domain graphs remain future work. SAP ERP-to-SAP outbox delivery remains incomplete in current source; documentation does not promote it.
+The graph covers the Iteration 1 core, Iteration 2 WinForms framework, Iteration 3 backend contracts, Iteration 4 repository-backed SAP/Matriz-Sucursal boundaries, and the Iteration 5 SRI queue plus Phase 5.3 worker baseline. BEAS, Android, and deeper domain graphs remain future work. SRI deployment/E2E, protected download and monitor nodes remain incomplete.
 
 `Transportistas` is the validated Iteration 2 pilot: solution build, automated tests, tenant/master SQL execution, renewed-token authorization, runtime CRUD, closed identification selector, Designer serialization, and approved compact vertical spacing were exercised. Its evidence promotes only the documented reusable framework patterns; its business identity remains independent.

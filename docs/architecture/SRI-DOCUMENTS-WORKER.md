@@ -1,5 +1,7 @@
 # Arquitectura objetivo SRI, documentos electronicos y Worker Service
 
+> **Estado de implementacion:** arquitectura objetivo. La ejecucion de Iteracion 5 y sus quality gates se controlan en [SRI-ITERATION-5-BLUEPRINT.md](SRI-ITERATION-5-BLUEPRINT.md). El primer piloto aprobado es la [consulta y descarga de comprobantes autorizados](SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md). La existencia de estos documentos no prueba una cola ni un worker operativos.
+
 Este documento define el modulo SRI centralizado de NuanSystem. Complementa la arquitectura comercial y multiempresa existente. El modulo SRI no depende de SAP Business One.
 
 ## Principios

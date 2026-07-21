@@ -63,6 +63,8 @@ Prompt sugerido: `docs/codex/prompts/03-sync-outbox-inbox.md`.
 
 ## Fase D - Cola SRI
 
+Estado actual: Iteracion 5 en blueprint/contratos. No existe todavia una cola operativa. Ver `docs/architecture/SRI-ITERATION-5-BLUEPRINT.md` y `$nuansystem-sri-document-queue`.
+
 - Crear contratos, tablas y endpoints para encolar documentos SRI.
 - Permitir origen NuanSystem, TXT, AddOn SAP y formulario.
 - Mantener procesamiento XML fuera de API y WinForms.
@@ -70,6 +72,8 @@ Prompt sugerido: `docs/codex/prompts/03-sync-outbox-inbox.md`.
 Prompt sugerido: `docs/codex/prompts/04-sri-document-queue.md`.
 
 ## Fase E - Worker SRI
+
+Estado actual: Iteracion 5 en blueprint/contratos. `NuanSystem.SriWorker` y el proveedor SRI productivo no existen todavia. Ver `docs/architecture/SRI-ITERATION-5-BLUEPRINT.md` y `$nuansystem-sri-worker`.
 
 - Crear Worker Service.
 - Procesar cola, descargar XML, registrar intentos y aplicar reintentos.
