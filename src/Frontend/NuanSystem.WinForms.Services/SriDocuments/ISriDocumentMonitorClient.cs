@@ -4,6 +4,8 @@ namespace NuanSystem.WinForms.Services.SriDocuments;
 public interface ISriDocumentMonitorClient
 {
     Task<SriDocumentMonitorSummary> GetSummaryAsync(CancellationToken cancellationToken=default);
+    Task<SriWorkerHealthReport> GetWorkerHealthAsync(CancellationToken cancellationToken=default) =>
+        Task.FromResult(new SriWorkerHealthReport("Unknown",DateTime.UtcNow,[]));
     Task<IReadOnlyCollection<SriDocumentMonitorItem>> SearchAsync(SriDocumentMonitorFilter filter,CancellationToken cancellationToken=default);
     Task<SriDocumentMonitorDetail> GetDetailAsync(long queueId,CancellationToken cancellationToken=default);
     Task<IReadOnlyCollection<SriDocumentAttempt>> GetAttemptsAsync(long queueId,CancellationToken cancellationToken=default);

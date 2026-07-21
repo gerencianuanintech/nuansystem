@@ -5,6 +5,7 @@ namespace NuanSystem.WinForms.Services.SriDocuments;
 public sealed class SriDocumentMonitorClient(INuanApiClient apiClient) : ISriDocumentMonitorClient
 {
     public Task<SriDocumentMonitorSummary> GetSummaryAsync(CancellationToken cancellationToken=default)=>apiClient.GetAsync<SriDocumentMonitorSummary>("/api/sri/documents/monitor/summary",cancellationToken);
+    public Task<SriWorkerHealthReport> GetWorkerHealthAsync(CancellationToken cancellationToken=default)=>apiClient.GetAsync<SriWorkerHealthReport>("/api/sri/documents/monitor/worker-health",cancellationToken);
     public Task<IReadOnlyCollection<SriDocumentMonitorItem>> SearchAsync(SriDocumentMonitorFilter filter,CancellationToken cancellationToken=default)=>apiClient.GetAsync<IReadOnlyCollection<SriDocumentMonitorItem>>("/api/sri/documents/monitor"+BuildQuery(filter),cancellationToken);
     public Task<SriDocumentMonitorDetail> GetDetailAsync(long queueId,CancellationToken cancellationToken=default)=>apiClient.GetAsync<SriDocumentMonitorDetail>($"/api/sri/documents/monitor/{queueId}",cancellationToken);
     public Task<IReadOnlyCollection<SriDocumentAttempt>> GetAttemptsAsync(long queueId,CancellationToken cancellationToken=default)=>apiClient.GetAsync<IReadOnlyCollection<SriDocumentAttempt>>($"/api/sri/documents/{queueId}/attempts",cancellationToken);

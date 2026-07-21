@@ -963,7 +963,8 @@ internal sealed class FrontendComposition : IDisposable
             new SriDocumentMonitorViewModel(
                 sriDocumentMonitorClient,
                 session.HasPermission(NuanSystem.Shared.Constants.PermissionCodes.SriDocumentsViewPayload),
-                session.HasPermission(NuanSystem.Shared.Constants.PermissionCodes.SriDocumentsDownloadXml)),
+                session.HasPermission(NuanSystem.Shared.Constants.PermissionCodes.SriDocumentsDownloadXml),
+                session.HasPermission(NuanSystem.Shared.Constants.PermissionCodes.SriWorkerHealthView)),
             session);
     }
 

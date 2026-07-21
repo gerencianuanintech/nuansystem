@@ -163,6 +163,7 @@ public static class PermissionCodes
     public const string SriDocumentsReprocess = "SRI.DOCUMENTS.REPROCESS";
     public const string SriDocumentsViewPayload = "SRI.DOCUMENTS.VIEW_PAYLOAD";
     public const string SriDocumentsDownloadXml = "SRI.DOCUMENTS.DOWNLOAD_XML";
+    public const string SriWorkerHealthView = "SRI.WORKER.HEALTH.VIEW";
     public const string SettingsManage = "SETTINGS.PARAMETERS.MANAGE";
 
     public static readonly IReadOnlyCollection<string> All =
@@ -324,6 +325,7 @@ public static class PermissionCodes
         SriDocumentsReprocess,
         SriDocumentsViewPayload,
         SriDocumentsDownloadXml,
+        SriWorkerHealthView,
         SettingsManage
     ];
 }
