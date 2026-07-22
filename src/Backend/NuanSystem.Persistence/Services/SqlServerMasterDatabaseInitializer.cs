@@ -794,6 +794,12 @@ END;
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
         }
 
+        scriptPath = FindDatabaseScriptPath("122_master_worker_heartbeat_operations_idempotency_fix.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
         scriptPath = FindDatabaseScriptPath("019_master_inventory_items_security.sql");
         if (scriptPath is not null)
         {

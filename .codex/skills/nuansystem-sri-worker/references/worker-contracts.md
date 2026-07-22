@@ -26,6 +26,8 @@ The approved provider is the SRI offline authorization service. XML is stored in
 
 This design does not prove implementation or production readiness. The existing generic `dbo.WorkerHeartbeat` and its SAP-scoped contracts are lifecycle evidence to evolve forward-safely; do not create a parallel SRI heartbeat or reuse SAP ownership. Host, account, HA, secret provider, heartbeat persistence, thresholds, alert channel, support, RPO/RTO, retention, certificate ownership, pilot and deployment decisions remain pending owner approval.
 
+The first controlled SQL deployment on 2026-07-22 completed `120` once in Master, then exposed SQL Server 5074 on its second pass because unconditional `ALTER COLUMN WorkerInstance` conflicted with the logical-identity index created by the first pass. Tenant script `121` was not executed. `120` now gates every affected alteration on catalog metadata, and `122_master_worker_heartbeat_operations_idempotency_fix.sql` is the required forward repair for fresh, complete, or partial `120` states. This is code/contract evidence only: runtime remains blocked until an authorized session executes the corrected second pass, `122` repeatedly, and then `121`.
+
 ## Validation hierarchy
 
 1. static contract review;

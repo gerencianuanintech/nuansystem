@@ -265,3 +265,16 @@ For SRI queue or worker work, R4, R5, R9, R10, R11, and R12 additionally require
 At Iteration 5 blueprint stage, implementation gates must be reported `Not validated`, not inferred from architecture documents.
 
 Phase 5.5 passed these gates on 2026-07-21: scripts `118`/`119` were deployed idempotently, renewed-token permission profiles and tenant isolation were exercised, two protected downloads preserved one document and added two audits, and the Designer was reviewed. Use `docs/operations/SRI-DOCUMENT-MONITOR.md` as the detailed sanitized evidence; do not infer broader SRI operations from this approval.
+
+## 19. Iteration 6 WorkerHeartbeat forward-repair gate
+
+- [ ] `120` compara tipo, longitud y nullability antes de cada `ALTER COLUMN`; una segunda o tercera ejecucion no altera metadata correcta.
+- [ ] La reparacion de `WorkerType`, `HostName` o `WorkerInstance` detecta primero la necesidad y protege `UX_WorkerHeartbeat_LogicalIdentity` dentro de una transaccion con `XACT_ABORT`.
+- [ ] El indice final es unico, no clusterizado, con claves `WorkerType`, `HostName`, `WorkerInstance` y filtro `WorkerInstance IS NOT NULL`.
+- [ ] Defaults y checks dependientes se conservan cuando son correctos y se restauran con el mismo contrato cuando una alteracion real los requiere.
+- [ ] `122` funciona como forward repair sin borrar `20260721.120`, filas heartbeat, identidad `InstanceName`, permisos u operaciones.
+- [ ] El inicializador Master ejecuta `122` inmediatamente despues de `120`.
+- [ ] Pruebas contractuales cubren instalacion previa a `120`, segundo/tercer pase, estado parcial, historia unica, metadata, indice, defaults/checks, SAP y ausencia de SQL destructivo contra datos.
+- [ ] Una revalidacion SQL autorizada confirma el segundo pase de `120` y dos pases de `122` antes de ejecutar `121`.
+
+Estado al 2026-07-22: el defecto y su causa raiz estan confirmados; la correccion de codigo existe, pero el ultimo gate permanece **bloqueado** porque esta tarea no autoriza SQL real ni continuacion runtime.

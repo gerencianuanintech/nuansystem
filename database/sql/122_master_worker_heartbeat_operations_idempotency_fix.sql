@@ -1,4 +1,4 @@
-/* Iteracion 6: evolucion forward-only del heartbeat compartido. NuanSystem_Master only. */
+/* Iteracion 6: forward repair idempotente de WorkerHeartbeat. NuanSystem_Master only; aplicable despues o en ausencia de 120. */
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 GO
@@ -227,6 +227,6 @@ IF @AdminRoleId IS NOT NULL AND @FormId IS NOT NULL AND @OperationId IS NOT NULL
  INSERT dbo.SecurityRoleFormOperations(RoleId,FormId,OperationId,IsAllowed,CreatedByUserName,CreatedAt) VALUES(@AdminRoleId,@FormId,@OperationId,1,N'Sistema',SYSUTCDATETIME());
 GO
 
-IF OBJECT_ID(N'dbo.MasterSchemaHistory',N'U') IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.MasterSchemaHistory WHERE Version=N'20260721.120')
- INSERT dbo.MasterSchemaHistory(Version,Description) VALUES(N'20260721.120',N'Heartbeat operacional compartido y salud del SRI Worker');
+IF OBJECT_ID(N'dbo.MasterSchemaHistory',N'U') IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.MasterSchemaHistory WHERE Version=N'20260722.122')
+ INSERT dbo.MasterSchemaHistory(Version,Description) VALUES(N'20260722.122',N'Forward repair idempotente de WorkerHeartbeat operacional');
 GO

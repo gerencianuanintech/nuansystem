@@ -2,11 +2,17 @@
 
 ## Estado
 
-**Runbook de implementacion tecnica inicial de Iteracion 6; no ejecutado ni aprobado para produccion.**
+**Runbook de implementacion tecnica inicial de Iteracion 6; validacion runtime bloqueada y no aprobada para produccion.**
 
 Las decisiones bloqueantes fueron aprobadas para preparar codigo, scripts y plantillas. Este documento no autoriza instalar el servicio, crear la cuenta, ejecutar SQL, habilitar tenants, consultar al SRI, alterar XML ni modificar colas.
 
 La evidencia historica de Fases 5.3/5.4 se conserva en [SRI-WORKER-DEPLOYMENT.md](../architecture/SRI-WORKER-DEPLOYMENT.md). No repetir ese recorrido sin nueva autorizacion.
+
+### Gate SQL bloqueado del 2026-07-22
+
+El primer pase de `120_master_worker_heartbeat_operations.sql` completo 11 lotes en Master y registro una sola version `20260721.120`. El segundo pase fallo con SQL Server 5074: un `ALTER COLUMN WorkerInstance` incondicional encontro el indice dependiente `UX_WorkerHeartbeat_LogicalIdentity`. Master quedo parcialmente desplegado de forma consistente, con dos heartbeats SAP y cero SRI; `121` no se ejecuto en DEMO.
+
+`120` fue corregido a partir de metadata real y se agrego `122_master_worker_heartbeat_operations_idempotency_fix.sql` como forward repair. Ninguno de esos cambios fue ejecutado durante la tarea de correccion. No continuar con `121`, SCM, cuenta, servicio, API o WinForms hasta que una revision apruebe el SQL y una nueva autorizacion permita reanudar desde el segundo pase de `120`.
 
 ## Reglas permanentes
 
@@ -72,7 +78,7 @@ Estado requerido antes de continuar:
 3. Decisiones bloqueantes del blueprint aprobadas.
 4. Backups Master/tenants con `CHECKSUM`; `COPY_ONLY` para la captura predeploy manual.
 5. Restore test reciente y RPO/RTO aceptados.
-6. Scripts pendientes revisados, autorizados, forward-safe e idempotentes.
+6. Scripts pendientes revisados, autorizados, forward-safe e idempotentes; para este incidente se requieren segundo pase corregido de `120`, dos pases de `122` y luego dos pases de `121`.
 7. Cuenta sin privilegios administrativos, con `Log on as a service` y ACL minimas.
 8. Secrets disponibles para esa identidad sin almacenarlos en el paquete.
 9. SQL con certificado confiable; conexiones efectivas usan TLS estricto.
@@ -291,4 +297,4 @@ Registrar:
 
 ## Pendientes antes del runtime
 
-Faltan host concreto, contactos organizacionales, despliegue SQL/SCM/ACL real, permisos con JWT renovado, backup/restore ejecutado, validacion de certificados, prueba de lifecycle/health, Designer visual y upgrade/rollback. Cualquier llamada real al SRI o habilitacion del worker requiere autorizacion separada.
+Primero falta revisar la correccion de idempotencia, reanudar el segundo pase de `120`, ejecutar `122` al menos dos veces y confirmar metadata/historia/heartbeats/permisos antes de ejecutar `121`. Despues siguen pendientes host concreto, contactos organizacionales, SCM/ACL real, permisos con JWT renovado, validacion de certificados, prueba de lifecycle/health, Designer visual y upgrade/rollback. Cualquier llamada real al SRI o habilitacion del worker requiere autorizacion separada.

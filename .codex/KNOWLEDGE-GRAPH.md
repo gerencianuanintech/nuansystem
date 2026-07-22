@@ -504,7 +504,7 @@ Iteration 6 adds implemented code/schema contracts, but not an executed deployme
 
 ```text
 NuanSystem.SriWorker Generic Host + UseWindowsService [implemented]
-  -> shared Master WorkerHeartbeat evolution [script 120 created; not executed]
+  -> shared Master WorkerHeartbeat evolution [120 applied once; corrected 120 + forward repair 122 await runtime revalidation]
   -> tenant operational summary [script 121 created; not executed]
   -> protected health + WinForms projection [implemented; runtime pending]
   -> lifecycle/gate/mutex/safe events [implemented; runtime pending]
