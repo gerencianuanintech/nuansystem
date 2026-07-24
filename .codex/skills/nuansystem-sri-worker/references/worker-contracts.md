@@ -20,13 +20,13 @@ The worker queries and persists previously authorized documents by access key. P
 
 The approved provider is the SRI offline authorization service. XML is stored in the tenant database, capped at 5 MiB, with no automatic deletion. Defaults are batch 10, concurrency 2, 120-second lease, 30-second timeout, five technical attempts and three no-authorization responses within a 30-minute window.
 
-## Iteration 6 operational-hardening design
+## Iteration 6 operational hardening
 
-`docs/architecture/SRI-ITERATION-6-OPERATIONS-BLUEPRINT.md` is the proposed source for Windows Service identity, least privilege, secrets, health/heartbeat, metrics, alerts, TLS/certificates, retention alternatives, backup/restore, deployment/rollback and production quality gates. `docs/operations/SRI-WORKER-OPERATIONS.md` contains the corresponding proposed procedures.
+`docs/architecture/SRI-ITERATION-6-OPERATIONS-BLUEPRINT.md` governs Windows Service identity, least privilege, secrets, health/heartbeat, metrics, alerts, TLS/certificates, retention alternatives, backup/restore, deployment/rollback and production quality gates. `docs/operations/SRI-WORKER-OPERATIONS.md` contains the validated pilot procedures and sanitized runtime closure.
 
-This design does not prove implementation or production readiness. The existing generic `dbo.WorkerHeartbeat` and its SAP-scoped contracts are lifecycle evidence to evolve forward-safely; do not create a parallel SRI heartbeat or reuse SAP ownership. Host, account, HA, secret provider, heartbeat persistence, thresholds, alert channel, support, RPO/RTO, retention, certificate ownership, pilot and deployment decisions remain pending owner approval.
+The generic `dbo.WorkerHeartbeat` remains the only shared heartbeat surface; do not create a parallel SRI heartbeat or reuse SAP ownership. Iteration 6 validated forward-compatible SQL, a temporary least-privilege Windows Service, protected health, mutex/Event Log, WinForms/Designer visibility and versioned update/rollback. This proves the authorized controlled pilot, not a permanent multi-tenant production rollout.
 
-The first controlled SQL deployment on 2026-07-22 completed `120` once in Master, then exposed SQL Server 5074 on its second pass because unconditional `ALTER COLUMN WorkerInstance` conflicted with the logical-identity index created by the first pass. Tenant script `121` was not executed. `120` now gates every affected alteration on catalog metadata, and `122_master_worker_heartbeat_operations_idempotency_fix.sql` is the required forward repair for fresh, complete, or partial `120` states. This is code/contract evidence only: runtime remains blocked until an authorized session executes the corrected second pass, `122` repeatedly, and then `121`.
+The first controlled SQL deployment exposed SQL Server 5074 on the second pass of `120`. The corrected `120` now gates affected alterations on catalog metadata, and `122_master_worker_heartbeat_operations_idempotency_fix.sql` repairs fresh, complete, or partial states. The authorized revalidation completed the second and third `120` passes, two `122` passes and two `121` passes while preserving SAP heartbeats, security, metadata and protected SRI evidence.
 
 ## Validation hierarchy
 

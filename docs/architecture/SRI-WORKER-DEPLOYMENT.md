@@ -4,7 +4,7 @@
 
 Este runbook aplica a la Fase 5.3 implementada y conserva la evidencia operativa de la Fase 5.4. El script `117` fue desplegado y SQL-validado en los tres tenants piloto. La consulta end-to-end autorizada para `NuanSystem_DEMO` se completo el 2026-07-20; este antecedente no autoriza repetirla, habilitar permanentemente el worker ni operar otros tenants. Cada ejecucion futura requiere alcance explicito del propietario.
 
-La Iteracion 6 se encuentra exclusivamente en Discovery y diseno. Su [blueprint operativo](SRI-ITERATION-6-OPERATIONS-BLUEPRINT.md) y [runbook propuesto](../operations/SRI-WORKER-OPERATIONS.md) definen decisiones, health, heartbeat, alertas, identidad, backup, retencion y gates pendientes. No existe todavia evidencia de instalacion productiva como servicio, minimo privilegio, observabilidad, restore o rollback de Iteracion 6; este documento historico no debe interpretarse como esa aprobacion.
+La Iteracion 6 completo su validacion runtime controlada. Su [blueprint operativo](SRI-ITERATION-6-OPERATIONS-BLUEPRINT.md) y [runbook](../operations/SRI-WORKER-OPERATIONS.md) registran SQL idempotente, instalacion SCM temporal, minimo privilegio, health/JWT, mutex, Event Log, monitor, Designer y update/rollback. Esta evidencia habilita revision e integracion del piloto; no equivale a una habilitacion productiva permanente ni autoriza nuevas llamadas al SRI.
 
 ## Evidencia SQL cerrada el 2026-07-20
 

@@ -277,4 +277,4 @@ Phase 5.5 passed these gates on 2026-07-21: scripts `118`/`119` were deployed id
 - [ ] Pruebas contractuales cubren instalacion previa a `120`, segundo/tercer pase, estado parcial, historia unica, metadata, indice, defaults/checks, SAP y ausencia de SQL destructivo contra datos.
 - [ ] Una revalidacion SQL autorizada confirma el segundo pase de `120` y dos pases de `122` antes de ejecutar `121`.
 
-Estado al 2026-07-22: el defecto y su causa raiz estan confirmados; la correccion de codigo existe, pero el ultimo gate permanece **bloqueado** porque esta tarea no autoriza SQL real ni continuacion runtime.
+Estado al cierre de Iteracion 6: los pases autorizados de `120`, `122` y `121` aprobaron idempotencia, metadata, compatibilidad SAP y preservacion de evidencia. La validacion runtime controlada aprobo SCM/ACL, TLS, JWT, lifecycle, heartbeat, mutex, Event Log, monitor, Designer y update/rollback, con limpieza final completa. Usar `docs/operations/SRI-WORKER-OPERATIONS.md` como fuente de evidencia; no generalizar este resultado a habilitacion productiva permanente.

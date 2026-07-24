@@ -2,21 +2,21 @@
 
 ## Estado y autoridad
 
-- **Estado del documento:** decisiones bloqueantes aprobadas e implementacion tecnica inicial; no constituye aprobacion productiva.
+- **Estado del documento:** implementacion y validacion runtime controlada completadas; listo para revision e integracion.
 - **Alcance:** Discovery, arquitectura y contrato operativo de `NuanSystem.SriWorker`.
-- **Implementacion runtime:** contratos y plantillas implementados; validacion runtime bloqueada por el defecto de idempotencia SQL descrito abajo.
-- **SQL, servicios Windows y canales externos:** `120` completo su primer pase en Master y fallo en el segundo; `121` no fue ejecutado. El forward repair `122` esta implementado pero no ejecutado. No se creo cuenta/servicio/certificado ni canal externo.
+- **Implementacion runtime:** contratos, plantillas, servicio Windows, health, monitor, Designer y update/rollback validados en el piloto controlado.
+- **SQL, servicios Windows y canales externos:** `120`, `122` y `121` aprobaron sus pases idempotentes autorizados. La instalacion SCM temporal y su limpieza fueron validadas. No se habilito un canal externo ni se amplio el alcance SRI.
 - **Autoridad:** `ENGINEERING-CONSTITUTION` > `ENGINEERING-KERNEL` > catalogos y grafo > skills aplicables > implementacion.
 
 Este blueprint parte de la Iteracion 5 validada. No autoriza nuevas llamadas al SRI, no amplia el piloto de consulta de autorizaciones, no cambia la retencion actual y no permite habilitar permanentemente el worker. Los procedimientos operativos propuestos viven en [`../operations/SRI-WORKER-OPERATIONS.md`](../operations/SRI-WORKER-OPERATIONS.md); la evidencia historica de Fases 5.3/5.4 permanece en [SRI-WORKER-DEPLOYMENT.md](SRI-WORKER-DEPLOYMENT.md).
 
-### Defecto de idempotencia y estado parcialmente desplegado
+### Defecto de idempotencia corregido y revalidado
 
 La validacion controlada del 2026-07-22 confirmo un defecto real en la segunda ejecucion de `120`: sus `ALTER COLUMN` incondicionales intentaban alterar `WorkerInstance` cuando `UX_WorkerHeartbeat_LogicalIdentity` ya dependia de esa columna, produciendo SQL Server 5074. El primer pase habia completado sus 11 lotes y registrado una sola version `20260721.120` en Master; preservo dos heartbeats SAP y no creo heartbeat SRI. DEMO conservo `20260721.121` ausente y su evidencia documental protegida intacta.
 
 La correccion hace que `120` compare tipo, longitud y nullability mediante catalogo antes de cada alteracion. Si las columnas de identidad o el indice realmente requieren reparacion, elimina y recrea el indice unico filtrado dentro de una transaccion con `XACT_ABORT`; defaults y checks dependientes se preservan o restauran sin debilitar el contrato. El nuevo `122_master_worker_heartbeat_operations_idempotency_fix.sql` aplica la misma reparacion forward-safe a instalaciones sin `120`, completas o parcialmente aplicadas, vuelve a establecer procedimientos/permisos y registra una sola version `20260722.122` sin eliminar `120`.
 
-Esta tarea valida codigo y contratos, no runtime SQL. El gate permanece **bloqueado** hasta revisar la correccion y reanudar en una ventana autorizada desde el segundo pase de `120`, seguido de dos pases de `122` y solo entonces `121`.
+La revalidacion autorizada completo el segundo y tercer pase corregidos de `120`, dos pases de `122` y dos pases de `121`. La historia, metadata, indices, defaults, checks, permisos y los dos heartbeats SAP permanecieron estables; la compatibilidad legacy por `InstanceName` se comprobo dentro de una transaccion con rollback. El defecto queda cerrado para el alcance de Iteracion 6.
 
 ## Clasificacion de evidencia
 
@@ -110,12 +110,12 @@ Se aplicaron `nuansystem-framework-discovery`, `nuansystem-commercial-architectu
 | Application | Cambio implementado | Contrato/evaluador operacional generico fuera de `SapSync`. |
 | Persistence | Cambio implementado | Repositorio compartido por procedimientos y resumen tenant seguro. |
 | API | Cambio implementado | Health SRI protegido y sin secretos. |
-| Database Master | Cambio y forward repair; runtime bloqueado | `120` esta aplicado una vez; su segundo pase fallo. `122` repara idempotencia sin borrar historia y espera revision/ejecucion. |
-| Database tenant | Verificada sin cambios | `121` no fue ejecutado; cola/XML/auditoria siguen autoritativos. |
+| Database Master | Validada | `120` y `122` aprobaron reejecucion idempotente; historia, metadata, heartbeats SAP y seguridad permanecieron estables. |
+| Database tenant | Validada en DEMO | `121` aprobo dos pases y el resumen operacional coincidio con los conteos reales sin alterar QueueId `10004`. |
 | Worker | Cambio implementado | Heartbeat, lifecycle, gate, mutex, shutdown y eventos. |
 | Frontend | Cambio implementado | Pestaña health en el monitor existente; solo API. |
-| Security | Cambio implementado estaticamente | Permiso, config externa/TLS y ACL en plantillas; runtime pendiente. |
-| Tests | Cambio | Regresion contractual cubre metadata, segundo/tercer pase, indice, defaults/checks, historia, SAP e inicializador; SQL real sigue pendiente. |
+| Security | Validada en piloto | Cuenta dedicada temporal, ACL, JWT 401/403/200, TLS estricto y limpieza completa comprobados. |
+| Tests | Validada | SQL real, contratos, build, pruebas y runtime controlado aprobaron sus gates. |
 | Documentacion | Cambio | Blueprint, runbook y plantillas. |
 
 ## Infraestructura reutilizable y brechas
@@ -384,31 +384,31 @@ Todos son obligatorios y requieren evidencia ejecutada:
 16. Build Release y suites unitarias/contrato/integracion aprobadas.
 17. Runbook ejecutado y firmado por Operaciones, Seguridad, DBA y propietario.
 
-Hasta completar todos los gates, el estado es **No apto para produccion**; una prueba de Iteracion 5 no sustituye estas evidencias.
+Los gates ejecutables del piloto de Iteracion 6 quedaron completos. Esto habilita revision e integracion del alcance implementado, pero no autoriza habilitar permanentemente el worker, ampliar tenants, repetir llamadas SRI ni declarar un despliegue productivo general.
 
 ## Matriz de decisiones aprobadas
 
 | # | Decision aprobada | Aplicacion en esta fase |
 |---:|---|---|
-| 1 | Piloto Windows x64/Windows Server compatible; sin host productivo declarado | Hosting y plantillas, sin instalacion real. |
-| 2 | Cuenta local dedicada `NuanSriWorkerSvc`, sin crearla ni conceder logon | Parametro obligatorio y ACL en plantilla. |
+| 1 | Piloto Windows x64/Windows Server compatible; sin host productivo declarado | Hosting, instalacion SCM temporal y limpieza validados. |
+| 2 | Cuenta local dedicada `NuanSriWorkerSvc` | Creacion temporal, ACL y eliminacion completa validadas. |
 | 3 | Singleton piloto; claims/leases compatibles con futuro multiinstancia | Mutex local, identidad compuesta y alerta por segundo heartbeat activo. |
 | 4 | Secrets fuera de release/Git bajo ProgramData; vault futuro | Fuente JSON externa, ACL documentada y `AesSecretProtector` existente. |
-| 5 | Evolucion forward-safe de `dbo.WorkerHeartbeat` | `120` corregido y forward repair `122`; compatibilidad SAP preservada. Ejecucion real de la reparacion pendiente. |
+| 5 | Evolucion forward-safe de `dbo.WorkerHeartbeat` | `120` corregido y `122` reejecutados; compatibilidad SAP e idempotencia validadas. |
 | 6 | Baseline de health configurable | API/evaluador con 90/180 s, 10/30 min, 5/20, 30/14 dias y 20/10%. |
 | 7 | Logs, Event Log critico, API y WinForms | Implementados sin canales externos. |
 | 8 | Soporte en horario laboral, Critical visible | Runbook con roles y objetivos no contractuales. |
 | 9 | RPO 15 min/RTO 4 h piloto | Documentado; pendiente de restore real. |
 | 10 | Retencion indefinida | Sin purge, archive ni endpoints destructivos. |
 | 11 | Certificados propiedad DBA/Infra | Solo observacion/umbrales; sin operaciones de certificado. |
-| 12 | `NuanSystem_DEMO`, Production existente, worker disabled, cero SRI | Contrato de futura validacion; no ejecutado en esta fase. |
+| 12 | `NuanSystem_DEMO`, Production existente, worker disabled, cero SRI | Runtime controlado validado sin procesar documentos ni llamar al SRI. |
 | 13 | Ventana manual off-hours de 60 minutos | Secuencia freeze/backup/deploy/smoke/observe/rollback documentada. |
 | 14 | Artefactos versionados, service stopped, config externa y forward SQL | Plantillas install/start/stop/update/rollback/uninstall; no MSI/pipeline. |
 
 ## Affected-layer y quality review de esta fase
 
-- **Validado:** Discovery, ownership SRI, infraestructura existente, separacion SAP/Sync, contratos SQL 115-119 y documentacion de Iteracion 5.
-- **Diseno propuesto:** servicio, identidad, heartbeat/health, metricas, alertas, TLS, backup, retencion, despliegue y gates.
+- **Validado:** Discovery, ownership SRI, separacion SAP/Sync, SQL `120`/`121`/`122`, servicio Windows, identidad, heartbeat/health, JWT, mutex, Event Log, monitor, Designer, update y rollback.
+- **Evidencia runtime:** `ITER6-DIRECT-FINAL-20260724T030751Z-fa3804e7`, detallada en el runbook operativo.
 - **Decision aprobada existente:** TLS estricto, worker deshabilitado por defecto, tenant XML inmutable sin purga, piloto solo de consulta.
-- **Pendiente:** revisar y ejecutar el segundo pase corregido de `120`, ejecutar `122` idempotentemente y luego `121`; despues instalacion/ACL/SCM, runtime, permisos con JWT, Designer visual, certificados y upgrade/rollback.
-- **Fuera de alcance:** ejecutar scripts, instalar servicio/certificados/cuentas, levantar procesos, consultar SRI, modificar XML o bases, crear canales externos, purge o HA.
+- **Pendiente fuera del piloto:** host productivo definitivo, proveedor de secretos productivo, canales externos, restauracion integral, HA y politica legal de retencion.
+- **Fuera de alcance:** habilitacion permanente, nuevas llamadas SRI, modificacion o purga de XML, ampliacion a otros tenants y despliegue productivo general.

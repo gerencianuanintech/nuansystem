@@ -2,17 +2,17 @@
 
 ## Estado
 
-**Runbook de implementacion tecnica inicial de Iteracion 6; validacion runtime bloqueada y no aprobada para produccion.**
+**Runbook validado para el piloto operativo controlado de Iteracion 6.**
 
-Las decisiones bloqueantes fueron aprobadas para preparar codigo, scripts y plantillas. Este documento no autoriza instalar el servicio, crear la cuenta, ejecutar SQL, habilitar tenants, consultar al SRI, alterar XML ni modificar colas.
+La ejecucion controlada valido SQL, instalacion temporal del servicio, lifecycle, health/JWT, mutex, Event Log, monitor WinForms, Designer y update/rollback. No autoriza habilitar permanentemente el worker, repetir llamadas al SRI, ampliar tenants, alterar XML ni modificar colas fuera de contratos versionados.
 
 La evidencia historica de Fases 5.3/5.4 se conserva en [SRI-WORKER-DEPLOYMENT.md](../architecture/SRI-WORKER-DEPLOYMENT.md). No repetir ese recorrido sin nueva autorizacion.
 
-### Gate SQL bloqueado del 2026-07-22
+### Cierre del gate SQL
 
 El primer pase de `120_master_worker_heartbeat_operations.sql` completo 11 lotes en Master y registro una sola version `20260721.120`. El segundo pase fallo con SQL Server 5074: un `ALTER COLUMN WorkerInstance` incondicional encontro el indice dependiente `UX_WorkerHeartbeat_LogicalIdentity`. Master quedo parcialmente desplegado de forma consistente, con dos heartbeats SAP y cero SRI; `121` no se ejecuto en DEMO.
 
-`120` fue corregido a partir de metadata real y se agrego `122_master_worker_heartbeat_operations_idempotency_fix.sql` como forward repair. Ninguno de esos cambios fue ejecutado durante la tarea de correccion. No continuar con `121`, SCM, cuenta, servicio, API o WinForms hasta que una revision apruebe el SQL y una nueva autorizacion permita reanudar desde el segundo pase de `120`.
+`120` fue corregido a partir de metadata real y se agrego `122_master_worker_heartbeat_operations_idempotency_fix.sql` como forward repair. La reanudacion autorizada aprobo el segundo y tercer pase de `120`, dos pases de `122` y dos pases de `121`. La historia, metadata, indices, defaults, checks, permisos, heartbeats SAP y QueueId `10004` permanecieron estables.
 
 ## Reglas permanentes
 
@@ -295,6 +295,20 @@ Registrar:
 - procesos finales y estado `Enabled`;
 - resultado `Validado`, `Fallido`, `Bloqueado` o `No ejecutado` por gate.
 
-## Pendientes antes del runtime
+## Cierre runtime de Iteracion 6
 
-Primero falta revisar la correccion de idempotencia, reanudar el segundo pase de `120`, ejecutar `122` al menos dos veces y confirmar metadata/historia/heartbeats/permisos antes de ejecutar `121`. Despues siguen pendientes host concreto, contactos organizacionales, SCM/ACL real, permisos con JWT renovado, validacion de certificados, prueba de lifecycle/health, Designer visual y upgrade/rollback. Cualquier llamada real al SRI o habilitacion del worker requiere autorizacion separada.
+La corrida final controlada `ITER6-DIRECT-FINAL-20260724T030751Z-fa3804e7` valido:
+
+- instalacion temporal SCM con cuenta dedicada, ACL, Event Source y ProgramData;
+- `pilot1` en estado `Disabled`, heartbeat unico y version exacta `6.0.0-pilot1+be4ef40374b1967bd5158127568fc78f436c95a3`;
+- health protegido con HTTP `401`, `403` y `200`, TLS `Encrypt=true` y `TrustServerCertificate=false`;
+- rechazo de segunda instancia, eventos seguros y cero trabajo/leases;
+- monitor WinForms consumiendo health, mostrando identidad, estado, heartbeat y version sin secretos;
+- apertura y renderizado del formulario en el Visual Studio Designer;
+- actualizacion a `pilot2`, version exacta `6.0.0-pilot2+be4ef40374b1967bd5158127568fc78f436c95a3`, y rollback a `pilot1`;
+- eliminacion exacta del heartbeat temporal, limpieza SCM completa y baseline final sin procesos ni recursos temporales;
+- `473` pruebas aprobadas, `5` omitidas, `0` fallidas, build con `0` errores y `0` advertencias.
+
+No hubo llamadas al SRI, procesamiento documental, cambios sobre QueueId `10004`, Remigio o Canaris. El certificado publico autorizado permanecio sin clave privada. La evidencia saneada se conserva fuera del repositorio en `E:\ChatGPT Work\NuanSystem-Iteration6-Validation`.
+
+El alcance queda validado para revision e integracion. Host productivo, secretos productivos, canales externos, restore integral, HA, retencion legal y cualquier habilitacion permanente requieren decisiones y autorizaciones separadas.

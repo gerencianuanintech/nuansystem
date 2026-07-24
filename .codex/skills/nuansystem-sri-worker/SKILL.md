@@ -9,7 +9,7 @@ description: Design, implement, or review the dedicated NuanSystem background wo
 
 Obey: Constitution > Kernel > catalogs/knowledge graph > framework discovery and operational-use-case skills > this skill > implementation.
 
-Read `references/worker-contracts.md`. For the approved first pilot, also read `../../../docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. `NuanSystem.SriWorker` and tenant script `117` implement the Phase 5.3 baseline. Existing workers remain lifecycle references only and must not be relabeled or extended across their ownership boundaries.
+Read `references/worker-contracts.md`. For the approved first pilot, also read `../../../docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. For service deployment, health or version changes, read `../../../docs/architecture/SRI-ITERATION-6-OPERATIONS-BLUEPRINT.md` and `../../../docs/operations/SRI-WORKER-OPERATIONS.md`. Existing workers remain lifecycle references only and must not be relabeled or extended across their ownership boundaries.
 
 ## Exclusive boundary
 
@@ -74,6 +74,10 @@ The loop must be bounded, cancellation-aware, restart-safe, and safe with multip
 12. Treat `IgnoreSslErrors`, custom accept-all callbacks, proxy bypasses or equivalent certificate-validation omissions as forbidden.
 13. Validate the returned authorization, inner document type, access key, issuer RUC and environment before persisting any XML.
 14. Mask access keys in ordinary logs and use generic transport/provider messages; full XML never belongs in logs.
+15. Publish `WorkerVersion` from `AssemblyInformationalVersionAttribute` before numeric assembly version, and preserve release metadata so update/rollback evidence can distinguish artifacts.
+16. Start API runtime probes from the project/content-root directory that contains the approved local configuration; do not treat stale `bin` output or a temporary harness failure as a product defect.
+17. When validating WinForms asynchronously, wait for the real refresh operation to complete and capture client exceptions separately from timeout or rendering failures.
+18. Preserve append-only sanitized evidence and always return temporary services, accounts, heartbeats, event sources, processes and runtime directories to the approved baseline.
 
 ## Forbidden patterns
 
@@ -99,6 +103,9 @@ Report `Validated`, `Not validated`, or `Not applicable` for:
 - XML integrity, storage, duplicate prevention, and access control;
 - tenant isolation and disabled-capability behavior;
 - health/metrics/audit evidence;
+- exact worker version through heartbeat, protected API and WinForms after update and rollback;
+- Windows Service install/lifecycle/cleanup, singleton rejection and safe Event Log evidence;
+- Visual Studio Designer opening for affected WinForms forms;
 - real provider round trip in the explicitly approved environment when end-to-end success is claimed.
 
 Never call Iteration 5 operational until queue, worker, provider, persistence, security, and end-to-end gates all have evidence.
