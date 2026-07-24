@@ -109,6 +109,42 @@ public sealed class WorkerOperationsTests
     }
 
     [Fact]
+    public void WorkerVersion_PrefersInformationalVersionAndPreservesReleaseMetadata()
+    {
+        var result=WorkerVersionResolver.Resolve("6.0.0-pilot1+commit.abc123",new Version(6,0,0,0));
+
+        result.Should().Be("6.0.0-pilot1+commit.abc123");
+    }
+
+    [Fact]
+    public void WorkerVersion_KeepsPilotReleasesDistinct()
+    {
+        var pilot1=WorkerVersionResolver.Resolve("6.0.0-pilot1",new Version(6,0,0,0));
+        var pilot2=WorkerVersionResolver.Resolve("6.0.0-pilot2",new Version(6,0,0,0));
+
+        pilot1.Should().Be("6.0.0-pilot1");
+        pilot2.Should().Be("6.0.0-pilot2");
+        pilot1.Should().NotBe(pilot2);
+    }
+
+    [Fact]
+    public void WorkerVersion_FallsBackToAssemblyVersion()
+    {
+        WorkerVersionResolver.Resolve(null,new Version(6,0,0,7)).Should().Be("6.0.0.7");
+        WorkerVersionResolver.Resolve("   ",new Version(6,0,0,8)).Should().Be("6.0.0.8");
+    }
+
+    [Fact]
+    public void WorkerVersion_UsesSafeFinalFallbackWithoutPathsSecretsOrConfiguration()
+    {
+        var result=WorkerVersionResolver.Resolve(null,null);
+
+        result.Should().Be("unknown");
+        foreach(var forbidden in new[] { "\\","/","ConnectionString","SigningKey","AccessKey","Jwt","appsettings" })
+            result.Contains(forbidden,StringComparison.OrdinalIgnoreCase).Should().BeFalse();
+    }
+
+    [Fact]
     public void SqlEvolution_IsForwardOnlyIdempotentAndKeepsSapCompatibility()
     {
         var master=Read("database","sql","120_master_worker_heartbeat_operations.sql");

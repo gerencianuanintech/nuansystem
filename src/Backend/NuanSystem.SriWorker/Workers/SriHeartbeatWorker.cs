@@ -32,7 +32,7 @@ public sealed class SriHeartbeatWorker(IServiceScopeFactory scopeFactory, SriWor
             var oldest = summaries.Where(x => x.OldestPendingAtUtc.HasValue).Select(x => x.OldestPendingAtUtc).Min();
             var heartbeat = new WorkerHeartbeatDto(
                 SriWorkerRuntimeState.StorageKey(host, current.NormalizedWorkerInstance), null, null,
-                state.LifecycleState, state.LastCycleResult, typeof(SriHeartbeatWorker).Assembly.GetName().Version?.ToString(), DateTime.UtcNow,
+                state.LifecycleState, state.LastCycleResult, WorkerVersionResolver.Resolve(typeof(SriHeartbeatWorker).Assembly), DateTime.UtcNow,
                 WorkerTypes.Sri, host, current.NormalizedWorkerInstance, state.LifecycleState, current.Enabled,
                 state.StartedAtUtc, state.LastCycleStartedAtUtc, state.LastCycleCompletedAtUtc, state.LastSuccessfulCycleAtUtc,
                 state.LastCycleDurationMs, state.LastCycleResult, state.LastSafeErrorCode, state.LastSafeErrorMessage,
