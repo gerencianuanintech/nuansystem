@@ -1,12 +1,18 @@
 using FluentAssertions;
 using NSubstitute;
 using NuanSystem.Application.Abstractions.Data;
+using NuanSystem.Application.Features.Operations;
 using NuanSystem.Application.Features.SriDocuments.Commands;
 using NuanSystem.Application.Features.SriDocuments.Dtos;
+using NuanSystem.Shared.Responses;
 using NuanSystem.WinForms.Services.Http;
+using NuanSystem.WinForms.Services.Session;
 using NuanSystem.WinForms.Services.SriDocuments;
 using NuanSystem.WinForms.Services.SriDocuments.Models;
 using NuanSystem.WinForms.ViewModels.SriDocuments;
+using System.Net;
+using System.Text;
+using System.Text.Json;
 
 namespace NuanSystem.Application.Tests.Features.SriDocuments;
 
@@ -125,6 +131,67 @@ public sealed class SriDocumentDownloadAndMonitorTests
         await FluentActions.Invoking(()=>viewModel.DownloadAsync()).Should().ThrowAsync<InvalidOperationException>();
     }
 
+    [Fact]
+    public async Task FrontendHealthModel_DeserializesWorkerVersionThroughRealClientOptions()
+    {
+        var backendReport=WorkerHealthEvaluator.Evaluate(
+            [BackendSnapshot("6.0.0.0")],
+            new(),
+            new DateTime(2026,7,23,12,0,0,DateTimeKind.Utc));
+        var json=JsonSerializer.Serialize(ApiResponse<WorkerHealthReportDto>.Ok(backendReport),
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        using var httpClient=new HttpClient(new JsonResponseHandler(json)) { BaseAddress=new Uri("http://localhost") };
+        var client=new SriDocumentMonitorClient(new NuanApiClient(httpClient,new ApiSession()));
+
+        var result=await client.GetWorkerHealthAsync();
+
+        result.Instances.Should().ContainSingle();
+        result.Instances.Single().WorkerVersion.Should().Be("6.0.0.0");
+    }
+
+    [Fact]
+    public async Task FrontendMonitor_RendersReportedWorkerVersionWithoutSensitiveData()
+    {
+        var health=FrontendHealth("6.0.0.0");
+        var viewModel=new SriDocumentMonitorViewModel(new FakeMonitorClient(MonitorItem(),health),
+            canViewDetail:false,canDownload:false,canViewWorkerHealth:true);
+
+        await viewModel.LoadAsync();
+
+        viewModel.WorkerHealthText.Should().Contain("Versión: 6.0.0.0");
+        foreach(var sensitiveName in new[] { "ConnectionString","SigningKey","AccessKey","XmlContent","JWT" })
+            viewModel.WorkerHealthText.Contains(sensitiveName,StringComparison.OrdinalIgnoreCase).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task FrontendMonitor_RendersMissingWorkerVersionAsNotReported(string? workerVersion)
+    {
+        var viewModel=new SriDocumentMonitorViewModel(
+            new FakeMonitorClient(MonitorItem(),FrontendHealth(workerVersion)),
+            canViewDetail:false,canDownload:false,canViewWorkerHealth:true);
+
+        await viewModel.LoadAsync();
+
+        viewModel.WorkerHealthText.Should().Contain("Versión: no informada");
+    }
+
+    private static WorkerHeartbeatSnapshotDto BackendSnapshot(string? workerVersion) =>
+        new(WorkerTypes.Sri,"HOST","pilot",WorkerLifecycleStates.Disabled,false,workerVersion,
+            new DateTime(2026,7,23,12,0,0,DateTimeKind.Utc),null,null,null,null,null,null,null,null,
+            0,0,0,0,0,0,0,null,null,null);
+
+    private static SriWorkerHealthReport FrontendHealth(string? workerVersion) =>
+        new("Disabled",new DateTime(2026,7,23,12,0,0,DateTimeKind.Utc),
+            [new SriWorkerHealthInstance(WorkerTypes.Sri,"HOST","pilot",WorkerLifecycleStates.Disabled,
+                "Disabled",[],new DateTime(2026,7,23,12,0,0,DateTimeKind.Utc),null,0,0,0,0,0,0,
+                null,null,workerVersion)]);
+
+    private static SriDocumentMonitorItem MonitorItem() =>
+        new(7,"Production","01","Manual","SAFE-REF",null,"Authorized",1,DateTime.UtcNow,null,true,1);
+
     private static string Read(params string[] parts)
     {
         var directory=new DirectoryInfo(AppContext.BaseDirectory);
@@ -132,13 +199,26 @@ public sealed class SriDocumentDownloadAndMonitorTests
         return File.ReadAllText(Path.Combine(new[] { directory!.FullName }.Concat(parts).ToArray()));
     }
 
-    private sealed class FakeMonitorClient(SriDocumentMonitorItem item) : ISriDocumentMonitorClient
+    private sealed class FakeMonitorClient(SriDocumentMonitorItem item,SriWorkerHealthReport? workerHealth=null) : ISriDocumentMonitorClient
     {
         public Task<SriDocumentMonitorSummary> GetSummaryAsync(CancellationToken cancellationToken=default)=>Task.FromResult(new SriDocumentMonitorSummary(1,0,0,1,0));
+        public Task<SriWorkerHealthReport> GetWorkerHealthAsync(CancellationToken cancellationToken=default)=>
+            Task.FromResult(workerHealth ?? new SriWorkerHealthReport("Unknown",DateTime.UtcNow,[]));
         public Task<IReadOnlyCollection<SriDocumentMonitorItem>> SearchAsync(NuanSystem.WinForms.Services.SriDocuments.Models.SriDocumentMonitorFilter filter,CancellationToken cancellationToken=default)=>Task.FromResult<IReadOnlyCollection<SriDocumentMonitorItem>>([item]);
         public Task<SriDocumentMonitorDetail> GetDetailAsync(long queueId,CancellationToken cancellationToken=default)=>throw new NotSupportedException();
         public Task<IReadOnlyCollection<SriDocumentAttempt>> GetAttemptsAsync(long queueId,CancellationToken cancellationToken=default)=>Task.FromResult<IReadOnlyCollection<SriDocumentAttempt>>([]);
         public Task<IReadOnlyCollection<SriDocumentAudit>> GetAuditAsync(long queueId,CancellationToken cancellationToken=default)=>Task.FromResult<IReadOnlyCollection<SriDocumentAudit>>([]);
         public Task<ApiFileResponse> DownloadXmlAsync(long queueId,CancellationToken cancellationToken=default)=>Task.FromResult(new ApiFileResponse([1],"application/xml","sri-7.xml"));
+    }
+
+    private sealed class JsonResponseHandler(string json) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                RequestMessage=request,
+                Content=new StringContent(json,Encoding.UTF8,"application/json")
+            });
     }
 }

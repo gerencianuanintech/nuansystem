@@ -88,5 +88,6 @@ public static class WorkerHealthEvaluator
     private static WorkerHealthInstanceDto ToResult(WorkerHeartbeatSnapshotDto x, string health, IReadOnlyCollection<string> reasons) =>
         new(x.WorkerType, x.HostName, x.WorkerInstance, x.LifecycleState, health, reasons, x.LastBeatAtUtc,
             x.LastSuccessfulCycleAtUtc, x.EnabledCompanyCount, x.PendingCount, x.RetryScheduledCount,
-            x.DeadLetterCount, x.ActiveLeaseCount, x.ExpiredLeaseCount, x.LastSafeErrorCode, x.LastSafeErrorMessage);
+            x.DeadLetterCount, x.ActiveLeaseCount, x.ExpiredLeaseCount, x.LastSafeErrorCode, x.LastSafeErrorMessage,
+            x.WorkerVersion);
 }

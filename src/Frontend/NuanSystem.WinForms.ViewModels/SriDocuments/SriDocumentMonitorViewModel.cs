@@ -7,6 +7,7 @@ public sealed class SriDocumentMonitorViewModel(ISriDocumentMonitorClient client
     public SriDocumentMonitorFilter Filter { get; }=new();
     public SriDocumentMonitorSummary? Summary { get; private set; }
     public SriWorkerHealthReport? WorkerHealth { get; private set; }
+    public string WorkerHealthText => SriWorkerHealthTextFormatter.Format(WorkerHealth);
     public IReadOnlyCollection<SriDocumentMonitorItem> Items { get; private set; }=[];
     public SriDocumentMonitorDetail? Detail { get; private set; }
     public SriDocumentMonitorItem? Selected { get; private set; }
@@ -26,4 +27,20 @@ public sealed class SriDocumentMonitorViewModel(ISriDocumentMonitorClient client
         if(!CanDownload || Selected is null) throw new InvalidOperationException("El documento seleccionado no esta disponible para descarga.");
         return client.DownloadXmlAsync(Selected.QueueId,cancellationToken);
     }
+}
+
+internal static class SriWorkerHealthTextFormatter
+{
+    public static string Format(SriWorkerHealthReport? report)
+    {
+        if(report is null) return "Salud del worker restringida por permisos.";
+        if(report.Instances.Count==0) return $"Estado general: {report.OverallHealth}\r\nNo existe heartbeat SRI registrado.";
+
+        return $"Estado general: {report.OverallHealth} | Evaluado UTC: {report.EvaluatedAtUtc:u}\r\n\r\n"+
+            string.Join("\r\n\r\n",report.Instances.Select(x=>
+                $"{x.HostName} / {x.WorkerInstance}\r\nVersión: {FormatVersion(x.WorkerVersion)}\r\n{x.LifecycleState} - {x.Health} | Ultimo heartbeat: {x.LastBeatAtUtc:u}\r\nEmpresas: {x.EnabledCompanyCount} | Pending: {x.PendingCount} | Retry: {x.RetryScheduledCount} | DeadLetter: {x.DeadLetterCount} | Leases: {x.ActiveLeaseCount} activos, {x.ExpiredLeaseCount} vencidos\r\nAlertas: {(x.ReasonCodes.Count==0?"ninguna":string.Join(", ",x.ReasonCodes))}"));
+    }
+
+    private static string FormatVersion(string? workerVersion) =>
+        string.IsNullOrWhiteSpace(workerVersion) ? "no informada" : workerVersion;
 }

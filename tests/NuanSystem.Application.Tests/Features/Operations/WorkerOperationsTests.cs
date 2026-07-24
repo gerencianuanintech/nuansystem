@@ -1,6 +1,8 @@
 using FluentAssertions;
 using NuanSystem.Application.Features.Operations;
+using NuanSystem.Shared.Responses;
 using NuanSystem.SriWorker.Services;
+using System.Text.Json;
 
 namespace NuanSystem.Application.Tests.Features.Operations;
 
@@ -31,6 +33,37 @@ public sealed class WorkerOperationsTests
         var result=WorkerHealthEvaluator.Evaluate([value],new(),Now).Instances.Single();
         result.Health.Should().Be("Unhealthy");
         result.ReasonCodes.Should().Contain(["OLDEST_PENDING_CRITICAL","RETRY_SCHEDULED_CRITICAL","DEADLETTER_RATE_CRITICAL","EXPIRED_LEASE_PRESENT","CERTIFICATE_CRITICAL","STORAGE_CRITICAL"]);
+    }
+
+    [Fact]
+    public void Health_PreservesWorkerVersionExactlyFromSnapshotToResult()
+    {
+        const string expectedVersion="6.0.0.0+pilot.2";
+
+        var result=WorkerHealthEvaluator.Evaluate(
+            [Snapshot(lastBeat:Now) with { WorkerVersion=expectedVersion }],
+            new(),
+            Now).Instances.Single();
+
+        result.WorkerVersion.Should().Be(expectedVersion);
+    }
+
+    [Fact]
+    public void HealthEndpointJson_IncludesWorkerVersionWithoutSensitiveContracts()
+    {
+        var report=WorkerHealthEvaluator.Evaluate(
+            [Snapshot(lastBeat:Now) with { WorkerVersion="6.0.0.0" }],
+            new(),
+            Now);
+
+        var json=JsonSerializer.Serialize(ApiResponse<WorkerHealthReportDto>.Ok(report),
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        using var document=JsonDocument.Parse(json);
+
+        document.RootElement.GetProperty("data").GetProperty("instances")[0]
+            .GetProperty("workerVersion").GetString().Should().Be("6.0.0.0");
+        foreach(var sensitiveName in new[] { "connectionString","signingKey","accessKey","xmlContent","jwt" })
+            json.Contains(sensitiveName,StringComparison.OrdinalIgnoreCase).Should().BeFalse();
     }
 
     [Fact]
@@ -98,7 +131,8 @@ public sealed class WorkerOperationsTests
         models.Should().NotContain("ConnectionString").And.NotContain("AccessKey").And.NotContain("XmlContent");
         var form=Read("src","Frontend","NuanSystem.WinForms.Forms","SriDocuments","SriDocumentMonitorForm.cs");
         var designer=Read("src","Frontend","NuanSystem.WinForms.Forms","SriDocuments","SriDocumentMonitorForm.Designer.cs");
-        form.Should().Contain("RenderWorkerHealth").And.Contain("lblWorkerHealth");
+        form.Should().Contain("RenderWorkerHealth").And.Contain("lblWorkerHealth")
+            .And.Contain("viewModel.WorkerHealthText");
         designer.Should().Contain("workerTab").And.Contain("DockStyle.Fill").And.Contain("AutoScaleMode=AutoScaleMode.Font")
             .And.Contain("MinimumSize=new Size(980,650)");
         var templates=Directory.GetFiles(Path.Combine(Root(),"docs","operations","templates","sri-worker"),"*.ps1");

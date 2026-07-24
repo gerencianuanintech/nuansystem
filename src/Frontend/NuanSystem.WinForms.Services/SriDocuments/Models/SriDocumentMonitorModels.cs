@@ -9,5 +9,5 @@ public sealed record SriWorkerHealthReport(string OverallHealth,DateTime Evaluat
 public sealed record SriWorkerHealthInstance(string WorkerType,string HostName,string WorkerInstance,string LifecycleState,string Health,
     IReadOnlyCollection<string> ReasonCodes,DateTime LastBeatAtUtc,DateTime? LastSuccessfulCycleAtUtc,int EnabledCompanyCount,
     long PendingCount,long RetryScheduledCount,long DeadLetterCount,long ActiveLeaseCount,long ExpiredLeaseCount,
-    string? LastSafeErrorCode,string? LastSafeErrorMessage);
+    string? LastSafeErrorCode,string? LastSafeErrorMessage,string? WorkerVersion=null);
 public sealed class SriDocumentMonitorFilter { public string? Environment { get; set; } public string? Status { get; set; } public string? DocumentTypeCode { get; set; } public string? SourceType { get; set; } public DateTime? CreatedFrom { get; set; } public DateTime? CreatedTo { get; set; } public string? Search { get; set; } public int Page { get; set; }=1; public int PageSize { get; set; }=50; }

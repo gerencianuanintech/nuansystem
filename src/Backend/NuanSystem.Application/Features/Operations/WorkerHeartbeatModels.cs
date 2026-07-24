@@ -118,7 +118,8 @@ public sealed record WorkerHealthInstanceDto(
     long ActiveLeaseCount,
     long ExpiredLeaseCount,
     string? LastSafeErrorCode,
-    string? LastSafeErrorMessage);
+    string? LastSafeErrorMessage,
+    string? WorkerVersion = null);
 
 public sealed record WorkerHealthReportDto(string OverallHealth, DateTime EvaluatedAtUtc,
     IReadOnlyCollection<WorkerHealthInstanceDto> Instances);

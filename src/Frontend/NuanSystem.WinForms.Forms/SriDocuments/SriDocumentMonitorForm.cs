@@ -78,11 +78,7 @@ public sealed partial class SriDocumentMonitorForm : XtraForm
 
     private void RenderWorkerHealth()
     {
-        var report=viewModel.WorkerHealth;
-        if(report is null) { lblWorkerHealth.Text="Salud del worker restringida por permisos."; return; }
-        if(report.Instances.Count==0) { lblWorkerHealth.Text=$"Estado general: {report.OverallHealth}\r\nNo existe heartbeat SRI registrado."; return; }
-        lblWorkerHealth.Text=$"Estado general: {report.OverallHealth} | Evaluado UTC: {report.EvaluatedAtUtc:u}\r\n\r\n"+
-            string.Join("\r\n\r\n",report.Instances.Select(x=>$"{x.HostName} / {x.WorkerInstance}\r\n{x.LifecycleState} - {x.Health} | Ultimo heartbeat: {x.LastBeatAtUtc:u}\r\nEmpresas: {x.EnabledCompanyCount} | Pending: {x.PendingCount} | Retry: {x.RetryScheduledCount} | DeadLetter: {x.DeadLetterCount} | Leases: {x.ActiveLeaseCount} activos, {x.ExpiredLeaseCount} vencidos\r\nAlertas: {(x.ReasonCodes.Count==0?"ninguna":string.Join(", ",x.ReasonCodes))}"));
+        lblWorkerHealth.Text=viewModel.WorkerHealthText;
     }
 
     private async Task LoadSelectedAsync()
