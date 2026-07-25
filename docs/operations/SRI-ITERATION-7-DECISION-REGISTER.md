@@ -28,7 +28,7 @@ Una propuesta o un valor de ejemplo no equivale a aprobación.
 |---|---|---|---|
 | D7-01 | Runtime productivo .NET 10 LTS | **Validado** | SDK `10.0.302`, runtimes `10.0.10`, build, pruebas, runtime autenticado y publicaciones `win-x64` validadas. |
 | D7-02 | Host Windows dedicado | **Bloqueado** | Nombre/FQDN, Windows Server y build, dominio, zona, patch level, CPU/RAM/disco, egress y responsables. |
-| D7-03 | Identidad gMSA | **Bloqueado** | Nombre de gMSA, dominio, owner, hosts autorizados, deny-interactive y matriz ACL/grants. |
+| D7-03 | Identidad gMSA | **Bloqueado** | El host de desarrollo está en `WORKGROUP`; falta dominio, nombre de gMSA, owner, hosts autorizados, deny-interactive y matriz ACL/grants. |
 | D7-04 | Modalidad de publicación | **Validado** | Framework-dependent `Release/win-x64`, cinco hosts separados, manifests, hashes y rollback `pilot1 -> pilot2 -> pilot1`. |
 | D7-05 | Proveedor de secretos | **Bloqueado** | Producto/vault, identidad de acceso, IDs opacos, owner, rotación, recovery y break-glass. |
 | D7-06 | Alertamiento push | **Bloqueado** | Plataforma, canal, destinatarios, severidades, deduplicación, acknowledge y synthetic test. |
@@ -40,6 +40,17 @@ Una propuesta o un valor de ejemplo no equivale a aprobación.
 | D7-12 | HA futura | **Pendiente** | Aceptación de singleton inicial y condición para estudiar HA. |
 
 ## Evidencia cerrada
+
+### Host de desarrollo local
+
+El propietario autorizó usar el computador actual únicamente para desarrollo.
+El baseline saneado se encuentra en
+[SRI-ITERATION-7-DEVELOPMENT-HOST-BASELINE.md](SRI-ITERATION-7-DEVELOPMENT-HOST-BASELINE.md).
+
+La estación cumple capacidad para build, pruebas, publicación y preflight,
+pero no cierra D7-02: utiliza Windows 11 Pro, está en `WORKGROUP` y no representa
+el host Windows Server dedicado. Tampoco cierra D7-03 porque no puede acreditar
+una gMSA productiva.
 
 ### D7-01 — .NET 10 LTS
 

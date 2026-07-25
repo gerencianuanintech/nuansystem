@@ -12,6 +12,11 @@ Runbook de preparación para convertir el piloto operativo de Iteración 6 en un
 Este documento no autoriza SQL, infraestructura, cuentas, SCM, certificados, procesos, configuración, llamadas SRI ni cambios documentales. La evidencia runtime anterior se consulta en
 [SRI-WORKER-OPERATIONS.md](SRI-WORKER-OPERATIONS.md); no se repite.
 
+El computador actual fue aceptado exclusivamente como host de desarrollo. Su
+inventario y límites están en
+[SRI-ITERATION-7-DEVELOPMENT-HOST-BASELINE.md](SRI-ITERATION-7-DEVELOPMENT-HOST-BASELINE.md).
+No sustituye el host productivo, el dominio ni la gMSA.
+
 ## Principios operativos
 
 - `SriWorker:Enabled=false` es el baseline de artefacto y despliegue.
