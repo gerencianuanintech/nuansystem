@@ -461,6 +461,7 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
             outboxRepository,
             Substitute.For<ISyncAuditRepository>(),
             Substitute.For<ISyncEventApplier>(),
+            Substitute.For<ILocalSyncOutboxRelay>(),
             NullLogger<MasterBranchSyncWorkerProcessor>.Instance);
     }
 
@@ -475,6 +476,7 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
             outboxRepository,
             auditRepository,
             eventApplier,
+            Substitute.For<ILocalSyncOutboxRelay>(),
             NullLogger<MasterBranchSyncWorkerProcessor>.Instance);
     }
 

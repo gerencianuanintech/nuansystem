@@ -294,3 +294,22 @@ La iteración puede pasar a implementación cuando el propietario apruebe:
 4. worker/relay deshabilitado por defecto;
 5. migraciones forward-only e idempotentes;
 6. prueba SQL y runtime separadas de la implementación.
+
+## Avance de Fase 8.1
+
+**Estado de código:** implementado y validado estáticamente; no desplegado.
+
+Se incorporaron:
+
+- contratos Application para escritura transaccional de `LocalOutbox`;
+- migración tenant 124 con leases exclusivos, recuperación, retry,
+  `DeadLetter` y auditoría local;
+- promoción Master idempotente que conserva `EventId` y confirma
+  `SyncOutbox`, decisiones, targets y auditoría en una sola transacción;
+- migración Master 125 forward-only;
+- relay dentro de `NuanSystem.MasterBranchSyncWorker`, deshabilitado por
+  defecto;
+- pruebas de contrato de transacción, configuración, scripts y promoción.
+
+No se conectó ningún handler de `BusinessPartner`; eso pertenece a Fase 8.2.
+No se ejecutaron scripts, workers, SAP, SRI ni pruebas runtime.

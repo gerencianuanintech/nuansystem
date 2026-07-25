@@ -13,6 +13,7 @@ public sealed class MasterBranchSyncWorkerOptions
     public bool SkeletonMode { get; init; } = true;
     public SkeletonModeBehavior SkeletonModeBehavior { get; init; } = SkeletonModeBehavior.ObserveOnly;
     public string[] EnabledEntityAppliers { get; init; } = [];
+    public LocalOutboxRelayOptions LocalOutboxRelay { get; init; } = new();
     public MasterBranchSyncWorkerDiagnosticsOptions Diagnostics { get; init; } = new();
 
     public int NormalizedBatchSize => Math.Clamp(BatchSize, 1, 500);
@@ -28,6 +29,18 @@ public sealed class MasterBranchSyncWorkerOptions
         return EnabledEntityAppliers.Any(enabled =>
             string.Equals(enabled?.Trim(), entityName, StringComparison.OrdinalIgnoreCase));
     }
+}
+
+public sealed class LocalOutboxRelayOptions
+{
+    public bool Enabled { get; init; } = false;
+    public int BatchSize { get; init; } = 25;
+    public int LeaseMinutes { get; init; } = 5;
+    public int RetryDelaySeconds { get; init; } = 30;
+
+    public int NormalizedBatchSize => Math.Clamp(BatchSize, 1, 500);
+    public TimeSpan LeaseDuration => TimeSpan.FromMinutes(Math.Clamp(LeaseMinutes, 1, 240));
+    public TimeSpan RetryDelay => TimeSpan.FromSeconds(Math.Clamp(RetryDelaySeconds, 1, 86400));
 }
 
 public sealed class MasterBranchSyncWorkerDiagnosticsOptions

@@ -107,5 +107,6 @@ Detener sin avanzar al gate siguiente cuando:
 
 ## Estado
 
-Plan documental creado. Ningún gate de implementación, SQL o runtime ha sido
-ejecutado todavía.
+Gate A de Fase 8.1 ejecutado para contratos y código. Build y pruebas
+automatizadas quedan registrados en el cierre de la rama. Los gates B a F no
+han sido ejecutados: requieren las autorizaciones separadas ya definidas.

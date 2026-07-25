@@ -74,6 +74,7 @@ try
             services.AddScoped<ISyncEntityEventApplier, ItemSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, WarehouseSyncEventApplier>();
             services.AddScoped<ISyncEventApplier, SyncEventApplierDispatcher>();
+            services.AddScoped<ILocalSyncOutboxRelay, LocalSyncOutboxRelay>();
             services.AddScoped<IMasterBranchSyncWorkerProcessor, MasterBranchSyncWorkerProcessor>();
 
             var diagnosticsPath = $"{MasterBranchSyncWorkerOptions.SectionName}:Diagnostics";

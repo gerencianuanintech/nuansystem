@@ -12,6 +12,7 @@ public sealed class MasterBranchSyncWorkerProcessor(
     ISyncOutboxRepository outboxRepository,
     ISyncAuditRepository auditRepository,
     ISyncEventApplier eventApplier,
+    ILocalSyncOutboxRelay localOutboxRelay,
     ILogger<MasterBranchSyncWorkerProcessor> logger) : IMasterBranchSyncWorkerProcessor
 {
     public async Task<int> ProcessOnceAsync(CancellationToken cancellationToken = default)
@@ -23,12 +24,14 @@ public sealed class MasterBranchSyncWorkerProcessor(
             return 0;
         }
 
+        var promoted = await localOutboxRelay.ProcessOnceAsync(cancellationToken);
+
         if (currentOptions.SkeletonMode &&
             currentOptions.SkeletonModeBehavior == SkeletonModeBehavior.ObserveOnly)
         {
             logger.LogInformation(
                 "Master/Branch sync worker en SkeletonMode ObserveOnly; no se reclamaran eventos SyncOutbox.");
-            return 0;
+            return promoted;
         }
 
         await outboxRepository.ReleaseExpiredLocksAsync(cancellationToken);
@@ -44,7 +47,7 @@ public sealed class MasterBranchSyncWorkerProcessor(
             await ProcessEventAsync(syncEvent, currentOptions, cancellationToken);
         }
 
-        return events.Count;
+        return promoted + events.Count;
     }
 
     private async Task ProcessEventAsync(
