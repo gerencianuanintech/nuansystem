@@ -1,12 +1,13 @@
 using FluentAssertions;
 using NSubstitute;
+using System.Data;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
-using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.Items.Commands;
 using NuanSystem.Application.Features.Items.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
+using NuanSystem.Application.Features.Sync.Services;
 using NuanSystem.Domain.Tenancy;
 using NuanSystem.Shared.Sync;
 
@@ -15,8 +16,8 @@ namespace NuanSystem.Application.Tests.Features.Items;
 public sealed class ItemSyncPublishingTests
 {
     private readonly IItemRepository _repository = Substitute.For<IItemRepository>();
-    private readonly ISyncEventPublisher _syncEventPublisher = Substitute.For<ISyncEventPublisher>();
-    private readonly ICompanyContext _companyContext = Substitute.For<ICompanyContext>();
+    private readonly IItemLocalOutboxWriter _writer = Substitute.For<IItemLocalOutboxWriter>();
+    private readonly ImmediateTransactionRunner _transactionRunner = new();
 
     [Fact]
     public async Task CreateValidator_AcceptsBarcodeAndWarehouseCollections_WithoutRuntimeException()
@@ -41,162 +42,144 @@ public sealed class ItemSyncPublishingTests
     }
 
     [Fact]
-    public async Task Create_PublishesItemSyncEvent_WithGlobalIdAndCode()
+    public async Task Create_WritesLocalOutboxInsideTheSameTransaction()
     {
-        SyncPublishRequest? captured = null;
         var item = CreateItem();
-        ConfigureActiveCompany(syncEnabled: true);
-        ConfigureSyncPublisher(request => captured = request);
-        _repository.ExistsByCodeAsync("ART-001", Arg.Any<CancellationToken>()).Returns(false);
-        _repository.CreateAsync(Arg.Any<CreateItemData>(), Arg.Any<CancellationToken>()).Returns(item.Id);
-        _repository.GetByIdAsync(item.Id, Arg.Any<CancellationToken>()).Returns(item);
+        _repository.ExistsByCodeAsync("ART-001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.CreateAsync(Arg.Any<CreateItemData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(item.Id);
+        _repository.GetByIdAsync(item.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(item);
         var handler = CreateCreateHandler();
 
         var result = await handler.Handle(CreateCommand(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        captured.Should().NotBeNull();
-        captured!.CompanyId.Should().Be(10);
-        captured.EntityName.Should().Be("Item");
-        captured.EntityGlobalId.Should().Be(item.GlobalId);
-        captured.EntityGlobalId.Should().NotBe(Guid.Empty);
-        captured.EntityCode.Should().Be(item.Code);
-        captured.Operation.Should().Be(SyncOperation.Created);
-        captured.Payload.Should().BeOfType<ItemSyncPayload>();
+        await _writer.Received(1).EnqueueAsync(
+            item, SyncOperation.Created, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+        _transactionRunner.Committed.Should().BeTrue();
     }
 
     [Fact]
-    public async Task Update_PublishesUpdatedItemSyncEvent_WithGlobalId()
+    public async Task Update_WritesLocalOutboxInsideTheSameTransaction()
     {
-        SyncPublishRequest? captured = null;
         var item = CreateItem(name: "Articulo actualizado");
-        ConfigureActiveCompany(syncEnabled: true);
-        ConfigureSyncPublisher(request => captured = request);
-        _repository.GetByIdAsync(item.Id, Arg.Any<CancellationToken>()).Returns(item);
-        _repository.ExistsByCodeAsync("ART-001", item.Id, Arg.Any<CancellationToken>()).Returns(false);
-        _repository.UpdateAsync(Arg.Any<UpdateItemData>(), Arg.Any<CancellationToken>()).Returns(true);
+        _repository.GetByIdAsync(item.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(item);
+        _repository.ExistsByCodeAsync("ART-001", item.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.UpdateAsync(Arg.Any<UpdateItemData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
         var handler = CreateUpdateHandler();
 
         var result = await handler.Handle(UpdateCommand(item.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        captured.Should().NotBeNull();
-        captured!.EntityGlobalId.Should().Be(item.GlobalId);
-        captured.EntityCode.Should().Be(item.Code);
-        captured.Operation.Should().Be(SyncOperation.Updated);
+        await _writer.Received(1).EnqueueAsync(
+            item, SyncOperation.Updated, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Update_PublishesDisabledItemSyncEvent_WhenItemBecomesInactive()
+    public async Task Update_WritesDisabledOperation_WhenItemBecomesInactive()
     {
-        SyncPublishRequest? captured = null;
         var item = CreateItem(isActive: false);
-        ConfigureActiveCompany(syncEnabled: true);
-        ConfigureSyncPublisher(request => captured = request);
-        _repository.GetByIdAsync(item.Id, Arg.Any<CancellationToken>()).Returns(item);
-        _repository.ExistsByCodeAsync("ART-001", item.Id, Arg.Any<CancellationToken>()).Returns(false);
-        _repository.UpdateAsync(Arg.Any<UpdateItemData>(), Arg.Any<CancellationToken>()).Returns(true);
+        _repository.GetByIdAsync(item.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(item);
+        _repository.ExistsByCodeAsync("ART-001", item.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.UpdateAsync(Arg.Any<UpdateItemData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
         var handler = CreateUpdateHandler();
 
         var result = await handler.Handle(UpdateCommand(item.Id, isActive: false), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        captured.Should().NotBeNull();
-        captured!.Operation.Should().Be(SyncOperation.Disabled);
+        await _writer.Received(1).EnqueueAsync(
+            item, SyncOperation.Disabled, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Delete_PublishesDeletedItemSyncEvent_AfterLogicalDelete()
+    public async Task Delete_WritesLocalOutboxInsideTheSameTransaction()
     {
-        SyncPublishRequest? captured = null;
         var item = CreateItem();
-        ConfigureActiveCompany(syncEnabled: true);
-        ConfigureSyncPublisher(request => captured = request);
-        _repository.GetByIdAsync(item.Id, Arg.Any<CancellationToken>()).Returns(item);
-        _repository.DeleteAsync(item.Id, 7, "admin", Arg.Any<CancellationToken>()).Returns(true);
+        _repository.GetByIdAsync(item.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(item);
+        _repository.DeleteAsync(item.Id, 7, "admin", _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
         var handler = CreateDeleteHandler();
 
         var result = await handler.Handle(new DeleteItemCommand(item.Id, 7, "admin"), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        captured.Should().NotBeNull();
-        captured!.EntityGlobalId.Should().Be(item.GlobalId);
-        captured.Operation.Should().Be(SyncOperation.Deleted);
+        await _writer.Received(1).EnqueueAsync(
+            item, SyncOperation.Deleted, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Create_KeepsStandaloneCrudWorking_WhenPublisherSkipsForDisabledSync()
+    public async Task Create_RollsBackWhenLocalOutboxFails()
     {
         var item = CreateItem();
-        ConfigureActiveCompany(syncEnabled: false);
-        _syncEventPublisher.PublishAsync(Arg.Any<SyncPublishRequest>(), Arg.Any<CancellationToken>())
-            .Returns(Result<SyncPublishResult>.Success(new SyncPublishResult(false, null, "La empresa no tiene sincronizacion habilitada.")));
-        _repository.ExistsByCodeAsync("ART-001", Arg.Any<CancellationToken>()).Returns(false);
-        _repository.CreateAsync(Arg.Any<CreateItemData>(), Arg.Any<CancellationToken>()).Returns(item.Id);
-        _repository.GetByIdAsync(item.Id, Arg.Any<CancellationToken>()).Returns(item);
+        _repository.ExistsByCodeAsync("ART-001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.CreateAsync(Arg.Any<CreateItemData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(item.Id);
+        _repository.GetByIdAsync(item.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(item);
+        _writer.EnqueueAsync(Arg.Any<ItemDto>(), Arg.Any<SyncOperation>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>(), Arg.Any<CancellationToken>())
+            .Returns<Task<Guid?>>(_ => throw new InvalidOperationException("Controlled outbox failure"));
         var handler = CreateCreateHandler();
 
-        var result = await handler.Handle(CreateCommand(), CancellationToken.None);
+        var action = () => handler.Handle(CreateCommand(), CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        await _syncEventPublisher.Received(1).PublishAsync(Arg.Any<SyncPublishRequest>(), Arg.Any<CancellationToken>());
+        await action.Should().ThrowAsync<InvalidOperationException>().WithMessage("Controlled outbox failure");
+        _transactionRunner.RolledBack.Should().BeTrue();
+        _transactionRunner.Committed.Should().BeFalse();
     }
 
     [Fact]
-    public async Task Create_DoesNotPublish_WhenNoActiveCompanyContext()
+    public async Task Writer_SkipsStandaloneOrDisabledCompany()
     {
         var item = CreateItem();
-        ConfigureNoActiveCompany();
-        _repository.ExistsByCodeAsync("ART-001", Arg.Any<CancellationToken>()).Returns(false);
-        _repository.CreateAsync(Arg.Any<CreateItemData>(), Arg.Any<CancellationToken>()).Returns(item.Id);
-        _repository.GetByIdAsync(item.Id, Arg.Any<CancellationToken>()).Returns(item);
-        var handler = CreateCreateHandler();
+        var companyContext = Substitute.For<ICompanyContext>();
+        companyContext.HasActiveCompany.Returns(true);
+        companyContext.CurrentCompany.Returns(Company(syncEnabled: false));
+        var localOutbox = Substitute.For<ILocalSyncOutboxRepository>();
+        var writer = new ItemLocalOutboxWriter(companyContext, new SyncEventPayloadFactory(), localOutbox);
 
-        var result = await handler.Handle(CreateCommand(), CancellationToken.None);
+        var eventId = await writer.EnqueueAsync(
+            item, SyncOperation.Created, _transactionRunner.Connection, _transactionRunner.Transaction);
 
-        result.IsSuccess.Should().BeTrue();
-        await _syncEventPublisher.DidNotReceiveWithAnyArgs().PublishAsync(default!, default);
+        eventId.Should().BeNull();
+        await localOutbox.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
     }
 
     [Fact]
-    public async Task Create_PayloadKeepsSapCodeOptionalAndExcludesOperationalInventoryValues()
+    public async Task Writer_CreatesLimitedPayloadAndStableEventIdentity()
     {
-        SyncPublishRequest? captured = null;
         var item = CreateItem(sapCode: null);
-        ConfigureActiveCompany(syncEnabled: true);
-        ConfigureSyncPublisher(request => captured = request);
-        _repository.ExistsByCodeAsync("ART-001", Arg.Any<CancellationToken>()).Returns(false);
-        _repository.CreateAsync(Arg.Any<CreateItemData>(), Arg.Any<CancellationToken>()).Returns(item.Id);
-        _repository.GetByIdAsync(item.Id, Arg.Any<CancellationToken>()).Returns(item);
-        var handler = CreateCreateHandler();
+        var companyContext = Substitute.For<ICompanyContext>();
+        companyContext.HasActiveCompany.Returns(true);
+        companyContext.CurrentCompany.Returns(Company(syncEnabled: true));
+        var localOutbox = Substitute.For<ILocalSyncOutboxRepository>();
+        CreateLocalSyncOutboxData? captured = null;
+        localOutbox.CreateAsync(
+                Arg.Do<CreateLocalSyncOutboxData>(value => captured = value),
+                _transactionRunner.Connection,
+                _transactionRunner.Transaction,
+                Arg.Any<CancellationToken>())
+            .Returns(10);
+        var writer = new ItemLocalOutboxWriter(companyContext, new SyncEventPayloadFactory(), localOutbox);
 
-        var result = await handler.Handle(CreateCommand(), CancellationToken.None);
+        var eventId = await writer.EnqueueAsync(
+            item, SyncOperation.Created, _transactionRunner.Connection, _transactionRunner.Transaction);
 
-        result.IsSuccess.Should().BeTrue();
-        var payload = captured!.Payload.Should().BeOfType<ItemSyncPayload>().Subject;
-        payload.SapCode.Should().BeNull();
-        payload.GlobalId.Should().Be(item.GlobalId);
-        payload.GetType().GetProperty(nameof(ItemDto.BaseSalesPrice)).Should().BeNull();
-        payload.GetType().GetProperty(nameof(ItemDto.ReferenceCost)).Should().BeNull();
-        payload.GetType().GetProperty(nameof(ItemDto.Warehouses)).Should().BeNull();
+        eventId.Should().NotBeNull().And.NotBe(Guid.Empty);
+        captured.Should().NotBeNull();
+        captured!.EventId.Should().Be(eventId!.Value);
+        captured.EntityGlobalId.Should().Be(item.GlobalId);
+        captured.EntityName.Should().Be("Item");
+        captured.PayloadJson.Should().Contain("\"operation\":\"Created\"")
+            .And.NotContain("\"baseSalesPrice\"")
+            .And.NotContain("\"referenceCost\"")
+            .And.NotContain("\"warehouses\"")
+            .And.NotContain("\"masterData\"");
     }
 
-    private CreateItemCommandHandler CreateCreateHandler() => new(_repository, _syncEventPublisher, _companyContext);
+    private CreateItemCommandHandler CreateCreateHandler() => new(_repository, _transactionRunner, _writer);
 
-    private UpdateItemCommandHandler CreateUpdateHandler() => new(_repository, _syncEventPublisher, _companyContext);
+    private UpdateItemCommandHandler CreateUpdateHandler() => new(_repository, _transactionRunner, _writer);
 
-    private DeleteItemCommandHandler CreateDeleteHandler() => new(_repository, _syncEventPublisher, _companyContext);
+    private DeleteItemCommandHandler CreateDeleteHandler() => new(_repository, _transactionRunner, _writer);
 
-    private void ConfigureSyncPublisher(Action<SyncPublishRequest> capture)
-    {
-        _syncEventPublisher.PublishAsync(Arg.Do(capture), Arg.Any<CancellationToken>())
-            .Returns(Result<SyncPublishResult>.Success(new SyncPublishResult(true, 45, "Evento publicado.")));
-    }
-
-    private void ConfigureActiveCompany(bool syncEnabled)
-    {
-        _companyContext.HasActiveCompany.Returns(true);
-        _companyContext.CurrentCompany.Returns(new CompanyConnectionInfo(
+    private static CompanyConnectionInfo Company(bool syncEnabled) =>
+        new(
             CompanyId: 10,
             CompanyCode: "MASTER",
             CommercialName: "Empresa Master",
@@ -205,14 +188,7 @@ public sealed class ItemSyncPublishingTests
             SapIntegrationMode: SapIntegrationMode.None,
             OperationMode: CompanyOperationMode.Standalone,
             IsMaster: true,
-            SyncEnabled: syncEnabled));
-    }
-
-    private void ConfigureNoActiveCompany()
-    {
-        _companyContext.HasActiveCompany.Returns(false);
-        _companyContext.CurrentCompany.Returns((CompanyConnectionInfo?)null);
-    }
+            SyncEnabled: syncEnabled);
 
     private static ItemDto CreateItem(string name = "Articulo Uno", bool isActive = true, string? sapCode = null)
     {
@@ -314,5 +290,43 @@ public sealed class ItemSyncPublishingTests
             create.MasterData,
             create.AuditUserId,
             create.AuditUserName);
+    }
+
+    private sealed class ImmediateTransactionRunner : ITransactionRunner
+    {
+        public IDbConnection Connection { get; } = Substitute.For<IDbConnection>();
+        public IDbTransaction Transaction { get; } = Substitute.For<IDbTransaction>();
+        public bool Committed { get; private set; }
+        public bool RolledBack { get; private set; }
+
+        public async Task ExecuteInTenantTransactionAsync(
+            Func<IDbConnection, IDbTransaction, CancellationToken, Task> operation,
+            CancellationToken cancellationToken = default)
+        {
+            await ExecuteInTenantTransactionAsync<object?>(
+                async (connection, transaction, token) =>
+                {
+                    await operation(connection, transaction, token);
+                    return null;
+                },
+                cancellationToken);
+        }
+
+        public async Task<T> ExecuteInTenantTransactionAsync<T>(
+            Func<IDbConnection, IDbTransaction, CancellationToken, Task<T>> operation,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var result = await operation(Connection, Transaction, cancellationToken);
+                Committed = true;
+                return result;
+            }
+            catch
+            {
+                RolledBack = true;
+                throw;
+            }
+        }
     }
 }
