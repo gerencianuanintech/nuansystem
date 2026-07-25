@@ -98,7 +98,11 @@ La infraestructura base de Fase 4 ya crea los objetos tecnicos para preparar sin
 - Fase 4.8 agrega monitoreo operativo de lectura: dashboard, resumen, busqueda de `SyncOutbox`, detalle con `PayloadJson`, targets y auditoria. Los listados y dashboard no cargan `PayloadJson` masivo. No agrega retry, reprocess, apply, run, dispatch ni claim desde API.
 - Fase 4.9 agrega acciones manuales controladas sobre `SyncOutbox`: retry de `Error`, retry de `DeadLetter` con motivo obligatorio y liberacion de locks vencidos. Cada accion exige permiso especifico, valida estado actual, no cambia `PayloadJson`, `EntityName` ni `EntityGlobalId`, y registra auditoria transaccional.
 
-BusinessPartners publica el evento despues de persistir y volver a leer la entidad. El CRUD tenant y el `SyncOutbox` Master aun no comparten una transaccion distribuida; queda como pendiente cerrar ese limite transaccional antes de masificar la estrategia a otras entidades.
+BusinessPartners publica actualmente el evento despues de persistir y volver a
+leer la entidad. Ese dual write no es el limite definitivo. Iteracion 8 define
+maestro + `LocalOutbox` en el mismo commit tenant y promocion idempotente
+posterior a `SyncOutbox` Master, sin transaccion distribuida. Hasta implementar
+y validar el piloto, no se debe masificar este camino a otras entidades.
 
 El proyecto `NuanSystem.SyncWorker` existente corresponde a workers SAP ya implementados. La sincronizacion Master/Sucursal usa el proyecto separado `NuanSystem.MasterBranchSyncWorker`. Desde Fase 4.7 opera con `SkeletonMode = true` y `SkeletonModeBehavior = ObserveOnly` por defecto: no reclama eventos, no libera locks, no cambia estados, no escribe en tablas de negocio de sucursal, no aplica `BusinessPartners`, `Items`, bodegas ni listas de precio, y no invoca SAP ni SRI.
 
@@ -252,7 +256,10 @@ Reglas de ciclo de vida:
 ## Pendientes de implementacion
 
 - Definir entidades Master para sucursales, nodos de sincronizacion y politicas de direccion.
-- Definir el limite transaccional definitivo entre CRUD tenant y `SyncOutbox` Master antes de conectar mas entidades replicables.
+- Implementar el limite transaccional definido por Iteracion 8: maestro +
+  `LocalOutbox` en un commit tenant y promocion idempotente posterior a
+  `SyncOutbox` Master. Ver
+  `MASTER-BRANCH-ITERATION-8-TRANSACTIONAL-OUTBOX-BLUEPRINT.md`.
 - Completar la consola WinForms para administrar politicas de distribucion y sus selecciones.
 - Diseñar consola operativa avanzada para revision historica, aprobaciones y reproceso masivo controlado de eventos `DeadLetter`.
 - Implementar aplicadores reales para listas de precio y otros catalogos replicables. `Currencies`, `Items` y `Warehouse` ya cuentan con aplicadores limitados al maestro.

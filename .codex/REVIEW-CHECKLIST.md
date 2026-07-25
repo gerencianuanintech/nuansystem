@@ -323,3 +323,20 @@ Development closure approved on 2026-07-25:
 - [x] A future canary is limited to DEMO; Remigio and Cañaris remain excluded.
 
 These checked development gates do not satisfy the unchecked production gates.
+
+## Iteration 8 transactional outbox gate
+
+- [ ] Entity mutation and `LocalOutbox` intent share one tenant transaction.
+- [ ] No Master, SAP, SRI or HTTP call runs inside that tenant transaction.
+- [ ] `EventId` is stable from local intent through Master promotion.
+- [ ] Master promotion is idempotent and detects payload/identity conflicts.
+- [ ] `SyncOutbox`, routing decisions, targets and audit cannot commit partially.
+- [ ] Local claims have owner, expiry, recovery and bounded retry.
+- [ ] A crash after Master commit is recovered without duplicate outbox/targets.
+- [ ] The CRUD returns success after durable local commit and does not report a
+      false failure solely because Master is unavailable.
+- [ ] A migrated handler does not also use direct `ISyncEventPublisher`.
+- [ ] `BusinessPartner` is validated before independently migrating `Item`,
+      `Warehouse` or another entity.
+- [ ] Relay and worker remain disabled by default; SQL/runtime require separate
+      authorization and evidence.

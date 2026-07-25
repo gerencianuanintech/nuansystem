@@ -560,3 +560,21 @@ an edge to permanent SCM installation, worker enablement or SRI processing.
 The graph covers the Iteration 1 core, Iteration 2 WinForms framework, Iteration 3 backend contracts, Iteration 4 repository-backed SAP/Matriz-Sucursal boundaries, Iteration 5 through Phase 5.5, and the controlled runtime validation of Iteration 6. BEAS, Android, permanent production enablement of the SRI worker, and deeper domain graphs remain future work.
 
 `Transportistas` is the validated Iteration 2 pilot: solution build, automated tests, tenant/master SQL execution, renewed-token authorization, runtime CRUD, closed identification selector, Designer serialization, and approved compact vertical spacing were exercised. Its evidence promotes only the documented reusable framework patterns; its business identity remains independent.
+
+## 12. Iteration 8 transactional outbox boundary
+
+```text
+replicable tenant CRUD
+  -> ITransactionRunner
+       -> entity persistence + readback
+       -> LocalOutbox (same tenant commit)
+  -> disabled-by-default local relay
+       -> idempotent promotion by EventId
+       -> SyncOutbox + routing decisions + targets (Master commit)
+  -> existing MasterBranchSyncWorker delivery/applier
+```
+
+The authoritative design is
+`docs/architecture/MASTER-BRANCH-ITERATION-8-TRANSACTIONAL-OUTBOX-BLUEPRINT.md`.
+`BusinessPartner` is the only initial pilot. This graph does not authorize
+runtime activation, SQL deployment, `Item`/`Warehouse` migration, SAP or SRI.

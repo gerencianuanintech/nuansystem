@@ -54,6 +54,10 @@ Security/SQL migration:
 ## Rules
 
 - Require stable `GlobalId` and metadata before publication.
+- For CRUD events whose business state is persisted in a tenant database, use
+  the Iteration 8 boundary: entity mutation plus `LocalOutbox` in one tenant
+  transaction, followed by idempotent promotion to Master with the same
+  `EventId`. Do not use a direct tenant/Master dual write.
 - Publish only from enabled Master context and allowed direction.
 - Persist outbox before delivery; route through `ISyncRoutingService` and record policy decisions.
 - Deduplicate targets by branch and keep target states independent until aggregate closure.
@@ -65,6 +69,19 @@ Security/SQL migration:
 - `SkeletonMode.ObserveOnly` does not claim; other skeleton modes are dry-run/ignore, not real application.
 - An entity is operative only when producer and applier exist and are enabled/configured.
 - Update catalog, dependency planner, producer, payload, dispatcher/applier, SQL, profiles/security, tests, and graph together.
+
+## Iteration 8 transactional boundary
+
+Read
+`docs/architecture/MASTER-BRANCH-ITERATION-8-TRANSACTIONAL-OUTBOX-BLUEPRINT.md`
+and
+`docs/operations/MASTER-BRANCH-ITERATION-8-VALIDATION-PLAN.md`
+before changing CRUD publication.
+
+The first pilot is `BusinessPartner` only. `Item`, `Warehouse` and other
+entities remain independent promotion decisions. The relay belongs to
+`NuanSystem.MasterBranchSyncWorker`, stays disabled by default and never reuses
+SAP or SRI infrastructure.
 
 ## Antipatterns
 
