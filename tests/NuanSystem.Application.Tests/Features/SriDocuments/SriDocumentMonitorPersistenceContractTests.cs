@@ -25,6 +25,21 @@ public sealed class SriDocumentMonitorPersistenceContractTests
     }
 
     [Fact]
+    public void Dapper_MaterializesEmptyMonitorSummaryAsBigIntZeros()
+    {
+        using var table = CreateSummaryTable(typeof(long));
+        table.Rows.Add(0L, 0L, 0L, 0L, 0L);
+        using var reader = table.CreateDataReader();
+
+        reader.Read().Should().BeTrue();
+        var materialize = reader.GetRowParser<SriDocumentMonitorSummaryDto>();
+
+        var summary = materialize(reader);
+
+        summary.Should().Be(new SriDocumentMonitorSummaryDto(0, 0, 0, 0, 0));
+    }
+
+    [Fact]
     public void Dapper_RejectsLegacyIntAggregatesThatDoNotMatchThePositionalRecord()
     {
         using var table = CreateSummaryTable(typeof(int));

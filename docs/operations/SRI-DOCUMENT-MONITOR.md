@@ -40,6 +40,12 @@ Seleccione un documento `Authorized` con XML disponible, pulse **Descargar XML**
   error interno anterior, mostro los KPI `4/0/1/0` y repitio la consulta con **Actualizar** sin
   excepcion. Esta comprobacion solo consulto datos persistidos en `NuanSystem_DEMO`; no inicio el
   worker ni realizo llamadas al SRI. Master, Remigio y Canaris quedaron fuera de esta correccion.
+- La regresion Dapper tambien materializa el resumen vacio como cinco valores `long` en cero. No
+  se eliminaron ni aislaron datos reales para producir ese escenario.
+- Una solicitud real sin JWT, con la empresa `DEMO` indicada y TLS estricto, obtuvo HTTP 401 en
+  `/api/sri/documents/monitor/summary`. Los perfiles HTTP 403/200 y el aislamiento entre tenants
+  no se repitieron porque este forward repair no modifica endpoints, autenticacion, autorizacion,
+  contexto de empresa ni seleccion de conexion; se conserva la evidencia runtime de Fase 5.5.
 - Se tomaron respaldos `COPY_ONLY` de Master y de los tres tenants autorizados y todos superaron `RESTORE VERIFYONLY WITH CHECKSUM`; ningun respaldo forma parte del repositorio.
 - `118_tenant_sri_document_monitor_and_download.sql` se ejecuto dos veces en `NuanSystem_DEMO`, `NuanSystem_DEMO_REMIGIO` y `NuanSystem_DEMO_CANARIS`. Cada base conserva una sola version `20260721.118`, cinco procedimientos y un solo indice de auditoria del monitor.
 - `119_master_sri_document_monitor_security.sql` se ejecuto dos veces en `NuanSystem_Master`. Quedaron una sola version `20260721.119`, un formulario, un menu, tres operaciones y las asignaciones ADMIN esperadas.
