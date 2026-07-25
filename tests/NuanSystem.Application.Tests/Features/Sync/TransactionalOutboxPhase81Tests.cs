@@ -1,3 +1,5 @@
+using System.Data;
+using Dapper;
 using FluentAssertions;
 using NSubstitute;
 using NuanSystem.Application.Abstractions.Sync;
@@ -78,6 +80,43 @@ public sealed class TransactionalOutboxPhase81Tests
     }
 
     [Fact]
+    public void BusinessPartnerPurchaseContractMigration_IsTenantOnlyAndForwardOnly()
+    {
+        var sql = Read(
+            "database", "sql", "126_tenant_business_partner_purchase_contract.sql");
+
+        string[] purchaseParameters =
+        [
+            "@Incoterm",
+            "@CommercialDiscountPercent",
+            "@PurchaseCurrencyCode",
+            "@PreferredWarehouseId",
+            "@PurchaseSupplierType",
+            "@PreferredWarehouseCode",
+            "@MinimumOrderQuantity",
+            "@ActiveForImport",
+            "@SubjectToEvaluation",
+            "@AllowsUrgentPurchases",
+            "@AverageDeliveryDays",
+            "@LeadTimeDays",
+            "@DeliveryToleranceDays",
+            "@RequiresPurchaseOrder"
+        ];
+
+        sql.Should().Contain("CREATE TABLE dbo.BusinessPartnerPurchaseSettings")
+            .And.Contain("CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_BUSINESSPARTNERS_CREAR")
+            .And.Contain("CREATE OR ALTER PROCEDURE dbo.SP_NA_PUT_BUSINESSPARTNERS_ACTUALIZAR")
+            .And.Contain("bp.GlobalId")
+            .And.Contain("bp.ExternalSystem")
+            .And.Contain("bp.ExternalCode")
+            .And.Contain("Version=N'20260725.126'")
+            .And.ContainAll(purchaseParameters)
+            .And.NotContain("USE [NuanSystem_Master]")
+            .And.NotContain("DELETE FROM dbo.SchemaHistory")
+            .And.NotContain("DROP TABLE");
+    }
+
+    [Fact]
     public void PromotionRepository_UsesOneMasterTransactionAndLocksEventId()
     {
         var source = Read(
@@ -105,6 +144,65 @@ public sealed class TransactionalOutboxPhase81Tests
     }
 
     [Fact]
+    public void LocalOutboxDto_MaterializesThePhysicalSqlColumnOrderWithDapper()
+    {
+        var eventId = Guid.NewGuid();
+        var entityGlobalId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+        using var table = new DataTable();
+        table.Columns.Add("Id", typeof(long));
+        table.Columns.Add("EventId", typeof(Guid));
+        table.Columns.Add("CompanyId", typeof(int));
+        table.Columns.Add("EntityName", typeof(string));
+        table.Columns.Add("EntityGlobalId", typeof(Guid));
+        table.Columns.Add("EntityCode", typeof(string));
+        table.Columns.Add("Operation", typeof(string));
+        table.Columns.Add("PayloadJson", typeof(string));
+        table.Columns.Add("Status", typeof(string));
+        table.Columns.Add("AttemptCount", typeof(int));
+        table.Columns.Add("MaxAttempts", typeof(int));
+        table.Columns.Add("NextRetryAt", typeof(DateTime));
+        table.Columns.Add("CreatedAt", typeof(DateTime));
+        table.Columns.Add("ProcessedAt", typeof(DateTime));
+        table.Columns.Add("LastErrorMessage", typeof(string));
+        table.Columns.Add("LockedBy", typeof(string));
+        table.Columns.Add("LockedAt", typeof(DateTime));
+        table.Columns.Add("LockExpiresAt", typeof(DateTime));
+        table.Rows.Add(
+            37L,
+            eventId,
+            3002,
+            "BusinessPartner",
+            entityGlobalId,
+            "BP-037",
+            "Updated",
+            """{"code":"BP-037"}""",
+            "InProcess",
+            2,
+            3,
+            DBNull.Value,
+            now,
+            DBNull.Value,
+            DBNull.Value,
+            "relay-test",
+            now,
+            now.AddMinutes(5));
+
+        using var reader = table.CreateDataReader();
+        reader.Read().Should().BeTrue();
+        var materialize = reader.GetRowParser<LocalSyncOutboxDto>();
+        var result = materialize(reader);
+
+        result.Id.Should().Be(37);
+        result.EventId.Should().Be(eventId);
+        result.EntityGlobalId.Should().Be(entityGlobalId);
+        result.Operation.Should().Be(SyncOperation.Updated);
+        result.Status.Should().Be(SyncEventStatus.InProcess);
+        result.LockedBy.Should().Be("relay-test");
+        result.LockExpiresAt.Should().Be(now.AddMinutes(5));
+    }
+
+    [Fact]
     public void RelayDiscoversOnlyEnabledMasterCompanies()
     {
         var source = Read(
@@ -114,6 +212,17 @@ public sealed class TransactionalOutboxPhase81Tests
         source.Should().Contain("IsMaster=1")
             .And.Contain("SyncEnabled=1")
             .And.NotContain("IsMaster=0 AND SyncEnabled=1");
+    }
+
+    [Fact]
+    public void MasterBranchWorker_RegistersApplicationPromotionServices()
+    {
+        var source = Read(
+            "src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Program.cs");
+
+        source.Should().Contain("AddApplicationServices()")
+            .And.Contain("AddInfrastructureServices()")
+            .And.Contain("AddPersistenceServices(context.Configuration)");
     }
 
     private static LocalSyncOutboxDto Event() => new(

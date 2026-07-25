@@ -7,6 +7,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.DependencyInjection;
 using NuanSystem.Infrastructure.DependencyInjection;
 using NuanSystem.MasterBranchSyncWorker.Options;
 using NuanSystem.MasterBranchSyncWorker.Services;
@@ -60,6 +61,7 @@ try
                 .ValidateOnStart();
 
             services
+                .AddApplicationServices()
                 .AddInfrastructureServices()
                 .AddPersistenceServices(context.Configuration);
 
