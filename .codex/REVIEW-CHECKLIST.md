@@ -308,3 +308,18 @@ Estado al cierre de Iteracion 6: los pases autorizados de `120`, `122` y `121` a
 - [ ] Remigio, Cañaris and other tenants are excluded from the first canary.
 - [ ] `QueueId=10004` is preserved as protected evidence and is not a fixture.
 - [ ] `SriWorker:Enabled=false` remains the baseline until an independent activation change.
+
+Development closure approved on 2026-07-25:
+
+- [x] Current computer is development-only and has no permanent SRI Worker installation.
+- [x] No Active Directory/gMSA is claimed; production identity remains blocked.
+- [x] Development secrets remain in ignored local configuration with strict TLS.
+- [x] Development observability is logs, Windows Event Log and WinForms Monitor.
+- [x] Development support is business-hours only, without 24x7 claims.
+- [x] RPO/RTO and full restore are deferred until a production host exists.
+- [x] XML and audit retention is indefinite; automatic and manual deletion remain forbidden.
+- [x] Runtime remains singleton and disabled.
+- [x] Every tenant and every real SRI call requires independent explicit authorization.
+- [x] A future canary is limited to DEMO; Remigio and Cañaris remain excluded.
+
+These checked development gates do not satisfy the unchecked production gates.

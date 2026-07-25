@@ -538,19 +538,22 @@ configuration remains external. See
 ```text
 .NET 10 validated [D7-01]
   + framework-dependent immutable releases [D7-04]
-  + dedicated host [D7-02 blocked]
-  + gMSA [D7-03 blocked]
-  + vault [D7-05 blocked]
-  + push alerts/support [D7-06/D7-07 blocked]
-  + measured restore/RPO/RTO [D7-08 blocked]
-  + retention/legal hold [D7-09 blocked]
-  + bounded DEMO canary change [D7-10 blocked]
+  + development host only [validated; no permanent service]
+  + dedicated production host [D7-02 deferred/blocked]
+  + production identity [D7-03 deferred/blocked; no AD]
+  + production vault [D7-05 blocked]
+  + production push alerts/support [D7-06/D7-07 blocked]
+  + measured restore/RPO/RTO [D7-08 deferred/blocked]
+  + indefinite retention/no delete [D7-09 current policy]
+  + DEMO-only canary scope [D7-10 approved; activation blocked]
+  + independent tenant approvals [D7-11 validated]
+  + singleton development runtime [D7-12 validated]
   -> production installation readiness
 ```
 
 The authoritative status and required non-secret fields are in
 `docs/operations/SRI-ITERATION-7-DECISION-REGISTER.md`. No blocked decision has
-an edge to SCM installation, worker startup or SRI processing.
+an edge to permanent SCM installation, worker enablement or SRI processing.
 
 ## 11. Iteration scope
 

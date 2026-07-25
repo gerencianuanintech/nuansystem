@@ -4,7 +4,8 @@
 
 Runbook de preparación para convertir el piloto operativo de Iteración 6 en un despliegue productivo controlado.
 
-**Estado:** Fase 7.4 en cierre de decisiones; instalación no ejecutada.
+**Estado:** alcance de desarrollo de Fase 7.4 cerrado y validado; producción
+diferida y no autorizada.
 
 **Decisión:** no apto para implementación ni activación hasta cerrar las decisiones D7 del
 [blueprint de Iteración 7](../architecture/SRI-ITERATION-7-PRODUCTION-READINESS-BLUEPRINT.md).
@@ -16,6 +17,12 @@ El computador actual fue aceptado exclusivamente como host de desarrollo. Su
 inventario y límites están en
 [SRI-ITERATION-7-DEVELOPMENT-HOST-BASELINE.md](SRI-ITERATION-7-DEVELOPMENT-HOST-BASELINE.md).
 No sustituye el host productivo, el dominio ni la gMSA.
+
+El propietario decidió mantener el worker deshabilitado, sin instalación
+permanente en el computador de desarrollo. Los secrets locales siguen fuera de
+Git, la observabilidad se limita a logs/Event Log/Monitor, el soporte es en
+horario laboral y cada tenant o llamada real al SRI requiere autorización
+independiente. El primer canario futuro, si se autoriza, será solo DEMO.
 
 ## Principios operativos
 
@@ -325,10 +332,11 @@ El cierre productivo necesita firma de Propietario, Operaciones, Infraestructura
 
 ## Estado de este documento
 
-Al 2026-07-24:
+Al 2026-07-25:
 
 - Discovery y planificación: **Validated** mediante inspección de repositorio y antecedentes.
+- Cierre de desarrollo: **Validated**; worker deshabilitado, singleton y sin instalación permanente.
 - Implementación productiva: **Not validated**; no ejecutada.
 - Activación DEMO: **Not validated**; no autorizada.
-- Otros tenants: **Not applicable** a esta fase.
+- Otros tenants: **Excluded**; requieren aprobación independiente.
 - SQL/SCM/certificados/procesos/SRI: **Not executed**.

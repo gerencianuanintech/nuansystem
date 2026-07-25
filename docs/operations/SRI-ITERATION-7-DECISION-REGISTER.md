@@ -27,17 +27,41 @@ Una propuesta o un valor de ejemplo no equivale a aprobación.
 | ID | Decisión | Estado | Evidencia o dato faltante |
 |---|---|---|---|
 | D7-01 | Runtime productivo .NET 10 LTS | **Validado** | SDK `10.0.302`, runtimes `10.0.10`, build, pruebas, runtime autenticado y publicaciones `win-x64` validadas. |
-| D7-02 | Host Windows dedicado | **Bloqueado** | Nombre/FQDN, Windows Server y build, dominio, zona, patch level, CPU/RAM/disco, egress y responsables. |
-| D7-03 | Identidad gMSA | **Bloqueado** | El host de desarrollo está en `WORKGROUP`; falta dominio, nombre de gMSA, owner, hosts autorizados, deny-interactive y matriz ACL/grants. |
+| D7-02 | Host Windows dedicado | **Diferido / bloqueado para producción** | El propietario cerró la etapa actual como desarrollo. El host productivo todavía no está definido. |
+| D7-03 | Identidad del servicio | **Diferido / bloqueado para producción** | No existe Active Directory, por lo que gMSA no es viable actualmente. Una identidad productiva alternativa exige decisión y excepción futuras. |
 | D7-04 | Modalidad de publicación | **Validado** | Framework-dependent `Release/win-x64`, cinco hosts separados, manifests, hashes y rollback `pilot1 -> pilot2 -> pilot1`. |
-| D7-05 | Proveedor de secretos | **Bloqueado** | Producto/vault, identidad de acceso, IDs opacos, owner, rotación, recovery y break-glass. |
-| D7-06 | Alertamiento push | **Bloqueado** | Plataforma, canal, destinatarios, severidades, deduplicación, acknowledge y synthetic test. |
-| D7-07 | Cobertura de soporte | **Bloqueado** | Horario, on-call, niveles, SLA internos, escalamiento y responsables. |
-| D7-08 | RPO/RTO | **Bloqueado** | Restore integral coordinado Master + DEMO y aceptación de valores medidos. |
-| D7-09 | Retención/legal hold | **Bloqueado** | Dictamen legal, retención, archivo, legal hold y prohibiciones de eliminación. |
-| D7-10 | Primer canario DEMO | **Bloqueado** | Ambiente, ventana, volumen, concurrencia, duración, operadores, rollback y criterios de aborto/éxito. |
-| D7-11 | Alta independiente de tenants | **Pendiente** | Aprobación del modelo de checklist/change separado para cada tenant. |
-| D7-12 | HA futura | **Pendiente** | Aceptación de singleton inicial y condición para estudiar HA. |
+| D7-05 | Proveedor de secretos | **Validado para desarrollo / bloqueado para producción** | `appsettings.Local.json` ignorado por Git y TLS estricto durante desarrollo. Vault, rotación y recuperación productivos quedan diferidos. |
+| D7-06 | Alertamiento push | **Validado para desarrollo / bloqueado para producción** | Logs, Windows Event Log y Monitor WinForms aprobados para desarrollo; no existe canal push productivo. |
+| D7-07 | Cobertura de soporte | **Validado para desarrollo / bloqueado para producción** | Soporte en horario laboral, sin cobertura 24x7. Un SLA productivo queda diferido. |
+| D7-08 | RPO/RTO | **Diferido / bloqueado para producción** | El propietario aplazó valores y restore integral hasta disponer del host productivo. |
+| D7-09 | Retención/legal hold | **Validado para el alcance actual** | Retención indefinida de XML y auditorías; cero eliminación automática o manual. |
+| D7-10 | Primer canario DEMO | **Alcance aprobado / activación bloqueada** | Solo `NuanSystem_DEMO`; Remigio y Cañaris excluidos. Worker deshabilitado y cada llamada real exige autorización con ambiente, documento, ventana y límites. |
+| D7-11 | Alta independiente de tenants | **Validado** | Cada tenant requiere aprobación, checklist y change independientes; no existe habilitación automática. |
+| D7-12 | HA futura | **Validado para desarrollo** | Una sola instancia; HA queda diferida hasta una etapa productiva futura. |
+
+## Decisiones de cierre de desarrollo
+
+El propietario aprobó:
+
+1. cerrar Iteración 7 como **desarrollo validado**;
+2. no declarar ni inferir un host productivo;
+3. registrar que el entorno actual no dispone de Active Directory;
+4. mantener `NuanSystem.SriWorker` deshabilitado;
+5. conservar secrets de desarrollo únicamente en configuración local ignorada
+   por Git, con TLS estricto;
+6. usar logs, Event Log y Monitor WinForms como observabilidad de desarrollo;
+7. limitar el soporte a horario laboral, sin 24x7;
+8. aplazar RPO/RTO y restore integral hasta disponer de infraestructura
+   productiva;
+9. retener indefinidamente XML y auditorías, sin eliminación;
+10. operar una sola instancia;
+11. no instalar permanentemente el worker en este computador;
+12. exigir autorización independiente para cada tenant;
+13. exigir autorización explícita para toda llamada real al SRI;
+14. reservar el futuro canario únicamente para `NuanSystem_DEMO`.
+
+Estas decisiones cierran el alcance de desarrollo, pero no convierten un gate
+productivo bloqueado en validado.
 
 ## Evidencia cerrada
 
@@ -220,7 +244,7 @@ todos los anteriores
 
 ## Criterio de salida de Fase 7.4
 
-Fase 7.4 termina cuando:
+El cierre productivo futuro exige:
 
 - D7-01 a D7-10 tienen owner y estado explícito;
 - D7-02, D7-03 y D7-05 cuentan con valores productivos sin incluir secretos;
@@ -231,4 +255,10 @@ Fase 7.4 termina cuando:
 - el worker continúa deshabilitado.
 
 **Estado actual:** **NO-GO para instalación productiva**. D7-01 y D7-04 están
-validados; D7-02, D7-03 y D7-05 a D7-10 permanecen bloqueados.
+validados; los valores de desarrollo D7-05 a D7-07 y D7-09 no sustituyen sus
+equivalentes productivos. D7-02, D7-03, D7-05 a D7-08 y la activación D7-10
+permanecen bloqueados.
+
+**Cierre de desarrollo:** **VALIDADO**. El worker permanece deshabilitado, no
+hay instalación permanente y cualquier nueva ejecución requiere autorización
+independiente.

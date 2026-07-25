@@ -4,8 +4,8 @@
 
 - **Fecha del blueprint:** 2026-07-24.
 - **Alcance:** Discovery, arquitectura y planificación productiva.
-- **Estado actual:** **no apta para instalación productiva**.
-- **Motivo:** faltan decisiones del propietario sobre host, identidad, proveedor de secretos, alertamiento, soporte, backup/restore, retención legal y canario. Ninguna de estas brechas autoriza cambios runtime.
+- **Estado actual:** **desarrollo validado; no apta para instalación productiva**.
+- **Motivo:** el propietario cerró el alcance actual como desarrollo, sin host productivo ni Active Directory, con worker deshabilitado. Host, identidad productiva, vault, alertamiento push, soporte productivo, restore/RPO/RTO y activación canaria permanecen diferidos o bloqueados.
 - **Autoridad:** `ENGINEERING-CONSTITUTION` > `ENGINEERING-KERNEL` > catálogos/grafo > skills > implementación.
 
 Este documento parte de la evidencia cerrada de Iteración 6 en
@@ -197,17 +197,17 @@ Privilegios mínimos:
 | ID | Decisión propuesta | Recomendación | Estado/propietario |
 |---|---|---|---|
 | D7-01 | Runtime productivo | Migrar y validar en .NET 10 LTS antes de producción | **Validado:** .NET 10, runtime autenticado y artefactos aprobados |
-| D7-02 | Host | VM Windows Server dedicada, soportada y parchada | **Bloqueante:** Infraestructura |
-| D7-03 | Identidad | gMSA dedicada; cuenta local solo por excepción | **Bloqueante:** Seguridad/Infra |
+| D7-02 | Host | VM Windows Server dedicada, soportada y parchada | **Diferido/bloqueante:** no definido; el computador actual es solo desarrollo |
+| D7-03 | Identidad | gMSA dedicada; cuenta local solo por excepción | **Diferido/bloqueante:** no existe Active Directory |
 | D7-04 | Publicación | Framework-dependent `win-x64` administrado | **Validado:** manifests, hashes y rollback de Fase 7.3 |
-| D7-05 | Secrets | Vault con autenticación por identidad y auditoría | **Bloqueante:** Seguridad |
-| D7-06 | Alertamiento | Plataforma push corporativa + API/WinForms | **Bloqueante:** Operaciones |
-| D7-07 | Soporte | Cobertura, on-call, severidades y SLA internos | **Bloqueante:** Propietario/Operaciones |
-| D7-08 | RPO/RTO | 15 min / 4 h solo si restore medido lo acredita | **Bloqueante:** DBA/Propietario |
-| D7-09 | Retención | Indefinida hasta dictamen legal; luego política versionada | **Bloqueante:** Legal/Propietario |
-| D7-10 | Primer canario | Solo `NuanSystem_DEMO`, ventana y límites expresos | **Bloqueante:** Propietario |
-| D7-11 | Otros tenants | Alta independiente por checklist y change record | Propuesto; aprobar modelo |
-| D7-12 | HA | Singleton inicial; HA solo después de capacidad y prueba | Propuesto; no requerido para primer canario |
+| D7-05 | Secrets | Vault con autenticación por identidad y auditoría | **Desarrollo aprobado; producción bloqueada:** configuración local ignorada por Git |
+| D7-06 | Alertamiento | Plataforma push corporativa + API/WinForms | **Desarrollo aprobado; producción bloqueada:** logs, Event Log y Monitor |
+| D7-07 | Soporte | Cobertura, on-call, severidades y SLA internos | **Desarrollo aprobado; producción bloqueada:** horario laboral, sin 24x7 |
+| D7-08 | RPO/RTO | 15 min / 4 h solo si restore medido lo acredita | **Diferido/bloqueante:** aplazado hasta host productivo |
+| D7-09 | Retención | Indefinida hasta dictamen legal; luego política versionada | **Validado para alcance actual:** indefinida y sin eliminación |
+| D7-10 | Primer canario | Solo `NuanSystem_DEMO`, ventana y límites expresos | **Alcance aprobado; activación bloqueada:** worker deshabilitado |
+| D7-11 | Otros tenants | Alta independiente por checklist y change record | **Validado:** aprobación independiente obligatoria |
+| D7-12 | HA | Singleton inicial; HA solo después de capacidad y prueba | **Validado para desarrollo:** singleton; HA diferida |
 
 ## Matriz de capas afectadas
 
