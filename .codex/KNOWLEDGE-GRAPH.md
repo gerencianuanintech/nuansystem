@@ -533,6 +533,25 @@ SAP, SRI or production promotion. Published workers are disabled and local
 configuration remains external. See
 `docs/operations/DOTNET-10-RELEASE-ARTIFACTS.md`.
 
+### 10.7 SRI production readiness decisions
+
+```text
+.NET 10 validated [D7-01]
+  + framework-dependent immutable releases [D7-04]
+  + dedicated host [D7-02 blocked]
+  + gMSA [D7-03 blocked]
+  + vault [D7-05 blocked]
+  + push alerts/support [D7-06/D7-07 blocked]
+  + measured restore/RPO/RTO [D7-08 blocked]
+  + retention/legal hold [D7-09 blocked]
+  + bounded DEMO canary change [D7-10 blocked]
+  -> production installation readiness
+```
+
+The authoritative status and required non-secret fields are in
+`docs/operations/SRI-ITERATION-7-DECISION-REGISTER.md`. No blocked decision has
+an edge to SCM installation, worker startup or SRI processing.
+
 ## 11. Iteration scope
 
 The graph covers the Iteration 1 core, Iteration 2 WinForms framework, Iteration 3 backend contracts, Iteration 4 repository-backed SAP/Matriz-Sucursal boundaries, Iteration 5 through Phase 5.5, and the controlled runtime validation of Iteration 6. BEAS, Android, permanent production enablement of the SRI worker, and deeper domain graphs remain future work.

@@ -1,9 +1,23 @@
 ---
 name: nuansystem-deployment-production
-description: Prepare NuanSystem for production deployment: API hosting in IIS or Windows Service, HTTPS, environment-specific appsettings, secrets, Serilog, backups, health checks, Swagger protection, least-privilege SQL users, firewall, SAP connectivity, script versioning, migrations, WinForms publishing, ApiBaseUrl configuration, monitoring, and release checklists.
+description: "Prepare NuanSystem for production deployment: API hosting in IIS or Windows Service, HTTPS, environment-specific appsettings, secrets, Serilog, backups, health checks, Swagger protection, least-privilege SQL users, firewall, SAP connectivity, script versioning, migrations, WinForms publishing, ApiBaseUrl configuration, monitoring, and release checklists."
 ---
 
 # NuanSystem Deployment Production
+
+## SRI production readiness authority
+
+Before installing or enabling `NuanSystem.SriWorker`, read:
+
+1. `docs/architecture/SRI-ITERATION-7-PRODUCTION-READINESS-BLUEPRINT.md`;
+2. `docs/operations/SRI-WORKER-PRODUCTION-READINESS.md`;
+3. `docs/operations/SRI-ITERATION-7-DECISION-REGISTER.md`;
+4. `docs/operations/DOTNET-10-RELEASE-ARTIFACTS.md`.
+
+D7-01 through D7-10 are hard gates. A blocked host, gMSA, vault, alerting,
+support, restore, retention or canary decision prohibits SCM installation,
+worker startup and SRI processing. `.NET 10` and release artifacts alone are
+not production approval.
 
 ## Production Principles
 

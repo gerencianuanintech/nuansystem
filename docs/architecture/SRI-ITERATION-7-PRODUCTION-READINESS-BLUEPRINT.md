@@ -4,8 +4,8 @@
 
 - **Fecha del blueprint:** 2026-07-24.
 - **Alcance:** Discovery, arquitectura y planificación productiva.
-- **Estado actual:** **no apta para implementación**.
-- **Motivo:** faltan decisiones del propietario sobre plataforma soportada, host, proveedor de secretos, alertamiento, soporte, backup/restore y retención legal. Ninguna de estas brechas autoriza cambios runtime.
+- **Estado actual:** **no apta para instalación productiva**.
+- **Motivo:** faltan decisiones del propietario sobre host, identidad, proveedor de secretos, alertamiento, soporte, backup/restore, retención legal y canario. Ninguna de estas brechas autoriza cambios runtime.
 - **Autoridad:** `ENGINEERING-CONSTITUTION` > `ENGINEERING-KERNEL` > catálogos/grafo > skills > implementación.
 
 Este documento parte de la evidencia cerrada de Iteración 6 en
@@ -39,7 +39,7 @@ runtime aprobados. La evidencia end-to-end histórica sigue en
 
 **Evidence inspected:**
 
-- `src/Backend/NuanSystem.SriWorker/NuanSystem.SriWorker.csproj` — el worker usa `net9.0`.
+- `src/Backend/NuanSystem.SriWorker/NuanSystem.SriWorker.csproj` — el worker usa `net10.0`.
 - `src/Backend/NuanSystem.SriWorker/Program.cs` — Generic Host, Windows Service, configuración externa, Serilog, validación de opciones, TLS y shutdown existentes.
 - `src/Backend/NuanSystem.SriWorker/appsettings.json` y `appsettings.Production.json` — `Enabled=false`, TLS estricto y endpoints oficiales seguros por defecto.
 - `SriBackgroundWorker`, `SriHeartbeatWorker`, `SriWorkerRuntimeState` y `WorkerOperationalEvents` — lifecycle, mutex local, heartbeat, drain y eventos implementados.
@@ -47,7 +47,8 @@ runtime aprobados. La evidencia end-to-end histórica sigue en
 - `docs/operations/templates/sri-worker/*` — instalación, start/stop, update, rollback y uninstall parametrizados; son ejemplos, no instalador productivo.
 - `tests/NuanSystem.Application.Tests/Features/Operations` y `Features/SriDocuments` — contratos automatizados de worker, heartbeat, SQL, provider y monitor.
 - Documentos de Iteraciones 5 y 6 — límites, evidencia saneada, operaciones y rollback ya validados.
-- [Política oficial de soporte de .NET](https://dotnet.microsoft.com/en-us/platform/support/policy) — .NET 9 es STS, está en mantenimiento y finaliza soporte el 2026-11-10; .NET 10 es LTS hasta 2028.
+- `docs/architecture/DOTNET-10-MIGRATION-EXECUTION.md` — migración, build, pruebas y runtime .NET 10 validados.
+- `docs/operations/DOTNET-10-RELEASE-ARTIFACTS.md` — modalidad framework-dependent, manifests, hashes y rollback validados.
 
 **Selected pattern:** promover el piloto validado mediante un plano de producción dedicado: host Windows soportado, identidad gMSA, proveedor de secretos sin bootstrap estático, artefactos versionados, heartbeat Master existente, activación por allowlist tenant y rollback no destructivo.
 
@@ -77,7 +78,7 @@ runtime aprobados. La evidencia end-to-end histórica sigue en
 - Purga por fecha sin legal hold y doble aprobación — riesgo legal y de pérdida irreversible.
 - Habilitación simultánea de tenants — impide atribuir fallos y generaliza evidencia indebidamente.
 
-**Gaps/new code:** no se autoriza código en esta fase. Una futura iteración deberá cubrir migración a runtime LTS, integración con el proveedor de secretos elegido, allowlist de despliegue si no queda cubierta por configuración existente y adaptador de alertamiento aprobado.
+**Gaps/new code:** no se autoriza código en esta fase. Una futura iteración deberá cubrir integración con el proveedor de secretos elegido, allowlist de despliegue si no queda cubierta por configuración existente y adaptador de alertamiento aprobado.
 
 **Differences/constraints:** la cuenta `NuanSriWorkerSvc`, la instalación SCM y los certificados de Iteración 6 fueron temporales; los objetivos RPO/RTO no tienen restore integral medido; no hay canal push de alertas ni política legal de retención aprobada.
 
@@ -90,7 +91,7 @@ runtime aprobados. La evidencia end-to-end histórica sigue en
 | Área | Riesgo | Razón | Tratamiento |
 |---|---|---|---|
 | Cambio documental actual | Bajo | No altera runtime ni datos | Revisión, enlaces, build y pruebas |
-| Plataforma/host | Alto | Fin de soporte, disponibilidad y superficie de ataque | LTS soportado, hardening y patching |
+| Plataforma/host | Alto | Disponibilidad, capacidad, patching y superficie de ataque | .NET 10 LTS, hardening y patching |
 | Identidad/secrets | Alto | Acceso a Master, tenants y configuración protegida | gMSA + vault + mínimo privilegio |
 | XML/backup/restore | Alto | Evidencia tributaria y datos sensibles | Cifrado, restore probado, legal hold |
 | Activación tenant | Alto | Trabajo remoto y cambios documentales persistentes | Allowlist, canario y abort criteria |
@@ -131,7 +132,7 @@ runtime aprobados. La evidencia end-to-end histórica sigue en
 | Backup/restore | Política propuesta, no restore integral | RPO 15 min/RTO 4 h no demostrados |
 | Retención | Indefinida, sin purge | Falta plazo legal, archivo y legal hold |
 | Multi-tenant | Contratos aislados y claims validados | Solo DEMO tiene evidencia E2E; no se generaliza |
-| Plataforma | Proyecto `net9.0` | Soporte termina el 2026-11-10 |
+| Plataforma | Proyecto `net10.0`, build/runtime validados | Falta owner de patching del host productivo |
 
 ## Arquitectura productiva propuesta
 
@@ -167,8 +168,8 @@ Baseline propuesto, sujeto a benchmark y aprobación de Infraestructura:
 - Sin login interactivo para la identidad; administración solo por grupo autorizado.
 - Sincronización horaria corporativa, EDR/antimalware, parchado mensual y reinicio controlado.
 - Salida de red allowlist a DNS, CRL/OCSP, SQL autorizado, vault/monitor aprobado y hosts oficiales SRI.
-- Runtime objetivo: **.NET 10 LTS con último patch soportado**. Migrar desde `net9.0` es un gate previo de implementación.
-- Artefacto preferido self-contained x64 o framework-dependent con inventario y patch ownership explícitos; el propietario debe escoger una modalidad.
+- Runtime objetivo: **.NET 10 LTS con último patch soportado**. La migración está cerrada; el host debe asignar patch ownership.
+- Modalidad seleccionada: framework-dependent `win-x64`, con inventario, manifests y hashes; cambiarla exige reabrir D7-04 y repetir Fase 7.3.
 
 El sizing es un mínimo de entrada, no garantía. La aceptación exige medir CPU, memoria, disco y latencia durante soak y canario.
 
@@ -195,10 +196,10 @@ Privilegios mínimos:
 
 | ID | Decisión propuesta | Recomendación | Estado/propietario |
 |---|---|---|---|
-| D7-01 | Runtime productivo | Migrar y validar en .NET 10 LTS antes de producción | **Bloqueante:** Propietario + Desarrollo |
+| D7-01 | Runtime productivo | Migrar y validar en .NET 10 LTS antes de producción | **Validado:** .NET 10, runtime autenticado y artefactos aprobados |
 | D7-02 | Host | VM Windows Server dedicada, soportada y parchada | **Bloqueante:** Infraestructura |
 | D7-03 | Identidad | gMSA dedicada; cuenta local solo por excepción | **Bloqueante:** Seguridad/Infra |
-| D7-04 | Publicación | Self-contained x64 o framework-dependent administrado | **Bloqueante:** Infra/Desarrollo |
+| D7-04 | Publicación | Framework-dependent `win-x64` administrado | **Validado:** manifests, hashes y rollback de Fase 7.3 |
 | D7-05 | Secrets | Vault con autenticación por identidad y auditoría | **Bloqueante:** Seguridad |
 | D7-06 | Alertamiento | Plataforma push corporativa + API/WinForms | **Bloqueante:** Operaciones |
 | D7-07 | Soporte | Cobertura, on-call, severidades y SLA internos | **Bloqueante:** Propietario/Operaciones |
@@ -466,7 +467,7 @@ La evidencia de Iteración 6 se referencia como antecedente; no se repite salvo 
 
 ## Riesgos pendientes
 
-- Horizonte corto de soporte de `net9.0`.
+- Ownership de patching y mantenimiento de .NET 10 productivo aún no asignado.
 - Topología y capacidad productivas desconocidas.
 - Dependencia de `Security:EncryptionKey` sin recovery productivo demostrado.
 - Ausencia de canal push y cobertura acordada.
@@ -477,7 +478,7 @@ La evidencia de Iteración 6 se referencia como antecedente; no se repite salvo 
 
 ## Decisiones bloqueantes del propietario
 
-1. Aprobar migración a .NET 10 LTS antes de producción.
+1. .NET 10 LTS: **cerrado** mediante Fases 7.1 a 7.3.
 2. Confirmar host Windows dedicado, dominio/AD y modalidad de publicación.
 3. Aprobar gMSA y nombre/owner definitivos, o una excepción documentada.
 4. Elegir vault/proveedor de secretos, rotación, escrow y break-glass.
@@ -498,4 +499,8 @@ Iteración 7 puede declararse **apta para implementación** únicamente cuando:
 - los gates delta tengan ambiente, comando/procedimiento, evidencia y responsable definidos;
 - la futura implementación mantenga `Enabled=false` hasta un change de activación independiente.
 
-**Evaluación al 2026-07-24:** **NO APTA PARA IMPLEMENTACIÓN**.
+El estado detallado y los datos faltantes se mantienen en
+[SRI-ITERATION-7-DECISION-REGISTER.md](../operations/SRI-ITERATION-7-DECISION-REGISTER.md).
+
+**Evaluación al 2026-07-25:** **NO APTA PARA INSTALACIÓN PRODUCTIVA**. D7-01 y
+D7-04 están validadas; D7-02, D7-03 y D7-05 a D7-10 continúan bloqueantes.

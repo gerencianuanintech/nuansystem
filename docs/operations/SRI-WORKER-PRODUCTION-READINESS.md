@@ -4,7 +4,7 @@
 
 Runbook de preparación para convertir el piloto operativo de Iteración 6 en un despliegue productivo controlado.
 
-**Estado:** planificación; no ejecutado.
+**Estado:** Fase 7.4 en cierre de decisiones; instalación no ejecutada.
 
 **Decisión:** no apto para implementación ni activación hasta cerrar las decisiones D7 del
 [blueprint de Iteración 7](../architecture/SRI-ITERATION-7-PRODUCTION-READINESS-BLUEPRINT.md).
@@ -24,9 +24,10 @@ Este documento no autoriza SQL, infraestructura, cuentas, SCM, certificados, pro
 
 ## Readiness board
 
-| Gate | Owner | Estado inicial | Evidencia para cerrar |
+| Gate | Owner | Estado actual | Evidencia para cerrar |
 |---|---|---|---|
-| Plataforma LTS | Desarrollo | Bloqueado | Worker migrado y validado en .NET 10 LTS |
+| Plataforma LTS | Desarrollo | **Validado** | .NET 10, runtime autenticado, build y pruebas aprobados |
+| Artefacto/reversión | Desarrollo | **Validado** | Publicación framework-dependent y rollback de Fase 7.3 |
 | Host/capacidad | Infraestructura | Bloqueado | Inventario, patching, sizing y egress |
 | Identidad/ACL | Seguridad/Infra | Bloqueado | gMSA y permisos efectivos |
 | Secrets | Seguridad | Bloqueado | Vault, rotación y recovery |
@@ -38,6 +39,8 @@ Este documento no autoriza SQL, infraestructura, cuentas, SCM, certificados, pro
 | Canario DEMO | Propietario | Bloqueado | Change con ventana/límites/abort |
 
 No convertir `Bloqueado` en `Validado` por evidencia documental o de Iteración 6.
+El estado y los campos exigidos para cada decisión se registran en
+[SRI-ITERATION-7-DECISION-REGISTER.md](SRI-ITERATION-7-DECISION-REGISTER.md).
 
 ## Inventario obligatorio sin secretos
 

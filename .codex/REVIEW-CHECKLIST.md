@@ -294,3 +294,17 @@ Estado al cierre de Iteracion 6: los pases autorizados de `120`, `122` y `121` a
 - [ ] Rollback pilot1 -> pilot2 -> pilot1 preserva los hashes originales.
 - [ ] No se declara instalación SCM, runtime o promoción productiva si no fue
       ejecutada y evidenciada por separado.
+
+## Iteration 7 production readiness gate
+
+- [ ] D7-01 through D7-10 have an explicit owner and evidence state.
+- [ ] .NET 10 and the selected release mode point to executed evidence.
+- [ ] Host, gMSA and vault values are production decisions, not pilot defaults.
+- [ ] No secret value, credential, token or private key appears in the decision record.
+- [ ] Push alerts and support coverage name routing, acknowledge and escalation.
+- [ ] RPO/RTO are based on a full coordinated restore, not `VERIFYONLY`.
+- [ ] Retention and legal hold are approved before any archive/purge/delete design.
+- [ ] DEMO canary names environment, action, window, limits, owners and abort criteria.
+- [ ] Remigio, Cañaris and other tenants are excluded from the first canary.
+- [ ] `QueueId=10004` is preserved as protected evidence and is not a fixture.
+- [ ] `SriWorker:Enabled=false` remains the baseline until an independent activation change.
