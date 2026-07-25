@@ -77,22 +77,27 @@ internal sealed class BusinessPartnerCommandRules<T> : AbstractValidator<T>
 
         RuleFor(command => GetAddresses(command))
             .Must(items => items.Count(item => item.IsPrimary && item.IsActive) <= 1)
-            .WithMessage("Solo puede existir una direccion principal activa.");
+            .WithMessage("Solo puede existir una direccion principal activa.")
+            .OverridePropertyName(nameof(CreateBusinessPartnerCommand.Addresses));
 
         RuleFor(command => GetContacts(command))
             .Must(items => items.Count(item => item.IsPrimary && item.IsActive) <= 1)
-            .WithMessage("Solo puede existir un contacto principal activo.");
+            .WithMessage("Solo puede existir un contacto principal activo.")
+            .OverridePropertyName(nameof(CreateBusinessPartnerCommand.Contacts));
 
         RuleFor(command => GetBankAccounts(command))
             .Must(items => items.Count(item => item.IsPrimary && item.IsActive) <= 1)
-            .WithMessage("Solo puede existir una cuenta bancaria principal activa.");
+            .WithMessage("Solo puede existir una cuenta bancaria principal activa.")
+            .OverridePropertyName(nameof(CreateBusinessPartnerCommand.BankAccounts));
 
-        RuleForEach(command => GetRetentionSettings(command)).ChildRules(setting =>
+        RuleForEach(command => GetRetentionSettings(command))
+            .ChildRules(setting =>
         {
             setting.RuleFor(item => item.Percent).InclusiveBetween(0m, 100m);
-        });
+        }).OverridePropertyName(nameof(CreateBusinessPartnerCommand.RetentionSettings));
 
-        RuleForEach(command => GetAddresses(command)).ChildRules(address =>
+        RuleForEach(command => GetAddresses(command))
+            .ChildRules(address =>
         {
             address.RuleFor(item => item.AddressType).NotEmpty().Must(AddressTypes.Contains);
             address.RuleFor(item => item.Line1).NotEmpty().MaximumLength(300);
@@ -101,16 +106,17 @@ internal sealed class BusinessPartnerCommandRules<T> : AbstractValidator<T>
             address.RuleFor(item => item.Province).MaximumLength(120);
             address.RuleFor(item => item.City).MaximumLength(120);
             address.RuleFor(item => item.PostalCode).MaximumLength(30);
-        });
+        }).OverridePropertyName(nameof(CreateBusinessPartnerCommand.Addresses));
 
-        RuleForEach(command => GetContacts(command)).ChildRules(contact =>
+        RuleForEach(command => GetContacts(command))
+            .ChildRules(contact =>
         {
             contact.RuleFor(item => item.Name).NotEmpty().MaximumLength(150);
             contact.RuleFor(item => item.Position).MaximumLength(120);
             contact.RuleFor(item => item.Phone).MaximumLength(50);
             contact.RuleFor(item => item.Mobile).MaximumLength(50);
             contact.RuleFor(item => item.Email).EmailAddress().MaximumLength(256).When(item => !string.IsNullOrWhiteSpace(item.Email));
-        });
+        }).OverridePropertyName(nameof(CreateBusinessPartnerCommand.Contacts));
     }
 
     private static string? GetString(T command, string name) => command?.GetType().GetProperty(name)?.GetValue(command) as string;
