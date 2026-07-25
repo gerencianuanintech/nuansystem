@@ -5,8 +5,12 @@
 - Fecha: 2026-07-25.
 - Rama: `refactor/codex-skills-v7-2-1-dotnet10-runtime-smoke`.
 - Baseline: `ed8333914704f253249fcb49be2baabdda2ca1f3`.
+- Rama de cierre: `refactor/codex-skills-v7-2-2-dotnet10-runtime-closure`.
+- Baseline de cierre: `709b9ae63088d6aa2398d105e83e7337263eb07f`.
 - Alcance: API local, workers deshabilitados y WinForms contra la empresa piloto `DEMO`.
 - Resultado original: **NO-GO**, corregido posteriormente por el forward repair tenant `123`.
+- Resultado de cierre de Fase 7.2.2: **GO runtime** para el alcance autenticado y multiempresa
+  aprobado.
 - Motivo bloqueante original: el resumen del Monitor SRI no podia materializarse con Dapper debido
   a tipos incompatibles entre el procedimiento almacenado y el DTO.
 
@@ -149,9 +153,37 @@ El blocker de materializacion y apertura del Monitor SRI quedo resuelto el 2026-
 - apertura y actualizacion visual del Monitor SRI con KPI `4/0/1/0`, sin iniciar workers ni llamar
   al SRI.
 
-La Fase 7.2.1 conserva pendientes los gates autenticados que no formaron parte de esta correccion
-acotada. Antes de un GO global todavia debe verificarse:
+## Cierre autenticado de Fase 7.2.2
 
-- se validen 401/403/200 con JWT y empresa activa;
-- build y pruebas completas permanezcan sin errores;
-- no existan procesos residuales ni llamadas SAP/SRI.
+El 2026-07-25 se completo el gate autenticado contra la API .NET 10 ya iniciada por Visual Studio,
+sin reiniciarla ni detenerla. La validacion uso un usuario activo existente y dos JWT efimeros
+generados exclusivamente en memoria: uno sin permisos y otro con
+`SRI.DOCUMENTS.VIEW`. No se ejecuto login, no se modificaron usuarios, roles, permisos o datos y
+no se imprimieron ni persistieron tokens, claves o cadenas de conexion.
+
+| Gate | Resultado |
+|---|---|
+| Runtime del validador | .NET `10.0.10` |
+| TLS SQL efectivo | `Encrypt=true`, `TrustServerCertificate=false` |
+| Sin autenticacion, empresa `DEMO` | HTTP 401 |
+| JWT vigente sin permiso, empresa `DEMO` | HTTP 403 |
+| JWT vigente con permiso, empresa `DEMO` | HTTP 200 |
+| Empresa inexistente/no disponible | HTTP 403 |
+| Resumen `DEMO` | `Total=4`, `Pending=0`, `Querying=0`, `Authorized=1`, `Errors=0` |
+| Resumen `DEMO-REMIGIO` | `0/0/0/0/0` |
+| Resumen `DEMO-CANARIS` | `0/0/0/0/0` |
+| Build Release sin restore | 0 advertencias, 0 errores |
+| Tests Release sin build/restore | 478 superadas, 5 diagnosticas omitidas, 0 fallidas; 483 total |
+
+Los tres codigos de empresa fueron resueltos por el middleware real para el mismo usuario y cada
+respuesta fue materializada desde su base tenant. Los conteos distintos entre Matriz y sucursales
+acreditan que el contexto de empresa no reutilizo datos de otro tenant.
+
+No se iniciaron WinForms ni workers durante este cierre; sus conteos finales fueron cero. La API
+preexistente con PID `45612` se conservo activa. El flujo ejecutado fue exclusivamente de consulta:
+no encolo documentos, no creo claims, leases, intentos o auditorias y no invoco SAP ni el proveedor
+SRI.
+
+Con esta evidencia quedan cerrados los pendientes de Fase 7.2.1 y 7.2.2. El siguiente gate no es
+otro smoke funcional: corresponde definir artefactos versionados `win-x64`, manifests, hashes y
+rollback pilot1/pilot2 antes de cualquier promocion.

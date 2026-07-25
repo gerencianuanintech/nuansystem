@@ -81,11 +81,13 @@ de assemblies DevExpress.
 
 ## Riesgos y gates pendientes
 
-1. El smoke runtime controlado se ejecutó y quedó en **NO-GO** por una incompatibilidad de tipos
-   entre `SP_NA_GET_SRIDOCUMENTMONITOR_RESUMEN` y `SriDocumentMonitorSummaryDto`. Consultar
+1. El defecto original del smoke runtime fue corregido mediante la migración tenant `123`,
+   validada con materialización Dapper real y apertura del Monitor SRI.
+2. El cierre autenticado de Fase 7.2.2 validó 401/403/200, empresa activa, rechazo de empresa no
+   disponible y aislamiento entre `DEMO`, `DEMO-REMIGIO` y `DEMO-CANARIS` sobre .NET 10. Consultar
    [DOTNET-10-RUNTIME-SMOKE.md](../operations/DOTNET-10-RUNTIME-SMOKE.md).
-2. Definir manifests, hashes, versionado pilot1/pilot2 y rollback antes de promover.
-3. No habilitar procesamiento, SQL, SAP o SRI como consecuencia de esta migración.
+3. Definir manifests, hashes, versionado pilot1/pilot2 y rollback antes de promover.
+4. No habilitar procesamiento, SQL, SAP o SRI como consecuencia de esta migración.
 
 ## Rollback
 
