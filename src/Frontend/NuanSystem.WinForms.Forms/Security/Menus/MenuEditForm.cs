@@ -3,15 +3,16 @@ using DevExpress.XtraEditors.Controls;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Services.Security.Forms.Models;
 using NuanSystem.WinForms.Services.Security.Menus.Models;
+using SecurityMenuItem = NuanSystem.WinForms.Services.Security.Menus.Models.MenuItem;
 
 namespace NuanSystem.WinForms.Forms.Security.Menus;
 
 public sealed partial class MenuEditForm : BaseEditForm
 {
     public MenuEditForm(
-        IReadOnlyCollection<MenuItem> menus,
+        IReadOnlyCollection<SecurityMenuItem> menus,
         IReadOnlyCollection<FormItem> forms,
-        MenuItem? menu = null,
+        SecurityMenuItem? menu = null,
         bool copyMode = false)
     {
         InitializeComponent();
@@ -80,7 +81,7 @@ public sealed partial class MenuEditForm : BaseEditForm
             activeCheckEdit.Checked);
     }
 
-    private void LoadParents(IReadOnlyCollection<MenuItem> menus, int? currentId)
+    private void LoadParents(IReadOnlyCollection<SecurityMenuItem> menus, int? currentId)
     {
         var parentOptions = menus
             .Where(menu => !currentId.HasValue || menu.Id != currentId.Value)

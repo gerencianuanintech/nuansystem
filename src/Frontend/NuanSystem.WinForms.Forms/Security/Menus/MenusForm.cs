@@ -6,6 +6,7 @@ using NuanSystem.WinForms.Services.GridColumnSettings;
 using NuanSystem.WinForms.Services.Security.Menus.Models;
 using NuanSystem.WinForms.Services.Session;
 using NuanSystem.WinForms.ViewModels.Security.Menus;
+using SecurityMenuItem = NuanSystem.WinForms.Services.Security.Menus.Models.MenuItem;
 
 namespace NuanSystem.WinForms.Forms.Security.Menus;
 
@@ -150,21 +151,21 @@ public sealed partial class MenusForm : BaseGridCrudListForm
             column.Visible = false;
         }
 
-        ConfigureColumn(nameof(MenuItem.Code), "Codigo", 1, 150);
-        ConfigureColumn(nameof(MenuItem.Name), "Nombre", 2, 180);
-        ConfigureColumn(nameof(MenuItem.ParentCode), "Codigo padre", 3, 150);
-        ConfigureColumn(nameof(MenuItem.ParentName), "Menu padre", 4, 180);
-        ConfigureColumn(nameof(MenuItem.MenuTypeName), "Tipo", 5, 110);
-        ConfigureColumn(nameof(MenuItem.FormCode), "Codigo formulario", 6, 150);
-        ConfigureColumn(nameof(MenuItem.FormName), "Formulario", 7, 180);
-        ConfigureColumn(nameof(MenuItem.DisplayOrder), "Orden", 8, 70);
-        ConfigureColumn(nameof(MenuItem.IsVisible), "Visible", 9, 70);
-        ConfigureColumn(nameof(MenuItem.IsActive), "Activo", 10, 70);
+        ConfigureColumn(nameof(SecurityMenuItem.Code), "Codigo", 1, 150);
+        ConfigureColumn(nameof(SecurityMenuItem.Name), "Nombre", 2, 180);
+        ConfigureColumn(nameof(SecurityMenuItem.ParentCode), "Codigo padre", 3, 150);
+        ConfigureColumn(nameof(SecurityMenuItem.ParentName), "Menu padre", 4, 180);
+        ConfigureColumn(nameof(SecurityMenuItem.MenuTypeName), "Tipo", 5, 110);
+        ConfigureColumn(nameof(SecurityMenuItem.FormCode), "Codigo formulario", 6, 150);
+        ConfigureColumn(nameof(SecurityMenuItem.FormName), "Formulario", 7, 180);
+        ConfigureColumn(nameof(SecurityMenuItem.DisplayOrder), "Orden", 8, 70);
+        ConfigureColumn(nameof(SecurityMenuItem.IsVisible), "Visible", 9, 70);
+        ConfigureColumn(nameof(SecurityMenuItem.IsActive), "Activo", 10, 70);
     }
 
-    private MenuItem? SelectedItem()
+    private SecurityMenuItem? SelectedItem()
     {
-        return SelectedGridItem<MenuItem>();
+        return SelectedGridItem<SecurityMenuItem>();
     }
 
     private void ConfigureColumn(string fieldName, string caption, int visibleIndex, int width)
