@@ -141,9 +141,10 @@ la intención de soportar volúmenes superiores a `Int32`.
 
 El blocker de materializacion y apertura del Monitor SRI quedo resuelto el 2026-07-25 mediante:
 
-- `123_tenant_sri_document_monitor_summary_bigint_fix.sql`, ejecutado dos veces solo en
-  `NuanSystem_DEMO`, con una unica version `20260725.123`;
-- metadata SQL real con cinco columnas `bigint`;
+- `123_tenant_sri_document_monitor_summary_bigint_fix.sql`, ejecutado dos veces en
+  `NuanSystem_DEMO`, `NuanSystem_DEMO_REMIGIO` y `NuanSystem_DEMO_CANARIS`, con una unica version
+  `20260725.123` por tenant;
+- metadata SQL real con cinco columnas `bigint` en los tres tenants;
 - materializacion Dapper real contra `SriDocumentMonitorSummaryDto`;
 - apertura y actualizacion visual del Monitor SRI con KPI `4/0/1/0`, sin iniciar workers ni llamar
   al SRI.

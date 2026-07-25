@@ -31,15 +31,17 @@ Seleccione un documento `Authorized` con XML disponible, pulse **Descargar XML**
 
 ## Evidencia de despliegue y runtime
 
-- El 2026-07-25 se aplico dos veces en `NuanSystem_DEMO` el forward repair
-  `123_tenant_sri_document_monitor_summary_bigint_fix.sql`. Quedo exactamente una version
-  `20260725.123`; `sys.dm_exec_describe_first_result_set_for_object` confirmo `bigint` para
-  `Total`, `Pending`, `Querying`, `Authorized` y `Errors`.
+- El 2026-07-25 se aplico dos veces en `NuanSystem_DEMO`,
+  `NuanSystem_DEMO_REMIGIO` y `NuanSystem_DEMO_CANARIS` el forward repair
+  `123_tenant_sri_document_monitor_summary_bigint_fix.sql`. Cada tenant quedo con exactamente una
+  version `20260725.123` y un procedimiento; la metadata SQL confirmo `bigint` para `Total`,
+  `Pending`, `Querying`, `Authorized` y `Errors`.
 - El procedimiento corregido se materializo mediante Dapper contra
   `SriDocumentMonitorSummaryDto` con el resultado real `4/0/0/1/0`. El Monitor SRI abrio sin el
   error interno anterior, mostro los KPI `4/0/1/0` y repitio la consulta con **Actualizar** sin
-  excepcion. Esta comprobacion solo consulto datos persistidos en `NuanSystem_DEMO`; no inicio el
-  worker ni realizo llamadas al SRI. Master, Remigio y Canaris quedaron fuera de esta correccion.
+  excepcion. Remigio y Canaris materializaron mediante Dapper `0/0/0/0/0`, conservaron estables
+  los conteos protegidos y recibieron respaldos `COPY_ONLY` verificados antes del despliegue. No
+  se inicio el worker, no se realizaron llamadas al SRI y Master no fue modificado.
 - La regresion Dapper tambien materializa el resumen vacio como cinco valores `long` en cero. No
   se eliminaron ni aislaron datos reales para producir ese escenario.
 - Una solicitud real sin JWT, con la empresa `DEMO` indicada y TLS estricto, obtuvo HTTP 401 en
