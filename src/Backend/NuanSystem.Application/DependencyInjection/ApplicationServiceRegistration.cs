@@ -60,6 +60,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<ISyncEventPublisher, SyncEventPublisher>();
         services.AddScoped<ISyncEventPayloadFactory, SyncEventPayloadFactory>();
         services.AddScoped<ISyncRoutingService, SyncRoutingService>();
+        services.AddScoped<ILocalSyncOutboxPromotionService, LocalSyncOutboxPromotionService>();
         services.AddSingleton<ISyncDistributionPolicyEvaluator, SyncDistributionPolicyEvaluator>();
         services.AddScoped<ISyncProfileValidationService, SyncProfileValidationService>();
         services.AddScoped<ISyncEntityCatalogService, SyncEntityCatalogService>();

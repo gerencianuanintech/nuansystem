@@ -120,6 +120,8 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IInventoryAuditRepository, InventoryAuditRepository>();
         services.AddScoped<ISyncOutboxRepository, SyncOutboxRepository>();
+        services.AddScoped<ILocalSyncOutboxRepository, LocalSyncOutboxRepository>();
+        services.AddScoped<ISyncOutboxPromotionRepository, SyncOutboxPromotionRepository>();
         services.AddScoped<ISyncInboxRepository, SyncInboxRepository>();
         services.AddScoped<ISyncAuditRepository, SyncAuditRepository>();
         services.AddScoped<ISyncRuleEvaluator, SyncRuleEvaluator>();
