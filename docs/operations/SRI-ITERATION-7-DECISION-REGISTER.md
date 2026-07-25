@@ -52,6 +52,12 @@ pero no cierra D7-02: utiliza Windows 11 Pro, está en `WORKGROUP` y no represen
 el host Windows Server dedicado. Tampoco cierra D7-03 porque no puede acreditar
 una gMSA productiva.
 
+El ensayo temporal de `pilot1`, deshabilitado y sin llamadas SRI, está
+documentado en
+[SRI-ITERATION-7-DEVELOPMENT-WORKER-REHEARSAL.md](SRI-ITERATION-7-DEVELOPMENT-WORKER-REHEARSAL.md).
+Valida el lifecycle local de desarrollo y su rollback, pero no cambia el estado
+de D7-02, D7-03 ni D7-10.
+
 ### D7-01 — .NET 10 LTS
 
 - 16 proyectos migrados a `net10.0` / `net10.0-windows`.

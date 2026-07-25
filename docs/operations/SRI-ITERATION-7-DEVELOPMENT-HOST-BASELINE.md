@@ -91,9 +91,11 @@ Host PROYECTOS
   -X-> llamada SRI
 ```
 
-Una futura instalación temporal deshabilitada en este equipo requiere una
-autorización separada que nombre release, duración, recursos creados, evidencia
-y rollback. No debe reutilizar recursos residuales de Iteración 6.
+La instalación temporal deshabilitada autorizada posteriormente quedó
+registrada en
+[SRI-ITERATION-7-DEVELOPMENT-WORKER-REHEARSAL.md](SRI-ITERATION-7-DEVELOPMENT-WORKER-REHEARSAL.md).
+El ensayo no reutilizó recursos residuales de Iteración 6 y restauró el
+baseline material.
 
 ## Resultado
 
