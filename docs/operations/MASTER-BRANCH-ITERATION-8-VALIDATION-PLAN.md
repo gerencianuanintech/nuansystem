@@ -298,6 +298,11 @@ Gates pendientes:
 | Decisiones del propietario | Aprobadas |
 | Implementación 8.4A | Completada; commits `e43043d3` y `594341a0` |
 | Migración SQL | No requerida según metadatos reales de DEMO |
-| Runtime DEMO/Master | Pendiente de autorización específica para JWT efímero |
+| Runtime DEMO/Master | Validado: CRUD completo, rollback atómico y promoción idempotente ObserveOnly |
 | Aplicación 8.4B en sucursal | No autorizada |
 | Warehouse | Fuera de alcance |
+
+La evidencia runtime se encuentra en
+[MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md](../architecture/MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md).
+Los fixtures `I8IT84*` fueron eliminados al terminar y no se aplicaron eventos
+en Remigio ni Cañaris.

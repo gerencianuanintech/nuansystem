@@ -5,7 +5,7 @@
 - **Fecha:** 2026-07-25.
 - **Tipo:** sincronización/worker y persistencia transaccional.
 - **Riesgo:** alto.
-- **Estado:** implementación 8.4A completada; runtime pendiente.
+- **Estado:** 8.4A implementada y validada en runtime; lista para revisión.
 - **Rama:** `refactor/codex-skills-v8-4-item-outbox`.
 - **Predecesor aprobado:** Fases 8.1–8.3 para `BusinessPartner`.
 
@@ -224,6 +224,43 @@ procedimientos requeridos y las ocho columnas usadas por `LocalOutbox` existen,
 por lo que no se justifica una migración nueva.
 
 Los respaldos `COPY_ONLY WITH CHECKSUM` de Master y DEMO fueron creados y
-verificados antes del runtime. El runtime por API permanece pendiente de una
-autorización específica para derivar en memoria el `SecurityStamp` vigente y
-generar el JWT efímero. No se crearon fixtures ni se iniciaron workers.
+verificados antes del runtime.
+
+## Evidencia runtime 8.4A — 2026-07-25
+
+La validación controlada utilizó exclusivamente `NuanSystem_DEMO` como tenant
+piloto y `NuanSystem_Master` como destino de promoción. El JWT y el
+`SecurityStamp` se calcularon y conservaron únicamente en memoria. No se
+imprimieron ni persistieron secretos.
+
+Resultados:
+
+- create, update, disable y delete lógico generaron cuatro eventos distintos;
+- los cuatro eventos compartieron un único `EntityGlobalId`;
+- el payload excluyó precios, costos, bodegas y `ItemMasterData`;
+- núcleo Item, códigos de barra, configuración de bodegas, perfil maestro y
+  `LocalOutbox` participaron en el mismo límite transaccional;
+- un fallo controlado al insertar `LocalOutbox` dejó cero filas Item y cero
+  eventos, acreditando rollback atómico;
+- el relay temporal promovió exactamente cuatro eventos a Master;
+- la segunda ejecución conservó cuatro eventos, sin duplicados;
+- Master mantuvo los eventos en `Pending` porque el worker operó en
+  `SkeletonMode=ObserveOnly`;
+- Remigio y Cañaris permanecieron en solo lectura, con cero eventos y cero
+  locks;
+- el trigger de prueba, API temporal, worker temporal y todos los fixtures
+  `I8IT84*` fueron retirados;
+- la API de desarrollo preexistente se preservó.
+
+Los escenarios genéricos del relay —Master no disponible, lease vencido,
+promoción repetida, conflicto de `EventId` y caída después del commit Master—
+continúan cubiertos por la evidencia aprobada de Fase 8.3. La Fase 8.4A no
+modificó ese relay; agregó únicamente el productor transaccional de Item.
+
+Respaldos verificados:
+
+- `NuanSystem_Master-iteration84-20260725-175051.bak`;
+- `NuanSystem_DEMO-iteration84-20260725-175051.bak`.
+
+La validación no autoriza 8.4B, aplicación en sucursales, `Warehouse`, SAP,
+SRI, stock, costos, precios ni movimientos.

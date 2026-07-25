@@ -580,7 +580,7 @@ The authoritative design is
 delete now use the tenant transactional boundary and the local relay was
 validated in `ObserveOnly`.
 
-The next independent proposal is Item 8.4A:
+Item 8.4A is implemented and runtime-validated:
 
 ```text
 Item core + child collections + ItemMasterData
@@ -589,7 +589,9 @@ Item core + child collections + ItemMasterData
   -> idempotent Master promotion in ObserveOnly
 ```
 
-Its design is
+Its design and runtime evidence are in
 `docs/architecture/MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md`.
-The document does not authorize implementation. Real branch application is a
-separate 8.4B decision, and `Warehouse`, SAP and SRI remain excluded.
+The tenant aggregate and LocalOutbox commit atomically, and the relay promotes
+the limited payload idempotently to Master in ObserveOnly. Real branch
+application is a separate 8.4B decision, and `Warehouse`, SAP and SRI remain
+excluded.

@@ -78,10 +78,14 @@ and
 `docs/operations/MASTER-BRANCH-ITERATION-8-VALIDATION-PLAN.md`
 before changing CRUD publication.
 
-The first pilot is `BusinessPartner` only. `Item`, `Warehouse` and other
-entities remain independent promotion decisions. The relay belongs to
-`NuanSystem.MasterBranchSyncWorker`, stays disabled by default and never reuses
-SAP or SRI infrastructure.
+The approved transactional producers are `BusinessPartner` and Item 8.4A.
+For Item, read
+`docs/architecture/MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md`.
+Keep its payload limited to master identity/state; do not add prices, costs,
+stock, warehouses or `ItemMasterData`. Item 8.4B real branch application,
+`Warehouse` and other entities remain independent decisions. The relay belongs
+to `NuanSystem.MasterBranchSyncWorker`, stays disabled by default and never
+reuses SAP or SRI infrastructure.
 
 ## Antipatterns
 
