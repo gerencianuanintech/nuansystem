@@ -81,7 +81,9 @@ de assemblies DevExpress.
 
 ## Riesgos y gates pendientes
 
-1. Ejecutar smokes controlados de API, workers y WinForms en una autorización separada.
+1. El smoke runtime controlado se ejecutó y quedó en **NO-GO** por una incompatibilidad de tipos
+   entre `SP_NA_GET_SRIDOCUMENTMONITOR_RESUMEN` y `SriDocumentMonitorSummaryDto`. Consultar
+   [DOTNET-10-RUNTIME-SMOKE.md](../operations/DOTNET-10-RUNTIME-SMOKE.md).
 2. Definir manifests, hashes, versionado pilot1/pilot2 y rollback antes de promover.
 3. No habilitar procesamiento, SQL, SAP o SRI como consecuencia de esta migración.
 

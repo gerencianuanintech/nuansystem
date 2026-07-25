@@ -1,0 +1,148 @@
+# Smoke runtime de NuanSystem sobre .NET 10
+
+## Estado
+
+- Fecha: 2026-07-25.
+- Rama: `refactor/codex-skills-v7-2-1-dotnet10-runtime-smoke`.
+- Baseline: `ed8333914704f253249fcb49be2baabdda2ca1f3`.
+- Alcance: API local, workers deshabilitados y WinForms contra la empresa piloto `DEMO`.
+- Resultado: **NO-GO**.
+- Motivo bloqueante: el resumen del Monitor SRI no puede materializarse con Dapper debido a
+  tipos incompatibles entre el procedimiento almacenado y el DTO.
+
+No se ejecutaron scripts SQL, SAP, SRI, servicios Windows ni procesamiento documental. No se
+crearon claims, leases o procesos residuales. La API iniciada previamente por Visual Studio se
+conservó sin detenerla.
+
+## API
+
+Se inició una instancia HTTP aislada en loopback, con inicialización de Master y hosted services
+deshabilitados, únicamente para comprobar el pipeline básico.
+
+| Gate | Resultado |
+|---|---|
+| `/health` | HTTP 200, `Healthy` |
+| `/health/live` | HTTP 200, `Healthy` |
+| `/health/ready` sin JWT | HTTP 401 |
+| API abierta por Visual Studio | Conservada; no se reinició ni detuvo |
+| Instancia HTTP aislada al finalizar | Detenida; puerto liberado |
+
+La instancia aislada registró advertencias de Data Protection porque el contexto de ejecución no
+podía usar el key ring DPAPI de la sesión interactiva. Esto no bloqueó los endpoints anónimos y no
+se atribuye al proceso iniciado desde Visual Studio.
+
+La autenticación interactiva del cliente WinForms fue satisfactoria para `admin`: devolvió tres
+empresas y permitió seleccionar `Empresa Demo`. El login exitoso ejecuta por diseño
+`RegisterSuccessfulLoginAsync` y actualiza `Users.LastLoginAt`; por tanto, esa marca de auditoría
+es el único efecto persistente conocido de la validación. No se repitió el login después de
+detectar el defecto.
+
+Los escenarios autenticados 403/200 no se declararon completos porque el criterio de aborto se
+activó al fallar el Monitor SRI.
+
+## Workers deshabilitados
+
+| Host | Configuración efectiva | Resultado |
+|---|---|---|
+| `NuanSystem.SyncWorker` | `Worker:Enabled=false`, `Retry:Enabled=false` | Inicio y cierre cooperativo; ambos ciclos deshabilitados |
+| `NuanSystem.MasterBranchSyncWorker` | `Enabled=false`, `SkeletonMode=true`, `ObserveOnly` | Inicio y cierre cooperativo; sin acceso a datos |
+| `NuanSystem.SriWorker` | `Enabled=false`, Event Log deshabilitado | Lifecycle `Disabled` y cierre cooperativo |
+
+Para impedir que el heartbeat deshabilitado del SRI Worker alcanzara Master, la conexión se
+sobrescribió temporalmente con un destino loopback no atendido. El fallo de conexión esperado fue
+registrado, pero no hubo acceso SQL ni invocación del proveedor SRI.
+
+Al finalizar no quedaron procesos de WinForms, SyncWorker, MasterBranchSyncWorker o SriWorker.
+
+## Build y pruebas
+
+| Gate | Resultado |
+|---|---|
+| `git diff --check` | Correcto |
+| Build Release sin restore | 0 advertencias, 0 errores |
+| Tests Release sin build/restore | 473 superadas, 5 diagnósticas omitidas, 0 fallidas; 478 total |
+
+La suite automatizada no detecta actualmente la incompatibilidad Dapper porque sus verificaciones
+del resumen son contractuales y no materializan el result set SQL real.
+
+## WinForms y DevExpress
+
+Se ejecutó `NuanSystem.WinForms` Release sobre `net10.0-windows` usando los assemblies DevExpress
+25.2 instalados en la máquina.
+
+| Gate | Resultado |
+|---|---|
+| Inicio del cliente | Validado |
+| Estado de API en login | `API activa` |
+| Login y selección de empresa | Validado; tres empresas, `Empresa Demo` seleccionada |
+| Shell, Ribbon, Accordion y pestañas | Validado visualmente |
+| Navegación por permisos | Validada para accesos visibles del usuario administrador |
+| Transportistas | Validado en modo consulta |
+| Historial de transportista | Validado; formulario corporativo con siete registros |
+| Monitor SRI | **Fallido** |
+| Cierre del cliente | Validado; cero procesos residuales |
+
+Transportistas mostró el maestro independiente con las columnas `Código`, `Nombre`,
+`Tipo de identificación`, `Identificación`, `Descripción` y `Activo`. También quedaron visibles
+las operaciones `Consultar`, `Copiar`, `Actualizar`, `Nuevo`, `Editar`, `Eliminar`, `Columnas` e
+`Historial`. No se creó, actualizó ni eliminó ningún transportista.
+
+## Defecto bloqueante
+
+Al abrir Monitor SRI, `GET /api/sri/documents/monitor/summary` produjo una excepción controlada y
+el cliente mostró `Ocurrió un error interno procesando la solicitud`.
+
+Evidencia técnica:
+
+```text
+InvalidOperationException:
+A parameterless default constructor or one matching signature
+(System.Int64 Total, System.Int32 Pending, System.Int32 Querying,
+ System.Int32 Authorized, System.Int32 Errors)
+is required for SriDocumentMonitorSummaryDto materialization.
+```
+
+El contrato C# declara:
+
+```text
+SriDocumentMonitorSummaryDto(
+    long Total,
+    long Pending,
+    long Querying,
+    long Authorized,
+    long Errors)
+```
+
+El procedimiento `SP_NA_GET_SRIDOCUMENTMONITOR_RESUMEN` devuelve:
+
+- `COUNT_BIG(1)` como `Int64`;
+- cada `SUM(CASE ... THEN 1 ELSE 0 END)` como `Int32`.
+
+Dapper intenta usar el constructor posicional exacto y rechaza esa combinación. Las pruebas
+existentes verifican presencia y seguridad textual del contrato, pero no materializan el result
+set real del procedimiento.
+
+## Corrección recomendada
+
+Debe abrirse una fase correctiva separada con autorización SQL explícita:
+
+1. agregar una nueva migración tenant idempotente;
+2. hacer que las cuatro sumas devuelvan `bigint` y cero para una cola vacía, preservando el
+   contrato público `long`;
+3. añadir una prueba de integración de materialización Dapper contra el esquema real;
+4. ejecutar el script dos veces en el tenant piloto autorizado;
+5. repetir únicamente resumen, listado, salud del worker y renderizado del Monitor SRI;
+6. completar después los gates autenticados 403/200 pendientes.
+
+No se recomienda reducir el DTO a `int`, porque los contadores públicos y `COUNT_BIG` ya expresan
+la intención de soportar volúmenes superiores a `Int32`.
+
+## Criterio de reanudación
+
+La Fase 7.2.1 permanece en NO-GO hasta que:
+
+- el resumen sea materializable en cola vacía y con datos;
+- el Monitor SRI abra sin error;
+- se validen 401/403/200 con JWT y empresa activa;
+- build y pruebas completas permanezcan sin errores;
+- no existan procesos residuales ni llamadas SAP/SRI.
