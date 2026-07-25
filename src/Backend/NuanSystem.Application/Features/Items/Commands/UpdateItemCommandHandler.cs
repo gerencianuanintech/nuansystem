@@ -1,7 +1,6 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Abstractions.Sync;
-using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.Items.Dtos;
 using NuanSystem.Shared.Sync;
@@ -11,28 +10,14 @@ namespace NuanSystem.Application.Features.Items.Commands;
 
 public sealed class UpdateItemCommandHandler(
     IItemRepository itemRepository,
-    ISyncEventPublisher syncEventPublisher,
-    ICompanyContext companyContext)
+    ITransactionRunner transactionRunner,
+    IItemLocalOutboxWriter localOutboxWriter)
     : ICommandHandler<UpdateItemCommand, ItemDto>
 {
     public async Task<Result<ItemDto>> Handle(UpdateItemCommand request, CancellationToken cancellationToken)
     {
-        if (await itemRepository.GetByIdAsync(request.Id, cancellationToken) is null)
-        {
-            return Result<ItemDto>.Failure(
-                "Articulo no encontrado.",
-                [new ApiError("ItemNotFound", "No existe el articulo indicado.", nameof(request.Id))]);
-        }
-
         var code = request.Code.Trim().ToUpperInvariant();
-        if (await itemRepository.ExistsByCodeAsync(code, request.Id, cancellationToken))
-        {
-            return Result<ItemDto>.Failure(
-                "Ya existe otro articulo con el codigo indicado.",
-                [new ApiError("ItemCodeAlreadyExists", "El codigo de articulo ya existe.", nameof(request.Code))]);
-        }
-
-        var updated = await itemRepository.UpdateAsync(new UpdateItemData(
+        var data = new UpdateItemData(
             request.Id,
             code,
             request.Name.Trim(),
@@ -68,28 +53,41 @@ public sealed class UpdateItemCommandHandler(
             request.AuditUserName?.Trim(),
             request.ExternalSystem?.Trim(),
             request.ExternalCode?.Trim(),
-            request.SapCode?.Trim()), cancellationToken);
+            request.SapCode?.Trim());
 
-        if (!updated)
-        {
-            return Result<ItemDto>.Failure("No se pudo actualizar el articulo.");
-        }
+        return await transactionRunner.ExecuteInTenantTransactionAsync(
+            async (connection, transaction, token) =>
+            {
+                if (await itemRepository.GetByIdAsync(request.Id, connection, transaction, token) is null)
+                {
+                    return Result<ItemDto>.Failure(
+                        "Articulo no encontrado.",
+                        [new ApiError("ItemNotFound", "No existe el articulo indicado.", nameof(request.Id))]);
+                }
 
-        var item = await itemRepository.GetByIdAsync(request.Id, cancellationToken)
-            ?? throw new InvalidOperationException("El articulo fue actualizado pero no pudo consultarse.");
+                if (await itemRepository.ExistsByCodeAsync(code, request.Id, connection, transaction, token))
+                {
+                    return Result<ItemDto>.Failure(
+                        "Ya existe otro articulo con el codigo indicado.",
+                        [new ApiError("ItemCodeAlreadyExists", "El codigo de articulo ya existe.", nameof(request.Code))]);
+                }
 
-        var syncResult = await ItemSyncPublisher.PublishAsync(
-            syncEventPublisher,
-            companyContext,
-            item,
-            item.IsActive ? SyncOperation.Updated : SyncOperation.Disabled,
+                if (!await itemRepository.UpdateAsync(data, connection, transaction, token))
+                {
+                    return Result<ItemDto>.Failure("No se pudo actualizar el articulo.");
+                }
+
+                var item = await itemRepository.GetByIdAsync(request.Id, connection, transaction, token)
+                    ?? throw new InvalidOperationException("El articulo fue actualizado pero no pudo consultarse.");
+
+                await localOutboxWriter.EnqueueAsync(
+                    item,
+                    item.IsActive ? SyncOperation.Updated : SyncOperation.Disabled,
+                    connection,
+                    transaction,
+                    token);
+                return Result<ItemDto>.Success(item, "Articulo actualizado correctamente.");
+            },
             cancellationToken);
-
-        if (syncResult is { IsSuccess: false })
-        {
-            return Result<ItemDto>.Failure(syncResult.Message, syncResult.Errors);
-        }
-
-        return Result<ItemDto>.Success(item, "Articulo actualizado correctamente.");
     }
 }

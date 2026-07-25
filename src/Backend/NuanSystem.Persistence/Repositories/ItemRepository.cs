@@ -32,8 +32,31 @@ public sealed class ItemRepository(ITenantConnectionFactory connectionFactory) :
     public async Task<ItemDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
+        return await GetByIdCoreAsync(id, connection, transaction: null, cancellationToken);
+    }
+
+    public Task<ItemDto?> GetByIdAsync(
+        int id,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        return GetByIdCoreAsync(id, connection, transaction, cancellationToken);
+    }
+
+    private static async Task<ItemDto?> GetByIdCoreAsync(
+        int id,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
         using var grid = await connection.QueryMultipleAsync(
-            new CommandDefinition(GetByIdProcedure, new { Id = id }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+            new CommandDefinition(
+                GetByIdProcedure,
+                new { Id = id },
+                transaction,
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
 
         var item = await grid.ReadSingleOrDefaultAsync<ItemDto>();
         if (item is null)
@@ -45,7 +68,12 @@ public sealed class ItemRepository(ITenantConnectionFactory connectionFactory) :
         item.Warehouses = (await grid.ReadAsync<ItemWarehouseDto>()).AsList();
 
         var masterDataJson = await connection.ExecuteScalarAsync<string?>(
-            new CommandDefinition(GetMasterDataProcedure, new { ItemId = id }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+            new CommandDefinition(
+                GetMasterDataProcedure,
+                new { ItemId = id },
+                transaction,
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
         item.MasterData = DeserializeMasterData(masterDataJson);
 
         return item;
@@ -68,27 +96,79 @@ public sealed class ItemRepository(ITenantConnectionFactory connectionFactory) :
     public async Task<int> CreateAsync(CreateItemData item, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        var id = await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(CreateProcedure, ToParameters(item), cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        return await CreateCoreAsync(item, connection, transaction: null, cancellationToken);
+    }
 
-        await SaveMasterDataAsync(connection, id, item.MasterData, item.CreatedByUserId, item.CreatedByUserName, cancellationToken);
+    public Task<int> CreateAsync(
+        CreateItemData item,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        return CreateCoreAsync(item, connection, transaction, cancellationToken);
+    }
+
+    private static async Task<int> CreateCoreAsync(
+        CreateItemData item,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
+        var id = await connection.ExecuteScalarAsync<int>(
+            new CommandDefinition(
+                CreateProcedure,
+                ToParameters(item),
+                transaction,
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
+
+        await SaveMasterDataAsync(
+            connection,
+            transaction,
+            id,
+            item.MasterData,
+            item.CreatedByUserId,
+            item.CreatedByUserName,
+            cancellationToken);
         return id;
     }
 
     public async Task<bool> ExistsByCodeAsync(string code, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        var count = await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(ExistsByCodeProcedure, new { Code = code, ExcluirId = (int?)null }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
-
-        return count > 0;
+        return await ExistsByCodeCoreAsync(code, excludingId: null, connection, transaction: null, cancellationToken);
     }
 
     public async Task<bool> ExistsByCodeAsync(string code, int excludingId, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
+        return await ExistsByCodeCoreAsync(code, excludingId, connection, transaction: null, cancellationToken);
+    }
+
+    public Task<bool> ExistsByCodeAsync(
+        string code,
+        int? excludingId,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        return ExistsByCodeCoreAsync(code, excludingId, connection, transaction, cancellationToken);
+    }
+
+    private static async Task<bool> ExistsByCodeCoreAsync(
+        string code,
+        int? excludingId,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
         var count = await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(ExistsByCodeProcedure, new { Code = code, ExcluirId = excludingId }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+            new CommandDefinition(
+                ExistsByCodeProcedure,
+                new { Code = code, ExcluirId = excludingId },
+                transaction,
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
 
         return count > 0;
     }
@@ -96,12 +176,42 @@ public sealed class ItemRepository(ITenantConnectionFactory connectionFactory) :
     public async Task<bool> UpdateAsync(UpdateItemData item, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
+        return await UpdateCoreAsync(item, connection, transaction: null, cancellationToken);
+    }
+
+    public Task<bool> UpdateAsync(
+        UpdateItemData item,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        return UpdateCoreAsync(item, connection, transaction, cancellationToken);
+    }
+
+    private static async Task<bool> UpdateCoreAsync(
+        UpdateItemData item,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
         var affectedRows = await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(UpdateProcedure, ToParameters(item), cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+            new CommandDefinition(
+                UpdateProcedure,
+                ToParameters(item),
+                transaction,
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
 
         if (affectedRows > 0)
         {
-            await SaveMasterDataAsync(connection, item.Id, item.MasterData, item.UpdatedByUserId, item.UpdatedByUserName, cancellationToken);
+            await SaveMasterDataAsync(
+                connection,
+                transaction,
+                item.Id,
+                item.MasterData,
+                item.UpdatedByUserId,
+                item.UpdatedByUserName,
+                cancellationToken);
         }
 
         return affectedRows > 0;
@@ -110,10 +220,45 @@ public sealed class ItemRepository(ITenantConnectionFactory connectionFactory) :
     public async Task<bool> DeleteAsync(int id, int? deletedByUserId, string? deletedByUserName, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
+        return await DeleteCoreAsync(
+            id,
+            deletedByUserId,
+            deletedByUserName,
+            connection,
+            transaction: null,
+            cancellationToken);
+    }
+
+    public Task<bool> DeleteAsync(
+        int id,
+        int? deletedByUserId,
+        string? deletedByUserName,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        return DeleteCoreAsync(
+            id,
+            deletedByUserId,
+            deletedByUserName,
+            connection,
+            transaction,
+            cancellationToken);
+    }
+
+    private static async Task<bool> DeleteCoreAsync(
+        int id,
+        int? deletedByUserId,
+        string? deletedByUserName,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
         var affectedRows = await connection.ExecuteScalarAsync<int>(
             new CommandDefinition(
                 DeleteProcedure,
                 new { Id = id, DeletedByUserId = deletedByUserId, DeletedByUserName = deletedByUserName },
+                transaction,
                 cancellationToken: cancellationToken,
                 commandType: CommandType.StoredProcedure));
 
@@ -206,6 +351,7 @@ public sealed class ItemRepository(ITenantConnectionFactory connectionFactory) :
 
     private static async Task SaveMasterDataAsync(
         IDbConnection connection,
+        IDbTransaction? transaction,
         int itemId,
         ItemMasterData? masterData,
         int? userId,
@@ -227,6 +373,7 @@ public sealed class ItemRepository(ITenantConnectionFactory connectionFactory) :
                     UpdatedByUserId = userId,
                     UpdatedByUserName = userName
                 },
+                transaction,
                 cancellationToken: cancellationToken,
                 commandType: CommandType.StoredProcedure));
     }

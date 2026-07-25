@@ -1,7 +1,6 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Abstractions.Sync;
-using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.Items.Dtos;
 using NuanSystem.Shared.Sync;
@@ -11,21 +10,14 @@ namespace NuanSystem.Application.Features.Items.Commands;
 
 public sealed class CreateItemCommandHandler(
     IItemRepository itemRepository,
-    ISyncEventPublisher syncEventPublisher,
-    ICompanyContext companyContext)
+    ITransactionRunner transactionRunner,
+    IItemLocalOutboxWriter localOutboxWriter)
     : ICommandHandler<CreateItemCommand, ItemDto>
 {
     public async Task<Result<ItemDto>> Handle(CreateItemCommand request, CancellationToken cancellationToken)
     {
         var code = request.Code.Trim().ToUpperInvariant();
-        if (await itemRepository.ExistsByCodeAsync(code, cancellationToken))
-        {
-            return Result<ItemDto>.Failure(
-                "Ya existe un articulo con el codigo indicado.",
-                [new ApiError("ItemCodeAlreadyExists", "El codigo de articulo ya existe.", nameof(request.Code))]);
-        }
-
-        var id = await itemRepository.CreateAsync(new CreateItemData(
+        var data = new CreateItemData(
             code,
             request.Name.Trim(),
             request.Description?.Trim(),
@@ -61,24 +53,27 @@ public sealed class CreateItemCommandHandler(
             request.GlobalId,
             request.ExternalSystem?.Trim(),
             request.ExternalCode?.Trim(),
-            request.SapCode?.Trim()), cancellationToken);
+            request.SapCode?.Trim());
 
-        var item = await itemRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new InvalidOperationException("El articulo fue creado pero no pudo consultarse.");
+        return await transactionRunner.ExecuteInTenantTransactionAsync(
+            async (connection, transaction, token) =>
+            {
+                if (await itemRepository.ExistsByCodeAsync(code, null, connection, transaction, token))
+                {
+                    return Result<ItemDto>.Failure(
+                        "Ya existe un articulo con el codigo indicado.",
+                        [new ApiError("ItemCodeAlreadyExists", "El codigo de articulo ya existe.", nameof(request.Code))]);
+                }
 
-        var syncResult = await ItemSyncPublisher.PublishAsync(
-            syncEventPublisher,
-            companyContext,
-            item,
-            SyncOperation.Created,
+                var id = await itemRepository.CreateAsync(data, connection, transaction, token);
+                var item = await itemRepository.GetByIdAsync(id, connection, transaction, token)
+                    ?? throw new InvalidOperationException("El articulo fue creado pero no pudo consultarse.");
+
+                await localOutboxWriter.EnqueueAsync(
+                    item, SyncOperation.Created, connection, transaction, token);
+                return Result<ItemDto>.Success(item, "Articulo creado correctamente.");
+            },
             cancellationToken);
-
-        if (syncResult is { IsSuccess: false })
-        {
-            return Result<ItemDto>.Failure(syncResult.Message, syncResult.Errors);
-        }
-
-        return Result<ItemDto>.Success(item, "Articulo creado correctamente.");
     }
 
     internal static IReadOnlyCollection<SaveItemBarcodeData> NormalizeBarcodes(IReadOnlyCollection<SaveItemBarcodeData>? barcodes)
