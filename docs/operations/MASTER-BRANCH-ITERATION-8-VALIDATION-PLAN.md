@@ -107,9 +107,9 @@ Detener sin avanzar al gate siguiente cuando:
 
 ## Estado
 
-Gate A de Fase 8.1 ejecutado para contratos y código. El alcance autorizado del
-Gate B se registra a continuación. Los escenarios restantes de B y los gates C
-a F conservan sus autorizaciones separadas.
+Gate A y el alcance autorizado de Gate B para Fase 8.1 quedaron aprobados. Los
+gates C a F del piloto `BusinessPartner` se ejecutaron posteriormente bajo la
+autorización específica de Fases 8.2 y 8.3 documentada al final.
 
 ## Ejecución autorizada de Fase 8.1 — 2026-07-25
 
@@ -175,3 +175,100 @@ Esta ejecución no valida todavía:
 
 Esos escenarios pertenecen a las Fases 8.2 y 8.3 y requieren una autorización
 independiente. No se habilitó ningún worker ni se realizaron llamadas SAP/SRI.
+
+## Ejecución autorizada de Fases 8.2 y 8.3 — 2026-07-25
+
+### Alcance y bases
+
+- Rama: `refactor/codex-skills-v8-transactional-outbox`.
+- Entidad piloto única: `BusinessPartner`.
+- Bases con escritura autorizada: `NuanSystem_Master` y
+  `NuanSystem_DEMO`.
+- `NuanSystem_DEMO_REMIGIO` y `NuanSystem_DEMO_CANARIS`: solo lectura.
+- `MasterBranchSyncWorker` iniciado únicamente de forma temporal.
+- Relay habilitado solo mediante variables del proceso.
+- `SkeletonMode=ObserveOnly`.
+- SAP y SRI excluidos.
+
+Antes de las pruebas se crearon y verificaron respaldos de Master y DEMO. Las
+conexiones y claves locales se utilizaron únicamente en memoria y no forman
+parte de la evidencia ni de Git.
+
+### Reparación forward-only de DEMO
+
+La primera ejecución funcional reveló un contrato tenant histórico incompleto
+para `BusinessPartner`. Se creó
+`126_tenant_business_partner_purchase_contract.sql` y se desplegó dos veces
+solo en DEMO:
+
+| Evidencia | Resultado |
+|---|---:|
+| `SchemaHistory` `20260725.126` | 1 |
+| Columnas de `BusinessPartnerPurchaseSettings` | 17 |
+| Parámetros create | 107 |
+| Parámetros update | 108 |
+| Proyecciones con identidad global | 2 |
+| BusinessPartners preservados durante despliegue | 11 |
+
+La migración restableció la tabla de compras, alineó create/update con Dapper,
+preservó los wrappers de dimensiones contables y agregó `GlobalId`,
+`ExternalSystem` y `ExternalCode` a list/get-by-id cuando faltaban.
+
+### Matriz de fallos y recuperación
+
+| Escenario | Estado | Evidencia saneada |
+|---|---|---|
+| Create/update/delete lógico | Validado | 3 maestros, 5 eventos únicos y `GlobalId` coincidente |
+| Rollback tenant | Validado | fallo controlado dejó 0 maestro y 0 `LocalOutbox` |
+| Master no disponible | Validado | 4 eventos locales permanecieron durables y elegibles |
+| Claims concurrentes | Validado | dos relays: 1 claim combinado y 1 owner activo |
+| Lease vencido | Validado | 4 leases expirados fueron liberados y reclamados |
+| Promoción inicial | Validado | 4 locales Applied y 4 filas Master con `EventId` único |
+| Promoción repetida | Validado | 1 fila local y 1 fila Master, sin duplicado |
+| Colisión de `EventId` | Validado | local `DeadLetter`; payload original Master preservado |
+| Crash después del commit Master | Validado | primer intento Error; segundo Applied; Master=1 |
+| Routing en `ObserveOnly` | Validado | eventos Master Pending; ninguna sucursal aplicada |
+| SAP/SRI | Validado | cero invocaciones |
+
+Durante el relay se corrigieron dos defectos reales:
+
+1. el host de `MasterBranchSyncWorker` no registraba los servicios de
+   Application necesarios para resolver el servicio de promoción;
+2. el record posicional `LocalSyncOutboxDto` no podía materializar de forma
+   segura el `SELECT item.*` después de agregar columnas de lease.
+
+El segundo defecto cuenta con una prueba Dapper real que materializa el orden
+físico del esquema SQL.
+
+### Limpieza y snapshot final
+
+Se retiraron exclusivamente:
+
+- 3 BusinessPartners `I8BP83*`;
+- 5 eventos `LocalOutbox`;
+- 5 eventos `SyncOutbox` y sus targets, decisiones y auditorías asociadas;
+- los triggers temporales de rollback y crash.
+
+Snapshot final:
+
+| Base | LocalOutbox | Elegibles | Locks | Fixtures |
+|---|---:|---:|---:|---:|
+| `NuanSystem_DEMO` | 0 | 0 | 0 | 0 |
+| `NuanSystem_DEMO_REMIGIO` | 0 | 0 | 0 | 0 |
+| `NuanSystem_DEMO_CANARIS` | 0 | 0 | 0 | 0 |
+
+Master quedó con 0 fixtures, 0 elegibles y 0 locks del piloto. La migración 126
+permanece instalada una sola vez en DEMO.
+
+### Validaciones de código
+
+- pruebas dirigidas de transactional outbox y `BusinessPartner`: 16 aprobadas;
+- build Release completo: 0 errores y 0 advertencias;
+- suite completa: 493 aprobadas, 5 diagnósticas omitidas y 0 fallidas;
+- `git diff --check`: aprobado.
+
+### Límite de aprobación
+
+Las Fases 8.2 y 8.3 quedan aprobadas únicamente para el piloto
+`BusinessPartner`. No se inició la Fase 8.4, no se migraron `Item` ni
+`Warehouse`, no se realizó push, PR ni integración a `master`.

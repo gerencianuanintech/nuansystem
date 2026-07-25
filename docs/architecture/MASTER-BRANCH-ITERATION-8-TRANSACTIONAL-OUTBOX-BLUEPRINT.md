@@ -4,7 +4,8 @@
 
 - **Fecha:** 2026-07-25.
 - **Alcance actual:** discovery, arquitectura y plan de validación.
-- **Estado:** **apta para revisión; implementación no iniciada**.
+- **Estado:** Fases 8.1, 8.2 y 8.3 implementadas y validadas en el piloto
+  `BusinessPartner`; Fase 8.4 no iniciada.
 - **Autoridad:** Constitución > Kernel > catálogos > skill
   `nuansystem-master-branch-sync` > implementación.
 
@@ -313,3 +314,48 @@ Se incorporaron:
 
 No se conectó ningún handler de `BusinessPartner`; eso pertenece a Fase 8.2.
 No se ejecutaron scripts, workers, SAP, SRI ni pruebas runtime.
+
+## Cierre de Fases 8.2 y 8.3
+
+**Fecha de validación:** 2026-07-25.
+
+El piloto `BusinessPartner` quedó conectado al límite transaccional tenant:
+
+- create, update y eliminación lógica guardan maestro e intención
+  `LocalOutbox` dentro de la misma transacción;
+- esos tres handlers ya no publican directamente a Master;
+- `Item` y `Warehouse` permanecen fuera del cambio;
+- el relay se resuelve desde el host
+  `NuanSystem.MasterBranchSyncWorker` mediante los servicios de Application;
+- el DTO reclamado por Dapper admite materialización por propiedades y no
+  depende del orden físico de las columnas agregadas por la migración 124.
+
+Durante la prueba real se detectó que el contrato histórico de
+`BusinessPartner` de DEMO no incluía toda la configuración de compras ni las
+proyecciones de identidad global. La migración tenant 126 restablece el
+contrato, conserva los wrappers de dimensiones contables y fue ejecutada dos
+veces exclusivamente en `NuanSystem_DEMO`. La versión
+`20260725.126` quedó registrada una sola vez. Remigio y Cañaris permanecieron
+en solo lectura.
+
+La validación runtime aprobó:
+
+- create, update y delete lógico con cinco eventos únicos;
+- rollback conjunto cuando falla la escritura de `LocalOutbox`;
+- indisponibilidad de Master sin pérdida del evento local;
+- claim exclusivo entre dos relays;
+- recuperación de lease vencido;
+- promoción idempotente repetida;
+- conflicto terminal cuando el mismo `EventId` contiene otro payload;
+- recuperación del crash ocurrido después del commit Master y antes del cierre
+  local, sin duplicar `SyncOutbox`;
+- ejecución con `SkeletonMode=ObserveOnly`, sin aplicar eventos en sucursales;
+- cero llamadas SAP y SRI.
+
+Todos los fixtures `I8BP83*`, eventos Master, targets, auditorías asociadas y
+triggers temporales fueron retirados. El snapshot final confirmó cero eventos
+elegibles, cero locks y cero fixtures en Master, DEMO, Remigio y Cañaris. La
+migración 126 y sus objetos forward-only permanecen instalados en DEMO.
+
+La Fase 8.4 sigue bloqueada hasta una aprobación independiente. No se autoriza
+inferir de este piloto la migración de `Item`, `Warehouse` ni otra entidad.
