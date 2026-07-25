@@ -592,12 +592,12 @@ Para cierre:
 | Visual Studio 2026 | Validated: Enterprise 18.8.1 |
 | DevExpress instalado, build CLI | Validated: DevExpress Components 25.2 |
 | Visual Studio Designer | Validated manualmente; sin cambios serializados |
-| Restore/build/test net10 | Validated: 0 warnings, 0 errors; 473 passed, 5 skipped |
-| API net10 | Validated para build y publish; runtime no ejecutado |
-| Workers net10 | Validated para build y publish; runtime no ejecutado |
-| WinForms net10 | Validated para build, publish y revisión de diseños |
-| Publish `win-x64` | Validated, framework-dependent |
-| Pilot1/pilot2/rollback | Not validated |
+| Restore/build/test net10 | Validated: 0 warnings, 0 errors; 483 passed, 5 skipped |
+| API net10 | Validated para build, publish y runtime autenticado controlado |
+| Workers net10 | Validated para build y publish; artefactos deshabilitados |
+| WinForms net10 | Validated para build, publish, runtime y revisión de diseños |
+| Publish `win-x64` | Validated, framework-dependent, cinco hosts independientes |
+| Pilot1/pilot2/rollback | Validated a nivel de artefactos inmutables; sin instalación SCM |
 | SQL/SAP/SRI runtime | Not applicable a esta fase |
 
 ## Criterio de cierre
@@ -615,5 +615,7 @@ La migración solo se acepta cuando:
 
 La ejecución técnica realizada se documenta en
 [DOTNET-10-MIGRATION-EXECUTION.md](../architecture/DOTNET-10-MIGRATION-EXECUTION.md).
+La publicación, verificación y reversión de artefactos se documenta en
+[DOTNET-10-RELEASE-ARTIFACTS.md](DOTNET-10-RELEASE-ARTIFACTS.md).
 La migración no concede autorización para instalar servicios, ejecutar SQL, habilitar workers,
 conectarse a SAP/SRI ni promover artefactos a producción.

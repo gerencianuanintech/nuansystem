@@ -323,3 +323,20 @@ The first pilot direction is approved: query and download by access key for prev
 | Tenant capability and secrets | Master tenant configuration | Disabled by default; sensitive values remain protected |
 
 SRI must not reuse SAP handlers/outbox, `SyncOutbox`, `NuanSystem.SyncWorker`, or `NuanSystem.MasterBranchSyncWorker`. Existing worker patterns are evidence for hosting and reliability techniques only.
+
+## .NET 10 release artifact framework
+
+`tools/release` owns the reusable Phase 7.3 packaging contract:
+
+- `Publish-NuanSystemRelease.ps1` publishes API, the three workers and WinForms
+  separately as `Release/win-x64`, framework-dependent artifacts;
+- `Test-NuanSystemRelease.ps1` verifies the exact file set, SHA-256, entry-point
+  versions, safe configuration and forbidden content;
+- `Set-NuanSystemActiveRelease.ps1` selects an immutable release through an
+  external pointer and supports artifact-level rollback without recompilation.
+
+Published releases exclude local settings, secrets, certificates, logs,
+backups and SRI payloads. All workers remain disabled. This framework packages
+and verifies binaries only; it does not own SCM installation, external
+configuration, process startup or production promotion. The operational
+contract is `docs/operations/DOTNET-10-RELEASE-ARTIFACTS.md`.

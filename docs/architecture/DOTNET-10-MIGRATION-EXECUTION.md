@@ -86,8 +86,37 @@ de assemblies DevExpress.
 2. El cierre autenticado de Fase 7.2.2 validó 401/403/200, empresa activa, rechazo de empresa no
    disponible y aislamiento entre `DEMO`, `DEMO-REMIGIO` y `DEMO-CANARIS` sobre .NET 10. Consultar
    [DOTNET-10-RUNTIME-SMOKE.md](../operations/DOTNET-10-RUNTIME-SMOKE.md).
-3. Definir manifests, hashes, versionado pilot1/pilot2 y rollback antes de promover.
+3. Fase 7.3 validó manifests, hashes, inventario de dependencias, versionado
+   `pilot1`/`pilot2` y rollback inmutable `pilot1 -> pilot2 -> pilot1`.
 4. No habilitar procesamiento, SQL, SAP o SRI como consecuencia de esta migración.
+
+## Cierre de artefactos de Fase 7.3
+
+Se incorporaron herramientas versionadas para publicar, verificar y seleccionar
+releases externas sin mutar sus archivos. Ambos pilotos publican los cinco hosts
+por separado como `Release/win-x64`, framework-dependent, sin trimming ni
+single-file.
+
+| Evidencia | Pilot1 | Pilot2 |
+|---|---|---|
+| Versión | `7.1.0-dotnet10-pilot1+9275f7c2` | `7.1.0-dotnet10-pilot2+664c48a4` |
+| Commit fuente | `9275f7c2fb7bab46afe6ccdff08f3e42e5bc19d1` | `664c48a42b9e23b8f4a69dde17eae11d9a3d214a` |
+| Proyectos | 5 | 5 |
+| Archivos | 645 | 645 |
+| Dependencias | 135 | 135 |
+| SHA-256 del manifiesto | `EF7B00AC030849DF18AACB8F24302D6A2D7DCA812EE070012ADC91D5D50A8062` | `0ED93ECA6F04D31E82B4A0087955B56DAB0D8223D41825D620E6F1BAC9F53116` |
+
+Los dos artefactos aprobaron verificación independiente de archivos, hashes,
+versiones y configuración segura. El puntero externo avanzó de pilot1 a pilot2
+y regresó a pilot1 sin modificar ninguna release. No se instalaron servicios,
+no se iniciaron procesos y no hubo SQL, SAP ni SRI.
+
+El cierre posterior aprobó build `Release` con cero advertencias y errores, y
+la suite completa con 483 pruebas superadas, 5 diagnósticas omitidas y cero
+fallos.
+
+El procedimiento reproducible y sus gates están en
+[DOTNET-10-RELEASE-ARTIFACTS.md](../operations/DOTNET-10-RELEASE-ARTIFACTS.md).
 
 ## Rollback
 

@@ -515,6 +515,24 @@ NuanSystem.SriWorker Generic Host + UseWindowsService [validated pilot]
 
 The design is governed by `docs/architecture/SRI-ITERATION-6-OPERATIONS-BLUEPRINT.md`; sanitized runtime evidence is summarized in `docs/operations/SRI-WORKER-OPERATIONS.md`. `WorkerHeartbeat` remains the single shared Master surface and its Application/Persistence contracts live under `Operations`; SAP compatibility is retained. The approval is limited to the controlled pilot and must not be generalized to permanent production enablement, other tenants or new SRI actions.
 
+### 10.6 .NET 10 release artifacts
+
+```text
+clean Git commit
+  -> Publish-NuanSystemRelease
+  -> API + SyncWorker + MasterBranchSyncWorker + SriWorker + WinForms
+  -> dependency inventory + release manifest + per-file SHA-256
+  -> Test-NuanSystemRelease
+  -> immutable pilot1 / immutable pilot2
+  -> external active-release pointer
+  -> pilot1 -> pilot2 -> pilot1 rollback
+```
+
+This graph has no edge to SQL migration, SCM installation, worker enablement,
+SAP, SRI or production promotion. Published workers are disabled and local
+configuration remains external. See
+`docs/operations/DOTNET-10-RELEASE-ARTIFACTS.md`.
+
 ## 11. Iteration scope
 
 The graph covers the Iteration 1 core, Iteration 2 WinForms framework, Iteration 3 backend contracts, Iteration 4 repository-backed SAP/Matriz-Sucursal boundaries, Iteration 5 through Phase 5.5, and the controlled runtime validation of Iteration 6. BEAS, Android, permanent production enablement of the SRI worker, and deeper domain graphs remain future work.

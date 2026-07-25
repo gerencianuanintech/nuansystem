@@ -278,3 +278,19 @@ Phase 5.5 passed these gates on 2026-07-21: scripts `118`/`119` were deployed id
 - [ ] Una revalidacion SQL autorizada confirma el segundo pase de `120` y dos pases de `122` antes de ejecutar `121`.
 
 Estado al cierre de Iteracion 6: los pases autorizados de `120`, `122` y `121` aprobaron idempotencia, metadata, compatibilidad SAP y preservacion de evidencia. La validacion runtime controlada aprobo SCM/ACL, TLS, JWT, lifecycle, heartbeat, mutex, Event Log, monitor, Designer y update/rollback, con limpieza final completa. Usar `docs/operations/SRI-WORKER-OPERATIONS.md` como fuente de evidencia; no generalizar este resultado a habilitacion productiva permanente.
+
+## .NET 10 release artifact gate
+
+- [ ] Working tree limpio y commit fuente inmutable.
+- [ ] API, SyncWorker, MasterBranchSyncWorker, SriWorker y WinForms publicados
+      por separado.
+- [ ] `Release`, `win-x64`, framework-dependent, sin trimming ni single-file.
+- [ ] InformationalVersion, FileVersion y AssemblyVersion verificadas.
+- [ ] Release manifest, dependency inventory y SHA-256 por archivo presentes.
+- [ ] `appsettings.Local.json`, secretos, certificados, logs, backups y payloads
+      sensibles ausentes.
+- [ ] Todos los workers y retries publicados permanecen deshabilitados.
+- [ ] Pilot1 y pilot2 tienen versiones, commits y manifests distinguibles.
+- [ ] Rollback pilot1 -> pilot2 -> pilot1 preserva los hashes originales.
+- [ ] No se declara instalación SCM, runtime o promoción productiva si no fue
+      ejecutada y evidenciada por separado.

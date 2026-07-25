@@ -103,6 +103,19 @@ El verificador debe confirmar:
 | Secretos detectados | No |
 | Workers habilitados | No |
 
+## Evidencia de pilot2
+
+| Evidencia | Resultado |
+|---|---|
+| Release | `7.1.0-dotnet10-pilot2+664c48a4` |
+| Commit fuente | `664c48a42b9e23b8f4a69dde17eae11d9a3d214a` |
+| Proyectos | 5 |
+| Archivos inventariados | 645 |
+| Dependencias inventariadas | 135 |
+| SHA-256 del manifiesto de hashes | `0ED93ECA6F04D31E82B4A0087955B56DAB0D8223D41825D620E6F1BAC9F53116` |
+| Secretos detectados | No |
+| Workers habilitados | No |
+
 ## Rollback
 
 El rollback de artefactos no recompila ni altera una release. Debe:
@@ -116,3 +129,8 @@ El rollback de artefactos no recompila ni altera una release. Debe:
 
 La instalación SCM, el cambio de configuración externa y el arranque de
 procesos pertenecen a una fase operativa posterior.
+
+La simulación de Fase 7.3 ejecutó y verificó `pilot1 -> pilot2 -> pilot1`.
+El puntero final referencia `pilot1` y su SHA-256 original. Las dos carpetas de
+release se conservaron fuera del repositorio como artefactos inmutables para
+revisión; ningún proceso fue iniciado.
