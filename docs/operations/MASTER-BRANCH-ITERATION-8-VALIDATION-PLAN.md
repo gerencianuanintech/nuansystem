@@ -275,7 +275,7 @@ Las Fases 8.2 y 8.3 quedan aprobadas únicamente para el piloto
 
 ## Plan de validación de Fase 8.4A — Item
 
-La implementación permanece pendiente de aprobación. El contrato completo se
+La implementación de código fue aprobada y completada. El contrato completo se
 define en
 [MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md](../architecture/MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md).
 
@@ -294,10 +294,10 @@ Gates pendientes:
 
 | Gate | Estado |
 |---|---|
-| Discovery y blueprint | Preparado |
-| Decisiones del propietario | Pendiente |
-| Implementación 8.4A | No iniciada |
-| Migración SQL | No determinada; depende de evidencia real |
-| Runtime DEMO/Master | No autorizado |
+| Discovery y blueprint | Validado |
+| Decisiones del propietario | Aprobadas |
+| Implementación 8.4A | Completada; commits `e43043d3` y `594341a0` |
+| Migración SQL | No requerida según metadatos reales de DEMO |
+| Runtime DEMO/Master | Pendiente de autorización específica para JWT efímero |
 | Aplicación 8.4B en sucursal | No autorizada |
 | Warehouse | Fuera de alcance |

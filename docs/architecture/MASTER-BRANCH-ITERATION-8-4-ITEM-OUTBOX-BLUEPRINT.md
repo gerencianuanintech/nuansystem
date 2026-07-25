@@ -5,7 +5,7 @@
 - **Fecha:** 2026-07-25.
 - **Tipo:** sincronización/worker y persistencia transaccional.
 - **Riesgo:** alto.
-- **Estado:** discovery y diseño; implementación no iniciada.
+- **Estado:** implementación 8.4A completada; runtime pendiente.
 - **Rama:** `refactor/codex-skills-v8-4-item-outbox`.
 - **Predecesor aprobado:** Fases 8.1–8.3 para `BusinessPartner`.
 
@@ -200,3 +200,30 @@ explícitamente:
 6. relay temporal en `ObserveOnly`;
 7. separación de 8.4B y sus decisiones de dependencias.
 
+## Avance de implementación 8.4A — 2026-07-25
+
+La implementación aprobada quedó registrada en los commits:
+
+- `e43043d3` — productor Item transaccional con `LocalOutbox`;
+- `594341a0` — pruebas de transacción, rollback, operación y payload limitado.
+
+Los handlers create, update, disable y delete lógico ya no publican directamente
+a Master. `ItemRepository` permite compartir conexión y transacción para el
+nucleo, códigos de barra, configuración de bodegas, `ItemMasterData`, relectura
+del snapshot y escritura de `LocalOutbox`.
+
+Evidencia automática:
+
+- 9 pruebas dirigidas de Item aprobadas;
+- build Release completo con 0 errores y 0 advertencias;
+- suite completa con 493 aprobadas, 5 diagnósticas omitidas y 0 fallidas;
+- `git diff --check` aprobado.
+
+El contrato SQL real de DEMO fue inspeccionado en solo lectura. Los siete
+procedimientos requeridos y las ocho columnas usadas por `LocalOutbox` existen,
+por lo que no se justifica una migración nueva.
+
+Los respaldos `COPY_ONLY WITH CHECKSUM` de Master y DEMO fueron creados y
+verificados antes del runtime. El runtime por API permanece pendiente de una
+autorización específica para derivar en memoria el `SecurityStamp` vigente y
+generar el JWT efímero. No se crearon fixtures ni se iniciaron workers.
