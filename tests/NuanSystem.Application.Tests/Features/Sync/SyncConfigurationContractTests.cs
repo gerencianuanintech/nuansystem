@@ -345,7 +345,7 @@ public sealed class SyncConfigurationContractTests
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Geography", "Commands", "ProvinceSyncPublisher.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Geography", "Commands", "CitySyncPublisher.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "FinancialCatalogs", "Catalogs", "Commands", "CurrencySyncPublisher.cs"),
-            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "BusinessPartners", "Commands", "BusinessPartnerSyncPublisher.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "BusinessPartners", "Commands", "BusinessPartnerSyncEventFactory.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "GeneralInventory", "ItemGroups", "Commands", "ItemGroupSyncPublisher.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Items", "Commands", "ItemSyncPublisher.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "GeneralInventory", "Warehouses", "Commands", "WarehouseSyncPublisher.cs"));

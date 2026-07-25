@@ -1,5 +1,6 @@
 using FluentAssertions;
 using NSubstitute;
+using System.Data;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
@@ -7,6 +8,7 @@ using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.BusinessPartners.Commands;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
+using NuanSystem.Application.Features.Sync.Services;
 using NuanSystem.Domain.Tenancy;
 using NuanSystem.Shared.Sync;
 
@@ -15,162 +17,142 @@ namespace NuanSystem.Application.Tests.Features.BusinessPartners;
 public sealed class BusinessPartnerSyncPublishingTests
 {
     private readonly IBusinessPartnerRepository _repository = Substitute.For<IBusinessPartnerRepository>();
-    private readonly ISyncEventPublisher _syncEventPublisher = Substitute.For<ISyncEventPublisher>();
-    private readonly ICompanyContext _companyContext = Substitute.For<ICompanyContext>();
+    private readonly IBusinessPartnerLocalOutboxWriter _writer = Substitute.For<IBusinessPartnerLocalOutboxWriter>();
+    private readonly ImmediateTransactionRunner _transactionRunner = new();
 
     [Fact]
-    public async Task Create_PublishesSyncEvent_WhenCompanyContextIsActive()
+    public async Task Create_WritesLocalOutboxInsideTheSameTransaction()
     {
-        SyncPublishRequest? captured = null;
         var partner = CreatePartner();
-        ConfigureActiveCompany(syncEnabled: true);
-        ConfigureSyncPublisher(request => captured = request);
-        _repository.ExistsByCodeAsync("CLI-001", cancellationToken: Arg.Any<CancellationToken>()).Returns(false);
-        _repository.ExistsByIdentificationAsync(1, "0999999999001", cancellationToken: Arg.Any<CancellationToken>()).Returns(false);
-        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), Arg.Any<CancellationToken>()).Returns(partner.Id);
-        _repository.GetByIdAsync(partner.Id, Arg.Any<CancellationToken>()).Returns(partner);
+        _repository.ExistsByCodeAsync("CLI-001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.ExistsByIdentificationAsync(1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner.Id);
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
         var handler = CreateCreateHandler();
 
         var result = await handler.Handle(CreateCommand(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        captured.Should().NotBeNull();
-        captured!.CompanyId.Should().Be(10);
-        captured.EntityName.Should().Be("BusinessPartner");
-        captured.EntityGlobalId.Should().Be(partner.GlobalId);
-        captured.EntityGlobalId.Should().NotBe(Guid.Empty);
-        captured.EntityCode.Should().Be(partner.Code);
-        captured.Operation.Should().Be(SyncOperation.Created);
-        captured.Payload.Should().BeOfType<BusinessPartnerSyncPayload>();
-        captured.Payload.Should().NotBeAssignableTo<BusinessPartnerDto>();
+        await _writer.Received(1).EnqueueAsync(
+            partner, SyncOperation.Created, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+        _transactionRunner.Committed.Should().BeTrue();
     }
 
     [Fact]
-    public async Task Update_PublishesSyncEvent_WithGlobalIdAndCode()
+    public async Task Update_WritesLocalOutboxInsideTheSameTransaction()
     {
-        SyncPublishRequest? captured = null;
         var partner = CreatePartner(name: "Cliente Actualizado");
-        ConfigureActiveCompany(syncEnabled: true);
-        ConfigureSyncPublisher(request => captured = request);
-        _repository.GetByIdAsync(partner.Id, Arg.Any<CancellationToken>()).Returns(partner);
-        _repository.ExistsByCodeAsync("CLI-001", partner.Id, Arg.Any<CancellationToken>()).Returns(false);
-        _repository.ExistsByIdentificationAsync(1, "0999999999001", partner.Id, Arg.Any<CancellationToken>()).Returns(false);
-        _repository.UpdateAsync(Arg.Any<UpdateBusinessPartnerData>(), Arg.Any<CancellationToken>()).Returns(true);
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+        _repository.ExistsByCodeAsync("CLI-001", partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.ExistsByIdentificationAsync(1, "0999999999001", partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.UpdateAsync(Arg.Any<UpdateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
         var handler = CreateUpdateHandler();
 
         var result = await handler.Handle(UpdateCommand(partner.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        captured.Should().NotBeNull();
-        captured!.EntityGlobalId.Should().Be(partner.GlobalId);
-        captured.EntityCode.Should().Be(partner.Code);
-        captured.Operation.Should().Be(SyncOperation.Updated);
+        await _writer.Received(1).EnqueueAsync(
+            partner, SyncOperation.Updated, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Delete_PublishesDeletedSyncEvent_AfterLogicalDelete()
+    public async Task Delete_WritesLocalOutboxInsideTheSameTransaction()
     {
-        SyncPublishRequest? captured = null;
         var partner = CreatePartner();
-        ConfigureActiveCompany(syncEnabled: true);
-        ConfigureSyncPublisher(request => captured = request);
-        _repository.GetByIdAsync(partner.Id, Arg.Any<CancellationToken>()).Returns(partner);
-        _repository.DeleteAsync(partner.Id, 7, "admin", Arg.Any<CancellationToken>()).Returns(true);
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+        _repository.DeleteAsync(partner.Id, 7, "admin", _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
         var handler = CreateDeleteHandler();
 
         var result = await handler.Handle(new DeleteBusinessPartnerCommand(partner.Id, 7, "admin"), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        captured.Should().NotBeNull();
-        captured!.EntityGlobalId.Should().Be(partner.GlobalId);
-        captured.EntityCode.Should().Be(partner.Code);
-        captured.Operation.Should().Be(SyncOperation.Deleted);
+        await _writer.Received(1).EnqueueAsync(
+            partner, SyncOperation.Deleted, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Create_DoesNotPublish_WhenNoActiveCompanyContext()
+    public async Task Create_RollsBackWhenLocalOutboxFails()
     {
         var partner = CreatePartner();
-        ConfigureNoActiveCompany();
-        _repository.ExistsByCodeAsync("CLI-001", cancellationToken: Arg.Any<CancellationToken>()).Returns(false);
-        _repository.ExistsByIdentificationAsync(1, "0999999999001", cancellationToken: Arg.Any<CancellationToken>()).Returns(false);
-        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), Arg.Any<CancellationToken>()).Returns(partner.Id);
-        _repository.GetByIdAsync(partner.Id, Arg.Any<CancellationToken>()).Returns(partner);
+        _repository.ExistsByCodeAsync("CLI-001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.ExistsByIdentificationAsync(1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner.Id);
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+        _writer.EnqueueAsync(Arg.Any<BusinessPartnerDto>(), Arg.Any<SyncOperation>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>(), Arg.Any<CancellationToken>())
+            .Returns<Task<Guid?>>(_ => throw new InvalidOperationException("Controlled outbox failure"));
         var handler = CreateCreateHandler();
 
-        var result = await handler.Handle(CreateCommand(), CancellationToken.None);
+        var action = () => handler.Handle(CreateCommand(), CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        await _syncEventPublisher.DidNotReceiveWithAnyArgs().PublishAsync(default!, default);
+        await action.Should().ThrowAsync<InvalidOperationException>().WithMessage("Controlled outbox failure");
+        _transactionRunner.RolledBack.Should().BeTrue();
+        _transactionRunner.Committed.Should().BeFalse();
     }
 
     [Fact]
-    public async Task Create_KeepsStandaloneCrudWorking_WhenPublisherSkipsForDisabledSync()
+    public async Task Writer_SkipsStandaloneOrDisabledCompany()
     {
         var partner = CreatePartner();
-        ConfigureActiveCompany(syncEnabled: false);
-        _syncEventPublisher.PublishAsync(Arg.Any<SyncPublishRequest>(), Arg.Any<CancellationToken>())
-            .Returns(Result<SyncPublishResult>.Success(new SyncPublishResult(false, null, "La empresa no tiene sincronizacion habilitada.")));
-        _repository.ExistsByCodeAsync("CLI-001", cancellationToken: Arg.Any<CancellationToken>()).Returns(false);
-        _repository.ExistsByIdentificationAsync(1, "0999999999001", cancellationToken: Arg.Any<CancellationToken>()).Returns(false);
-        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), Arg.Any<CancellationToken>()).Returns(partner.Id);
-        _repository.GetByIdAsync(partner.Id, Arg.Any<CancellationToken>()).Returns(partner);
-        var handler = CreateCreateHandler();
+        var companyContext = Substitute.For<ICompanyContext>();
+        companyContext.HasActiveCompany.Returns(true);
+        companyContext.CurrentCompany.Returns(Company(syncEnabled: false));
+        var localOutbox = Substitute.For<ILocalSyncOutboxRepository>();
+        var writer = new BusinessPartnerLocalOutboxWriter(companyContext, new SyncEventPayloadFactory(), localOutbox);
 
-        var result = await handler.Handle(CreateCommand(), CancellationToken.None);
+        var eventId = await writer.EnqueueAsync(
+            partner, SyncOperation.Created, _transactionRunner.Connection, _transactionRunner.Transaction);
 
-        result.IsSuccess.Should().BeTrue();
-        await _syncEventPublisher.Received(1).PublishAsync(Arg.Any<SyncPublishRequest>(), Arg.Any<CancellationToken>());
+        eventId.Should().BeNull();
+        await localOutbox.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
     }
 
     [Fact]
-    public async Task Create_DoesNotIncludeSapCardCode_InSyncPayload()
+    public async Task Writer_CreatesSanitizedPayloadAndStableEventIdentity()
     {
-        SyncPublishRequest? captured = null;
         var partner = CreatePartner(sapCardCode: "S0001");
-        ConfigureActiveCompany(syncEnabled: true);
-        ConfigureSyncPublisher(request => captured = request);
-        _repository.ExistsByCodeAsync("CLI-001", cancellationToken: Arg.Any<CancellationToken>()).Returns(false);
-        _repository.ExistsByIdentificationAsync(1, "0999999999001", cancellationToken: Arg.Any<CancellationToken>()).Returns(false);
-        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), Arg.Any<CancellationToken>()).Returns(partner.Id);
-        _repository.GetByIdAsync(partner.Id, Arg.Any<CancellationToken>()).Returns(partner);
-        var handler = CreateCreateHandler();
+        var companyContext = Substitute.For<ICompanyContext>();
+        companyContext.HasActiveCompany.Returns(true);
+        companyContext.CurrentCompany.Returns(Company(syncEnabled: true));
+        var localOutbox = Substitute.For<ILocalSyncOutboxRepository>();
+        CreateLocalSyncOutboxData? captured = null;
+        localOutbox.CreateAsync(
+                Arg.Do<CreateLocalSyncOutboxData>(value => captured = value),
+                _transactionRunner.Connection,
+                _transactionRunner.Transaction,
+                Arg.Any<CancellationToken>())
+            .Returns(10);
+        var writer = new BusinessPartnerLocalOutboxWriter(companyContext, new SyncEventPayloadFactory(), localOutbox);
 
-        var result = await handler.Handle(CreateCommand(sapCardCode: "S0001"), CancellationToken.None);
+        var eventId = await writer.EnqueueAsync(
+            partner, SyncOperation.Created, _transactionRunner.Connection, _transactionRunner.Transaction);
 
-        result.IsSuccess.Should().BeTrue();
+        eventId.Should().NotBeNull().And.NotBe(Guid.Empty);
         captured.Should().NotBeNull();
-        var payload = captured!.Payload.Should().BeOfType<BusinessPartnerSyncPayload>().Subject;
-        payload.GlobalId.Should().Be(partner.GlobalId);
-        payload.Code.Should().Be(partner.Code);
-        payload.GetType().GetProperty(nameof(BusinessPartnerDto.SapCardCode)).Should().BeNull();
+        captured!.EventId.Should().Be(eventId!.Value);
+        captured.EntityGlobalId.Should().Be(partner.GlobalId);
+        captured.EntityName.Should().Be("BusinessPartner");
+        captured.PayloadJson.Should().Contain("\"operation\":\"Created\"")
+            .And.NotContain("SapCardCode")
+            .And.NotContain("S0001");
     }
 
     private CreateBusinessPartnerCommandHandler CreateCreateHandler()
     {
-        return new CreateBusinessPartnerCommandHandler(_repository, _syncEventPublisher, _companyContext);
+        return new CreateBusinessPartnerCommandHandler(_repository, _transactionRunner, _writer);
     }
 
     private UpdateBusinessPartnerCommandHandler CreateUpdateHandler()
     {
-        return new UpdateBusinessPartnerCommandHandler(_repository, _syncEventPublisher, _companyContext);
+        return new UpdateBusinessPartnerCommandHandler(_repository, _transactionRunner, _writer);
     }
 
     private DeleteBusinessPartnerCommandHandler CreateDeleteHandler()
     {
-        return new DeleteBusinessPartnerCommandHandler(_repository, _syncEventPublisher, _companyContext);
+        return new DeleteBusinessPartnerCommandHandler(_repository, _transactionRunner, _writer);
     }
 
-    private void ConfigureSyncPublisher(Action<SyncPublishRequest> capture)
-    {
-        _syncEventPublisher.PublishAsync(Arg.Do(capture), Arg.Any<CancellationToken>())
-            .Returns(Result<SyncPublishResult>.Success(new SyncPublishResult(true, 45, "Evento publicado.")));
-    }
-
-    private void ConfigureActiveCompany(bool syncEnabled)
-    {
-        _companyContext.HasActiveCompany.Returns(true);
-        _companyContext.CurrentCompany.Returns(new CompanyConnectionInfo(
+    private static CompanyConnectionInfo Company(bool syncEnabled) =>
+        new(
             CompanyId: 10,
             CompanyCode: "MASTER",
             CommercialName: "Empresa Master",
@@ -179,14 +161,7 @@ public sealed class BusinessPartnerSyncPublishingTests
             SapIntegrationMode: SapIntegrationMode.None,
             OperationMode: CompanyOperationMode.Standalone,
             IsMaster: true,
-            SyncEnabled: syncEnabled));
-    }
-
-    private void ConfigureNoActiveCompany()
-    {
-        _companyContext.HasActiveCompany.Returns(false);
-        _companyContext.CurrentCompany.Returns((CompanyConnectionInfo?)null);
-    }
+            SyncEnabled: syncEnabled);
 
     private static BusinessPartnerDto CreatePartner(string name = "Cliente Uno", string? sapCardCode = null)
     {
@@ -433,5 +408,43 @@ public sealed class BusinessPartnerSyncPublishingTests
             create.Attachments,
             create.AuditUserId,
             create.AuditUserName);
+    }
+
+    private sealed class ImmediateTransactionRunner : ITransactionRunner
+    {
+        public IDbConnection Connection { get; } = Substitute.For<IDbConnection>();
+        public IDbTransaction Transaction { get; } = Substitute.For<IDbTransaction>();
+        public bool Committed { get; private set; }
+        public bool RolledBack { get; private set; }
+
+        public async Task ExecuteInTenantTransactionAsync(
+            Func<IDbConnection, IDbTransaction, CancellationToken, Task> operation,
+            CancellationToken cancellationToken = default)
+        {
+            await ExecuteInTenantTransactionAsync<object?>(
+                async (connection, transaction, token) =>
+                {
+                    await operation(connection, transaction, token);
+                    return null;
+                },
+                cancellationToken);
+        }
+
+        public async Task<T> ExecuteInTenantTransactionAsync<T>(
+            Func<IDbConnection, IDbTransaction, CancellationToken, Task<T>> operation,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var result = await operation(Connection, Transaction, cancellationToken);
+                Committed = true;
+                return result;
+            }
+            catch
+            {
+                RolledBack = true;
+                throw;
+            }
+        }
     }
 }
