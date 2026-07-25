@@ -585,17 +585,18 @@ Para cierre:
 
 ## Gates finales
 
-| Gate | Estado inicial tras Fase 7.1 |
+| Gate | Estado al 2026-07-25 |
 |---|---|
 | Readiness documental | Validated |
-| SDK .NET 10 | Blocked |
+| SDK .NET 10 | Validated: SDK 10.0.302 y runtimes 10.0.10 |
 | Visual Studio 2026 | Blocked |
-| DevExpress único y Designer | Blocked |
-| Restore/build/test net10 | Not validated |
-| API net10 | Not validated |
-| Workers net10 | Not validated |
-| WinForms net10 | Not validated |
-| Publish `win-x64` | Not validated |
+| DevExpress instalado, build CLI | Validated: DevExpress Components 25.2 |
+| Visual Studio Designer | Blocked por Visual Studio 2022 |
+| Restore/build/test net10 | Validated: 0 warnings, 0 errors; 473 passed, 5 skipped |
+| API net10 | Validated para build y publish; runtime no ejecutado |
+| Workers net10 | Validated para build y publish; runtime no ejecutado |
+| WinForms net10 | Validated para build y publish; smoke visual pendiente |
+| Publish `win-x64` | Validated, framework-dependent |
 | Pilot1/pilot2/rollback | Not validated |
 | SQL/SAP/SRI runtime | Not applicable a esta fase |
 
@@ -612,4 +613,7 @@ La migración solo se acepta cuando:
 - no se amplió comportamiento, datos o integraciones;
 - el propietario aprueba la promoción.
 
-Detenerse después de este plan. La Fase 7.1 no concede autorización para ejecutar ninguno de sus pasos de implementación.
+La ejecución técnica realizada se documenta en
+[DOTNET-10-MIGRATION-EXECUTION.md](../architecture/DOTNET-10-MIGRATION-EXECUTION.md).
+La migración no concede autorización para instalar servicios, ejecutar SQL, habilitar workers,
+conectarse a SAP/SRI ni promover artefactos a producción.

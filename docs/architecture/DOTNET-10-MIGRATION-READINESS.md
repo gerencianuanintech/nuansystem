@@ -3,16 +3,23 @@
 ## Estado y decisión
 
 - **Fecha de la auditoría:** 2026-07-24.
+- **Fecha de ejecución de la migración:** 2026-07-25.
 - **Baseline Git:** `4df7ce630edb8bcafb92a82bac5737d4be669915`.
 - **Rama de auditoría:** `refactor/codex-skills-v7-1-dotnet10-readiness`.
-- **Tipo de trabajo:** Discovery, análisis y documentación; no es una implementación.
-- **Decisión:** **NO-GO para ejecutar la migración en el entorno actual**.
-- **Motivo:** no están instalados el SDK/runtime .NET 10 ni Visual Studio 2026; tampoco existe todavía una prueba `net10.0`, un contrato reproducible de SDK/publicación o una validación del Designer con una instalación DevExpress alineada.
-- **Viabilidad arquitectónica:** **GO condicionado**. No se encontró una incompatibilidad estructural que obligue a rediseñar NuanSystem. Los paquetes críticos tienen una ruta oficial compatible, pero los gates de este documento deben cerrarse antes de cambiar un `TargetFramework`.
+- **Rama de implementación:** `refactor/codex-skills-v7-2-dotnet10-migration`.
+- **Tipo de trabajo:** migración transversal de toolchain, TFM y paquetes de plataforma, sin cambios funcionales ni ejecución de integraciones.
+- **Decisión actual:** **GO técnico condicionado**. Los 16 proyectos compilan y las pruebas pasan en .NET 10; los artefactos `win-x64` se publican correctamente.
+- **Condición pendiente:** la validación visual del Designer continúa bloqueada porque la máquina conserva Visual Studio 2022 17.14. El build CLI y la publicación WinForms sí quedaron validados con DevExpress 25.2 instalado.
+- **Evidencia de ejecución:** [DOTNET-10-MIGRATION-EXECUTION.md](DOTNET-10-MIGRATION-EXECUTION.md).
 
 Esta decisión complementa el gate D7-01 de
 [SRI-ITERATION-7-PRODUCTION-READINESS-BLUEPRINT.md](SRI-ITERATION-7-PRODUCTION-READINESS-BLUEPRINT.md)
 y no habilita el SRI Worker, un tenant, un servicio Windows ni una llamada externa.
+
+El inventario y los estados detallados que siguen conservan la fotografía histórica de la
+auditoría del 2026-07-24. Los resultados posteriores a la implementación prevalecen únicamente
+donde están documentados en
+[DOTNET-10-MIGRATION-EXECUTION.md](DOTNET-10-MIGRATION-EXECUTION.md).
 
 ## Escala de evidencia
 
