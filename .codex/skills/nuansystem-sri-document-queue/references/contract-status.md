@@ -35,6 +35,7 @@
 - Phase 5.5 implements safe monitor projections, protected byte download and per-access audit in tenant script `118`, plus Master navigation/security in script `119`.
 - `SriDocumentMonitorForm` uses the typed API client and corporate monitor controls without direct SQL or SRI access.
 - Phase 5.5 is deployed in Master and the three authorized tenant schemas. Idempotent SQL, renewed-token permission profiles, tenant isolation, protected API download, byte length/SHA-256 integrity, per-access audit, repeated-download behavior and Visual Studio Designer review were validated without starting the worker or calling the SRI.
+- Forward repair `123` aligns every monitor-summary aggregate with the public `long` DTO by returning non-null SQL `bigint` values. It was executed twice only in `NuanSystem_DEMO`; one schema-history version, SQL result metadata, real Dapper materialization, visual monitor opening and refresh were validated without starting the worker or calling the SRI. Master, Remigio and Canaris were not changed by this repair.
 - The detailed sanitized evidence is `docs/operations/SRI-DOCUMENT-MONITOR.md`; retain only this summary in the skill reference.
 
 ## Approved pilot direction

@@ -6,9 +6,9 @@
 - Rama: `refactor/codex-skills-v7-2-1-dotnet10-runtime-smoke`.
 - Baseline: `ed8333914704f253249fcb49be2baabdda2ca1f3`.
 - Alcance: API local, workers deshabilitados y WinForms contra la empresa piloto `DEMO`.
-- Resultado: **NO-GO**.
-- Motivo bloqueante: el resumen del Monitor SRI no puede materializarse con Dapper debido a
-  tipos incompatibles entre el procedimiento almacenado y el DTO.
+- Resultado original: **NO-GO**, corregido posteriormente por el forward repair tenant `123`.
+- Motivo bloqueante original: el resumen del Monitor SRI no podia materializarse con Dapper debido
+  a tipos incompatibles entre el procedimiento almacenado y el DTO.
 
 No se ejecutaron scripts SQL, SAP, SRI, servicios Windows ni procesamiento documental. No se
 crearon claims, leases o procesos residuales. La API iniciada previamente por Visual Studio se
@@ -139,10 +139,18 @@ la intención de soportar volúmenes superiores a `Int32`.
 
 ## Criterio de reanudación
 
-La Fase 7.2.1 permanece en NO-GO hasta que:
+El blocker de materializacion y apertura del Monitor SRI quedo resuelto el 2026-07-25 mediante:
 
-- el resumen sea materializable en cola vacía y con datos;
-- el Monitor SRI abra sin error;
+- `123_tenant_sri_document_monitor_summary_bigint_fix.sql`, ejecutado dos veces solo en
+  `NuanSystem_DEMO`, con una unica version `20260725.123`;
+- metadata SQL real con cinco columnas `bigint`;
+- materializacion Dapper real contra `SriDocumentMonitorSummaryDto`;
+- apertura y actualizacion visual del Monitor SRI con KPI `4/0/1/0`, sin iniciar workers ni llamar
+  al SRI.
+
+La Fase 7.2.1 conserva pendientes los gates autenticados que no formaron parte de esta correccion
+acotada. Antes de un GO global todavia debe verificarse:
+
 - se validen 401/403/200 con JWT y empresa activa;
 - build y pruebas completas permanezcan sin errores;
 - no existan procesos residuales ni llamadas SAP/SRI.

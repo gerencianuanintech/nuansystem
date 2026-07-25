@@ -56,6 +56,7 @@ public sealed class SqlServerTenantDatabaseInitializer(
                       ,"117_tenant_sri_worker_and_document_store.sql"
                       ,"118_tenant_sri_document_monitor_and_download.sql"
                       ,"121_tenant_sri_worker_operational_summary.sql"
+                      ,"123_tenant_sri_document_monitor_summary_bigint_fix.sql"
                    })
         {
             var scriptPath = FindDatabaseScriptPath(fileName);
