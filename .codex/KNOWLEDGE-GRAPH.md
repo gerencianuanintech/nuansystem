@@ -576,5 +576,20 @@ replicable tenant CRUD
 
 The authoritative design is
 `docs/architecture/MASTER-BRANCH-ITERATION-8-TRANSACTIONAL-OUTBOX-BLUEPRINT.md`.
-`BusinessPartner` is the only initial pilot. This graph does not authorize
-runtime activation, SQL deployment, `Item`/`Warehouse` migration, SAP or SRI.
+`BusinessPartner` is the approved initial pilot: create, update and logical
+delete now use the tenant transactional boundary and the local relay was
+validated in `ObserveOnly`.
+
+The next independent proposal is Item 8.4A:
+
+```text
+Item core + child collections + ItemMasterData
+  -> same tenant transaction
+  -> LocalOutbox with the existing limited master payload
+  -> idempotent Master promotion in ObserveOnly
+```
+
+Its design is
+`docs/architecture/MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md`.
+The document does not authorize implementation. Real branch application is a
+separate 8.4B decision, and `Warehouse`, SAP and SRI remain excluded.

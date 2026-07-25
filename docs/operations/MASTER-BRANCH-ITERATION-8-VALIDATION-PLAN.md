@@ -272,3 +272,32 @@ permanece instalada una sola vez en DEMO.
 Las Fases 8.2 y 8.3 quedan aprobadas únicamente para el piloto
 `BusinessPartner`. No se inició la Fase 8.4, no se migraron `Item` ni
 `Warehouse`, no se realizó push, PR ni integración a `master`.
+
+## Plan de validación de Fase 8.4A — Item
+
+La implementación permanece pendiente de aprobación. El contrato completo se
+define en
+[MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md](../architecture/MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md).
+
+Cuando se autorice, se repetirá la matriz aprobada de BusinessPartner con estas
+diferencias:
+
+- el commit tenant debe incluir núcleo Item, colecciones guardadas por el
+  procedimiento, `ItemMasterData` e intención local;
+- el payload debe conservar su alcance maestro limitado;
+- las pruebas runtime se ejecutarán con `ObserveOnly`;
+- no se aplicará el evento en Remigio ni Cañaris;
+- la aplicación real en sucursal pertenece a 8.4B y requiere aprobación
+  separada.
+
+Gates pendientes:
+
+| Gate | Estado |
+|---|---|
+| Discovery y blueprint | Preparado |
+| Decisiones del propietario | Pendiente |
+| Implementación 8.4A | No iniciada |
+| Migración SQL | No determinada; depende de evidencia real |
+| Runtime DEMO/Master | No autorizado |
+| Aplicación 8.4B en sucursal | No autorizada |
+| Warehouse | Fuera de alcance |

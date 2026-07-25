@@ -359,3 +359,18 @@ migración 126 y sus objetos forward-only permanecen instalados en DEMO.
 
 La Fase 8.4 sigue bloqueada hasta una aprobación independiente. No se autoriza
 inferir de este piloto la migración de `Item`, `Warehouse` ni otra entidad.
+
+## Plan documental de Fase 8.4
+
+El siguiente piloto propuesto es `Item` y está definido en
+[MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md](MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md).
+
+La propuesta separa:
+
+- **8.4A:** productor Item transaccional y promoción a Master en
+  `ObserveOnly`;
+- **8.4B:** aplicación real en una sucursal, sujeta a decisiones independientes
+  sobre familias, unidades de medida, códigos de barras y colisiones.
+
+La existencia del blueprint no autoriza implementación, despliegue ni
+activación. `Warehouse` permanece fuera del alcance.
