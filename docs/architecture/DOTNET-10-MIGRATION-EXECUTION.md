@@ -6,8 +6,8 @@
 - Rama: `refactor/codex-skills-v7-2-dotnet10-migration`.
 - Baseline: `bd37ed0b70be180533bb7b70aed45d253e07f9ca`.
 - Alcance: toolchain, TFM, paquetes de plataforma, compatibilidad de compilación y publicación local.
-- Resultado: **GO técnico condicionado**.
-- Condición pendiente: validar el Visual Studio Designer con un IDE oficialmente compatible con .NET 10.
+- Resultado: **GO técnico**.
+- Visual Studio Designer: validado manualmente por el propietario con Visual Studio Enterprise 2026.
 
 No se ejecutaron SQL, API, WinForms, servicios Windows, workers, SAP ni SRI. No se modificaron
 bases, configuraciones locales, certificados, secretos, permisos, menús ni datos.
@@ -21,7 +21,7 @@ bases, configuraciones locales, certificados, secretos, permisos, menús ni dato
 | Microsoft.AspNetCore.App | `10.0.10` |
 | Microsoft.WindowsDesktop.App | `10.0.10` |
 | DevExpress | Components 25.2 instalado en la máquina |
-| Visual Studio | Enterprise 2022 17.14; no valida el Designer de .NET 10 |
+| Visual Studio | Enterprise 2026 18.8.1 |
 
 El SDK y los runtimes .NET 9 permanecen instalados para permitir rollback y convivencia.
 No se instaló ni actualizó DevExpress.
@@ -76,19 +76,14 @@ de assemblies DevExpress.
 - Los file versions observados pertenecen al mismo set instalado y se expresan como
   `25.2.5.26075` o `25.2.6.0`, según el assembly.
 - No se modificaron `.Designer.cs`, `.resx`, layout, controles corporativos ni tipografía.
-- El smoke visual y la apertura del Designer permanecen pendientes; Visual Studio 2022
-  no constituye evidencia oficial para un proyecto que apunta a .NET 10.
+- El propietario abrió y revisó los diseños con Visual Studio Enterprise 2026 18.8.1.
+- La revisión no produjo cambios en `.Designer.cs`, `.resx` ni `.csproj`.
 
 ## Riesgos y gates pendientes
 
-1. Instalar o disponer de un Visual Studio oficialmente compatible con .NET 10 antes de
-   aceptar el Designer como validado.
-2. Abrir los formularios representativos definidos en
-   [DOTNET-10-MIGRATION-PLAN.md](../operations/DOTNET-10-MIGRATION-PLAN.md) y confirmar
-   que no se reserializan `.Designer.cs` o `.resx`.
-3. Ejecutar smokes controlados de API, workers y WinForms en una autorización separada.
-4. Definir manifests, hashes, versionado pilot1/pilot2 y rollback antes de promover.
-5. No habilitar procesamiento, SQL, SAP o SRI como consecuencia de esta migración.
+1. Ejecutar smokes controlados de API, workers y WinForms en una autorización separada.
+2. Definir manifests, hashes, versionado pilot1/pilot2 y rollback antes de promover.
+3. No habilitar procesamiento, SQL, SAP o SRI como consecuencia de esta migración.
 
 ## Rollback
 

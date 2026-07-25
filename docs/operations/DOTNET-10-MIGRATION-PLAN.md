@@ -589,13 +589,13 @@ Para cierre:
 |---|---|
 | Readiness documental | Validated |
 | SDK .NET 10 | Validated: SDK 10.0.302 y runtimes 10.0.10 |
-| Visual Studio 2026 | Blocked |
+| Visual Studio 2026 | Validated: Enterprise 18.8.1 |
 | DevExpress instalado, build CLI | Validated: DevExpress Components 25.2 |
-| Visual Studio Designer | Blocked por Visual Studio 2022 |
+| Visual Studio Designer | Validated manualmente; sin cambios serializados |
 | Restore/build/test net10 | Validated: 0 warnings, 0 errors; 473 passed, 5 skipped |
 | API net10 | Validated para build y publish; runtime no ejecutado |
 | Workers net10 | Validated para build y publish; runtime no ejecutado |
-| WinForms net10 | Validated para build y publish; smoke visual pendiente |
+| WinForms net10 | Validated para build, publish y revisión de diseños |
 | Publish `win-x64` | Validated, framework-dependent |
 | Pilot1/pilot2/rollback | Not validated |
 | SQL/SAP/SRI runtime | Not applicable a esta fase |

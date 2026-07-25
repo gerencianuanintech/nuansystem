@@ -8,8 +8,8 @@
 - **Rama de auditoría:** `refactor/codex-skills-v7-1-dotnet10-readiness`.
 - **Rama de implementación:** `refactor/codex-skills-v7-2-dotnet10-migration`.
 - **Tipo de trabajo:** migración transversal de toolchain, TFM y paquetes de plataforma, sin cambios funcionales ni ejecución de integraciones.
-- **Decisión actual:** **GO técnico condicionado**. Los 16 proyectos compilan y las pruebas pasan en .NET 10; los artefactos `win-x64` se publican correctamente.
-- **Condición pendiente:** la validación visual del Designer continúa bloqueada porque la máquina conserva Visual Studio 2022 17.14. El build CLI y la publicación WinForms sí quedaron validados con DevExpress 25.2 instalado.
+- **Decisión actual:** **GO técnico**. Los 16 proyectos compilan y las pruebas pasan en .NET 10; los artefactos `win-x64` se publican correctamente.
+- **Designer:** validado manualmente por el propietario con Visual Studio Enterprise 2026 18.8.1 y DevExpress 25.2, sin reserialización de `.Designer.cs`, `.resx` o `.csproj`.
 - **Evidencia de ejecución:** [DOTNET-10-MIGRATION-EXECUTION.md](DOTNET-10-MIGRATION-EXECUTION.md).
 
 Esta decisión complementa el gate D7-01 de
