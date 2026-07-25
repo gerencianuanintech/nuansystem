@@ -13,6 +13,7 @@ using NuanSystem.Application.Features.SapSync.Handlers;
 using NuanSystem.Application.Features.SapSync.Services;
 using NuanSystem.Application.Features.Operations;
 using NuanSystem.Application.Features.SriDocuments.Services;
+using NuanSystem.Application.Features.BusinessPartners.Commands;
 using NuanSystem.Application.Features.Sync.Configuration.Services;
 using NuanSystem.Application.Features.Sync.Execution.Services;
 using NuanSystem.Application.Features.Sync.EntityDefinitions.Services;
@@ -61,6 +62,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<ISyncEventPayloadFactory, SyncEventPayloadFactory>();
         services.AddScoped<ISyncRoutingService, SyncRoutingService>();
         services.AddScoped<ILocalSyncOutboxPromotionService, LocalSyncOutboxPromotionService>();
+        services.AddScoped<IBusinessPartnerLocalOutboxWriter, BusinessPartnerLocalOutboxWriter>();
         services.AddSingleton<ISyncDistributionPolicyEvaluator, SyncDistributionPolicyEvaluator>();
         services.AddScoped<ISyncProfileValidationService, SyncProfileValidationService>();
         services.AddScoped<ISyncEntityCatalogService, SyncEntityCatalogService>();

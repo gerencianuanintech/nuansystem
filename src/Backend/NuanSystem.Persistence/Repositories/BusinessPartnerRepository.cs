@@ -32,8 +32,24 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
     public async Task<BusinessPartnerDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
+        return await GetByIdCoreAsync(id, connection, transaction: null, cancellationToken);
+    }
+
+    public Task<BusinessPartnerDto?> GetByIdAsync(
+        int id,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default) =>
+        GetByIdCoreAsync(id, connection, transaction, cancellationToken);
+
+    private static async Task<BusinessPartnerDto?> GetByIdCoreAsync(
+        int id,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
         using var grid = await connection.QueryMultipleAsync(
-            new CommandDefinition(GetByIdProcedure, new { Id = id }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+            new CommandDefinition(GetByIdProcedure, new { Id = id }, transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
 
         var partner = await grid.ReadSingleOrDefaultAsync<BusinessPartnerDto>();
         if (partner is null)
@@ -98,26 +114,80 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
     public async Task<int> CreateAsync(CreateBusinessPartnerData partner, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(CreateProcedure, ToParameters(partner), cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        return await CreateCoreAsync(partner, connection, transaction: null, cancellationToken);
     }
+
+    public Task<int> CreateAsync(
+        CreateBusinessPartnerData partner,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default) =>
+        CreateCoreAsync(partner, connection, transaction, cancellationToken);
+
+    private static Task<int> CreateCoreAsync(
+        CreateBusinessPartnerData partner,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken) =>
+        connection.ExecuteScalarAsync<int>(
+            new CommandDefinition(CreateProcedure, ToParameters(partner), transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
 
     public async Task<bool> ExistsByCodeAsync(string code, int? excludingId = null, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        var count = await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(ExistsByCodeProcedure, new { Code = code, ExcluirId = excludingId }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        return await ExistsByCodeCoreAsync(code, excludingId, connection, transaction: null, cancellationToken);
+    }
 
+    public Task<bool> ExistsByCodeAsync(
+        string code,
+        int? excludingId,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default) =>
+        ExistsByCodeCoreAsync(code, excludingId, connection, transaction, cancellationToken);
+
+    private static async Task<bool> ExistsByCodeCoreAsync(
+        string code,
+        int? excludingId,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
+        var count = await connection.ExecuteScalarAsync<int>(
+            new CommandDefinition(ExistsByCodeProcedure, new { Code = code, ExcluirId = excludingId }, transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
         return count > 0;
     }
 
     public async Task<bool> ExistsByIdentificationAsync(int identificationTypeId, string identificationNumber, int? excludingId = null, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
+        return await ExistsByIdentificationCoreAsync(
+            identificationTypeId, identificationNumber, excludingId, connection, transaction: null, cancellationToken);
+    }
+
+    public Task<bool> ExistsByIdentificationAsync(
+        int identificationTypeId,
+        string identificationNumber,
+        int? excludingId,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default) =>
+        ExistsByIdentificationCoreAsync(
+            identificationTypeId, identificationNumber, excludingId, connection, transaction, cancellationToken);
+
+    private static async Task<bool> ExistsByIdentificationCoreAsync(
+        int identificationTypeId,
+        string identificationNumber,
+        int? excludingId,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
         var count = await connection.ExecuteScalarAsync<int>(
             new CommandDefinition(
                 ExistsByIdentificationProcedure,
                 new { IdentificationTypeId = identificationTypeId, IdentificationNumber = identificationNumber, ExcluirId = excludingId },
+                transaction,
                 cancellationToken: cancellationToken,
                 commandType: CommandType.StoredProcedure));
 
@@ -127,8 +197,24 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
     public async Task<bool> UpdateAsync(UpdateBusinessPartnerData partner, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
+        return await UpdateCoreAsync(partner, connection, transaction: null, cancellationToken);
+    }
+
+    public Task<bool> UpdateAsync(
+        UpdateBusinessPartnerData partner,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default) =>
+        UpdateCoreAsync(partner, connection, transaction, cancellationToken);
+
+    private static async Task<bool> UpdateCoreAsync(
+        UpdateBusinessPartnerData partner,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
         var affectedRows = await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(UpdateProcedure, ToParameters(partner), cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+            new CommandDefinition(UpdateProcedure, ToParameters(partner), transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
 
         return affectedRows > 0;
     }
@@ -149,10 +235,31 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
     public async Task<bool> DeleteAsync(int id, int? deletedByUserId, string? deletedByUserName, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
+        return await DeleteCoreAsync(id, deletedByUserId, deletedByUserName, connection, transaction: null, cancellationToken);
+    }
+
+    public Task<bool> DeleteAsync(
+        int id,
+        int? deletedByUserId,
+        string? deletedByUserName,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default) =>
+        DeleteCoreAsync(id, deletedByUserId, deletedByUserName, connection, transaction, cancellationToken);
+
+    private static async Task<bool> DeleteCoreAsync(
+        int id,
+        int? deletedByUserId,
+        string? deletedByUserName,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
         var affectedRows = await connection.ExecuteScalarAsync<int>(
             new CommandDefinition(
                 DeleteProcedure,
                 new { Id = id, DeletedByUserId = deletedByUserId, DeletedByUserName = deletedByUserName },
+                transaction,
                 cancellationToken: cancellationToken,
                 commandType: CommandType.StoredProcedure));
 

@@ -1,7 +1,6 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Abstractions.Sync;
-using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
 using NuanSystem.Shared.Sync;
@@ -11,8 +10,8 @@ namespace NuanSystem.Application.Features.BusinessPartners.Commands;
 
 public sealed class CreateBusinessPartnerCommandHandler(
     IBusinessPartnerRepository repository,
-    ISyncEventPublisher syncEventPublisher,
-    ICompanyContext companyContext)
+    ITransactionRunner transactionRunner,
+    IBusinessPartnerLocalOutboxWriter localOutboxWriter)
     : ICommandHandler<CreateBusinessPartnerCommand, BusinessPartnerDto>
 {
     public async Task<Result<BusinessPartnerDto>> Handle(CreateBusinessPartnerCommand request, CancellationToken cancellationToken)
@@ -20,37 +19,34 @@ public sealed class CreateBusinessPartnerCommandHandler(
         var code = request.Code.Trim().ToUpperInvariant();
         var identificationNumber = request.IdentificationNumber.Trim();
 
-        if (await repository.ExistsByCodeAsync(code, cancellationToken: cancellationToken))
-        {
-            return Result<BusinessPartnerDto>.Failure(
-                "Ya existe un tercero comercial con el codigo indicado.",
-                [new ApiError("BusinessPartnerCodeAlreadyExists", "El codigo ya existe.", nameof(request.Code))]);
-        }
+        return await transactionRunner.ExecuteInTenantTransactionAsync(
+            async (connection, transaction, token) =>
+            {
+                if (await repository.ExistsByCodeAsync(code, null, connection, transaction, token))
+                {
+                    return Result<BusinessPartnerDto>.Failure(
+                        "Ya existe un tercero comercial con el codigo indicado.",
+                        [new ApiError("BusinessPartnerCodeAlreadyExists", "El codigo ya existe.", nameof(request.Code))]);
+                }
 
-        if (await repository.ExistsByIdentificationAsync(request.IdentificationTypeId, identificationNumber, cancellationToken: cancellationToken))
-        {
-            return Result<BusinessPartnerDto>.Failure(
-                "Ya existe un tercero comercial con la identificacion indicada.",
-                [new ApiError("BusinessPartnerIdentificationAlreadyExists", "La identificacion ya existe.", nameof(request.IdentificationNumber))]);
-        }
+                if (await repository.ExistsByIdentificationAsync(
+                        request.IdentificationTypeId, identificationNumber, null, connection, transaction, token))
+                {
+                    return Result<BusinessPartnerDto>.Failure(
+                        "Ya existe un tercero comercial con la identificacion indicada.",
+                        [new ApiError("BusinessPartnerIdentificationAlreadyExists", "La identificacion ya existe.", nameof(request.IdentificationNumber))]);
+                }
 
-        var id = await repository.CreateAsync(ToCreateData(request, code, identificationNumber), cancellationToken);
-        var partner = await repository.GetByIdAsync(id, cancellationToken)
-            ?? throw new InvalidOperationException("El tercero comercial fue creado pero no pudo consultarse.");
+                var id = await repository.CreateAsync(
+                    ToCreateData(request, code, identificationNumber), connection, transaction, token);
+                var partner = await repository.GetByIdAsync(id, connection, transaction, token)
+                    ?? throw new InvalidOperationException("El tercero comercial fue creado pero no pudo consultarse.");
 
-        var syncResult = await BusinessPartnerSyncPublisher.PublishAsync(
-            syncEventPublisher,
-            companyContext,
-            partner,
-            SyncOperation.Created,
+                await localOutboxWriter.EnqueueAsync(
+                    partner, SyncOperation.Created, connection, transaction, token);
+                return Result<BusinessPartnerDto>.Success(partner, "Tercero comercial creado correctamente.");
+            },
             cancellationToken);
-
-        if (syncResult is { IsSuccess: false })
-        {
-            return Result<BusinessPartnerDto>.Failure(syncResult.Message, syncResult.Errors);
-        }
-
-        return Result<BusinessPartnerDto>.Success(partner, "Tercero comercial creado correctamente.");
     }
 
     internal static CreateBusinessPartnerData ToCreateData(CreateBusinessPartnerCommand request, string code, string identificationNumber)
