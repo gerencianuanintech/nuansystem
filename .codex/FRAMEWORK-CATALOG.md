@@ -298,6 +298,21 @@ A framework change is incomplete until:
 
 These are related but non-interchangeable pipelines. Route through `$nuansystem-sap-business-one`, `$nuansystem-sap-sync-orchestration`, or `$nuansystem-master-branch-sync` as applicable.
 
+### Iteration 8 transactional LocalOutbox catalog
+
+| Entity | Tenant producer | Dependencies | Code/migrations | SQL/runtime |
+|---|---|---|---|---|
+| BusinessPartner | Transactional LocalOutbox | None | Integrated | Validated |
+| Item 8.4A | Transactional LocalOutbox | Limited payload | Integrated | Validated in ObserveOnly |
+| ItemFamily | Transactional LocalOutbox | ItemGroup | Integrated | Validated DEMO to Remigio |
+| ItemGroup | Transactional LocalOutbox | None | Scripts 129/130 ready | Pending |
+| Item v2 | Existing transactional LocalOutbox | ItemGroup, ItemFamily, three UOM identities | Scripts 131/132 ready | Pending |
+| UnitOfMeasure | Full source | None | Script 132 hardening ready | Pending |
+| Warehouse | Transactional LocalOutbox | None | Scripts 133/134 ready | Pending |
+
+For every row marked pending, the relay and worker remain disabled. Code-ready
+does not imply permission to deploy SQL, create fixtures or apply branch events.
+
 ## Iteration 5 SRI framework
 
 ### Implemented foundation

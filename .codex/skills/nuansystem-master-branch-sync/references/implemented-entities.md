@@ -11,8 +11,18 @@ branch applier in code. Its identity is `GlobalId`; its parent is resolved by
 `ItemGroupGlobalId`; `(ItemGroupId, Code)` collisions are terminal and never
 adopted automatically. Scripts `127`/`128` are deployed in Master, DEMO and
 Remigio as applicable, disabled by default; Cañaris remains unchanged.
-Runtime application remains pending; read
+The DEMO-to-Remigio runtime pilot is validated; read
 `docs/architecture/MASTER-BRANCH-ITERATION-8-4B-ITEM-FAMILY-BLUEPRINT.md`.
+
+`ItemGroups` and `Warehouse` now use transactional `LocalOutbox` producers and
+terminal no-adoption appliers. Their scripts `129`/`130` and `133`/`134` are
+versioned but not deployed or runtime-validated.
+
+Item payload v2 carries `ItemGroupGlobalId`, `ItemFamilyGlobalId` and separate
+inventory, purchase and sales UOM `GlobalId` values. `UnitOfMeasure` remains a
+Full source with terminal no-adoption behavior. Scripts `131`/`132` are
+versioned but not deployed or runtime-validated. All these paths remain
+disabled by default.
 
 `BusinessPartnerPaymentTerms` is operative through `PaymentTermFullEntitySource`, `ReferenceCatalogSyncEventApplier`, and `ReferenceCatalogSyncApplyRepository`. Its approved upstream source is SAP B1 `PaymentTermsTypes`; read `docs/architecture/SAP-PAYMENT-TERMS-SYNC.md` and the SAP synchronization skill before changing that pipeline. Tenant script `112` and Master scripts `113`/`114` install its contracts but do not activate profiles or workers.
 
@@ -27,4 +37,5 @@ Supplier groups/classes, economic activities, zones, and supply methods have no 
 - monitor/manual actions: `Application/Features/Sync/Queries` and `Commands`
 - worker/appliers: `NuanSystem.MasterBranchSyncWorker`
 - API: `SyncEndpoints.cs`, `SyncConfigurationEndpoints.cs`, `SyncEntityDefinitionEndpoints.cs`
-- SQL: `064` through `105`, plus forward contracts such as `112`/`113`; inspect installers `074`/`075` and verifier `076`.
+- SQL: `064` through `105`, plus forward contracts `112` through `134`;
+  inspect the exact entity blueprint before deployment.

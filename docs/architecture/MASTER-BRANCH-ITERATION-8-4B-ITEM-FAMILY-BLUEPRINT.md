@@ -4,11 +4,12 @@
 
 - **Fecha:** 2026-07-25.
 - **Rama:** `refactor/codex-skills-v8-4b-item-family`.
-- **Estado:** implementacion, despliegue SQL y runtime piloto validados; rama
-  pendiente de revision final.
+- **Estado:** implementación, despliegue SQL y runtime piloto DEMO → Remigio
+  validados e integrados.
 - **Predecesor:** Item 8.4A integrado y validado.
-- **Siguiente dependencia:** Item 8.4B no puede aplicar familias hasta cerrar
-  esta fase.
+- **Siguiente dependencia:** Item payload v2 y UnitOfMeasure ya están
+  implementados en código; sus scripts 131/132 y runtime permanecen pendientes
+  de autorización independiente.
 
 ## Decisiones aprobadas
 

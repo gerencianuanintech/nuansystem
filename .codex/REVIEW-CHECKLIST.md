@@ -340,3 +340,12 @@ These checked development gates do not satisfy the unchecked production gates.
       `Warehouse` or another entity.
 - [ ] Relay and worker remain disabled by default; SQL/runtime require separate
       authorization and evidence.
+- [ ] The entity dependency order is explicit before enabling a profile.
+- [ ] Tenant and Master scripts are registered and executed twice only after
+      verified backups and explicit database authorization.
+- [ ] DI registrations and database initializers include every new writer and
+      migration.
+- [ ] Code collisions are terminal, tombstones reserve identity, and no
+      automatic adoption occurs.
+- [ ] Runtime fixtures are identifiable, isolated to authorized tenants and
+      removed after validation.

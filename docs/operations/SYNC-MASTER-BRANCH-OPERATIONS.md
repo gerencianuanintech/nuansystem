@@ -21,10 +21,12 @@ Reglas base:
 | `SyncOutbox` | Master | Registra eventos publicados desde entidades replicables. |
 | `SyncOutboxTargets` | Master | Declara sucursales destino y estado por target. |
 | `SyncInbox` | Sucursal | Garantiza idempotencia por `EventId` antes de aplicar. |
-| `LocalOutbox` | Sucursal | Reserva para eventos originados localmente hacia Master. |
+| `LocalOutbox` | Tenant | Intencion durable que comparte transaccion con el maestro y luego es promovida idempotentemente a Master. |
 | `SyncAudit` | Master/Sucursal | Registra cambios de estado, acciones tecnicas y acciones manuales. |
 | `NuanSystem.MasterBranchSyncWorker` | Worker backend | Reclama eventos, consulta targets y aplica entidades cuando corresponde. |
-| `ISyncEventPublisher` | Application | Publica eventos SAP-free si la empresa, entidad y direccion lo permiten. |
+| `ISyncEventPublisher` | Application | Publicador directo legado para entidades aun no migradas. |
+| Writers `LocalOutbox` | Application/Persistence | Construyen la intencion local dentro de la misma transaccion tenant. |
+| Relay `LocalOutbox` | Backend worker | Promueve por `EventId` hacia `SyncOutbox` sin transaccion distribuida. |
 | Aplicador `BusinessPartner` | Worker/Application/Persistence | Aplica terceros por `GlobalId`. |
 | Aplicador `Item` | Worker/Application/Persistence | Aplica maestro de articulo por `GlobalId`. |
 | Aplicador `Warehouse` | Worker/Application/Persistence | Aplica maestro de bodega por `GlobalId`. |
@@ -86,14 +88,17 @@ Modo real.
 |---|---|---|---|---|
 | BusinessPartner | `BusinessPartner` | `GlobalId` | Create, update, disable/delete logico | `Code` es referencia funcional. `SapCardCode` no es identidad, `BusinessPartnerSapMapping` no participa y SAP no es obligatorio. |
 | Item | `Item` | `GlobalId` | Create, update, disable/delete logico del maestro | No sincroniza stock, precios, costos, kardex, movimientos de inventario, lotes, series, vencimientos ni bodegas. `SapCode` es nullable, opcional y no es identidad. |
-| Warehouse | `Warehouse` | `GlobalId` | Create, update, disable/delete logico del maestro | No sincroniza stock, saldos, costos, kardex, ubicaciones internas avanzadas, lotes, series ni transferencias. `SapCode` es nullable, opcional y no es identidad. |
+| ItemGroup | `ItemGroups` | `GlobalId` | Create, update, disable/delete logico | Codigo y migraciones 129/130 listos; SQL/runtime pendientes y worker deshabilitado. |
+| ItemFamily | `ItemFamilies` | `GlobalId` | Create, update, disable/delete logico | Depende de ItemGroup; piloto DEMO a Remigio validado. |
+| UnitOfMeasure | `UnitOfMeasure` | `GlobalId` | Full | Contrato sin adopcion por codigo; script 132 y runtime pendientes. |
+| Warehouse | `Warehouse` | `GlobalId` | Create, update, disable/delete logico del maestro | Contrato minimo corporativo; codigo y migraciones 133/134 listos, SQL/runtime pendientes. No sincroniza stock, saldos, costos ni kardex. |
 
 ## Flujo Operativo
 
-1. Un registro replicable se crea, actualiza o desactiva en Master.
-2. El caso de uso persiste el cambio y el publicador evalua empresa, entidad, ownership y direccion.
-3. Si aplica, se crea un evento en `SyncOutbox` con `EventId`, `EntityName`, `EntityGlobalId`, `EntityCode` y `PayloadJson`.
-4. Las reglas de distribucion crean o mantienen targets en `SyncOutboxTargets`.
+1. Un registro replicable se crea, actualiza o desactiva en el tenant Matriz.
+2. Para entidades migradas, el caso de uso persiste maestro y `LocalOutbox` en una sola transaccion tenant.
+3. El relay promueve el mismo `EventId` a `SyncOutbox`; entidades legadas aun pueden usar publicacion directa.
+4. Las reglas de distribucion crean o mantienen targets en `SyncOutboxTargets` dentro del commit Master.
 5. El worker, segun su modo, observa, reclama/libera o procesa el evento.
 6. En modo real, por cada target se registra `SyncInbox` en la sucursal.
 7. El aplicador usa `GlobalId` para upsert o desactivacion idempotente.

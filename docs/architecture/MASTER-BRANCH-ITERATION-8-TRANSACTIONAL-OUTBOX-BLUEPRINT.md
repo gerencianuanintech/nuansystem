@@ -5,16 +5,18 @@
 - **Fecha:** 2026-07-25.
 - **Alcance actual:** límite transaccional, relay e incorporación progresiva de
   maestros.
-- **Estado:** Fases 8.1–8.3 y 8.4A implementadas y validadas. ItemFamily
-  8.4B-1 está implementada en código, deshabilitada y pendiente de despliegue
-  y runtime autorizados.
+- **Estado:** Fases 8.1–8.3, 8.4A y ItemFamily 8.4B-1 implementadas y
+  validadas. ItemGroup, Item payload v2/UnitOfMeasure y Warehouse están
+  implementados en código con migraciones versionadas, deshabilitados y
+  pendientes de despliegue SQL y runtime autorizados.
 - **Autoridad:** Constitución > Kernel > catálogos > skill
   `nuansystem-master-branch-sync` > implementación.
 
 Esta iteración cierra el pendiente documentado entre la persistencia de un
 maestro en la base tenant y la creación de `SyncOutbox` en Master. No habilita
 workers, no activa perfiles, no aplica eventos en sucursales y no involucra SAP
-ni SRI.
+ni SRI. La existencia de código o migraciones no concede autorización para
+ejecutarlos.
 
 ## Discovery Record
 

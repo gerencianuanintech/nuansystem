@@ -306,3 +306,28 @@ La evidencia runtime se encuentra en
 [MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md](../architecture/MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md).
 Los fixtures `I8IT84*` fueron eliminados al terminar y no se aplicaron eventos
 en Remigio ni Cañaris.
+
+## Próxima oleada — ItemGroup, Item payload v2/UOM y Warehouse
+
+La implementación y las migraciones están preparadas, pero ninguna de estas
+fases está desplegada ni validada en runtime:
+
+| Alcance | Tenant | Master | Estado |
+|---|---|---|---|
+| ItemGroup | 129 | 130 | Código listo; SQL/runtime pendiente |
+| Item v2 y UnitOfMeasure | 131 | 132 | Código listo; SQL/runtime pendiente |
+| Warehouse | 133 | 134 | Código listo; SQL/runtime pendiente |
+
+El orden obligatorio para el piloto es:
+
+1. respaldos verificados de las bases expresamente autorizadas;
+2. ejecutar cada script dos veces y comprobar una sola versión;
+3. mantener relay y workers deshabilitados;
+4. validar ItemGroup antes de ItemFamily/Item;
+5. validar UnitOfMeasure antes del payload Item v2;
+6. validar Warehouse como flujo independiente;
+7. probar rollback atómico, idempotencia, tombstone y colisión terminal;
+8. aplicar únicamente DEMO → Remigio cuando exista autorización expresa;
+9. limpiar fixtures y confirmar cero locks/procesos.
+
+Cañaris, SAP y SRI permanecen fuera de alcance.

@@ -437,7 +437,7 @@ Diseno recomendado:
 
 ## Etapa 4 - Flujo operativo identificado
 
-La clase que genera eventos `SyncOutbox` es `SyncEventPublisher` en `src/Backend/NuanSystem.Application/Features/Sync/Services/SyncEventPublisher.cs`. Recibe solicitudes desde publicadores existentes como `CountrySyncPublisher`, `ProvinceSyncPublisher`, `CitySyncPublisher`, `CurrencySyncPublisher`, `BusinessPartnerSyncPublisher`, `ItemSyncPublisher` y `WarehouseSyncPublisher`, valida metadata con `IReplicableEntityMetadataProvider`, serializa payload seguro con `SyncEventPayloadFactory` y persiste el evento mediante `ISyncOutboxRepository.CreateAsync`.
+Las entidades legadas de geografia y moneda aun pueden publicar directamente mediante `SyncEventPublisher`. Las entidades migradas en Iteracion 8 —BusinessPartner, Item, ItemFamily, ItemGroup y Warehouse— construyen el evento con su factory, guardan `LocalOutbox` en la misma transaccion tenant y dejan que el relay promueva idempotentemente el `EventId` hacia `SyncOutbox`. No se abre Master dentro de la transaccion tenant.
 
 La creacion de `SyncOutboxTargets` ocurre en el mismo `SyncEventPublisher` despues de persistir el outbox. Antes de esta etapa, los destinos salian de `ISyncRuleEvaluator`/`SyncRuleEvaluator`, que consultaba `SyncDistributionRules`. En Etapa 4 la resolucion pasa a `ISyncRoutingService`/`ISyncRoutingRepository` y al SP `SP_NA_GET_SYNCROUTINGTARGETS`, que consulta perfiles activos `MasterToBranch`, `Incremental` y `MasterWins`. La insercion de targets sigue reutilizando `SyncOutboxRepository.CreateTargetAsync`.
 

@@ -596,8 +596,8 @@ Its design and runtime evidence are in
 `docs/architecture/MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md`.
 The tenant aggregate and LocalOutbox commit atomically, and the relay promotes
 the limited payload idempotently to Master in ObserveOnly. Real branch
-application is a separate 8.4B decision, and `Warehouse`, SAP and SRI remain
-excluded.
+application is governed by the later Item v2 dependency contract. SAP and SRI
+remain excluded.
 
 ItemFamily 8.4B-1 adds the dependency contract required before Item can be
 applied to a branch:
@@ -616,5 +616,27 @@ ItemFamily CRUD in Master tenant
 `ItemGroupCode|ItemFamilyCode`; code is not globally unique. No code adoption
 edge exists. Scripts `127`/`128` are deployed in Master, DEMO and Remigio as
 applicable, with configuration disabled by default; Cañaris remains unchanged.
-Remigio runtime evidence remains pending. The authoritative scope is
+Remigio runtime evidence is validated for ItemFamily. The authoritative scope is
 `docs/architecture/MASTER-BRANCH-ITERATION-8-4B-ITEM-FAMILY-BLUEPRINT.md`.
+
+The next catalog wave is code-complete but not deployed:
+
+```text
+ItemGroup
+  -> transactional LocalOutbox
+  -> scripts 129/130
+  -> ItemFamily -> Item
+
+UnitOfMeasure (Full)
+  -> terminal collision without adoption
+  -> Item v2 inventory/purchase/sales UOM GlobalIds
+  -> scripts 131/132
+
+Warehouse
+  -> transactional LocalOutbox
+  -> minimal corporate payload
+  -> preserve branch-local fields
+  -> scripts 133/134
+```
+
+All three paths remain disabled and require separate SQL/runtime authorization.
