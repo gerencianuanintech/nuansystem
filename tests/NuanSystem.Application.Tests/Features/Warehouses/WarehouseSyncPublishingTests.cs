@@ -36,6 +36,20 @@ public sealed class WarehouseSyncPublishingTests
         request.Payload.Should().BeOfType<WarehouseSyncPayload>().Subject.IsActive.Should().BeFalse();
     }
 
+    [Fact]
+    public void UpdateHandler_PreservesPersistedGlobalId_AndMigrationRejectsTombstoneCodeCollision()
+    {
+        var handler = ReadSource(
+            "src", "Backend", "NuanSystem.Application", "Features", "GeneralInventory",
+            "Warehouses", "Commands", "UpdateWarehouseCommandHandler.cs");
+        var migration = ReadSource("database", "sql", "133_tenant_warehouse_transactional_outbox.sql");
+
+        handler.Should().Contain("current.GlobalId,");
+        handler.Should().NotContain("request.GlobalId.GetValueOrDefault");
+        migration.Should().Contain("WHERE Code=@Code AND GlobalId<>@GlobalId");
+        migration.Should().NotContain("WHERE Code=@Code AND IsDeleted=0 AND GlobalId<>@GlobalId");
+    }
+
     private static WarehouseDto CreateWarehouse() => new()
     {
         Id = 25,
@@ -51,4 +65,21 @@ public sealed class WarehouseSyncPublishingTests
         SapCode = "01",
         CreatedAt = new DateTime(2026, 7, 10, 10, 0, 0, DateTimeKind.Utc)
     };
+
+    private static string ReadSource(params string[] pathParts)
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            var path = Path.Combine([directory.FullName, .. pathParts]);
+            if (File.Exists(path))
+            {
+                return File.ReadAllText(path);
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new FileNotFoundException(Path.Combine(pathParts));
+    }
 }

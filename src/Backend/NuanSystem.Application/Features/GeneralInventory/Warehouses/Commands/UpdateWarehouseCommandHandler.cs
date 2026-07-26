@@ -37,7 +37,7 @@ public sealed class UpdateWarehouseCommandHandler(
 
                 var updated = await warehouseRepository.UpdateAsync(new UpdateWarehouseData(
                     request.Id,
-                    request.GlobalId.GetValueOrDefault(current.GlobalId == Guid.Empty ? Guid.NewGuid() : current.GlobalId),
+                    current.GlobalId,
                     code,
                     request.Name.Trim(),
                     WarehouseCommandHelpers.NormalizeOptional(request.Description),

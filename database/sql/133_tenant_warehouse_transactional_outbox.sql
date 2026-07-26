@@ -154,7 +154,7 @@ BEGIN
     DECLARE @WarehouseId int;
     SELECT @WarehouseId=Id FROM dbo.Warehouses WITH(UPDLOCK,HOLDLOCK) WHERE GlobalId=@GlobalId;
     IF EXISTS(SELECT 1 FROM dbo.Warehouses WITH(UPDLOCK,HOLDLOCK)
-              WHERE Code=@Code AND IsDeleted=0 AND GlobalId<>@GlobalId)
+              WHERE Code=@Code AND GlobalId<>@GlobalId)
     BEGIN
         SELECT -2 AS ResultCode, CONVERT(int,NULL) AS WarehouseId;
         RETURN;

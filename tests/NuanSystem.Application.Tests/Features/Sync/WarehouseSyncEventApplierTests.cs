@@ -57,6 +57,30 @@ public sealed class WarehouseSyncEventApplierTests
     }
 
     [Fact]
+    public async Task WarehouseApplier_CodeCollision_IsPropagatedAsTerminal()
+    {
+        var repository = Substitute.For<IWarehouseSyncApplyRepository>();
+        var payload = CreatePayload();
+        var context = CreateContext(payload, SyncOperation.Created);
+        repository.UpsertFromSyncAsync(2, context, payload, SyncOperation.Created, Arg.Any<CancellationToken>())
+            .Returns(new WarehouseSyncApplyResult(
+                false,
+                false,
+                true,
+                null,
+                "Codigo ocupado.",
+                "SYNC_WAREHOUSE_CODE_CONFLICT"));
+        var applier = new WarehouseSyncEventApplier(repository);
+
+        var result = await applier.ApplyAsync(context, CancellationToken.None);
+
+        result.Applied.Should().BeFalse();
+        result.Terminal.Should().BeTrue();
+        result.Retryable.Should().BeFalse();
+        result.ErrorCode.Should().Be("SYNC_WAREHOUSE_CODE_CONFLICT");
+    }
+
+    [Fact]
     public async Task WarehouseApplier_ReapplyingSameEventId_IsIdempotentAndDoesNotDuplicate()
     {
         var repository = new InMemoryWarehouseSyncApplyRepository();
