@@ -239,11 +239,22 @@ SELECT CAST(SCOPE_IDENTITY() AS bigint);
     {
         var isDeleted = markDeleted || operation == SyncOperation.Deleted;
         var isActive = !isDeleted && operation != SyncOperation.Disabled && payload.IsActive;
-        var itemGroupId = await ResolveIdByGlobalIdAsync(connection, transaction, "dbo.ItemGroups", payload.ItemGroupGlobalId, cancellationToken);
-        var itemFamilyId = await ResolveIdByGlobalIdAsync(connection, transaction, "dbo.ItemFamilies", payload.ItemFamilyGlobalId, cancellationToken);
-        var inventoryUnitOfMeasureId = await ResolveIdByGlobalIdAsync(connection, transaction, "dbo.UnitOfMeasures", payload.InventoryUnitOfMeasureGlobalId, cancellationToken);
-        var purchaseUnitOfMeasureId = await ResolveIdByGlobalIdAsync(connection, transaction, "dbo.UnitOfMeasures", payload.PurchaseUnitOfMeasureGlobalId, cancellationToken);
-        var salesUnitOfMeasureId = await ResolveIdByGlobalIdAsync(connection, transaction, "dbo.UnitOfMeasures", payload.SalesUnitOfMeasureGlobalId, cancellationToken);
+        var preserveDependencies = operation is SyncOperation.Disabled or SyncOperation.Deleted || markDeleted;
+        var itemGroupId = preserveDependencies
+            ? null
+            : await ResolveIdByGlobalIdAsync(connection, transaction, "dbo.ItemGroups", payload.ItemGroupGlobalId, cancellationToken);
+        var itemFamilyId = preserveDependencies
+            ? null
+            : await ResolveIdByGlobalIdAsync(connection, transaction, "dbo.ItemFamilies", payload.ItemFamilyGlobalId, cancellationToken);
+        var inventoryUnitOfMeasureId = preserveDependencies
+            ? null
+            : await ResolveIdByGlobalIdAsync(connection, transaction, "dbo.UnitOfMeasures", payload.InventoryUnitOfMeasureGlobalId, cancellationToken);
+        var purchaseUnitOfMeasureId = preserveDependencies
+            ? null
+            : await ResolveIdByGlobalIdAsync(connection, transaction, "dbo.UnitOfMeasures", payload.PurchaseUnitOfMeasureGlobalId, cancellationToken);
+        var salesUnitOfMeasureId = preserveDependencies
+            ? null
+            : await ResolveIdByGlobalIdAsync(connection, transaction, "dbo.UnitOfMeasures", payload.SalesUnitOfMeasureGlobalId, cancellationToken);
 
         const string sql = """
 DECLARE @ItemId int;
@@ -328,12 +339,12 @@ BEGIN
         ExternalCode = @ExternalCode,
         SapCode = @SapCode,
         Description = @Description,
-        ItemGroupId = @ItemGroupId,
-        ItemFamilyId = @ItemFamilyId,
+        ItemGroupId = CASE WHEN @PreserveDependencies = 1 THEN ItemGroupId ELSE @ItemGroupId END,
+        ItemFamilyId = CASE WHEN @PreserveDependencies = 1 THEN ItemFamilyId ELSE @ItemFamilyId END,
         ItemType = @ItemType,
-        InventoryUnitOfMeasureId = @InventoryUnitOfMeasureId,
-        PurchaseUnitOfMeasureId = @PurchaseUnitOfMeasureId,
-        SalesUnitOfMeasureId = @SalesUnitOfMeasureId,
+        InventoryUnitOfMeasureId = CASE WHEN @PreserveDependencies = 1 THEN InventoryUnitOfMeasureId ELSE @InventoryUnitOfMeasureId END,
+        PurchaseUnitOfMeasureId = CASE WHEN @PreserveDependencies = 1 THEN PurchaseUnitOfMeasureId ELSE @PurchaseUnitOfMeasureId END,
+        SalesUnitOfMeasureId = CASE WHEN @PreserveDependencies = 1 THEN SalesUnitOfMeasureId ELSE @SalesUnitOfMeasureId END,
         IsPurchaseItem = @IsPurchaseItem,
         IsSalesItem = @IsSalesItem,
         IsInventoryItem = @IsInventoryItem,
@@ -366,6 +377,7 @@ SELECT @ItemId;
                 InventoryUnitOfMeasureId = inventoryUnitOfMeasureId,
                 PurchaseUnitOfMeasureId = purchaseUnitOfMeasureId,
                 SalesUnitOfMeasureId = salesUnitOfMeasureId,
+                PreserveDependencies = preserveDependencies,
                 payload.IsPurchaseItem,
                 payload.IsSalesItem,
                 payload.IsInventoryItem,

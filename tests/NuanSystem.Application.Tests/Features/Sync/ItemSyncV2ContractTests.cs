@@ -1,3 +1,5 @@
+using System.Data;
+using Dapper;
 using System.Text.Json;
 using FluentAssertions;
 using NSubstitute;
@@ -109,6 +111,52 @@ public sealed class ItemSyncV2ContractTests
         result.Terminal.Should().BeTrue();
         result.Retryable.Should().BeFalse();
         result.ErrorCode.Should().Be("SYNC_ITEM_CODE_CONFLICT");
+    }
+
+    [Fact]
+    public void DisabledOrDeletedPersistence_PreservesExistingDependencyForeignKeys()
+    {
+        var source = ReadSource(
+            "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync", "ItemSyncApplyRepository.cs");
+
+        source.Should().Contain("operation is SyncOperation.Disabled or SyncOperation.Deleted || markDeleted");
+        source.Should().Contain("CASE WHEN @PreserveDependencies = 1 THEN ItemGroupId ELSE @ItemGroupId END");
+        source.Should().Contain("CASE WHEN @PreserveDependencies = 1 THEN ItemFamilyId ELSE @ItemFamilyId END");
+        source.Should().Contain("CASE WHEN @PreserveDependencies = 1 THEN InventoryUnitOfMeasureId ELSE @InventoryUnitOfMeasureId END");
+        source.Should().Contain("CASE WHEN @PreserveDependencies = 1 THEN PurchaseUnitOfMeasureId ELSE @PurchaseUnitOfMeasureId END");
+        source.Should().Contain("CASE WHEN @PreserveDependencies = 1 THEN SalesUnitOfMeasureId ELSE @SalesUnitOfMeasureId END");
+    }
+
+    [Fact]
+    public void DapperMaterialization_MapsFiveDependencyGlobalIdAliases()
+    {
+        var expected = new[]
+        {
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid()
+        };
+        var table = new DataTable();
+        table.Columns.Add("ItemGroupGlobalId", typeof(Guid));
+        table.Columns.Add("ItemFamilyGlobalId", typeof(Guid));
+        table.Columns.Add("InventoryUnitOfMeasureGlobalId", typeof(Guid));
+        table.Columns.Add("PurchaseUnitOfMeasureGlobalId", typeof(Guid));
+        table.Columns.Add("SalesUnitOfMeasureGlobalId", typeof(Guid));
+        table.Rows.Add(expected.Cast<object>().ToArray());
+
+        using var reader = table.CreateDataReader();
+        reader.Read().Should().BeTrue();
+        var materializer = SqlMapper.GetTypeDeserializer(typeof(ItemDto), reader);
+
+        var item = materializer(reader).Should().BeOfType<ItemDto>().Subject;
+
+        item.ItemGroupGlobalId.Should().Be(expected[0]);
+        item.ItemFamilyGlobalId.Should().Be(expected[1]);
+        item.InventoryUnitOfMeasureGlobalId.Should().Be(expected[2]);
+        item.PurchaseUnitOfMeasureGlobalId.Should().Be(expected[3]);
+        item.SalesUnitOfMeasureGlobalId.Should().Be(expected[4]);
     }
 
     [Fact]
