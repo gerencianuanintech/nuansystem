@@ -18,7 +18,7 @@ public sealed class WarehouseSyncEventApplierTests
         var payload = CreatePayload();
         var context = CreateContext(payload, SyncOperation.Created);
         repository.UpsertFromSyncAsync(2, context, payload, SyncOperation.Created, Arg.Any<CancellationToken>())
-            .Returns(new WarehouseSyncApplyResult(true, false, 100, "Creado."));
+            .Returns(new WarehouseSyncApplyResult(true, false, false, 100, "Creado."));
         var applier = new WarehouseSyncEventApplier(repository);
 
         var result = await applier.ApplyAsync(context, CancellationToken.None);
@@ -42,7 +42,7 @@ public sealed class WarehouseSyncEventApplierTests
         var payload = CreatePayload(isActive: false);
         var context = CreateContext(payload, SyncOperation.Disabled);
         repository.DisableFromSyncAsync(2, context, payload, false, Arg.Any<CancellationToken>())
-            .Returns(new WarehouseSyncApplyResult(true, false, 100, "Desactivado."));
+            .Returns(new WarehouseSyncApplyResult(true, false, false, 100, "Desactivado."));
         var applier = new WarehouseSyncEventApplier(repository);
 
         var result = await applier.ApplyAsync(context, CancellationToken.None);
@@ -101,10 +101,13 @@ public sealed class WarehouseSyncEventApplierTests
             "WarehouseSyncApplyRepository.cs");
 
         applier.Should().NotContain("SapCode");
-        repository.Should().Contain("WHERE GlobalId = @GlobalId");
+        repository.Should().Contain("SP_NA_POST_WAREHOUSE_SYNC_APPLY");
         repository.Should().Contain("EventId = @EventId");
         repository.Should().Contain("Status = N'Applied'");
-        repository.Should().Contain("SapCode = @SapCode");
+        repository.Should().Contain("SapCode = NormalizeOptional(payload.SapCode");
+        repository.Should().NotContain("payload.Description");
+        repository.Should().NotContain("payload.Address");
+        repository.Should().NotContain("payload.AllowsSales");
         repository.Should().NotContain("WarehouseStock");
         repository.Should().NotContain("Kardex");
         repository.Should().NotContain("AverageCost");
@@ -137,20 +140,6 @@ public sealed class WarehouseSyncEventApplierTests
             GlobalId: Guid.NewGuid(),
             Code: "BOD-AME",
             Name: "Bodega Mega Americas",
-            Description: "Bodega comercial principal",
-            BranchCode: "AME",
-            Address: "Av. Americas",
-            City: "Cuenca",
-            Province: "Azuay",
-            Country: "EC",
-            Phone: "0999999999",
-            Email: "bodega@example.com",
-            ManagerName: "Administrador",
-            AllowsSales: true,
-            AllowsPurchases: true,
-            AllowsTransfers: true,
-            AllowsProduction: false,
-            IsDefault: true,
             IsActive: isActive,
             ExternalSystem: null,
             ExternalCode: null,
@@ -232,8 +221,9 @@ public sealed class WarehouseSyncEventApplierTests
                 return Task.FromResult(new WarehouseSyncApplyResult(
                     true,
                     true,
+                    false,
                     WarehouseId: null,
-                    "Evento ya aplicado en SyncInbox."));
+                    Message: "Evento ya aplicado en SyncInbox."));
             }
 
             _syncInboxByEventId[context.EventId] = SyncEventStatus.Pending;
@@ -244,8 +234,9 @@ public sealed class WarehouseSyncEventApplierTests
             return Task.FromResult(new WarehouseSyncApplyResult(
                 true,
                 false,
+                false,
                 WarehouseId: 1,
-                "Warehouse sincronizado por GlobalId."));
+                Message: "Warehouse sincronizado por GlobalId."));
         }
 
         public Task<WarehouseSyncApplyResult> DisableFromSyncAsync(
