@@ -26,54 +26,162 @@ public sealed class ItemGroupRepository(ITenantConnectionFactory connectionFacto
     public async Task<ItemGroupDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        return await connection.QuerySingleOrDefaultAsync<ItemGroupDto>(
-            new CommandDefinition(GetByIdProcedure, new { Id = id }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        return await GetByIdCoreAsync(id, connection, transaction: null, cancellationToken);
+    }
+
+    public Task<ItemGroupDto?> GetByIdAsync(
+        int id,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        return GetByIdCoreAsync(id, connection, transaction, cancellationToken);
     }
 
     public async Task<int> CreateAsync(CreateItemGroupData itemGroup, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(CreateProcedure, itemGroup, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        return await CreateCoreAsync(itemGroup, connection, transaction: null, cancellationToken);
+    }
+
+    public Task<int> CreateAsync(
+        CreateItemGroupData itemGroup,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        return CreateCoreAsync(itemGroup, connection, transaction, cancellationToken);
     }
 
     public async Task<bool> ExistsByCodeAsync(string code, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        var count = await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(ExistsByCodeProcedure, new { Code = code, ExcluirId = (int?)null }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
-
-        return count > 0;
+        return await ExistsByCodeCoreAsync(code, null, connection, transaction: null, cancellationToken);
     }
 
     public async Task<bool> ExistsByCodeAsync(string code, int excludingId, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        var count = await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(ExistsByCodeProcedure, new { Code = code, ExcluirId = excludingId }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        return await ExistsByCodeCoreAsync(code, excludingId, connection, transaction: null, cancellationToken);
+    }
 
-        return count > 0;
+    public Task<bool> ExistsByCodeAsync(
+        string code,
+        int? excludingId,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        return ExistsByCodeCoreAsync(code, excludingId, connection, transaction, cancellationToken);
     }
 
     public async Task<bool> UpdateAsync(UpdateItemGroupData itemGroup, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        var affectedRows = await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(UpdateProcedure, itemGroup, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        return await UpdateCoreAsync(itemGroup, connection, transaction: null, cancellationToken);
+    }
 
-        return affectedRows > 0;
+    public Task<bool> UpdateAsync(
+        UpdateItemGroupData itemGroup,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        return UpdateCoreAsync(itemGroup, connection, transaction, cancellationToken);
     }
 
     public async Task<bool> DeleteAsync(int id, int? deletedByUserId, string? deletedByUserName, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
+        return await DeleteCoreAsync(
+            id, deletedByUserId, deletedByUserName, connection, transaction: null, cancellationToken);
+    }
+
+    public Task<bool> DeleteAsync(
+        int id,
+        int? deletedByUserId,
+        string? deletedByUserName,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        return DeleteCoreAsync(
+            id, deletedByUserId, deletedByUserName, connection, transaction, cancellationToken);
+    }
+
+    private static Task<ItemGroupDto?> GetByIdCoreAsync(
+        int id,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
+        return connection.QuerySingleOrDefaultAsync<ItemGroupDto>(
+            new CommandDefinition(
+                GetByIdProcedure,
+                new { Id = id },
+                transaction,
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
+    }
+
+    private static Task<int> CreateCoreAsync(
+        CreateItemGroupData itemGroup,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
+        return connection.ExecuteScalarAsync<int>(
+            new CommandDefinition(
+                CreateProcedure,
+                itemGroup,
+                transaction,
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
+    }
+
+    private static async Task<bool> ExistsByCodeCoreAsync(
+        string code,
+        int? excludingId,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
+        var count = await connection.ExecuteScalarAsync<int>(
+            new CommandDefinition(
+                ExistsByCodeProcedure,
+                new { Code = code, ExcluirId = excludingId },
+                transaction,
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
+        return count > 0;
+    }
+
+    private static async Task<bool> UpdateCoreAsync(
+        UpdateItemGroupData itemGroup,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
+        var affectedRows = await connection.ExecuteScalarAsync<int>(
+            new CommandDefinition(UpdateProcedure, itemGroup, transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        return affectedRows > 0;
+    }
+
+    private static async Task<bool> DeleteCoreAsync(
+        int id,
+        int? deletedByUserId,
+        string? deletedByUserName,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
         var affectedRows = await connection.ExecuteScalarAsync<int>(
             new CommandDefinition(
                 DeleteProcedure,
                 new { Id = id, DeletedByUserId = deletedByUserId, DeletedByUserName = deletedByUserName },
+                transaction,
                 cancellationToken: cancellationToken,
                 commandType: CommandType.StoredProcedure));
-
         return affectedRows > 0;
     }
 }

@@ -1,7 +1,6 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Abstractions.Sync;
-using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Dtos;
 using NuanSystem.Shared.Responses;
@@ -12,27 +11,13 @@ namespace NuanSystem.Application.Features.GeneralInventory.ItemGroups.Commands;
 public sealed class UpdateItemGroupCommandHandler(
     IItemGroupRepository itemGroupRepository,
     IChartOfAccountRepository chartOfAccountRepository,
-    ISyncEventPublisher syncEventPublisher,
-    ICompanyContext companyContext)
+    ITransactionRunner transactionRunner,
+    IItemGroupLocalOutboxWriter localOutboxWriter)
     : ICommandHandler<UpdateItemGroupCommand, ItemGroupDto>
 {
     public async Task<Result<ItemGroupDto>> Handle(UpdateItemGroupCommand request, CancellationToken cancellationToken)
     {
-        if (await itemGroupRepository.GetByIdAsync(request.Id, cancellationToken) is null)
-        {
-            return Result<ItemGroupDto>.Failure(
-                "Grupo de artículos no encontrado.",
-                [new ApiError("ItemGroupNotFound", "No existe el grupo de artículos indicado.", nameof(request.Id))]);
-        }
-
         var code = CreateItemGroupCommandHandler.NormalizeCode(request.Code);
-        if (await itemGroupRepository.ExistsByCodeAsync(code, request.Id, cancellationToken))
-        {
-            return Result<ItemGroupDto>.Failure(
-                "Ya existe otro grupo de artículos con el código indicado.",
-                [new ApiError("ItemGroupCodeAlreadyExists", "El código de grupo ya existe.", nameof(request.Code))]);
-        }
-
         var accountValidation = await CreateItemGroupCommandHandler.ValidateAccountCodesAsync(
             chartOfAccountRepository,
             [
@@ -48,7 +33,7 @@ public sealed class UpdateItemGroupCommandHandler(
             return Result<ItemGroupDto>.Failure(accountValidation.Message, accountValidation.Errors);
         }
 
-        var updated = await itemGroupRepository.UpdateAsync(new UpdateItemGroupData(
+        var data = new UpdateItemGroupData(
             request.Id,
             code,
             request.Name.Trim(),
@@ -61,28 +46,42 @@ public sealed class UpdateItemGroupCommandHandler(
             CreateItemGroupCommandHandler.NormalizeOptional(request.SapGroupCode),
             CreateItemGroupCommandHandler.NormalizeOptional(request.SapCode),
             request.AuditUserId,
-            CreateItemGroupCommandHandler.NormalizeOptional(request.AuditUserName)), cancellationToken);
+            CreateItemGroupCommandHandler.NormalizeOptional(request.AuditUserName));
 
-        if (!updated)
-        {
-            return Result<ItemGroupDto>.Failure("No se pudo actualizar el grupo de artículos.");
-        }
+        return await transactionRunner.ExecuteInTenantTransactionAsync(
+            async (connection, transaction, token) =>
+            {
+                if (await itemGroupRepository.GetByIdAsync(request.Id, connection, transaction, token) is null)
+                {
+                    return Result<ItemGroupDto>.Failure(
+                        "Grupo de articulos no encontrado.",
+                        [new ApiError("ItemGroupNotFound", "No existe el grupo de articulos indicado.", nameof(request.Id))]);
+                }
 
-        var itemGroup = await itemGroupRepository.GetByIdAsync(request.Id, cancellationToken)
-            ?? throw new InvalidOperationException("El grupo de artículos fue actualizado pero no pudo consultarse.");
+                if (await itemGroupRepository.ExistsByCodeAsync(
+                        code, request.Id, connection, transaction, token))
+                {
+                    return Result<ItemGroupDto>.Failure(
+                        "Ya existe otro grupo de articulos con el codigo indicado.",
+                        [new ApiError("ItemGroupCodeAlreadyExists", "El codigo de grupo ya existe.", nameof(request.Code))]);
+                }
 
-        var syncResult = await ItemGroupSyncPublisher.PublishAsync(
-            syncEventPublisher,
-            companyContext,
-            itemGroup,
-            itemGroup.IsActive ? SyncOperation.Updated : SyncOperation.Disabled,
+                if (!await itemGroupRepository.UpdateAsync(data, connection, transaction, token))
+                {
+                    return Result<ItemGroupDto>.Failure("No se pudo actualizar el grupo de articulos.");
+                }
+
+                var itemGroup = await itemGroupRepository.GetByIdAsync(request.Id, connection, transaction, token)
+                    ?? throw new InvalidOperationException("El grupo de articulos fue actualizado pero no pudo consultarse.");
+
+                await localOutboxWriter.EnqueueAsync(
+                    itemGroup,
+                    itemGroup.IsActive ? SyncOperation.Updated : SyncOperation.Disabled,
+                    connection,
+                    transaction,
+                    token);
+                return Result<ItemGroupDto>.Success(itemGroup, "Grupo de articulos actualizado correctamente.");
+            },
             cancellationToken);
-
-        if (syncResult is { IsSuccess: false })
-        {
-            return Result<ItemGroupDto>.Failure(syncResult.Message, syncResult.Errors);
-        }
-
-        return Result<ItemGroupDto>.Success(itemGroup, "Grupo de artículos actualizado correctamente.");
     }
 }

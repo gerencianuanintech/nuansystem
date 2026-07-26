@@ -1,7 +1,6 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Abstractions.Sync;
-using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Dtos;
 using NuanSystem.Shared.Responses;
@@ -12,20 +11,13 @@ namespace NuanSystem.Application.Features.GeneralInventory.ItemGroups.Commands;
 public sealed class CreateItemGroupCommandHandler(
     IItemGroupRepository itemGroupRepository,
     IChartOfAccountRepository chartOfAccountRepository,
-    ISyncEventPublisher syncEventPublisher,
-    ICompanyContext companyContext)
+    ITransactionRunner transactionRunner,
+    IItemGroupLocalOutboxWriter localOutboxWriter)
     : ICommandHandler<CreateItemGroupCommand, ItemGroupDto>
 {
     public async Task<Result<ItemGroupDto>> Handle(CreateItemGroupCommand request, CancellationToken cancellationToken)
     {
         var code = NormalizeCode(request.Code);
-        if (await itemGroupRepository.ExistsByCodeAsync(code, cancellationToken))
-        {
-            return Result<ItemGroupDto>.Failure(
-                "Ya existe un grupo de artículos con el código indicado.",
-                [new ApiError("ItemGroupCodeAlreadyExists", "El código de grupo ya existe.", nameof(request.Code))]);
-        }
-
         var accountValidation = await ValidateAccountCodesAsync(
             chartOfAccountRepository,
             [
@@ -41,7 +33,8 @@ public sealed class CreateItemGroupCommandHandler(
             return Result<ItemGroupDto>.Failure(accountValidation.Message, accountValidation.Errors);
         }
 
-        var id = await itemGroupRepository.CreateAsync(new CreateItemGroupData(
+        var data = new CreateItemGroupData(
+            Guid.NewGuid(),
             code,
             request.Name.Trim(),
             NormalizeOptional(request.Description),
@@ -53,24 +46,28 @@ public sealed class CreateItemGroupCommandHandler(
             NormalizeOptional(request.SapGroupCode),
             NormalizeOptional(request.SapCode),
             request.AuditUserId,
-            NormalizeOptional(request.AuditUserName)), cancellationToken);
+            NormalizeOptional(request.AuditUserName));
 
-        var itemGroup = await itemGroupRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new InvalidOperationException("El grupo de artículos fue creado pero no pudo consultarse.");
+        return await transactionRunner.ExecuteInTenantTransactionAsync(
+            async (connection, transaction, token) =>
+            {
+                if (await itemGroupRepository.ExistsByCodeAsync(
+                        code, null, connection, transaction, token))
+                {
+                    return Result<ItemGroupDto>.Failure(
+                        "Ya existe un grupo de articulos con el codigo indicado.",
+                        [new ApiError("ItemGroupCodeAlreadyExists", "El codigo de grupo ya existe.", nameof(request.Code))]);
+                }
 
-        var syncResult = await ItemGroupSyncPublisher.PublishAsync(
-            syncEventPublisher,
-            companyContext,
-            itemGroup,
-            SyncOperation.Created,
+                var id = await itemGroupRepository.CreateAsync(data, connection, transaction, token);
+                var itemGroup = await itemGroupRepository.GetByIdAsync(id, connection, transaction, token)
+                    ?? throw new InvalidOperationException("El grupo de articulos fue creado pero no pudo consultarse.");
+
+                await localOutboxWriter.EnqueueAsync(
+                    itemGroup, SyncOperation.Created, connection, transaction, token);
+                return Result<ItemGroupDto>.Success(itemGroup, "Grupo de articulos creado correctamente.");
+            },
             cancellationToken);
-
-        if (syncResult is { IsSuccess: false })
-        {
-            return Result<ItemGroupDto>.Failure(syncResult.Message, syncResult.Errors);
-        }
-
-        return Result<ItemGroupDto>.Success(itemGroup, "Grupo de artículos creado correctamente.");
     }
 
     internal static string NormalizeCode(string code)
@@ -107,14 +104,14 @@ public sealed class CreateItemGroupCommandHandler(
             .Where(field => !activeCodes.Contains(field.Code!))
             .Select(field => new ApiError(
                 "ChartOfAccountNotFound",
-                $"La {field.DisplayName} '{field.Code}' no existe en el plan de cuentas o no está activa.",
+                $"La {field.DisplayName} '{field.Code}' no existe en el plan de cuentas o no esta activa.",
                 field.FieldName))
             .ToArray();
 
         return errors.Length == 0
             ? AccountCodeValidationResult.Success()
             : AccountCodeValidationResult.Failure(
-                "Revise las cuentas contables del grupo de artículos. Deben existir en el plan de cuentas y estar activas.",
+                "Revise las cuentas contables del grupo de articulos. Deben existir en el plan de cuentas y estar activas.",
                 errors);
     }
 
