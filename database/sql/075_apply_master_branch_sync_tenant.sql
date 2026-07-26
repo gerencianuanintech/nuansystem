@@ -37,6 +37,9 @@ PRINT N'Aplicando 090_tenant_currency_master_branch_sync.sql';
 PRINT N'Aplicando 097_tenant_item_group_master_branch_sync.sql';
 :r 097_tenant_item_group_master_branch_sync.sql
 
+PRINT N'Aplicando 127_tenant_item_family_master_branch_sync.sql';
+:r 127_tenant_item_family_master_branch_sync.sql
+
 PRINT N'Validando objetos tenant Sync';
 SET NOCOUNT ON;
 GO
@@ -56,7 +59,9 @@ FROM
         (N'dbo.Cities', N'U'),
         (N'dbo.Currencies', N'U'),
         (N'dbo.ItemGroups', N'U'),
-        (N'dbo.SP_NA_POST_ITEM_GROUP_SYNC_APPLY', N'P')
+        (N'dbo.SP_NA_POST_ITEM_GROUP_SYNC_APPLY', N'P'),
+        (N'dbo.ItemFamilies', N'U'),
+        (N'dbo.SP_NA_POST_ITEM_FAMILY_SYNC_APPLY', N'P')
 ) AS missing(ObjectName, ObjectType)
 WHERE OBJECT_ID(missing.ObjectName, missing.ObjectType) IS NULL;
 
@@ -121,6 +126,16 @@ IF NOT EXISTS
 )
 BEGIN
     THROW 51082, 'ItemGroups no tiene el indice unico requerido para GlobalId.', 1;
+END;
+
+IF NOT EXISTS
+(
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'UX_ItemFamilies_GlobalId'
+      AND object_id = OBJECT_ID(N'dbo.ItemFamilies')
+)
+BEGIN
+    THROW 51083, 'ItemFamilies no tiene el indice unico requerido para GlobalId.', 1;
 END;
 
 PRINT N'Infraestructura tenant Sync aplicada correctamente.';

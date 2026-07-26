@@ -147,8 +147,10 @@ BEGIN
             (N'dbo.LocalOutbox', N'U'),
             (N'dbo.SyncAudit', N'U'),
             (N'dbo.Currencies', N'U'),
+            (N'dbo.ItemFamilies', N'U'),
             (N'dbo.SP_NA_GET_CURRENCIES_LISTAR', N'P'),
-            (N'dbo.SP_NA_GET_CURRENCIES_BUSCARPORID', N'P')
+            (N'dbo.SP_NA_GET_CURRENCIES_BUSCARPORID', N'P'),
+            (N'dbo.SP_NA_POST_ITEM_FAMILY_SYNC_APPLY', N'P')
     ) AS required(ObjectName, ObjectType)
     ORDER BY required.ObjectName;
 END;

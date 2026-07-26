@@ -68,6 +68,9 @@ PRINT N'Aplicando 093_sync_distribution_policies.sql';
 PRINT N'Aplicando 098_master_item_group_sync_registration.sql';
 :r 098_master_item_group_sync_registration.sql
 
+PRINT N'Aplicando 128_master_item_family_sync_registration.sql';
+:r 128_master_item_family_sync_registration.sql
+
 PRINT N'Aplicando 099_master_sync_dependency_engine.sql';
 :r 099_master_sync_dependency_engine.sql
 

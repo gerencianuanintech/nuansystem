@@ -24,6 +24,8 @@ La compatibilidad futura con MySQL se trabajara desde abstracciones de persisten
 - `097_tenant_item_group_master_branch_sync.sql`: normaliza ItemGroups, agrega contratos de aplicacion idempotente y conserva GlobalId entre tenants.
 - `098_master_item_group_sync_registration.sql`: registra ItemGroups como entidad operativa y declara la dependencia Item -> ItemGroups.
 - `099_master_sync_dependency_engine.sql`: registra definiciones futuras y el grafo inicial de dependencias para listas de precios y ordenes de compra, sin activar productores ni aplicadores.
+- `127_tenant_item_family_master_branch_sync.sql`: normaliza ItemFamilies, agrega GlobalId, repara las proyecciones CRUD y crea el aplicador idempotente sin adopcion automatica por codigo.
+- `128_master_item_family_sync_registration.sql`: registra ItemFamilies y sus dependencias ItemGroups -> ItemFamilies -> Item, manteniendo perfiles y workers deshabilitados.
 | `100_tenant_purchase_reference_catalog_sync.sql` | Tenant | Normaliza impuestos, unidades de medida y listas de precios para sincronizacion previa a ordenes. |
 | `101_tenant_sap_purchase_order_import.sql` | Tenant | Agrega identidad, version SAP y estado de enrutamiento a ordenes de compra. |
 | `112_tenant_sap_payment_terms_sync.sql` | Tenant | Importacion idempotente SAP B1 y aplicacion por GlobalId de condiciones de pago. |
