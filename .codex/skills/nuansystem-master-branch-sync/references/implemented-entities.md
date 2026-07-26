@@ -4,7 +4,14 @@ The runtime catalog is `Application/Features/Sync/Configuration/SyncMasterBranch
 
 ## Operative examples
 
-Countries -> Provinces -> Cities; Currencies; Taxes; UnitOfMeasures; PriceLists; BusinessPartnerPaymentTerms; limited BusinessPartner; ItemGroups -> Item; Warehouse; and PurchaseOrder with reference dependencies/branch routing.
+Countries -> Provinces -> Cities; Currencies; Taxes; UnitOfMeasures; PriceLists; BusinessPartnerPaymentTerms; limited BusinessPartner; ItemGroups -> ItemFamilies -> Item; Warehouse; and PurchaseOrder with reference dependencies/branch routing.
+
+`ItemFamilies` has a transactional `LocalOutbox` producer, Full source and
+branch applier in code. Its identity is `GlobalId`; its parent is resolved by
+`ItemGroupGlobalId`; `(ItemGroupId, Code)` collisions are terminal and never
+adopted automatically. Scripts `127`/`128` install the contracts disabled by
+default. Runtime deployment remains pending; read
+`docs/architecture/MASTER-BRANCH-ITERATION-8-4B-ITEM-FAMILY-BLUEPRINT.md`.
 
 `BusinessPartnerPaymentTerms` is operative through `PaymentTermFullEntitySource`, `ReferenceCatalogSyncEventApplier`, and `ReferenceCatalogSyncApplyRepository`. Its approved upstream source is SAP B1 `PaymentTermsTypes`; read `docs/architecture/SAP-PAYMENT-TERMS-SYNC.md` and the SAP synchronization skill before changing that pipeline. Tenant script `112` and Master scripts `113`/`114` install its contracts but do not activate profiles or workers.
 

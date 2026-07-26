@@ -461,7 +461,10 @@ SyncMasterBranchEntityCatalog + SyncProfiles
   -> SyncAudit / retry / release lock / DeadLetter
 ```
 
-Dependencies include Countries -> Provinces -> Cities, ItemGroups -> Item, PriceLists -> Currencies, and PurchaseOrder references. A catalog entry without producer or applier is a capability gap, not an active path.
+Dependencies include Countries -> Provinces -> Cities, ItemGroups ->
+ItemFamilies -> Item, PriceLists -> Currencies, and PurchaseOrder references.
+A catalog entry without producer or applier is a capability gap, not an active
+path.
 
 ### 10.4 Condiciones de Pago SAP B1 → Matriz → Sucursal
 
@@ -595,3 +598,23 @@ The tenant aggregate and LocalOutbox commit atomically, and the relay promotes
 the limited payload idempotently to Master in ObserveOnly. Real branch
 application is a separate 8.4B decision, and `Warehouse`, SAP and SRI remain
 excluded.
+
+ItemFamily 8.4B-1 adds the dependency contract required before Item can be
+applied to a branch:
+
+```text
+ItemFamily CRUD in Master tenant
+  -> same transaction -> LocalOutbox
+  -> Full or Incremental promotion
+  -> dependency ItemGroupGlobalId
+  -> branch SyncInbox + ItemFamily apply procedure
+  -> Applied
+     or terminal DeadLetter on (ItemGroupId, Code) collision
+```
+
+`GlobalId` is the only cross-tenant identity. Full pagination uses
+`ItemGroupCode|ItemFamilyCode`; code is not globally unique. No code adoption
+edge exists. Scripts `127`/`128` and the runtime registrations are implemented
+but disabled by default; deployment and Remigio runtime evidence remain
+pending. The authoritative scope is
+`docs/architecture/MASTER-BRANCH-ITERATION-8-4B-ITEM-FAMILY-BLUEPRINT.md`.

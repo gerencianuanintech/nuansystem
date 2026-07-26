@@ -78,11 +78,16 @@ and
 `docs/operations/MASTER-BRANCH-ITERATION-8-VALIDATION-PLAN.md`
 before changing CRUD publication.
 
-The approved transactional producers are `BusinessPartner` and Item 8.4A.
+The approved transactional producers are `BusinessPartner`, Item 8.4A and the
+ItemFamily 8.4B-1 code contract.
 For Item, read
 `docs/architecture/MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md`.
+For ItemFamily, read
+`docs/architecture/MASTER-BRANCH-ITERATION-8-4B-ITEM-FAMILY-BLUEPRINT.md`.
 Keep its payload limited to master identity/state; do not add prices, costs,
-stock, warehouses or `ItemMasterData`. Item 8.4B real branch application,
+stock, warehouses or `ItemMasterData`. ItemFamily must resolve ItemGroup by
+`GlobalId`; a code collision is terminal and must never adopt automatically.
+Item 8.4B real branch application,
 `Warehouse` and other entities remain independent decisions. The relay belongs
 to `NuanSystem.MasterBranchSyncWorker`, stays disabled by default and never
 reuses SAP or SRI infrastructure.

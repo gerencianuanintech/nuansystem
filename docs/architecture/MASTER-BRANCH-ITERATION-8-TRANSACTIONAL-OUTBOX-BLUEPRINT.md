@@ -3,9 +3,11 @@
 ## Estado y autoridad
 
 - **Fecha:** 2026-07-25.
-- **Alcance actual:** discovery, arquitectura y plan de validación.
-- **Estado:** Fases 8.1, 8.2 y 8.3 implementadas y validadas en el piloto
-  `BusinessPartner`; Fase 8.4 no iniciada.
+- **Alcance actual:** límite transaccional, relay e incorporación progresiva de
+  maestros.
+- **Estado:** Fases 8.1–8.3 y 8.4A implementadas y validadas. ItemFamily
+  8.4B-1 está implementada en código, deshabilitada y pendiente de despliegue
+  y runtime autorizados.
 - **Autoridad:** Constitución > Kernel > catálogos > skill
   `nuansystem-master-branch-sync` > implementación.
 
@@ -357,8 +359,9 @@ triggers temporales fueron retirados. El snapshot final confirmó cero eventos
 elegibles, cero locks y cero fixtures en Master, DEMO, Remigio y Cañaris. La
 migración 126 y sus objetos forward-only permanecen instalados en DEMO.
 
-La Fase 8.4 sigue bloqueada hasta una aprobación independiente. No se autoriza
-inferir de este piloto la migración de `Item`, `Warehouse` ni otra entidad.
+La evidencia de BusinessPartner no autoriza inferir la migración de otra
+entidad. Item 8.4A y ItemFamily 8.4B-1 tienen decisiones, contratos y gates
+independientes.
 
 ## Plan documental de Fase 8.4
 
@@ -369,8 +372,10 @@ La propuesta separa:
 
 - **8.4A:** productor Item transaccional y promoción a Master en
   `ObserveOnly`;
-- **8.4B:** aplicación real en una sucursal, sujeta a decisiones independientes
-  sobre familias, unidades de medida, códigos de barras y colisiones.
+- **8.4B-1:** ItemFamily como dependencia operativa, definida en
+  [MASTER-BRANCH-ITERATION-8-4B-ITEM-FAMILY-BLUEPRINT.md](MASTER-BRANCH-ITERATION-8-4B-ITEM-FAMILY-BLUEPRINT.md);
+- **8.4B:** aplicación real de Item en una sucursal, todavía sujeta a unidades
+  de medida, código de barras principal y validación de dependencias.
 
 La existencia del blueprint no autoriza implementación, despliegue ni
 activación. `Warehouse` permanece fuera del alcance.
