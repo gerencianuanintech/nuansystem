@@ -1,6 +1,7 @@
 namespace NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Dtos;
 
 public sealed record CreateItemFamilyData(
+    Guid GlobalId,
     int ItemGroupId,
     string Code,
     string Name,

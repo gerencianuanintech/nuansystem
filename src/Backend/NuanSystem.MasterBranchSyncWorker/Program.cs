@@ -73,6 +73,7 @@ try
             services.AddScoped<ISyncEntityEventApplier, PurchaseOrderSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, BusinessPartnerSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, ItemGroupSyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, ItemFamilySyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, ItemSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, WarehouseSyncEventApplier>();
             services.AddScoped<ISyncEventApplier, SyncEventApplierDispatcher>();

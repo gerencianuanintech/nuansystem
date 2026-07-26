@@ -164,6 +164,25 @@ public sealed class MasterBranchSyncWorkerProcessor(
                         continue;
                     }
 
+                    if (applyResult.Terminal)
+                    {
+                        var terminalMessage = applyResult.Message ?? "Conflicto terminal de sincronizacion.";
+                        await outboxRepository.MarkTargetDeadLetterAsync(target.Id, terminalMessage, cancellationToken);
+                        targetStatuses[target.Id] = SyncEventStatus.DeadLetter;
+                        await AddAuditAsync(
+                            syncEvent,
+                            SyncAuditAction.DeadLetter,
+                            previousStatus: SyncEventStatus.InProcess,
+                            newStatus: SyncEventStatus.DeadLetter,
+                            message: terminalMessage,
+                            errorCode: applyResult.ErrorCode,
+                            errorDetail: null,
+                            currentOptions,
+                            cancellationToken,
+                            target.BranchCompanyId);
+                        continue;
+                    }
+
                     await outboxRepository.MarkTargetIgnoredAsync(target.Id, applyResult.Message, cancellationToken);
                     targetStatuses[target.Id] = SyncEventStatus.Ignored;
                     await AddAuditAsync(

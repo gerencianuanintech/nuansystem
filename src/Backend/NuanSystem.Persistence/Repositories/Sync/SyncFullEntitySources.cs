@@ -4,6 +4,7 @@ using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
 using NuanSystem.Application.Features.FinancialCatalogs.Catalogs.Dtos;
+using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Dtos;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Dtos;
 using NuanSystem.Application.Features.GeneralInventory.Warehouses.Dtos;
 using NuanSystem.Application.Features.Geography.Dtos;
@@ -417,6 +418,91 @@ public sealed class ItemGroupFullEntitySource(ICompanyResolver companyResolver) 
         string? ExternalCode,
         DateTime CreatedAt,
         DateTime? UpdatedAt);
+}
+
+public sealed class ItemFamilyFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource
+{
+    public string EntityCode => SyncMasterBranchEntityCodes.ItemFamilies;
+
+    public async Task<SyncSourcePage> ReadPageAsync(
+        SyncSourceReadContext context,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT TOP (@Take)
+                family.GlobalId,
+                itemGroup.GlobalId AS ItemGroupGlobalId,
+                itemGroup.Code AS ItemGroupCode,
+                family.Code,
+                family.Name,
+                family.Description,
+                family.IsActive,
+                family.SapFamilyCode,
+                family.SapCode,
+                family.ExternalSystem,
+                family.ExternalCode,
+                family.CreatedAt,
+                family.UpdatedAt,
+                CONCAT(itemGroup.Code, N'|', family.Code) AS EntityKey
+            FROM dbo.ItemFamilies AS family
+            INNER JOIN dbo.ItemGroups AS itemGroup ON itemGroup.Id = family.ItemGroupId
+            WHERE family.IsDeleted = 0
+              AND itemGroup.IsDeleted = 0
+              AND (@LastKey IS NULL OR CONCAT(itemGroup.Code, N'|', family.Code) > @LastKey)
+            ORDER BY itemGroup.Code, family.Code;
+            """;
+
+        var company = await SyncFullEntitySourceHelpers.ResolveSqlServerCompanyAsync(
+            companyResolver, context.CompanyId, cancellationToken);
+        await using var connection = new SqlConnection(company.ConnectionString);
+        var rows = (await connection.QueryAsync<ItemFamilySourceRow>(
+            new CommandDefinition(
+                sql,
+                SyncFullEntitySourceHelpers.ReadParameters(context),
+                cancellationToken: cancellationToken))).AsList();
+
+        var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context))
+            .Select(row => new SyncSourceRecord(
+                row.GlobalId,
+                row.EntityKey,
+                row.IsActive,
+                new ItemFamilySyncPayload(
+                    row.GlobalId,
+                    row.ItemGroupGlobalId,
+                    row.ItemGroupCode,
+                    row.Code,
+                    row.Name,
+                    row.Description,
+                    row.IsActive,
+                    row.SapFamilyCode,
+                    row.SapCode,
+                    row.ExternalSystem,
+                    row.ExternalCode,
+                    row.CreatedAt,
+                    row.UpdatedAt)))
+            .ToArray();
+
+        return new SyncSourcePage(
+            limited,
+            limited.LastOrDefault()?.EntityKey,
+            rows.Count > SyncFullEntitySourceHelpers.GetPageLimit(context));
+    }
+
+    private sealed record ItemFamilySourceRow(
+        Guid GlobalId,
+        Guid ItemGroupGlobalId,
+        string ItemGroupCode,
+        string Code,
+        string Name,
+        string? Description,
+        bool IsActive,
+        string? SapFamilyCode,
+        string? SapCode,
+        string? ExternalSystem,
+        string? ExternalCode,
+        DateTime CreatedAt,
+        DateTime? UpdatedAt,
+        string EntityKey);
 }
 
 public sealed class ItemFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource

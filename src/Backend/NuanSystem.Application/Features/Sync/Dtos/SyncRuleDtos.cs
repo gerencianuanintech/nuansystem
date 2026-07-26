@@ -26,4 +26,5 @@ public sealed record SyncEventApplyResult(
     bool Applied,
     string? Message = null,
     string? ErrorCode = null,
-    bool Retryable = false);
+    bool Retryable = false,
+    bool Terminal = false);

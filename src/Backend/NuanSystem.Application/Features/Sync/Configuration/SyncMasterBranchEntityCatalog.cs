@@ -40,6 +40,7 @@ public static class SyncMasterBranchEntityCodes
     public const string SupplyMethods = "SupplyMethods";
     public const string BusinessPartner = "BusinessPartner";
     public const string ItemGroups = "ItemGroups";
+    public const string ItemFamilies = "ItemFamilies";
     public const string Item = "Item";
     public const string Warehouse = "Warehouse";
 
@@ -59,7 +60,8 @@ public static class SyncMasterBranchEntityCodes
         new(SupplyMethods, SupplyMethods, "Metodos de abastecimiento", true, false, false, false, false, false, "Catalogo tenant definido en 026_tenant_general_supplier_catalogs.sql. Sin productor/aplicador Master-Branch operativo.", 100),
         new(BusinessPartner, BusinessPartner, "Socios de negocio", true, true, true, true, true, true, "Productor BusinessPartnerSyncPublisher y aplicador BusinessPartnerSyncApplyRepository existentes; alcance limitado, no BusinessPartners completos.", 200),
         new(ItemGroups, ItemGroups, "Grupos de articulos", true, true, true, true, true, true, "Catalogo maestro con productor incremental, fuente Full y aplicador idempotente por GlobalId.", 205),
-        new(Item, Item, "Articulos", true, true, true, true, true, true, "Productor ItemSyncPublisher y aplicador ItemSyncApplyRepository existentes; alcance maestro limitado.", 210, Dependencies: [ItemGroups]),
+        new(ItemFamilies, ItemFamilies, "Familias de articulos", true, true, true, true, true, true, "Catalogo maestro dependiente de ItemGroups con LocalOutbox transaccional, fuente Full y aplicador sin adopcion por codigo.", 207, Dependencies: [ItemGroups]),
+        new(Item, Item, "Articulos", true, true, true, true, true, true, "Productor ItemSyncPublisher y aplicador ItemSyncApplyRepository existentes; alcance maestro limitado.", 210, Dependencies: [ItemGroups, ItemFamilies]),
         new(Warehouse, Warehouse, "Almacenes", true, true, true, true, true, true, "Productor WarehouseSyncPublisher y aplicador WarehouseSyncApplyRepository existentes.", 220),
         new(PriceLists, PriceLists, "Listas de precios", true, true, true, true, true, true, "Catalogo comercial con fuente Full y aplicador idempotente por GlobalId.", 230, Dependencies: [Currencies]),
         new(PurchaseOrder, PurchaseOrder, "Ordenes de compra", true, true, true, true, true, true, "Documento operativo con enrutamiento por bodega, Outbox/Inbox y aplicacion transaccional.", 300, Dependencies: [Currencies, Taxes, UnitOfMeasures, BusinessPartner, Item, Warehouse, PriceLists])

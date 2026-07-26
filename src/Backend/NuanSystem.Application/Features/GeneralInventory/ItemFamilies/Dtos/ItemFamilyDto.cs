@@ -5,6 +5,7 @@ public sealed class ItemFamilyDto
     public int Id { get; set; }
     public Guid? GlobalId { get; set; }
     public int ItemGroupId { get; set; }
+    public Guid? ItemGroupGlobalId { get; set; }
     public string ItemGroupCode { get; set; } = string.Empty;
     public string ItemGroupName { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
@@ -25,3 +26,18 @@ public sealed class ItemFamilyDto
     public string? DeletedByUserName { get; set; }
     public DateTime? DeletedAt { get; set; }
 }
+
+public sealed record ItemFamilySyncPayload(
+    Guid GlobalId,
+    Guid ItemGroupGlobalId,
+    string ItemGroupCode,
+    string Code,
+    string Name,
+    string? Description,
+    bool IsActive,
+    string? SapFamilyCode,
+    string? SapCode,
+    string? ExternalSystem,
+    string? ExternalCode,
+    DateTime CreatedAt,
+    DateTime? UpdatedAt);

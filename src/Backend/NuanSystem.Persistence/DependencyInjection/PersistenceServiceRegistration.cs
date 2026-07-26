@@ -141,6 +141,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ISyncFullEntitySource, PaymentTermFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, BusinessPartnerFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, ItemGroupFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, ItemFamilyFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, ItemFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, WarehouseFullEntitySource>();
         services.AddScoped<IBusinessPartnerSyncApplyRepository, BusinessPartnerSyncApplyRepository>();
@@ -154,6 +155,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IPurchaseOrderRoutingRepository, PurchaseOrderRoutingRepository>();
         services.AddScoped<IPurchaseOrderSyncApplyRepository, PurchaseOrderSyncApplyRepository>();
         services.AddScoped<IItemGroupSyncApplyRepository, ItemGroupSyncApplyRepository>();
+        services.AddScoped<IItemFamilySyncApplyRepository, ItemFamilySyncApplyRepository>();
 
         return services;
     }
