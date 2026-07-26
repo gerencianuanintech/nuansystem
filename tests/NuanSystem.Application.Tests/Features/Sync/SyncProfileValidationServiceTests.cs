@@ -37,6 +37,7 @@ public sealed class SyncProfileValidationServiceTests
             [
                 Entity("BusinessPartner", 10, [2, 3]),
                 Entity("ItemGroups", 15, [2, 3]),
+                Entity("ItemFamilies", 18, [2, 3]),
                 Entity("Item", 20, [2, 3]),
                 Entity("Warehouse", 30, [2, 3])
             ]
@@ -99,7 +100,8 @@ public sealed class SyncProfileValidationServiceTests
             Entities =
             [
                 Entity("Item", 10, [2]),
-                Entity("ItemGroups", 20, [2])
+                Entity("ItemGroups", 20, [2]),
+                Entity("ItemFamilies", 30, [2])
             ]
         };
 

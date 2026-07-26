@@ -270,6 +270,52 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
     }
 
     [Fact]
+    public async Task Processor_MarksTerminalApplyConflictAsDeadLetterWithoutRetry()
+    {
+        var outboxRepository = Substitute.For<ISyncOutboxRepository>();
+        var auditRepository = Substitute.For<ISyncAuditRepository>();
+        var applier = Substitute.For<ISyncEventApplier>();
+        var syncEvent = CreateOutboxEvent(attemptCount: 1, maxAttempts: 3);
+        var target = CreateTarget(syncEvent.Id);
+
+        outboxRepository.ClaimPendingAsync(
+                Arg.Any<string>(), Arg.Any<int>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { syncEvent });
+        outboxRepository.GetTargetsAsync(syncEvent.CompanyId, syncEvent.Id, Arg.Any<CancellationToken>())
+            .Returns(new[] { target });
+        outboxRepository.TryMarkTargetInProcessAsync(target.Id, Arg.Any<CancellationToken>()).Returns(true);
+        applier.ApplyAsync(Arg.Any<SyncEventApplyContext>(), Arg.Any<CancellationToken>())
+            .Returns(new SyncEventApplyResult(
+                false,
+                "El codigo ya pertenece a otro GlobalId.",
+                "SYNC_ITEM_FAMILY_CODE_CONFLICT",
+                Terminal: true));
+
+        var processor = CreateProcessor(
+            new MasterBranchSyncWorkerOptions { Enabled = true, WorkerInstance = "worker-a", SkeletonMode = false },
+            outboxRepository,
+            auditRepository,
+            applier);
+
+        await processor.ProcessOnceAsync(CancellationToken.None);
+
+        await outboxRepository.Received(1).MarkTargetDeadLetterAsync(
+            target.Id,
+            "El codigo ya pertenece a otro GlobalId.",
+            Arg.Any<CancellationToken>());
+        await outboxRepository.DidNotReceiveWithAnyArgs()
+            .MarkTargetErrorAsync(default, default!, default, default);
+        await outboxRepository.DidNotReceiveWithAnyArgs()
+            .MarkTargetIgnoredAsync(default, default!, default);
+        await auditRepository.Received(1).AddAsync(
+            Arg.Is<CreateSyncAuditData>(data =>
+                data.BranchCompanyId == target.BranchCompanyId &&
+                data.Action == SyncAuditAction.DeadLetter &&
+                data.ErrorCode == "SYNC_ITEM_FAMILY_CODE_CONFLICT"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Processor_MarksDeadLetter_WhenMaxAttemptsReached()
     {
         var outboxRepository = Substitute.For<ISyncOutboxRepository>();
