@@ -219,7 +219,8 @@ public sealed class ItemSyncEventApplierTests
         repository.Should().Contain("EventId = @EventId");
         repository.Should().Contain("Status = N'Applied'");
         repository.Should().Contain("SapCode = @SapCode");
-        repository.Should().Contain("FROM dbo.ItemGroups");
+        repository.Should().Contain("new DependencyIdentity(\"ItemGroups\"");
+        repository.Should().Contain("payload.ItemGroupGlobalId");
         repository.Should().Contain("ItemSyncDependencyCheckResult");
         applier.Should().Contain("SYNC_DEPENDENCY_PENDING");
         repository.Should().NotContain("WarehouseStock");
@@ -256,12 +257,16 @@ public sealed class ItemSyncEventApplierTests
             Name: name,
             Description: "Articulo maestro",
             ItemType: "Product",
-            ItemGroupId: 1,
+            ItemGroupGlobalId: Guid.NewGuid(),
             ItemGroupCode: "GENERAL",
-            ItemFamilyId: 2,
+            ItemFamilyGlobalId: Guid.NewGuid(),
             ItemFamilyCode: "FAM",
-            InventoryUnitOfMeasureId: 3,
+            InventoryUnitOfMeasureGlobalId: Guid.NewGuid(),
             InventoryUnitOfMeasureCode: "UND",
+            PurchaseUnitOfMeasureGlobalId: Guid.NewGuid(),
+            PurchaseUnitOfMeasureCode: "UND-C",
+            SalesUnitOfMeasureGlobalId: Guid.NewGuid(),
+            SalesUnitOfMeasureCode: "UND-V",
             Barcode: "1234567890",
             IsInventoryItem: true,
             IsSalesItem: true,
