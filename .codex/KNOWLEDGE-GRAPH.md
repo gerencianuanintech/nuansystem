@@ -614,7 +614,7 @@ ItemFamily CRUD in Master tenant
 
 `GlobalId` is the only cross-tenant identity. Full pagination uses
 `ItemGroupCode|ItemFamilyCode`; code is not globally unique. No code adoption
-edge exists. Scripts `127`/`128` and the runtime registrations are implemented
-but disabled by default; deployment and Remigio runtime evidence remain
-pending. The authoritative scope is
+edge exists. Scripts `127`/`128` are deployed in Master, DEMO and Remigio as
+applicable, with configuration disabled by default; Cañaris remains unchanged.
+Remigio runtime evidence remains pending. The authoritative scope is
 `docs/architecture/MASTER-BRANCH-ITERATION-8-4B-ITEM-FAMILY-BLUEPRINT.md`.

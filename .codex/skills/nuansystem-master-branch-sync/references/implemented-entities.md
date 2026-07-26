@@ -9,8 +9,9 @@ Countries -> Provinces -> Cities; Currencies; Taxes; UnitOfMeasures; PriceLists;
 `ItemFamilies` has a transactional `LocalOutbox` producer, Full source and
 branch applier in code. Its identity is `GlobalId`; its parent is resolved by
 `ItemGroupGlobalId`; `(ItemGroupId, Code)` collisions are terminal and never
-adopted automatically. Scripts `127`/`128` install the contracts disabled by
-default. Runtime deployment remains pending; read
+adopted automatically. Scripts `127`/`128` are deployed in Master, DEMO and
+Remigio as applicable, disabled by default; Cañaris remains unchanged.
+Runtime application remains pending; read
 `docs/architecture/MASTER-BRANCH-ITERATION-8-4B-ITEM-FAMILY-BLUEPRINT.md`.
 
 `BusinessPartnerPaymentTerms` is operative through `PaymentTermFullEntitySource`, `ReferenceCatalogSyncEventApplier`, and `ReferenceCatalogSyncApplyRepository`. Its approved upstream source is SAP B1 `PaymentTermsTypes`; read `docs/architecture/SAP-PAYMENT-TERMS-SYNC.md` and the SAP synchronization skill before changing that pipeline. Tenant script `112` and Master scripts `113`/`114` install its contracts but do not activate profiles or workers.

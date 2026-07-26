@@ -4,8 +4,8 @@
 
 - **Fecha:** 2026-07-25.
 - **Rama:** `refactor/codex-skills-v8-4b-item-family`.
-- **Estado:** implementacion de codigo; despliegue SQL y runtime pendientes de
-  autorizacion independiente.
+- **Estado:** implementacion de codigo y despliegue SQL validados; runtime
+  pendiente de autorizacion independiente.
 - **Predecesor:** Item 8.4A integrado y validado.
 - **Siguiente dependencia:** Item 8.4B no puede aplicar familias hasta cerrar
   esta fase.
@@ -114,3 +114,50 @@ expresamente las bases permitidas. El piloto recomendado es:
 
 Hasta cerrar esos gates no debe declararse la fase validada en runtime ni
 habilitarse `ItemFamilies` en perfiles permanentes.
+
+## Evidencia de despliegue SQL — 2026-07-25
+
+El propietario autorizo expresamente `NuanSystem_Master`,
+`NuanSystem_DEMO` y `NuanSystem_DEMO_REMIGIO`. Cañaris permanecio en solo
+lectura.
+
+Preflight:
+
+- rama `refactor/codex-skills-v8-4b-item-family`, working tree limpio;
+- cero procesos `MasterBranchSyncWorker`, `SyncWorker` y `SriWorker`;
+- TLS SQL estricto: `Encrypt=true`, `TrustServerCertificate=false`;
+- cuatro bases esperadas presentes;
+- prerequisitos Master/tenant completos;
+- cero duplicados de `GlobalId`;
+- cero duplicados activos de `(ItemGroupId, Code)`;
+- snapshot Cañaris: version 127 = 0, procedimiento = 0, familias = 0.
+
+Respaldos `COPY_ONLY WITH CHECKSUM` creados y aprobados mediante
+`RESTORE VERIFYONLY WITH CHECKSUM`:
+
+- `NuanSystem_Master-item-family-20260726-041426.bak`;
+- `NuanSystem_DEMO-item-family-20260726-041426.bak`;
+- `NuanSystem_DEMO_REMIGIO-item-family-20260726-041426.bak`.
+
+Ejecucion:
+
+- script 128: dos pases correctos en `NuanSystem_Master`;
+- script 127: dos pases correctos en `NuanSystem_DEMO`;
+- script 127: dos pases correctos en `NuanSystem_DEMO_REMIGIO`.
+
+Postflight:
+
+- una sola version `20260725.128` en Master;
+- una sola definicion ItemFamilies activa;
+- configuracion `MasterToBranch`/`MasterWins` deshabilitada;
+- ownership deshabilitado;
+- dependencias `ItemGroups -> ItemFamilies -> Item` unicas;
+- una sola version `20260725.127` por tenant desplegado;
+- `GlobalId` no nulo, indice unico y procedimiento de aplicacion presentes;
+- procedimientos CRUD proyectan `GlobalId` e `ItemGroupGlobalId`;
+- Cañaris con snapshot final identico al inicial;
+- cero activaciones de workers y cero llamadas SAP/SRI.
+
+La aprobacion alcanzada es exclusivamente SQL. Aun faltan fixtures
+identificables, aplicacion real en Remigio, idempotencia runtime, conflicto
+terminal, limpieza y snapshots finales antes de cerrar 8.4B-1.
