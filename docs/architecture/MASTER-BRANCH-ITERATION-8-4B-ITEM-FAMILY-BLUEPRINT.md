@@ -4,8 +4,8 @@
 
 - **Fecha:** 2026-07-25.
 - **Rama:** `refactor/codex-skills-v8-4b-item-family`.
-- **Estado:** implementacion de codigo y despliegue SQL validados; runtime
-  pendiente de autorizacion independiente.
+- **Estado:** implementacion, despliegue SQL y runtime piloto validados; rama
+  pendiente de revision final.
 - **Predecesor:** Item 8.4A integrado y validado.
 - **Siguiente dependencia:** Item 8.4B no puede aplicar familias hasta cerrar
   esta fase.
@@ -212,14 +212,49 @@ La causa reproducida es un defecto de contrato en
 limpiar `LockOwner` y `LockExpiresAt`, columnas que no existen en
 `dbo.SyncInbox`. SQL Server devolvio error 207 y revirtio la transaccion.
 
-Por este defecto la validacion runtime queda **parcial y no aprobada**. La
-correccion debe:
+La primera corrida runtime quedo **parcial y no aprobada**. La correccion
+requerida fue:
 
 1. retirar las referencias a columnas inexistentes del cierre terminal;
 2. agregar una prueba que confronte el SQL del repositorio con el esquema real
    de `SyncInbox`;
 3. repetir solamente la colision terminal y comprobar `DeadLetter` en inbox,
    target y evento Master.
+
+### Correccion y repeticion terminal — 2026-07-26
+
+Se retiraron exclusivamente las asignaciones inexistentes `LockOwner` y
+`LockExpiresAt` del `UPDATE dbo.SyncInbox`. No se eliminaron ni agregaron
+columnas en base de datos.
+
+Se agrego una prueba de regresion que compara el SQL del repositorio con el
+contrato versionado de `SyncInbox`. Resultados:
+
+- compilacion Debug: 0 errores y 0 advertencias;
+- compilacion Release: 0 errores y 0 advertencias;
+- pruebas dirigidas ItemFamily: 6 superadas, 0 fallidas;
+- pruebas completas: 505 superadas, 5 diagnosticas omitidas, 0 fallidas.
+
+La repeticion runtime uso solamente los fixtures minimos de la colision y
+produjo:
+
+| Evidencia | Resultado |
+|---|---:|
+| `LocalOutbox` Matriz | 1 evento promovido |
+| `SyncOutbox` Master | 1 evento `DeadLetter` |
+| target Remigio | 1 target `DeadLetter` |
+| `SyncInbox` Remigio | 1 inbox `DeadLetter` |
+| fila conflictiva Remigio | 1, `GlobalId` original preservado |
+| adopcion automatica | 0 |
+| targets Cañaris | 0 |
+
+Tras la repeticion se detuvieron API y worker, se eliminaron la ruta y los
+fixtures `I8F841`, y el snapshot Cañaris permanecio en
+`Families=0`, `Groups=5`, `Inbox=867`, `Version127=0`.
+
+Con esta evidencia la Fase 8.4B-1 queda **validada en runtime** para
+DEMO -> Remigio. La rama puede pasar a revision final, pero no debe integrarse
+sin aprobacion expresa del propietario.
 
 ### Limpieza final
 
