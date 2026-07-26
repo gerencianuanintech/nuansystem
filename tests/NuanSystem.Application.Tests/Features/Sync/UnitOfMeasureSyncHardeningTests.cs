@@ -77,6 +77,22 @@ public sealed class UnitOfMeasureSyncHardeningTests
         script.Should().NotContain("SyncEntityConfigurations");
     }
 
+    [Fact]
+    public void TenantMigration_AddsDescriptionRequiredByFullSourceAndApplier()
+    {
+        var script = ReadSource("database", "sql", "131_tenant_item_sync_payload_v2.sql");
+        var source = ReadSource(
+            "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync", "ReferenceCatalogFullEntitySources.cs");
+        var repository = ReadSource(
+            "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync", "ReferenceCatalogSyncApplyRepository.cs");
+
+        script.Should().Contain("IF COL_LENGTH(N'dbo.UnitOfMeasures', N'Description') IS NULL");
+        script.Should().Contain("ALTER TABLE dbo.UnitOfMeasures ADD Description nvarchar(500) NULL");
+        source.Should().Contain(
+            "SyncMasterBranchEntityCodes.UnitOfMeasures => (\"UnitOfMeasures\", \"Id\", \"Description,");
+        repository.Should().Contain("Description = Optional(payload.Description, 500)");
+    }
+
     private static string ReadSource(params string[] pathParts)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

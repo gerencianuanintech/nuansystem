@@ -26,6 +26,15 @@ IF COL_LENGTH(N'dbo.Items', N'GlobalId') IS NULL
     THROW 51131, 'GlobalId is required on Item and all synchronized dependencies.', 1;
 GO
 
+/*
+    UnitOfMeasures creado por 018 no incluia Description, pero la fuente Full y
+    el aplicador de catalogos de referencia usan este contrato. La evolucion es
+    forward-only, nullable e idempotente.
+*/
+IF COL_LENGTH(N'dbo.UnitOfMeasures', N'Description') IS NULL
+    ALTER TABLE dbo.UnitOfMeasures ADD Description nvarchar(500) NULL;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_ITEMS_LISTAR
 AS
 BEGIN
