@@ -279,9 +279,7 @@ UPDATE dbo.SyncInbox
 SET Status = N'DeadLetter',
     ErrorMessage = @Message,
     LastErrorMessage = @Message,
-    NextRetryAt = NULL,
-    LockOwner = NULL,
-    LockExpiresAt = NULL
+    NextRetryAt = NULL
 WHERE Id = @InboxId;
 """;
 

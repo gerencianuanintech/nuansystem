@@ -92,10 +92,15 @@ public sealed class ItemFamilySyncEventApplierTests
         var repository = ReadSourceFile(
             "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync", "ItemFamilySyncApplyRepository.cs");
         var script = ReadSourceFile("database", "sql", "127_tenant_item_family_master_branch_sync.sql");
+        var inboxSchema = ReadSourceFile("database", "sql", "065_tenant_sync_inbox_local_outbox.sql");
 
         repository.Should().Contain("SP_NA_POST_ITEM_FAMILY_SYNC_APPLY");
         repository.Should().Contain("CommandType.StoredProcedure");
         repository.Should().Contain("Status = N'DeadLetter'");
+        repository.Should().NotContain("LockOwner = NULL")
+            .And.NotContain("LockExpiresAt = NULL");
+        inboxSchema.Should().NotContain("LockOwner")
+            .And.NotContain("LockExpiresAt");
         script.Should().Contain("CONVERT(int, -2) AS ResultCode");
         script.Should().Contain("@ConflictingItemFamilyId IS NOT NULL");
         script.Should().NotContain("SET @GlobalId =");
