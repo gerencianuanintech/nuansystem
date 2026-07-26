@@ -75,7 +75,11 @@ public sealed class ItemSyncEventApplier(
                 cancellationToken)
         };
 
-        return new SyncEventApplyResult(result.Applied, result.Message);
+        return new SyncEventApplyResult(
+            result.Applied,
+            result.Message,
+            result.ErrorCode,
+            Terminal: result.TerminalConflict);
     }
 
     private static ItemSyncPayload ReadPayload(string payloadJson)

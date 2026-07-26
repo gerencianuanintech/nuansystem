@@ -520,12 +520,16 @@ public sealed class ItemFullEntitySource(ICompanyResolver companyResolver) : ISy
                 i.Name,
                 i.Description,
                 i.ItemType,
-                i.ItemGroupId,
+                ig.GlobalId AS ItemGroupGlobalId,
                 ig.Code AS ItemGroupCode,
-                CAST(NULL AS int) AS ItemFamilyId,
-                CAST(NULL AS nvarchar(50)) AS ItemFamilyCode,
-                i.InventoryUnitOfMeasureId,
-                uom.Code AS InventoryUnitOfMeasureCode,
+                itemFamily.GlobalId AS ItemFamilyGlobalId,
+                itemFamily.Code AS ItemFamilyCode,
+                inventoryUom.GlobalId AS InventoryUnitOfMeasureGlobalId,
+                inventoryUom.Code AS InventoryUnitOfMeasureCode,
+                purchaseUom.GlobalId AS PurchaseUnitOfMeasureGlobalId,
+                purchaseUom.Code AS PurchaseUnitOfMeasureCode,
+                salesUom.GlobalId AS SalesUnitOfMeasureGlobalId,
+                salesUom.Code AS SalesUnitOfMeasureCode,
                 barcode.Barcode,
                 i.IsInventoryItem,
                 i.IsSalesItem,
@@ -536,7 +540,10 @@ public sealed class ItemFullEntitySource(ICompanyResolver companyResolver) : ISy
                 i.SapCode
             FROM dbo.Items i
             LEFT JOIN dbo.ItemGroups ig ON ig.Id = i.ItemGroupId
-            LEFT JOIN dbo.UnitOfMeasures uom ON uom.Id = i.InventoryUnitOfMeasureId
+            LEFT JOIN dbo.ItemFamilies itemFamily ON itemFamily.Id = i.ItemFamilyId
+            LEFT JOIN dbo.UnitOfMeasures inventoryUom ON inventoryUom.Id = i.InventoryUnitOfMeasureId
+            LEFT JOIN dbo.UnitOfMeasures purchaseUom ON purchaseUom.Id = i.PurchaseUnitOfMeasureId
+            LEFT JOIN dbo.UnitOfMeasures salesUom ON salesUom.Id = i.SalesUnitOfMeasureId
             OUTER APPLY (
                 SELECT TOP (1) b.Barcode
                 FROM dbo.ItemBarcodes b
@@ -563,12 +570,16 @@ public sealed class ItemFullEntitySource(ICompanyResolver companyResolver) : ISy
                 row.Name,
                 row.Description,
                 row.ItemType,
-                row.ItemGroupId,
+                row.ItemGroupGlobalId,
                 row.ItemGroupCode,
-                row.ItemFamilyId,
+                row.ItemFamilyGlobalId,
                 row.ItemFamilyCode,
-                row.InventoryUnitOfMeasureId,
+                row.InventoryUnitOfMeasureGlobalId,
                 row.InventoryUnitOfMeasureCode,
+                row.PurchaseUnitOfMeasureGlobalId,
+                row.PurchaseUnitOfMeasureCode,
+                row.SalesUnitOfMeasureGlobalId,
+                row.SalesUnitOfMeasureCode,
                 row.Barcode,
                 row.IsInventoryItem,
                 row.IsSalesItem,
@@ -587,12 +598,16 @@ public sealed class ItemFullEntitySource(ICompanyResolver companyResolver) : ISy
         string Name,
         string? Description,
         string ItemType,
-        int? ItemGroupId,
+        Guid? ItemGroupGlobalId,
         string? ItemGroupCode,
-        int? ItemFamilyId,
+        Guid? ItemFamilyGlobalId,
         string? ItemFamilyCode,
-        int? InventoryUnitOfMeasureId,
+        Guid? InventoryUnitOfMeasureGlobalId,
         string? InventoryUnitOfMeasureCode,
+        Guid? PurchaseUnitOfMeasureGlobalId,
+        string? PurchaseUnitOfMeasureCode,
+        Guid? SalesUnitOfMeasureGlobalId,
+        string? SalesUnitOfMeasureCode,
         string? Barcode,
         bool IsInventoryItem,
         bool IsSalesItem,

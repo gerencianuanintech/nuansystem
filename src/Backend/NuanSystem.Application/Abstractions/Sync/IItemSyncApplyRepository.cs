@@ -35,7 +35,9 @@ public sealed record ItemSyncApplyResult(
     bool Applied,
     bool AlreadyApplied,
     int? ItemId,
-    string Message);
+    string Message,
+    bool TerminalConflict = false,
+    string? ErrorCode = null);
 
 public sealed record ItemSyncDependencyCheckResult(
     bool IsSatisfied,

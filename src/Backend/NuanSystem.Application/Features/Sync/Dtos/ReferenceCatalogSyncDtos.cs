@@ -21,4 +21,6 @@ public sealed record ReferenceCatalogSyncApplyResult(
     bool Applied,
     bool AlreadyApplied,
     int? LocalId,
-    string Message);
+    string Message,
+    bool TerminalConflict = false,
+    string? ErrorCode = null);

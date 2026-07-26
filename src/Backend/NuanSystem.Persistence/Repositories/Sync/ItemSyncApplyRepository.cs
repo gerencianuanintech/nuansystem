@@ -21,31 +21,42 @@ public sealed class ItemSyncApplyRepository(ICompanyResolver companyResolver) : 
         await using var connection = CreateSqlConnection(company);
         await connection.OpenAsync(cancellationToken);
 
-        var itemGroupCode = NormalizeOptional(payload.ItemGroupCode, 50);
-        if (itemGroupCode is null && payload.ItemGroupId is null)
+        var dependencies = new[]
         {
-            return ItemSyncDependencyCheckResult.Satisfied;
+            new DependencyIdentity("ItemGroups", payload.ItemGroupGlobalId, payload.ItemGroupCode,
+                payload.ItemGroupGlobalId.HasValue || !string.IsNullOrWhiteSpace(payload.ItemGroupCode)),
+            new DependencyIdentity("ItemFamilies", payload.ItemFamilyGlobalId, payload.ItemFamilyCode,
+                payload.ItemFamilyGlobalId.HasValue || !string.IsNullOrWhiteSpace(payload.ItemFamilyCode)),
+            new DependencyIdentity("UnitOfMeasures.Inventory", payload.InventoryUnitOfMeasureGlobalId, payload.InventoryUnitOfMeasureCode,
+                payload.IsInventoryItem || payload.InventoryUnitOfMeasureGlobalId.HasValue || !string.IsNullOrWhiteSpace(payload.InventoryUnitOfMeasureCode)),
+            new DependencyIdentity("UnitOfMeasures.Purchase", payload.PurchaseUnitOfMeasureGlobalId, payload.PurchaseUnitOfMeasureCode,
+                payload.IsPurchaseItem || payload.PurchaseUnitOfMeasureGlobalId.HasValue || !string.IsNullOrWhiteSpace(payload.PurchaseUnitOfMeasureCode)),
+            new DependencyIdentity("UnitOfMeasures.Sales", payload.SalesUnitOfMeasureGlobalId, payload.SalesUnitOfMeasureCode,
+                payload.IsSalesItem || payload.SalesUnitOfMeasureGlobalId.HasValue || !string.IsNullOrWhiteSpace(payload.SalesUnitOfMeasureCode))
+        };
+
+        foreach (var dependency in dependencies.Where(value => value.Required))
+        {
+            if (!dependency.GlobalId.HasValue || dependency.GlobalId.Value == Guid.Empty)
+            {
+                return MissingDependency(payload, dependency, "no informa GlobalId");
+            }
+
+            var table = dependency.Name.StartsWith("UnitOfMeasures", StringComparison.Ordinal)
+                ? "UnitOfMeasures"
+                : dependency.Name;
+            var sql = $"SELECT COUNT(1) FROM dbo.{table} WHERE GlobalId=@GlobalId AND IsDeleted=0;";
+            var exists = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+                sql,
+                new { dependency.GlobalId },
+                cancellationToken: cancellationToken));
+            if (exists == 0)
+            {
+                return MissingDependency(payload, dependency, "aun no existe en la sucursal");
+            }
         }
 
-        const string sql = """
-SELECT COUNT(1)
-FROM dbo.ItemGroups
-WHERE IsDeleted = 0
-  AND ((@Code IS NOT NULL AND Code = @Code)
-       OR (@Code IS NULL AND @Id IS NOT NULL AND Id = @Id));
-""";
-
-        var exists = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
-            sql,
-            new { Id = payload.ItemGroupId, Code = itemGroupCode },
-            cancellationToken: cancellationToken));
-
-        return exists > 0
-            ? ItemSyncDependencyCheckResult.Satisfied
-            : new ItemSyncDependencyCheckResult(
-                false,
-                "ItemGroups",
-                $"El grupo {itemGroupCode ?? payload.ItemGroupId?.ToString() ?? "sin codigo"} requerido por Item {payload.Code} aun no existe en la sucursal.");
+        return ItemSyncDependencyCheckResult.Satisfied;
     }
 
     public async Task<bool> ExistsByGlobalIdAsync(
@@ -111,8 +122,33 @@ WHERE GlobalId = @GlobalId;
                 await transaction.CommitAsync(cancellationToken);
                 return new ItemSyncApplyResult(true, true, null, "Evento ya aplicado en SyncInbox.");
             }
+            if (inbox?.Status == SyncEventStatus.DeadLetter.ToString())
+            {
+                await transaction.CommitAsync(cancellationToken);
+                return new ItemSyncApplyResult(
+                    false,
+                    true,
+                    null,
+                    inbox.LastErrorMessage ?? "El evento Item permanece en conflicto terminal.",
+                    TerminalConflict: true,
+                    ErrorCode: "SYNC_ITEM_CODE_CONFLICT");
+            }
 
             var inboxId = inbox?.Id ?? await InsertInboxAsync(connection, transaction, context, cancellationToken);
+            if (await HasCodeCollisionAsync(connection, transaction, payload, cancellationToken))
+            {
+                var message = $"El codigo Item {NormalizeRequired(payload.Code, "Code", 50)} ya pertenece a otro GlobalId y no se adopta automaticamente.";
+                await MarkInboxDeadLetterAsync(connection, transaction, inboxId, message, cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return new ItemSyncApplyResult(
+                    false,
+                    false,
+                    null,
+                    message,
+                    TerminalConflict: true,
+                    ErrorCode: "SYNC_ITEM_CODE_CONFLICT");
+            }
+
             var itemId = await UpsertItemAsync(connection, transaction, payload, operation, markDeleted, cancellationToken);
 
             await MarkInboxAppliedAsync(connection, transaction, inboxId, cancellationToken);
@@ -135,7 +171,7 @@ WHERE GlobalId = @GlobalId;
         CancellationToken cancellationToken)
     {
         const string sql = """
-SELECT TOP (1) Id, Status
+SELECT TOP (1) Id, Status, LastErrorMessage
 FROM dbo.SyncInbox WITH (UPDLOCK, HOLDLOCK)
 WHERE EventId = @EventId;
 """;
@@ -203,9 +239,11 @@ SELECT CAST(SCOPE_IDENTITY() AS bigint);
     {
         var isDeleted = markDeleted || operation == SyncOperation.Deleted;
         var isActive = !isDeleted && operation != SyncOperation.Disabled && payload.IsActive;
-        var itemGroupId = await ResolveIdByCodeOrIdAsync(connection, transaction, "dbo.ItemGroups", payload.ItemGroupId, payload.ItemGroupCode, cancellationToken);
-        var itemFamilyId = await ResolveIdByCodeOrIdAsync(connection, transaction, "dbo.ItemFamilies", payload.ItemFamilyId, payload.ItemFamilyCode, cancellationToken);
-        var inventoryUnitOfMeasureId = await ResolveIdByCodeOrIdAsync(connection, transaction, "dbo.UnitOfMeasures", payload.InventoryUnitOfMeasureId, payload.InventoryUnitOfMeasureCode, cancellationToken);
+        var itemGroupId = await ResolveIdByGlobalIdAsync(connection, transaction, "dbo.ItemGroups", payload.ItemGroupGlobalId, cancellationToken);
+        var itemFamilyId = await ResolveIdByGlobalIdAsync(connection, transaction, "dbo.ItemFamilies", payload.ItemFamilyGlobalId, cancellationToken);
+        var inventoryUnitOfMeasureId = await ResolveIdByGlobalIdAsync(connection, transaction, "dbo.UnitOfMeasures", payload.InventoryUnitOfMeasureGlobalId, cancellationToken);
+        var purchaseUnitOfMeasureId = await ResolveIdByGlobalIdAsync(connection, transaction, "dbo.UnitOfMeasures", payload.PurchaseUnitOfMeasureGlobalId, cancellationToken);
+        var salesUnitOfMeasureId = await ResolveIdByGlobalIdAsync(connection, transaction, "dbo.UnitOfMeasures", payload.SalesUnitOfMeasureGlobalId, cancellationToken);
 
         const string sql = """
 DECLARE @ItemId int;
@@ -260,8 +298,8 @@ BEGIN
         @ItemFamilyId,
         @ItemType,
         @InventoryUnitOfMeasureId,
-        @InventoryUnitOfMeasureId,
-        @InventoryUnitOfMeasureId,
+        @PurchaseUnitOfMeasureId,
+        @SalesUnitOfMeasureId,
         @IsPurchaseItem,
         @IsSalesItem,
         @IsInventoryItem,
@@ -294,8 +332,8 @@ BEGIN
         ItemFamilyId = @ItemFamilyId,
         ItemType = @ItemType,
         InventoryUnitOfMeasureId = @InventoryUnitOfMeasureId,
-        PurchaseUnitOfMeasureId = COALESCE(PurchaseUnitOfMeasureId, @InventoryUnitOfMeasureId),
-        SalesUnitOfMeasureId = COALESCE(SalesUnitOfMeasureId, @InventoryUnitOfMeasureId),
+        PurchaseUnitOfMeasureId = @PurchaseUnitOfMeasureId,
+        SalesUnitOfMeasureId = @SalesUnitOfMeasureId,
         IsPurchaseItem = @IsPurchaseItem,
         IsSalesItem = @IsSalesItem,
         IsInventoryItem = @IsInventoryItem,
@@ -326,6 +364,8 @@ SELECT @ItemId;
                 ItemFamilyId = itemFamilyId,
                 ItemType = NormalizeItemType(payload.ItemType),
                 InventoryUnitOfMeasureId = inventoryUnitOfMeasureId,
+                PurchaseUnitOfMeasureId = purchaseUnitOfMeasureId,
+                SalesUnitOfMeasureId = salesUnitOfMeasureId,
                 payload.IsPurchaseItem,
                 payload.IsSalesItem,
                 payload.IsInventoryItem,
@@ -336,26 +376,76 @@ SELECT @ItemId;
             cancellationToken: cancellationToken));
     }
 
-    private static async Task<int?> ResolveIdByCodeOrIdAsync(
+    private static async Task<int?> ResolveIdByGlobalIdAsync(
         SqlConnection connection,
         IDbTransaction transaction,
         string tableName,
-        int? id,
-        string? code,
+        Guid? globalId,
         CancellationToken cancellationToken)
     {
+        if (!globalId.HasValue || globalId.Value == Guid.Empty)
+        {
+            return null;
+        }
+
         var sql = $"""
 SELECT TOP (1) Id
 FROM {tableName}
 WHERE IsDeleted = 0
-  AND ((@Code IS NOT NULL AND Code = @Code)
-       OR (@Code IS NULL AND @Id IS NOT NULL AND Id = @Id))
-ORDER BY CASE WHEN @Code IS NOT NULL AND Code = @Code THEN 0 ELSE 1 END;
+  AND GlobalId = @GlobalId;
 """;
 
         return await connection.ExecuteScalarAsync<int?>(new CommandDefinition(
             sql,
-            new { Id = id, Code = NormalizeOptional(code, 50) },
+            new { GlobalId = globalId.Value },
+            transaction,
+            cancellationToken: cancellationToken));
+    }
+
+    private static async Task<bool> HasCodeCollisionAsync(
+        SqlConnection connection,
+        IDbTransaction transaction,
+        ItemSyncPayload payload,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+SELECT COUNT(1)
+FROM dbo.Items WITH (UPDLOCK, HOLDLOCK)
+WHERE Code = @Code
+  AND GlobalId <> @GlobalId;
+""";
+
+        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            sql,
+            new
+            {
+                payload.GlobalId,
+                Code = NormalizeRequired(payload.Code, "Code", 50)
+            },
+            transaction,
+            cancellationToken: cancellationToken)) > 0;
+    }
+
+    private static async Task MarkInboxDeadLetterAsync(
+        SqlConnection connection,
+        IDbTransaction transaction,
+        long inboxId,
+        string message,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+UPDATE dbo.SyncInbox
+SET Status = N'DeadLetter',
+    AttemptCount = AttemptCount + 1,
+    ErrorMessage = @Message,
+    LastErrorMessage = @Message,
+    NextRetryAt = NULL
+WHERE Id = @InboxId;
+""";
+
+        await connection.ExecuteAsync(new CommandDefinition(
+            sql,
+            new { InboxId = inboxId, Message = message },
             transaction,
             cancellationToken: cancellationToken));
     }
@@ -399,7 +489,7 @@ BEGIN
         LastErrorMessage = @ErrorMessage,
         NextRetryAt = DATEADD(second, 30, SYSUTCDATETIME())
     WHERE EventId = @EventId
-      AND Status <> N'Applied';
+      AND Status NOT IN (N'Applied', N'DeadLetter');
 END
 ELSE
 BEGIN
@@ -491,5 +581,19 @@ END;
             : "Product";
     }
 
-    private sealed record InboxState(long Id, string Status);
+    private static ItemSyncDependencyCheckResult MissingDependency(
+        ItemSyncPayload payload,
+        DependencyIdentity dependency,
+        string reason)
+    {
+        var evidence = NormalizeOptional(dependency.Code, 50) ?? dependency.GlobalId?.ToString() ?? "sin evidencia";
+        return new ItemSyncDependencyCheckResult(
+            false,
+            dependency.Name,
+            $"La dependencia {dependency.Name} ({evidence}) requerida por Item {payload.Code} {reason}.");
+    }
+
+    private sealed record InboxState(long Id, string Status, string? LastErrorMessage);
+
+    private sealed record DependencyIdentity(string Name, Guid? GlobalId, string? Code, bool Required);
 }

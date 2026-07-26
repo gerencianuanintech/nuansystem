@@ -35,6 +35,10 @@ public sealed class ReferenceCatalogSyncEventApplier(IReferenceCatalogSyncApplyR
 
         var operation = Enum.Parse<SyncOperation>(context.Operation, true);
         var result = await repository.ApplyAsync(context.TargetCompanyId.Value, context.EntityName, context, payload, operation, cancellationToken);
-        return new(result.Applied, result.Message);
+        return new(
+            result.Applied,
+            result.Message,
+            result.ErrorCode,
+            Terminal: result.TerminalConflict);
     }
 }

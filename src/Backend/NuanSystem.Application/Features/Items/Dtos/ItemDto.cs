@@ -11,19 +11,24 @@ public sealed class ItemDto
     public string? SapCode { get; set; }
     public string? Description { get; set; }
     public int? ItemGroupId { get; set; }
+    public Guid? ItemGroupGlobalId { get; set; }
     public string? ItemGroupCode { get; set; }
     public string? ItemGroupName { get; set; }
     public int? ItemFamilyId { get; set; }
+    public Guid? ItemFamilyGlobalId { get; set; }
     public string? ItemFamilyCode { get; set; }
     public string? ItemFamilyName { get; set; }
     public string ItemType { get; set; } = "Product";
     public int? InventoryUnitOfMeasureId { get; set; }
+    public Guid? InventoryUnitOfMeasureGlobalId { get; set; }
     public string? InventoryUnitOfMeasureCode { get; set; }
     public string? InventoryUnitOfMeasureName { get; set; }
     public int? PurchaseUnitOfMeasureId { get; set; }
+    public Guid? PurchaseUnitOfMeasureGlobalId { get; set; }
     public string? PurchaseUnitOfMeasureCode { get; set; }
     public string? PurchaseUnitOfMeasureName { get; set; }
     public int? SalesUnitOfMeasureId { get; set; }
+    public Guid? SalesUnitOfMeasureGlobalId { get; set; }
     public string? SalesUnitOfMeasureCode { get; set; }
     public string? SalesUnitOfMeasureName { get; set; }
     public bool IsPurchaseItem { get; set; }
@@ -68,12 +73,16 @@ public sealed record ItemSyncPayload(
     string Name,
     string? Description,
     string ItemType,
-    int? ItemGroupId,
+    Guid? ItemGroupGlobalId,
     string? ItemGroupCode,
-    int? ItemFamilyId,
+    Guid? ItemFamilyGlobalId,
     string? ItemFamilyCode,
-    int? InventoryUnitOfMeasureId,
+    Guid? InventoryUnitOfMeasureGlobalId,
     string? InventoryUnitOfMeasureCode,
+    Guid? PurchaseUnitOfMeasureGlobalId,
+    string? PurchaseUnitOfMeasureCode,
+    Guid? SalesUnitOfMeasureGlobalId,
+    string? SalesUnitOfMeasureCode,
     string? Barcode,
     bool IsInventoryItem,
     bool IsSalesItem,

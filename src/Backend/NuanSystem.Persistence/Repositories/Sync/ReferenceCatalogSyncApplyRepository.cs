@@ -39,12 +39,23 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
         try
         {
             var inbox = await connection.QuerySingleOrDefaultAsync<InboxState>(new CommandDefinition(
-                "SELECT TOP (1) Id,Status FROM dbo.SyncInbox WITH (UPDLOCK,HOLDLOCK) WHERE EventId=@EventId;",
+                "SELECT TOP (1) Id,Status,LastErrorMessage FROM dbo.SyncInbox WITH (UPDLOCK,HOLDLOCK) WHERE EventId=@EventId;",
                 new { context.EventId }, transaction, cancellationToken: cancellationToken));
             if (inbox?.Status == nameof(SyncEventStatus.Applied))
             {
                 await transaction.CommitAsync(cancellationToken);
                 return new(true, true, null, "Evento ya aplicado en SyncInbox.");
+            }
+            if (inbox?.Status == nameof(SyncEventStatus.DeadLetter))
+            {
+                await transaction.CommitAsync(cancellationToken);
+                return new(
+                    false,
+                    true,
+                    null,
+                    inbox.LastErrorMessage ?? "El evento permanece en conflicto terminal.",
+                    TerminalConflict: true,
+                    ErrorCode: "SYNC_UNIT_OF_MEASURE_CODE_CONFLICT");
             }
 
             var inboxId = inbox?.Id ?? await connection.ExecuteScalarAsync<long>(new CommandDefinition(
@@ -53,6 +64,21 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
                 VALUES(@EventId,@SourceCompanyId,@EntityName,@EntityGlobalId,@Operation,@PayloadJson,N'Pending');
                 SELECT CONVERT(bigint,SCOPE_IDENTITY());
                 """, context, transaction, cancellationToken: cancellationToken));
+
+            if (string.Equals(entityCode, SyncMasterBranchEntityCodes.UnitOfMeasures, StringComparison.OrdinalIgnoreCase) &&
+                await HasUnitOfMeasureCodeCollisionAsync(connection, transaction, payload, cancellationToken))
+            {
+                var message = $"El codigo UnitOfMeasure {Required(payload.Code, 50)} ya pertenece a otro GlobalId y no se adopta automaticamente.";
+                await MarkInboxDeadLetterAsync(connection, transaction, inboxId, message, cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return new(
+                    false,
+                    false,
+                    null,
+                    message,
+                    TerminalConflict: true,
+                    ErrorCode: "SYNC_UNIT_OF_MEASURE_CODE_CONFLICT");
+            }
 
             var localId = await UpsertAsync(connection, transaction, table, payload, operation, cancellationToken);
             await connection.ExecuteAsync(new CommandDefinition(
@@ -77,7 +103,13 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
         var sql = table switch
         {
             "Taxes" => BuildUpsertSql(table, "Id", "Rate=@Rate,", "Rate,", "@Rate,"),
-            "UnitOfMeasures" => BuildUpsertSql(table, "Id", string.Empty, string.Empty, string.Empty),
+            "UnitOfMeasures" => BuildUpsertSql(
+                table,
+                "Id",
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                allowCodeReconciliation: false),
             "PriceLists" => BuildUpsertSql(table, "PriceListId",
                 "CurrencyCode=@CurrencyCode,AppliesTo=@AppliesTo,IsDefault=@IsDefault,",
                 "CurrencyCode,AppliesTo,IsDefault,", "@CurrencyCode,@AppliesTo,@IsDefault,"),
@@ -107,6 +139,50 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
             CreatedAt = payload.CreatedAt == default ? DateTime.UtcNow : payload.CreatedAt,
             UpdatedAt = payload.UpdatedAt ?? DateTime.UtcNow
         }, transaction, cancellationToken: cancellationToken));
+    }
+
+    private static async Task<bool> HasUnitOfMeasureCodeCollisionAsync(
+        SqlConnection connection,
+        IDbTransaction transaction,
+        ReferenceCatalogSyncPayload payload,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+        SELECT COUNT(1)
+        FROM dbo.UnitOfMeasures WITH (UPDLOCK, HOLDLOCK)
+        WHERE Code=@Code
+          AND GlobalId<>@GlobalId;
+        """;
+
+        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            sql,
+            new { payload.GlobalId, Code = Required(payload.Code, 50) },
+            transaction,
+            cancellationToken: cancellationToken)) > 0;
+    }
+
+    private static Task MarkInboxDeadLetterAsync(
+        SqlConnection connection,
+        IDbTransaction transaction,
+        long inboxId,
+        string message,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+        UPDATE dbo.SyncInbox
+        SET Status=N'DeadLetter',
+            AttemptCount=AttemptCount+1,
+            ErrorMessage=@Message,
+            LastErrorMessage=@Message,
+            NextRetryAt=NULL
+        WHERE Id=@InboxId;
+        """;
+
+        return connection.ExecuteAsync(new CommandDefinition(
+            sql,
+            new { InboxId = inboxId, Message = message },
+            transaction,
+            cancellationToken: cancellationToken));
     }
 
     private static string BuildUpsertSql(
@@ -148,7 +224,7 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
         const string sql = """
         IF EXISTS(SELECT 1 FROM dbo.SyncInbox WHERE EventId=@EventId)
           UPDATE dbo.SyncInbox SET Status=N'Error',AttemptCount=AttemptCount+1,ErrorMessage=@Message,LastErrorMessage=@Message,
-          NextRetryAt=DATEADD(second,30,SYSUTCDATETIME()) WHERE EventId=@EventId AND Status<>N'Applied';
+          NextRetryAt=DATEADD(second,30,SYSUTCDATETIME()) WHERE EventId=@EventId AND Status NOT IN (N'Applied',N'DeadLetter');
         ELSE
           INSERT dbo.SyncInbox(EventId,SourceCompanyId,EntityName,EntityGlobalId,Operation,PayloadJson,Status,AttemptCount,ErrorMessage,LastErrorMessage,NextRetryAt)
           VALUES(@EventId,@SourceCompanyId,@EntityName,@EntityGlobalId,@Operation,@PayloadJson,N'Error',1,@Message,@Message,DATEADD(second,30,SYSUTCDATETIME()));
@@ -172,5 +248,5 @@ public sealed class ReferenceCatalogSyncApplyRepository(ICompanyResolver company
     private static string Required(string value, int max) => string.IsNullOrWhiteSpace(value)
         ? throw new InvalidOperationException("El valor requerido del catalogo esta vacio.") : value.Trim()[..Math.Min(value.Trim().Length, max)];
     private static string? Optional(string? value, int max) => string.IsNullOrWhiteSpace(value) ? null : value.Trim()[..Math.Min(value.Trim().Length, max)];
-    private sealed record InboxState(long Id, string Status);
+    private sealed record InboxState(long Id, string Status, string? LastErrorMessage);
 }
