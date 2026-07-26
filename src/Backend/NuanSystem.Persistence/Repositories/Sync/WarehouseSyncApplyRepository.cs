@@ -73,16 +73,29 @@ WHERE GlobalId = @GlobalId;
             if (inbox?.Status == SyncEventStatus.Applied.ToString())
             {
                 await transaction.CommitAsync(cancellationToken);
-                return new WarehouseSyncApplyResult(true, true, null, "Evento ya aplicado en SyncInbox.");
+                return new WarehouseSyncApplyResult(true, true, false, null, "Evento ya aplicado en SyncInbox.");
+            }
+
+            if (inbox?.Status == SyncEventStatus.DeadLetter.ToString())
+            {
+                await transaction.CommitAsync(cancellationToken);
+                return new WarehouseSyncApplyResult(false, false, true, null, inbox.LastErrorMessage ?? "Evento ya clasificado como conflicto terminal.", "SYNC_WAREHOUSE_CODE_CONFLICT");
             }
 
             var inboxId = inbox?.Id ?? await InsertInboxAsync(connection, transaction, context, cancellationToken);
-            var warehouseId = await UpsertWarehouseAsync(connection, transaction, payload, operation, markDeleted, cancellationToken);
+            var applyResult = await UpsertWarehouseAsync(connection, transaction, payload, operation, markDeleted, cancellationToken);
+            if (applyResult.ResultCode == -2)
+            {
+                const string conflictMessage = "El codigo de Warehouse ya pertenece a otro GlobalId en la sucursal; no se realizo adopcion automatica.";
+                await MarkInboxDeadLetterAsync(connection, transaction, inboxId, conflictMessage, cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return new WarehouseSyncApplyResult(false, false, true, null, conflictMessage, "SYNC_WAREHOUSE_CODE_CONFLICT");
+            }
 
             await MarkInboxAppliedAsync(connection, transaction, inboxId, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            return new WarehouseSyncApplyResult(true, false, warehouseId, $"Warehouse sincronizado por GlobalId {payload.GlobalId}.");
+            return new WarehouseSyncApplyResult(true, false, false, applyResult.WarehouseId, $"Warehouse sincronizado por GlobalId {payload.GlobalId}.");
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -99,7 +112,7 @@ WHERE GlobalId = @GlobalId;
         CancellationToken cancellationToken)
     {
         const string sql = """
-SELECT TOP (1) Id, Status
+SELECT TOP (1) Id, Status, LastErrorMessage
 FROM dbo.SyncInbox WITH (UPDLOCK, HOLDLOCK)
 WHERE EventId = @EventId;
 """;
@@ -157,7 +170,7 @@ SELECT CAST(SCOPE_IDENTITY() AS bigint);
             cancellationToken: cancellationToken));
     }
 
-    private static async Task<int> UpsertWarehouseAsync(
+    private static Task<WarehouseApplyProcedureResult> UpsertWarehouseAsync(
         SqlConnection connection,
         IDbTransaction transaction,
         WarehouseSyncPayload payload,
@@ -168,131 +181,13 @@ SELECT CAST(SCOPE_IDENTITY() AS bigint);
         var isDeleted = markDeleted || operation == SyncOperation.Deleted;
         var isActive = !isDeleted && operation != SyncOperation.Disabled && payload.IsActive;
 
-        const string sql = """
-DECLARE @WarehouseId int;
-
-SELECT @WarehouseId = Id
-FROM dbo.Warehouses WITH (UPDLOCK, HOLDLOCK)
-WHERE GlobalId = @GlobalId;
-
-IF @WarehouseId IS NULL
-BEGIN
-    INSERT INTO dbo.Warehouses
-    (
-        GlobalId,
-        Code,
-        Name,
-        Description,
-        BranchCode,
-        Address,
-        City,
-        Province,
-        Country,
-        Phone,
-        Email,
-        ManagerName,
-        AllowsSales,
-        AllowsPurchases,
-        AllowsTransfers,
-        AllowsProduction,
-        IsDefault,
-        ExternalSystem,
-        ExternalCode,
-        SapCode,
-        IsActive,
-        CreatedByUserName,
-        CreatedAt,
-        IsDeleted,
-        DeletedByUserName,
-        DeletedAt
-    )
-    VALUES
-    (
-        @GlobalId,
-        @Code,
-        @Name,
-        @Description,
-        @BranchCode,
-        @Address,
-        @City,
-        @Province,
-        @Country,
-        @Phone,
-        @Email,
-        @ManagerName,
-        @AllowsSales,
-        @AllowsPurchases,
-        @AllowsTransfers,
-        @AllowsProduction,
-        @IsDefault,
-        @ExternalSystem,
-        @ExternalCode,
-        @SapCode,
-        @IsActive,
-        N'MasterBranchSyncWorker',
-        @CreatedAt,
-        @IsDeleted,
-        CASE WHEN @IsDeleted = 1 THEN N'MasterBranchSyncWorker' ELSE NULL END,
-        CASE WHEN @IsDeleted = 1 THEN SYSUTCDATETIME() ELSE NULL END
-    );
-
-    SET @WarehouseId = CONVERT(int, SCOPE_IDENTITY());
-END
-ELSE
-BEGIN
-    UPDATE dbo.Warehouses
-    SET Code = @Code,
-        Name = @Name,
-        Description = @Description,
-        BranchCode = @BranchCode,
-        Address = @Address,
-        City = @City,
-        Province = @Province,
-        Country = @Country,
-        Phone = @Phone,
-        Email = @Email,
-        ManagerName = @ManagerName,
-        AllowsSales = @AllowsSales,
-        AllowsPurchases = @AllowsPurchases,
-        AllowsTransfers = @AllowsTransfers,
-        AllowsProduction = @AllowsProduction,
-        IsDefault = @IsDefault,
-        ExternalSystem = @ExternalSystem,
-        ExternalCode = @ExternalCode,
-        SapCode = @SapCode,
-        IsActive = @IsActive,
-        UpdatedByUserName = N'MasterBranchSyncWorker',
-        UpdatedAt = @UpdatedAt,
-        IsDeleted = @IsDeleted,
-        DeletedByUserName = CASE WHEN @IsDeleted = 1 THEN N'MasterBranchSyncWorker' ELSE NULL END,
-        DeletedAt = CASE WHEN @IsDeleted = 1 THEN COALESCE(DeletedAt, SYSUTCDATETIME()) ELSE NULL END
-    WHERE Id = @WarehouseId;
-END;
-
-SELECT @WarehouseId;
-""";
-
-        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
-            sql,
+        return connection.QuerySingleAsync<WarehouseApplyProcedureResult>(new CommandDefinition(
+            "dbo.SP_NA_POST_WAREHOUSE_SYNC_APPLY",
             new
             {
                 payload.GlobalId,
                 Code = NormalizeRequired(payload.Code, "Code", 50),
                 Name = NormalizeRequired(payload.Name, "Name", 150),
-                Description = NormalizeOptional(payload.Description, 500),
-                BranchCode = NormalizeOptional(payload.BranchCode, 50),
-                Address = NormalizeOptional(payload.Address, 250),
-                City = NormalizeOptional(payload.City, 100),
-                Province = NormalizeOptional(payload.Province, 100),
-                Country = NormalizeOptional(payload.Country, 100),
-                Phone = NormalizeOptional(payload.Phone, 50),
-                Email = NormalizeOptional(payload.Email, 150),
-                ManagerName = NormalizeOptional(payload.ManagerName, 150),
-                payload.AllowsSales,
-                payload.AllowsPurchases,
-                payload.AllowsTransfers,
-                payload.AllowsProduction,
-                payload.IsDefault,
                 ExternalSystem = NormalizeOptional(payload.ExternalSystem, 50),
                 ExternalCode = NormalizeOptional(payload.ExternalCode, 100),
                 SapCode = NormalizeOptional(payload.SapCode, 100),
@@ -302,7 +197,27 @@ SELECT @WarehouseId;
                 IsDeleted = isDeleted
             },
             transaction,
-            cancellationToken: cancellationToken));
+            cancellationToken: cancellationToken,
+            commandType: CommandType.StoredProcedure));
+    }
+
+    private static Task MarkInboxDeadLetterAsync(
+        SqlConnection connection,
+        IDbTransaction transaction,
+        long inboxId,
+        string message,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+UPDATE dbo.SyncInbox
+SET Status = N'DeadLetter',
+    AttemptCount = AttemptCount + 1,
+    ErrorMessage = @Message,
+    LastErrorMessage = @Message,
+    NextRetryAt = NULL
+WHERE Id = @InboxId;
+""";
+        return connection.ExecuteAsync(new CommandDefinition(sql, new { InboxId = inboxId, Message = message }, transaction, cancellationToken: cancellationToken));
     }
 
     private static async Task MarkInboxAppliedAsync(
@@ -429,5 +344,6 @@ END;
         return trimmed[..Math.Min(trimmed.Length, maxLength)];
     }
 
-    private sealed record InboxState(long Id, string Status);
+    private sealed record InboxState(long Id, string Status, string? LastErrorMessage);
+    private sealed record WarehouseApplyProcedureResult(int ResultCode, int? WarehouseId);
 }

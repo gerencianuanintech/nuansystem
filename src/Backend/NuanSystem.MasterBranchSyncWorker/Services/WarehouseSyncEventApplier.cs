@@ -59,7 +59,7 @@ public sealed class WarehouseSyncEventApplier(
                 cancellationToken)
         };
 
-        return new SyncEventApplyResult(result.Applied, result.Message);
+        return new SyncEventApplyResult(result.Applied, result.Message, result.ErrorCode);
     }
 
     private static WarehouseSyncPayload ReadPayload(string payloadJson)

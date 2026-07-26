@@ -12,5 +12,5 @@ public interface IWarehouseClient
 
     Task<WarehouseItem> UpdateAsync(int id, SaveWarehouseRequest request, CancellationToken cancellationToken = default);
 
-    Task DeactivateAsync(int id, CancellationToken cancellationToken = default);
+    Task DeleteAsync(int id, CancellationToken cancellationToken = default);
 }

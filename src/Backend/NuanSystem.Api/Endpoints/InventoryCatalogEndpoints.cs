@@ -159,7 +159,7 @@ public static class InventoryCatalogEndpoints
             CancellationToken cancellationToken) =>
         {
             var auditUser = user.GetAuditUser();
-            var result = await sender.Send(new SetWarehouseActiveStatusCommand(id, false, auditUser.UserId, auditUser.UserName), cancellationToken);
+            var result = await sender.Send(new DeleteWarehouseCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
             return result.ToHttpResult();
         })
         .RequirePermission(PermissionCodes.GeneralInventoryWarehousesManage);

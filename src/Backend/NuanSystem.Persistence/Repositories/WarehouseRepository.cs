@@ -1,3 +1,4 @@
+using System.Data;
 using Dapper;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Features.GeneralInventory.Warehouses.Dtos;
@@ -6,188 +7,97 @@ namespace NuanSystem.Persistence.Repositories;
 
 public sealed class WarehouseRepository(ITenantConnectionFactory connectionFactory) : IWarehouseRepository
 {
-    private const string SelectColumns = """
-        Id,
-        GlobalId,
-        Code,
-        Name,
-        Description,
-        BranchCode,
-        Address,
-        City,
-        Province,
-        Country,
-        Phone,
-        Email,
-        ManagerName,
-        CAST(AllowsSales AS bit) AS AllowsSales,
-        CAST(AllowsPurchases AS bit) AS AllowsPurchases,
-        CAST(AllowsTransfers AS bit) AS AllowsTransfers,
-        CAST(AllowsProduction AS bit) AS AllowsProduction,
-        CAST(IsDefault AS bit) AS IsDefault,
-        ExternalSystem,
-        ExternalCode,
-        SapCode,
-        CAST(IsActive AS bit) AS IsActive,
-        CreatedByUserId,
-        CreatedByUserName,
-        CreatedAt,
-        UpdatedByUserId,
-        UpdatedByUserName,
-        UpdatedAt,
-        DeletedByUserId,
-        DeletedByUserName,
-        DeletedAt
-        """;
+    private const string ListProcedure = "dbo.SP_NA_GET_WAREHOUSES_LISTAR";
+    private const string GetByIdProcedure = "dbo.SP_NA_GET_WAREHOUSES_BUSCARPORID";
+    private const string CreateProcedure = "dbo.SP_NA_POST_WAREHOUSES_CREAR";
+    private const string ExistsByCodeProcedure = "dbo.SP_NA_GET_WAREHOUSESBUSCARPORCODIGO";
+    private const string UpdateProcedure = "dbo.SP_NA_PUT_WAREHOUSES_ACTUALIZAR";
+    private const string SetActiveProcedure = "dbo.SP_NA_PATCH_WAREHOUSES_ESTADO";
+    private const string DeleteProcedure = "dbo.SP_NA_DELETE_WAREHOUSES_ELIMINAR";
 
     public async Task<IReadOnlyCollection<WarehouseDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        var warehouses = await connection.QueryAsync<WarehouseDto>(
-            new CommandDefinition(
-                $"""
-                SELECT {SelectColumns}
-                FROM dbo.Warehouses
-                WHERE IsDeleted = 0
-                ORDER BY IsDefault DESC, Name, Code;
-                """,
-                cancellationToken: cancellationToken));
-
-        return warehouses.AsList();
+        var rows = await connection.QueryAsync<WarehouseDto>(
+            new CommandDefinition(ListProcedure, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        return rows.AsList();
     }
 
     public async Task<WarehouseDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        return await connection.QuerySingleOrDefaultAsync<WarehouseDto>(
-            new CommandDefinition(
-                $"""
-                SELECT TOP (1) {SelectColumns}
-                FROM dbo.Warehouses
-                WHERE Id = @Id
-                  AND IsDeleted = 0;
-                """,
-                new { Id = id },
-                cancellationToken: cancellationToken));
+        return await GetByIdCoreAsync(id, connection, null, cancellationToken);
     }
+
+    public Task<WarehouseDto?> GetByIdAsync(int id, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default) =>
+        GetByIdCoreAsync(id, connection, transaction, cancellationToken);
 
     public async Task<int> CreateAsync(CreateWarehouseData warehouse, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(
-                """
-                INSERT INTO dbo.Warehouses
-                (
-                    GlobalId, Code, Name, Description, BranchCode, Address, City, Province, Country,
-                    Phone, Email, ManagerName, AllowsSales, AllowsPurchases, AllowsTransfers,
-                    AllowsProduction, IsDefault, ExternalSystem, ExternalCode, SapCode, IsActive,
-                    IsDeleted, CreatedAt, CreatedByUserId, CreatedByUserName
-                )
-                VALUES
-                (
-                    @GlobalId, @Code, @Name, @Description, @BranchCode, @Address, @City, @Province, @Country,
-                    @Phone, @Email, @ManagerName, @AllowsSales, @AllowsPurchases, @AllowsTransfers,
-                    @AllowsProduction, @IsDefault, @ExternalSystem, @ExternalCode, @SapCode, @IsActive,
-                    0, SYSUTCDATETIME(), @CreatedByUserId, @CreatedByUserName
-                );
-
-                SELECT CONVERT(int, SCOPE_IDENTITY());
-                """,
-                warehouse,
-                cancellationToken: cancellationToken));
+        return await CreateCoreAsync(warehouse, connection, null, cancellationToken);
     }
+
+    public Task<int> CreateAsync(CreateWarehouseData warehouse, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default) =>
+        CreateCoreAsync(warehouse, connection, transaction, cancellationToken);
 
     public async Task<bool> ExistsByCodeAsync(string code, CancellationToken cancellationToken = default)
     {
-        return await ExistsByCodeCoreAsync(code, null, cancellationToken);
+        using var connection = connectionFactory.CreateConnection();
+        return await ExistsByCodeCoreAsync(code, null, connection, null, cancellationToken);
     }
 
     public async Task<bool> ExistsByCodeAsync(string code, int excludingId, CancellationToken cancellationToken = default)
     {
-        return await ExistsByCodeCoreAsync(code, excludingId, cancellationToken);
+        using var connection = connectionFactory.CreateConnection();
+        return await ExistsByCodeCoreAsync(code, excludingId, connection, null, cancellationToken);
     }
+
+    public Task<bool> ExistsByCodeAsync(string code, int? excludingId, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default) =>
+        ExistsByCodeCoreAsync(code, excludingId, connection, transaction, cancellationToken);
 
     public async Task<bool> UpdateAsync(UpdateWarehouseData warehouse, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        var affectedRows = await connection.ExecuteAsync(
-            new CommandDefinition(
-                """
-                UPDATE dbo.Warehouses
-                SET GlobalId = @GlobalId,
-                    Code = @Code,
-                    Name = @Name,
-                    Description = @Description,
-                    BranchCode = @BranchCode,
-                    Address = @Address,
-                    City = @City,
-                    Province = @Province,
-                    Country = @Country,
-                    Phone = @Phone,
-                    Email = @Email,
-                    ManagerName = @ManagerName,
-                    AllowsSales = @AllowsSales,
-                    AllowsPurchases = @AllowsPurchases,
-                    AllowsTransfers = @AllowsTransfers,
-                    AllowsProduction = @AllowsProduction,
-                    IsDefault = @IsDefault,
-                    ExternalSystem = @ExternalSystem,
-                    ExternalCode = @ExternalCode,
-                    SapCode = @SapCode,
-                    IsActive = @IsActive,
-                    UpdatedAt = SYSUTCDATETIME(),
-                    UpdatedByUserId = @UpdatedByUserId,
-                    UpdatedByUserName = @UpdatedByUserName
-                WHERE Id = @Id
-                  AND IsDeleted = 0;
-                """,
-                warehouse,
-                cancellationToken: cancellationToken));
-
-        return affectedRows > 0;
+        return await UpdateCoreAsync(warehouse, connection, null, cancellationToken);
     }
 
-    public async Task<bool> SetActiveStatusAsync(
-        int id,
-        bool isActive,
-        int? updatedByUserId,
-        string? updatedByUserName,
-        CancellationToken cancellationToken = default)
+    public Task<bool> UpdateAsync(UpdateWarehouseData warehouse, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default) =>
+        UpdateCoreAsync(warehouse, connection, transaction, cancellationToken);
+
+    public async Task<bool> SetActiveStatusAsync(int id, bool isActive, int? updatedByUserId, string? updatedByUserName, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        var affectedRows = await connection.ExecuteAsync(
-            new CommandDefinition(
-                """
-                UPDATE dbo.Warehouses
-                SET IsActive = @IsActive,
-                    UpdatedAt = SYSUTCDATETIME(),
-                    UpdatedByUserId = @UpdatedByUserId,
-                    UpdatedByUserName = @UpdatedByUserName
-                WHERE Id = @Id
-                  AND IsDeleted = 0;
-                """,
-                new { Id = id, IsActive = isActive, UpdatedByUserId = updatedByUserId, UpdatedByUserName = updatedByUserName },
-                cancellationToken: cancellationToken));
-
-        return affectedRows > 0;
+        return await SetActiveStatusCoreAsync(id, isActive, updatedByUserId, updatedByUserName, connection, null, cancellationToken);
     }
 
-    private async Task<bool> ExistsByCodeCoreAsync(string code, int? excludingId, CancellationToken cancellationToken)
+    public Task<bool> SetActiveStatusAsync(int id, bool isActive, int? updatedByUserId, string? updatedByUserName, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default) =>
+        SetActiveStatusCoreAsync(id, isActive, updatedByUserId, updatedByUserName, connection, transaction, cancellationToken);
+
+    public async Task<bool> DeleteAsync(int id, int? deletedByUserId, string? deletedByUserName, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        var count = await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(
-                """
-                SELECT COUNT(1)
-                FROM dbo.Warehouses
-                WHERE Code = @Code
-                  AND IsDeleted = 0
-                  AND (@ExcludingId IS NULL OR Id <> @ExcludingId);
-                """,
-                new { Code = code, ExcludingId = excludingId },
-                cancellationToken: cancellationToken));
-
-        return count > 0;
+        return await DeleteCoreAsync(id, deletedByUserId, deletedByUserName, connection, null, cancellationToken);
     }
+
+    public Task<bool> DeleteAsync(int id, int? deletedByUserId, string? deletedByUserName, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default) =>
+        DeleteCoreAsync(id, deletedByUserId, deletedByUserName, connection, transaction, cancellationToken);
+
+    private static Task<WarehouseDto?> GetByIdCoreAsync(int id, IDbConnection connection, IDbTransaction? transaction, CancellationToken token) =>
+        connection.QuerySingleOrDefaultAsync<WarehouseDto>(new CommandDefinition(GetByIdProcedure, new { Id = id }, transaction, cancellationToken: token, commandType: CommandType.StoredProcedure));
+
+    private static Task<int> CreateCoreAsync(CreateWarehouseData data, IDbConnection connection, IDbTransaction? transaction, CancellationToken token) =>
+        connection.ExecuteScalarAsync<int>(new CommandDefinition(CreateProcedure, data, transaction, cancellationToken: token, commandType: CommandType.StoredProcedure));
+
+    private static async Task<bool> ExistsByCodeCoreAsync(string code, int? excludingId, IDbConnection connection, IDbTransaction? transaction, CancellationToken token) =>
+        await connection.ExecuteScalarAsync<int>(new CommandDefinition(ExistsByCodeProcedure, new { Code = code, ExcluirId = excludingId }, transaction, cancellationToken: token, commandType: CommandType.StoredProcedure)) > 0;
+
+    private static async Task<bool> UpdateCoreAsync(UpdateWarehouseData data, IDbConnection connection, IDbTransaction? transaction, CancellationToken token) =>
+        await connection.ExecuteScalarAsync<int>(new CommandDefinition(UpdateProcedure, data, transaction, cancellationToken: token, commandType: CommandType.StoredProcedure)) > 0;
+
+    private static async Task<bool> SetActiveStatusCoreAsync(int id, bool isActive, int? userId, string? userName, IDbConnection connection, IDbTransaction? transaction, CancellationToken token) =>
+        await connection.ExecuteScalarAsync<int>(new CommandDefinition(SetActiveProcedure, new { Id = id, IsActive = isActive, UpdatedByUserId = userId, UpdatedByUserName = userName }, transaction, cancellationToken: token, commandType: CommandType.StoredProcedure)) > 0;
+
+    private static async Task<bool> DeleteCoreAsync(int id, int? userId, string? userName, IDbConnection connection, IDbTransaction? transaction, CancellationToken token) =>
+        await connection.ExecuteScalarAsync<int>(new CommandDefinition(DeleteProcedure, new { Id = id, DeletedByUserId = userId, DeletedByUserName = userName }, transaction, cancellationToken: token, commandType: CommandType.StoredProcedure)) > 0;
 }

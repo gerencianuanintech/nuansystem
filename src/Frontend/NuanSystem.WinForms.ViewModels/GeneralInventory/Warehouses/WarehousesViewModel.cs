@@ -29,6 +29,6 @@ public sealed class WarehousesViewModel(IWarehouseClient warehouseClient)
 
     public override Task DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        return warehouseClient.DeactivateAsync(id, cancellationToken);
+        return warehouseClient.DeleteAsync(id, cancellationToken);
     }
 }

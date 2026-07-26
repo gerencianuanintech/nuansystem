@@ -29,5 +29,7 @@ public interface IWarehouseSyncApplyRepository
 public sealed record WarehouseSyncApplyResult(
     bool Applied,
     bool AlreadyApplied,
+    bool TerminalConflict,
     int? WarehouseId,
-    string Message);
+    string Message,
+    string? ErrorCode = null);

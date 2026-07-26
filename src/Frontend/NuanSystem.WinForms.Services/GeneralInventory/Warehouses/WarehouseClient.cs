@@ -25,7 +25,7 @@ public sealed class WarehouseClient(INuanApiClient apiClient) : IWarehouseClient
         return apiClient.PutAsync<SaveWarehouseRequest, WarehouseItem>($"/api/warehouses/{id}", request, cancellationToken);
     }
 
-    public async Task DeactivateAsync(int id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
         await apiClient.DeleteAsync<object>($"/api/warehouses/{id}", cancellationToken);
     }

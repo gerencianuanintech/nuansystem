@@ -1,7 +1,6 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Abstractions.Sync;
-using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.GeneralInventory.Warehouses.Dtos;
 using NuanSystem.Shared.Sync;
@@ -11,21 +10,14 @@ namespace NuanSystem.Application.Features.GeneralInventory.Warehouses.Commands;
 
 public sealed class CreateWarehouseCommandHandler(
     IWarehouseRepository warehouseRepository,
-    ISyncEventPublisher syncEventPublisher,
-    ICompanyContext companyContext)
+    ITransactionRunner transactionRunner,
+    IWarehouseLocalOutboxWriter localOutboxWriter)
     : ICommandHandler<CreateWarehouseCommand, WarehouseDto>
 {
     public async Task<Result<WarehouseDto>> Handle(CreateWarehouseCommand request, CancellationToken cancellationToken)
     {
         var code = WarehouseCommandHelpers.NormalizeCode(request.Code);
-        if (await warehouseRepository.ExistsByCodeAsync(code, cancellationToken))
-        {
-            return Result<WarehouseDto>.Failure(
-                "Ya existe una bodega con el codigo indicado.",
-                new[] { new ApiError("WarehouseCodeAlreadyExists", "El codigo de bodega ya existe.", nameof(request.Code)) });
-        }
-
-        var id = await warehouseRepository.CreateAsync(new CreateWarehouseData(
+        var data = new CreateWarehouseData(
             request.GlobalId.GetValueOrDefault(Guid.NewGuid()),
             code,
             request.Name.Trim(),
@@ -48,23 +40,24 @@ public sealed class CreateWarehouseCommandHandler(
             WarehouseCommandHelpers.NormalizeOptional(request.SapCode),
             request.IsActive,
             request.AuditUserId,
-            WarehouseCommandHelpers.NormalizeOptional(request.AuditUserName)), cancellationToken);
+            WarehouseCommandHelpers.NormalizeOptional(request.AuditUserName));
 
-        var warehouse = await warehouseRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new InvalidOperationException("La bodega fue creada pero no pudo consultarse.");
+        return await transactionRunner.ExecuteInTenantTransactionAsync(
+            async (connection, transaction, token) =>
+            {
+                if (await warehouseRepository.ExistsByCodeAsync(code, null, connection, transaction, token))
+                {
+                    return Result<WarehouseDto>.Failure(
+                        "Ya existe una bodega con el codigo indicado.",
+                        [new ApiError("WarehouseCodeAlreadyExists", "El codigo de bodega ya existe.", nameof(request.Code))]);
+                }
 
-        var syncResult = await WarehouseSyncPublisher.PublishAsync(
-            syncEventPublisher,
-            companyContext,
-            warehouse,
-            SyncOperation.Created,
+                var id = await warehouseRepository.CreateAsync(data, connection, transaction, token);
+                var warehouse = await warehouseRepository.GetByIdAsync(id, connection, transaction, token)
+                    ?? throw new InvalidOperationException("La bodega fue creada pero no pudo consultarse.");
+                await localOutboxWriter.EnqueueAsync(warehouse, SyncOperation.Created, connection, transaction, token);
+                return Result<WarehouseDto>.Success(warehouse, "Bodega creada correctamente.");
+            },
             cancellationToken);
-
-        if (syncResult is { IsSuccess: false })
-        {
-            return Result<WarehouseDto>.Failure(syncResult.Message, syncResult.Errors);
-        }
-
-        return Result<WarehouseDto>.Success(warehouse, "Bodega creada correctamente.");
     }
 }

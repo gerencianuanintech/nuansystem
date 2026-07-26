@@ -101,7 +101,7 @@ public sealed partial class WarehousesForm : BaseGridCrudListForm
             return;
         }
 
-        if (!Confirm($"Inactivar la bodega {item.Code}?"))
+        if (!Confirm($"Eliminar la bodega {item.Code}?"))
         {
             return;
         }
