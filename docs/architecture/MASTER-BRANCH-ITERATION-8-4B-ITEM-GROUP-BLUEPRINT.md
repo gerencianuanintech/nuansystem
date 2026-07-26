@@ -3,11 +3,12 @@
 ## Estado
 
 - Fecha: 2026-07-26.
-- Estado: implementación y despliegue SQL validados; runtime pendiente.
+- Estado: implementación, despliegue SQL y piloto runtime DEMO a Remigio
+  validados.
 - Worker: deshabilitado por defecto.
-- Sucursal piloto futura: Remigio, sujeta a autorización separada.
+- Sucursal piloto validada: Remigio.
 
-Este estado no autoriza ejecutar los scripts, activar el relay ni aplicar eventos.
+Este estado no autoriza una activación permanente del relay o del worker.
 
 ## Contrato aprobado
 
@@ -36,11 +37,46 @@ Este estado no autoriza ejecutar los scripts, activar el relay ni aplicar evento
 - Los conteos de ItemGroup permanecieron en 5 en ambos tenants.
 - `NuanSystem_DEMO_CANARIS` permaneció en solo lectura y no recibió `129`.
 
-## Quality gates pendientes
+## Runtime validado
 
-- prueba de commit atómico y rollback tenant;
-- promoción repetida e idempotente;
-- colisión terminal y reserva del código eliminado;
-- aplicación controlada DEMO → Remigio;
-- limpieza completa de fixtures;
-- build y suite completos posteriores al despliegue.
+El piloto controlado usó `NuanSystem_DEMO` como Matriz y
+`NuanSystem_DEMO_REMIGIO` como única sucursal destino. Antes de la prueba se
+crearon y verificaron estos respaldos:
+
+- `NuanSystem_Master-item-group-runtime-20260726-232603.bak`;
+- `NuanSystem_DEMO-item-group-runtime-20260726-232603.bak`;
+- `NuanSystem_DEMO_REMIGIO-item-group-runtime-20260726-232603.bak`.
+
+La ruta `ItemGroups` del perfil `DEMO-ITEMS-PILOT` estaba registrada como
+`Full`, por lo que el relay incremental produjo inicialmente eventos sin
+targets. Esos fixtures fueron retirados. Con autorización expresa se cambió
+temporalmente la entidad a `Incremental`, se deshabilitó solamente la matriz
+de Cañaris y se repitió el piloto hacia Remigio. Al finalizar se restauraron
+exactamente `Full` y ambas matrices activas.
+
+Los gates ejecutados aprobaron:
+
+- create, update, disable y eliminación lógica mediante la API;
+- maestro y `LocalOutbox` revertidos juntos ante un fallo controlado;
+- cinco eventos locales con cinco `EventId` distintos;
+- promoción repetida del mismo `EventId` sin duplicar `SyncOutbox`;
+- cuatro eventos aplicados en Remigio;
+- tombstone aplicado por `GlobalId`;
+- una colisión terminal por `Code`, sin adopción automática;
+- cero targets e inbox de fixtures en Cañaris;
+- limpieza completa de ItemGroup, LocalOutbox, SyncOutbox, targets, inbox y
+  auditorías de los fixtures `I8IGRT1*`;
+- cero procesos NuanSystem al finalizar;
+- build con cero errores y advertencias;
+- 523 pruebas superadas, 5 diagnósticas omitidas y 0 fallidas.
+
+Los siete eventos históricos de BusinessPartner, Item y Warehouse que ya
+existían en Master conservaron `AttemptCount=MaxAttempts`, no fueron
+reclamables y no fueron modificados.
+
+## Estado operativo posterior
+
+El perfil volvió a `SyncMode=Full`, las rutas de Remigio y Cañaris quedaron
+activas y todos los workers permanecen deshabilitados. El piloto valida el
+contrato runtime, pero no convierte la configuración temporal en activación
+permanente.

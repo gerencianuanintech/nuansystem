@@ -6,7 +6,8 @@
 - **Alcance actual:** límite transaccional, relay e incorporación progresiva de
   maestros.
 - **Estado:** Fases 8.1–8.3, 8.4A y ItemFamily 8.4B-1 implementadas y
-  validadas. ItemGroup, Item payload v2/UnitOfMeasure y Warehouse están
+  validadas. ItemGroup también tiene piloto runtime DEMO a Remigio validado.
+  Item payload v2/UnitOfMeasure y Warehouse están
   implementados y desplegados en SQL de forma idempotente en Master, DEMO y
   Remigio según corresponde; permanecen deshabilitados y pendientes de runtime
   autorizado.

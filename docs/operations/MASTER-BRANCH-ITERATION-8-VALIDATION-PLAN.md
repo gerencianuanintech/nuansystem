@@ -314,7 +314,7 @@ fases está desplegada ni validada en runtime:
 
 | Alcance | Tenant | Master | Estado |
 |---|---|---|---|
-| ItemGroup | 129 | 130 | Código listo; SQL/runtime pendiente |
+| ItemGroup | 129 | 130 | SQL y piloto runtime DEMO a Remigio validados |
 | Item v2 y UnitOfMeasure | 131 | 132 | Código listo; SQL/runtime pendiente |
 | Warehouse | 133 | 134 | Código listo; SQL/runtime pendiente |
 
@@ -363,3 +363,15 @@ fue modificada y debe revisarse antes de cualquier runtime.
 
 Validación de código posterior: build con 0 errores/advertencias y suite con
 523 aprobadas, 5 diagnósticas omitidas y 0 fallidas.
+
+## Piloto runtime ItemGroup — 2026-07-26
+
+ItemGroup fue validado con DEMO como Matriz y Remigio como única sucursal
+temporal. Aprobaron rollback atómico, create, update, disable, delete lógico,
+promoción idempotente, aplicación por `GlobalId`, tombstone y colisión terminal
+sin adopción. Cañaris permaneció en solo lectura y recibió cero targets.
+
+La ruta se cambió temporalmente de `Full` a `Incremental` y la matriz de
+Cañaris se deshabilitó solamente durante el piloto. Ambos valores originales
+fueron restaurados al finalizar. Los fixtures `I8IGRT1*` y toda su trazabilidad
+fueron eliminados. Los respaldos runtime verificados se conservan.

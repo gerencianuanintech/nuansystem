@@ -88,7 +88,7 @@ Modo real.
 |---|---|---|---|---|
 | BusinessPartner | `BusinessPartner` | `GlobalId` | Create, update, disable/delete logico | `Code` es referencia funcional. `SapCardCode` no es identidad, `BusinessPartnerSapMapping` no participa y SAP no es obligatorio. |
 | Item | `Item` | `GlobalId` | Create, update, disable/delete logico del maestro | No sincroniza stock, precios, costos, kardex, movimientos de inventario, lotes, series, vencimientos ni bodegas. `SapCode` es nullable, opcional y no es identidad. |
-| ItemGroup | `ItemGroups` | `GlobalId` | Create, update, disable/delete logico | Codigo y migraciones 129/130 listos; SQL/runtime pendientes y worker deshabilitado. |
+| ItemGroup | `ItemGroups` | `GlobalId` | Create, update, disable/delete logico | Migraciones 129/130 y piloto DEMO a Remigio validados; colision por codigo terminal, sin adopcion. Configuracion permanente y worker continúan deshabilitados. |
 | ItemFamily | `ItemFamilies` | `GlobalId` | Create, update, disable/delete logico | Depende de ItemGroup; piloto DEMO a Remigio validado. |
 | UnitOfMeasure | `UnitOfMeasure` | `GlobalId` | Full | Contrato sin adopcion por codigo; script 132 y runtime pendientes. |
 | Warehouse | `Warehouse` | `GlobalId` | Create, update, disable/delete logico del maestro | Contrato minimo corporativo; codigo y migraciones 133/134 listos, SQL/runtime pendientes. No sincroniza stock, saldos, costos ni kardex. |

@@ -15,9 +15,12 @@ The DEMO-to-Remigio runtime pilot is validated; read
 `docs/architecture/MASTER-BRANCH-ITERATION-8-4B-ITEM-FAMILY-BLUEPRINT.md`.
 
 `ItemGroups` and `Warehouse` now use transactional `LocalOutbox` producers and
-terminal no-adoption appliers. Their scripts `129`/`130` and `133`/`134` are
-deployed idempotently in Master, DEMO and Remigio as applicable, but remain
-runtime-unvalidated.
+terminal no-adoption appliers. ItemGroups scripts `129`/`130` and its
+DEMO-to-Remigio runtime pilot are validated, including atomic rollback,
+idempotent promotion, tombstone and terminal code collision. Its temporary
+Incremental/Remigio-only routing was restored after the pilot. Warehouse
+scripts `133`/`134` are deployed idempotently in Master, DEMO and Remigio as
+applicable, but Warehouse remains runtime-unvalidated.
 
 Item payload v2 carries `ItemGroupGlobalId`, `ItemFamilyGlobalId` and separate
 inventory, purchase and sales UOM `GlobalId` values. `UnitOfMeasure` remains a
