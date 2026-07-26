@@ -19,10 +19,10 @@ GO
 DECLARE @ItemDefinitionId int =
     (SELECT Id FROM dbo.SyncEntityDefinitions WHERE Code = N'Item' AND IsDeleted = 0);
 DECLARE @UnitOfMeasuresDefinitionId int =
-    (SELECT Id FROM dbo.SyncEntityDefinitions WHERE Code = N'UnitOfMeasures' AND IsDeleted = 0);
+    (SELECT Id FROM dbo.SyncEntityDefinitions WHERE Code = N'UnitOfMeasure' AND IsDeleted = 0);
 
 IF @ItemDefinitionId IS NULL OR @UnitOfMeasuresDefinitionId IS NULL
-    THROW 51132, 'Item and UnitOfMeasures definitions are required for migration 132.', 1;
+    THROW 51132, 'Item and UnitOfMeasure definitions are required for migration 132.', 1;
 
 IF EXISTS
 (

@@ -70,7 +70,7 @@ public sealed class UnitOfMeasureSyncHardeningTests
         var script = ReadSource("database", "sql", "132_master_item_unit_of_measure_dependency.sql");
 
         script.Should().Contain("Code = N'Item'");
-        script.Should().Contain("Code = N'UnitOfMeasures'");
+        script.Should().Contain("Code = N'UnitOfMeasure'");
         script.Should().Contain("SyncEntityDefinitionDependencies");
         script.Should().Contain("20260726.132");
         script.Should().NotContain("SupportsIncremental");
