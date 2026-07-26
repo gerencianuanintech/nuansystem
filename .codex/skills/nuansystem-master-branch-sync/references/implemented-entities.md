@@ -16,13 +16,14 @@ The DEMO-to-Remigio runtime pilot is validated; read
 
 `ItemGroups` and `Warehouse` now use transactional `LocalOutbox` producers and
 terminal no-adoption appliers. Their scripts `129`/`130` and `133`/`134` are
-versioned but not deployed or runtime-validated.
+deployed idempotently in Master, DEMO and Remigio as applicable, but remain
+runtime-unvalidated.
 
 Item payload v2 carries `ItemGroupGlobalId`, `ItemFamilyGlobalId` and separate
 inventory, purchase and sales UOM `GlobalId` values. `UnitOfMeasure` remains a
 Full source with terminal no-adoption behavior. Scripts `131`/`132` are
-versioned but not deployed or runtime-validated. All these paths remain
-disabled by default.
+deployed idempotently in Master, DEMO and Remigio as applicable, but remain
+runtime-unvalidated. All worker and relay paths remain disabled.
 
 `BusinessPartnerPaymentTerms` is operative through `PaymentTermFullEntitySource`, `ReferenceCatalogSyncEventApplier`, and `ReferenceCatalogSyncApplyRepository`. Its approved upstream source is SAP B1 `PaymentTermsTypes`; read `docs/architecture/SAP-PAYMENT-TERMS-SYNC.md` and the SAP synchronization skill before changing that pipeline. Tenant script `112` and Master scripts `113`/`114` install its contracts but do not activate profiles or workers.
 

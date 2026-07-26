@@ -3,7 +3,7 @@
 ## Estado
 
 - Fecha: 2026-07-26.
-- Estado: implementación y migraciones versionadas; despliegue SQL y validación runtime pendientes.
+- Estado: implementación y despliegue SQL validados; runtime pendiente.
 - Worker: deshabilitado por defecto.
 - Sucursal piloto futura: Remigio, sujeta a autorización separada.
 
@@ -27,10 +27,17 @@ Este estado no autoriza ejecutar los scripts, activar el relay ni aplicar evento
 - Migración tenant: `129_tenant_item_group_transactional_outbox.sql`.
 - Registro Master: `130_master_item_group_sync_registration.sql`.
 
+## Despliegue SQL validado
+
+- `130` fue ejecutado dos veces en `NuanSystem_Master`.
+- `129` fue ejecutado dos veces en `NuanSystem_DEMO` y
+  `NuanSystem_DEMO_REMIGIO`.
+- Cada versión quedó registrada exactamente una vez.
+- Los conteos de ItemGroup permanecieron en 5 en ambos tenants.
+- `NuanSystem_DEMO_CANARIS` permaneció en solo lectura y no recibió `129`.
+
 ## Quality gates pendientes
 
-- respaldos verificados de las bases autorizadas;
-- scripts 129 y 130 ejecutados dos veces;
 - prueba de commit atómico y rollback tenant;
 - promoción repetida e idempotente;
 - colisión terminal y reserva del código eliminado;

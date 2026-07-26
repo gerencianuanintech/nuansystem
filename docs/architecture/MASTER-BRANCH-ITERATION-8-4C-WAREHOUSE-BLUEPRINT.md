@@ -3,7 +3,7 @@
 ## Estado
 
 - Fecha: 2026-07-26.
-- Estado: implementación y migraciones versionadas; despliegue SQL y validación runtime pendientes.
+- Estado: implementación y despliegue SQL validados; runtime pendiente.
 - Worker: deshabilitado por defecto.
 - Sucursal piloto futura: Remigio, sujeta a autorización separada.
 
@@ -28,10 +28,20 @@ Este estado no autoriza ejecutar los scripts, activar el relay ni aplicar evento
 - Migración tenant: `133_tenant_warehouse_transactional_outbox.sql`.
 - Registro Master: `134_master_warehouse_sync_registration.sql`.
 
+## Despliegue SQL validado
+
+- `134` fue ejecutado dos veces en `NuanSystem_Master`.
+- `133` fue ejecutado dos veces en `NuanSystem_DEMO` y
+  `NuanSystem_DEMO_REMIGIO`.
+- Cada versión quedó registrada exactamente una vez.
+- Los conteos Warehouse permanecieron en 35 para DEMO y 4 para Remigio.
+- `NuanSystem_DEMO_CANARIS` permaneció en solo lectura y no recibió `133`.
+- Master ya tenía una configuración Warehouse habilitada antes de esta
+  ejecución. El script 134 no la activó ni la desactivó; worker y relay
+  permanecen apagados. Debe revisarse expresamente antes del runtime.
+
 ## Quality gates pendientes
 
-- respaldos verificados de las bases autorizadas;
-- scripts 133 y 134 ejecutados dos veces;
 - prueba de commit atómico y rollback tenant;
 - create, update, disable y delete lógico;
 - promoción repetida e idempotente;

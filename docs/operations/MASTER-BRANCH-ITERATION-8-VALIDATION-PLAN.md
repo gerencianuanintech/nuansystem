@@ -331,3 +331,35 @@ El orden obligatorio para el piloto es:
 9. limpiar fixtures y confirmar cero locks/procesos.
 
 Cañaris, SAP y SRI permanecen fuera de alcance.
+
+## Despliegue SQL autorizado de la oleada — 2026-07-26
+
+### Respaldos
+
+Se crearon respaldos `COPY_ONLY WITH CHECKSUM` y se verificaron mediante
+`RESTORE VERIFYONLY WITH CHECKSUM`:
+
+- `NuanSystem_Master-catalog-wave-20260726-100612.bak`;
+- `NuanSystem_DEMO-catalog-wave-20260726-100612.bak`;
+- `NuanSystem_DEMO_REMIGIO-catalog-wave-20260726-100612.bak`.
+
+### Scripts y resultado
+
+| Base | Scripts, dos pases cada uno | Resultado |
+|---|---|---|
+| `NuanSystem_Master` | 130, 132, 134 | Una fila por versión |
+| `NuanSystem_DEMO` | 129, 131, 133 | Una fila por versión |
+| `NuanSystem_DEMO_REMIGIO` | 129, 131, 133 | Una fila por versión |
+| `NuanSystem_DEMO_CANARIS` | Ninguno; solo lectura | Sin versiones 129/131/133 |
+
+Se confirmaron las cinco definiciones Master, las tres dependencias de Item,
+los procedimientos de aplicación, la descripción UOM y los índices esperados.
+Los conteos de ItemGroup, ItemFamily, Item, UnitOfMeasure, Warehouse y
+LocalOutbox permanecieron iguales al snapshot inicial.
+
+Worker, relay, SAP y SRI permanecieron apagados. No hubo aplicación de eventos
+ni fixtures. La configuración Warehouse habilitada que ya existía en Master no
+fue modificada y debe revisarse antes de cualquier runtime.
+
+Validación de código posterior: build con 0 errores/advertencias y suite con
+523 aprobadas, 5 diagnósticas omitidas y 0 fallidas.

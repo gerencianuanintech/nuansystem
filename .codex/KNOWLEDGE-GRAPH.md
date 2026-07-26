@@ -619,7 +619,7 @@ applicable, with configuration disabled by default; Cañaris remains unchanged.
 Remigio runtime evidence is validated for ItemFamily. The authoritative scope is
 `docs/architecture/MASTER-BRANCH-ITERATION-8-4B-ITEM-FAMILY-BLUEPRINT.md`.
 
-The next catalog wave is code-complete but not deployed:
+The next catalog wave is code- and SQL-complete but not runtime-validated:
 
 ```text
 ItemGroup
@@ -639,4 +639,4 @@ Warehouse
   -> scripts 133/134
 ```
 
-All three paths remain disabled and require separate SQL/runtime authorization.
+All three paths remain disabled and require separate runtime authorization.

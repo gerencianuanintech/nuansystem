@@ -7,8 +7,9 @@
   maestros.
 - **Estado:** Fases 8.1–8.3, 8.4A y ItemFamily 8.4B-1 implementadas y
   validadas. ItemGroup, Item payload v2/UnitOfMeasure y Warehouse están
-  implementados en código con migraciones versionadas, deshabilitados y
-  pendientes de despliegue SQL y runtime autorizados.
+  implementados y desplegados en SQL de forma idempotente en Master, DEMO y
+  Remigio según corresponde; permanecen deshabilitados y pendientes de runtime
+  autorizado.
 - **Autoridad:** Constitución > Kernel > catálogos > skill
   `nuansystem-master-branch-sync` > implementación.
 

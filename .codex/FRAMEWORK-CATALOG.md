@@ -305,10 +305,10 @@ These are related but non-interchangeable pipelines. Route through `$nuansystem-
 | BusinessPartner | Transactional LocalOutbox | None | Integrated | Validated |
 | Item 8.4A | Transactional LocalOutbox | Limited payload | Integrated | Validated in ObserveOnly |
 | ItemFamily | Transactional LocalOutbox | ItemGroup | Integrated | Validated DEMO to Remigio |
-| ItemGroup | Transactional LocalOutbox | None | Scripts 129/130 ready | Pending |
-| Item v2 | Existing transactional LocalOutbox | ItemGroup, ItemFamily, three UOM identities | Scripts 131/132 ready | Pending |
-| UnitOfMeasure | Full source | None | Script 132 hardening ready | Pending |
-| Warehouse | Transactional LocalOutbox | None | Scripts 133/134 ready | Pending |
+| ItemGroup | Transactional LocalOutbox | None | Scripts 129/130 deployed | Runtime pending |
+| Item v2 | Existing transactional LocalOutbox | ItemGroup, ItemFamily, three UOM identities | Scripts 131/132 deployed | Runtime pending |
+| UnitOfMeasure | Full source | None | Script 132 deployed | Runtime pending |
+| Warehouse | Transactional LocalOutbox | None | Scripts 133/134 deployed | Runtime pending |
 
 For every row marked pending, the relay and worker remain disabled. Code-ready
 does not imply permission to deploy SQL, create fixtures or apply branch events.
