@@ -161,3 +161,72 @@ Postflight:
 La aprobacion alcanzada es exclusivamente SQL. Aun faltan fixtures
 identificables, aplicacion real en Remigio, idempotencia runtime, conflicto
 terminal, limpieza y snapshots finales antes de cerrar 8.4B-1.
+
+## Evidencia runtime parcial — 2026-07-25
+
+El propietario autorizo expresamente `NuanSystem_DEMO` como Matriz,
+`NuanSystem_DEMO_REMIGIO` como sucursal piloto y
+`NuanSystem_DEMO_CANARIS` en solo lectura.
+
+### Preparacion y aislamiento
+
+- TLS SQL estricto: `Encrypt=true`, `TrustServerCertificate=false`;
+- cero workers activos antes de la preparacion;
+- una API temporal se inicio en loopback y se detuvo al finalizar;
+- `MasterBranchSyncWorker` se habilito solo mediante variables del proceso;
+- el unico aplicador habilitado fue `ItemFamilies`;
+- se reutilizo el perfil `DEMO-ITEMS-PILOT` mediante una entidad/ruta temporal
+  identificable exclusivamente hacia Remigio;
+- la configuracion persistente `SyncEntityConfigurations.ItemFamilies`
+  permanecio deshabilitada;
+- no existieron targets hacia Cañaris;
+- no se llamo SAP ni SRI.
+
+Respaldos `COPY_ONLY WITH CHECKSUM` creados y verificados:
+
+- `NuanSystem_Master-item-family-runtime-20260726-042735.bak`;
+- `NuanSystem_DEMO-item-family-runtime-20260726-042735.bak`;
+- `NuanSystem_DEMO_REMIGIO-item-family-runtime-20260726-042735.bak`.
+
+### Escenarios aprobados
+
+| Escenario | Resultado |
+|---|---|
+| Create transaccional | Una familia y un `LocalOutbox`; mismo evento promovido una vez |
+| Dependencia `ItemGroup` ausente | `Error` reintentable; cero filas creadas en Remigio |
+| Recuperacion de dependencia | Evento aplicado al crear el grupo con el mismo `GlobalId` |
+| Update | Nombre actualizado y segundo evento aplicado |
+| Disable | `IsActive=0` en Remigio y tercer evento aplicado |
+| Delete logico | Fila preservada con `IsDeleted=1` y cuarto evento aplicado |
+| Promocion repetida | Cuatro `EventId`, cuatro filas Master y cuatro inbox; sin duplicados |
+| Aislamiento Cañaris | Cero familias y snapshot `0/5/867/0` sin cambios |
+
+### Bloqueo encontrado
+
+La colision terminal preservo correctamente la fila local de Remigio con su
+`GlobalId` original y no realizo adopcion automatica. Sin embargo, el evento
+quedo en `Error` en lugar de `DeadLetter`.
+
+La causa reproducida es un defecto de contrato en
+`ItemFamilySyncApplyRepository.MarkInboxDeadLetterAsync`: el `UPDATE` intenta
+limpiar `LockOwner` y `LockExpiresAt`, columnas que no existen en
+`dbo.SyncInbox`. SQL Server devolvio error 207 y revirtio la transaccion.
+
+Por este defecto la validacion runtime queda **parcial y no aprobada**. La
+correccion debe:
+
+1. retirar las referencias a columnas inexistentes del cierre terminal;
+2. agregar una prueba que confronte el SQL del repositorio con el esquema real
+   de `SyncInbox`;
+3. repetir solamente la colision terminal y comprobar `DeadLetter` en inbox,
+   target y evento Master.
+
+### Limpieza final
+
+- worker y API temporales detenidos;
+- ruta temporal retirada;
+- familias, grupos, outbox, inbox, targets, decisiones y auditorias de fixture
+  retirados;
+- cero residuos con prefijo `I8F841`;
+- Cañaris con snapshot final identico al inicial;
+- configuraciones versionadas y locales sin cambios.
