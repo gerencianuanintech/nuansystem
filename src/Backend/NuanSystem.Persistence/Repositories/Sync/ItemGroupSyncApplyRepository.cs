@@ -71,16 +71,50 @@ public sealed class ItemGroupSyncApplyRepository(ICompanyResolver companyResolve
             if (inbox?.Status == SyncEventStatus.Applied.ToString())
             {
                 await transaction.CommitAsync(cancellationToken);
-                return new ItemGroupSyncApplyResult(true, true, null, "Evento ya aplicado en SyncInbox.");
+                return new ItemGroupSyncApplyResult(true, true, false, null, "Evento ya aplicado en SyncInbox.");
+            }
+
+            if (inbox?.Status == SyncEventStatus.DeadLetter.ToString())
+            {
+                await transaction.CommitAsync(cancellationToken);
+                return new ItemGroupSyncApplyResult(
+                    false,
+                    false,
+                    true,
+                    null,
+                    inbox.LastErrorMessage ?? "Evento ya clasificado como conflicto terminal.",
+                    "SYNC_ITEM_GROUP_CODE_CONFLICT");
             }
 
             var inboxId = inbox?.Id ?? await InsertInboxAsync(connection, transaction, context, cancellationToken);
-            var itemGroupId = await UpsertItemGroupAsync(connection, transaction, payload, operation, markDeleted, cancellationToken);
+            var applyResult = await UpsertItemGroupAsync(
+                connection, transaction, payload, operation, markDeleted, cancellationToken);
+
+            if (applyResult.ResultCode == -2)
+            {
+                const string conflictMessage =
+                    "El codigo de ItemGroup ya pertenece a otro GlobalId en la sucursal; no se realizo adopcion automatica.";
+                await MarkInboxDeadLetterAsync(
+                    connection, transaction, inboxId, conflictMessage, cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return new ItemGroupSyncApplyResult(
+                    false,
+                    false,
+                    true,
+                    null,
+                    conflictMessage,
+                    "SYNC_ITEM_GROUP_CODE_CONFLICT");
+            }
 
             await MarkInboxAppliedAsync(connection, transaction, inboxId, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            return new ItemGroupSyncApplyResult(true, false, itemGroupId, $"Grupo de articulos sincronizado por GlobalId {payload.GlobalId}.");
+            return new ItemGroupSyncApplyResult(
+                true,
+                false,
+                false,
+                applyResult.ItemGroupId,
+                $"Grupo de articulos sincronizado por GlobalId {payload.GlobalId}.");
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -97,7 +131,7 @@ public sealed class ItemGroupSyncApplyRepository(ICompanyResolver companyResolve
         CancellationToken cancellationToken)
     {
         const string sql = """
-SELECT TOP (1) Id, Status
+SELECT TOP (1) Id, Status, LastErrorMessage
 FROM dbo.SyncInbox WITH (UPDLOCK, HOLDLOCK)
 WHERE EventId = @EventId;
 """;
@@ -143,7 +177,7 @@ SELECT CAST(SCOPE_IDENTITY() AS bigint);
             cancellationToken: cancellationToken));
     }
 
-    private static async Task<int> UpsertItemGroupAsync(
+    private static Task<ItemGroupApplyRow> UpsertItemGroupAsync(
         SqlConnection connection,
         IDbTransaction transaction,
         ItemGroupSyncPayload payload,
@@ -154,7 +188,7 @@ SELECT CAST(SCOPE_IDENTITY() AS bigint);
         var isDeleted = markDeleted || operation == SyncOperation.Deleted;
         var isActive = !isDeleted && operation != SyncOperation.Disabled && payload.IsActive;
 
-        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+        return connection.QuerySingleAsync<ItemGroupApplyRow>(new CommandDefinition(
             ApplyProcedure,
             new
             {
@@ -200,6 +234,29 @@ WHERE Id = @InboxId;
             cancellationToken: cancellationToken));
     }
 
+    private static Task MarkInboxDeadLetterAsync(
+        SqlConnection connection,
+        IDbTransaction transaction,
+        long inboxId,
+        string message,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+UPDATE dbo.SyncInbox
+SET Status = N'DeadLetter',
+    ErrorMessage = @Message,
+    LastErrorMessage = @Message,
+    NextRetryAt = NULL
+WHERE Id = @InboxId;
+""";
+
+        return connection.ExecuteAsync(new CommandDefinition(
+            sql,
+            new { InboxId = inboxId, Message = message },
+            transaction,
+            cancellationToken: cancellationToken));
+    }
+
     private static async Task RecordInboxErrorAsync(
         SqlConnection connection,
         SyncEventApplyContext context,
@@ -213,7 +270,7 @@ BEGIN
     SET Status = N'Error', AttemptCount = AttemptCount + 1,
         ErrorMessage = @ErrorMessage, LastErrorMessage = @ErrorMessage,
         NextRetryAt = DATEADD(second, 30, SYSUTCDATETIME())
-    WHERE EventId = @EventId AND Status <> N'Applied';
+    WHERE EventId = @EventId AND Status NOT IN (N'Applied', N'DeadLetter');
 END
 ELSE
 BEGIN
@@ -280,5 +337,12 @@ END;
         return trimmed[..Math.Min(trimmed.Length, maxLength)];
     }
 
-    private sealed record InboxState(long Id, string Status);
+    private sealed record InboxState(long Id, string Status, string? LastErrorMessage);
+
+    private sealed class ItemGroupApplyRow
+    {
+        public int ResultCode { get; set; }
+
+        public int? ItemGroupId { get; set; }
+    }
 }

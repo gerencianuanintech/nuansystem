@@ -29,5 +29,7 @@ public interface IItemGroupSyncApplyRepository
 public sealed record ItemGroupSyncApplyResult(
     bool Applied,
     bool AlreadyApplied,
+    bool TerminalConflict,
     int? ItemGroupId,
-    string Message);
+    string Message,
+    string? ErrorCode = null);

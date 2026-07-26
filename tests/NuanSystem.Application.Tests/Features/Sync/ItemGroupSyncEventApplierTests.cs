@@ -18,7 +18,7 @@ public sealed class ItemGroupSyncEventApplierTests
         var payload = CreatePayload();
         var context = CreateContext(payload, SyncOperation.Created);
         repository.UpsertFromSyncAsync(1002, context, payload, SyncOperation.Created, Arg.Any<CancellationToken>())
-            .Returns(new ItemGroupSyncApplyResult(true, false, 1, "Creado."));
+            .Returns(new ItemGroupSyncApplyResult(true, false, false, 1, "Creado."));
         var applier = new ItemGroupSyncEventApplier(repository);
 
         var result = await applier.ApplyAsync(context, CancellationToken.None);
@@ -39,7 +39,7 @@ public sealed class ItemGroupSyncEventApplierTests
         var payload = CreatePayload(isActive: false);
         var context = CreateContext(payload, SyncOperation.Deleted);
         repository.DisableFromSyncAsync(1002, context, payload, true, Arg.Any<CancellationToken>())
-            .Returns(new ItemGroupSyncApplyResult(true, false, 1, "Eliminado."));
+            .Returns(new ItemGroupSyncApplyResult(true, false, false, 1, "Eliminado."));
         var applier = new ItemGroupSyncEventApplier(repository);
 
         var result = await applier.ApplyAsync(context, CancellationToken.None);
@@ -54,15 +54,46 @@ public sealed class ItemGroupSyncEventApplierTests
     }
 
     [Fact]
+    public async Task CodeCollision_IsTerminalAndNeverAdoptedAutomatically()
+    {
+        var repository = Substitute.For<IItemGroupSyncApplyRepository>();
+        var payload = CreatePayload();
+        var context = CreateContext(payload, SyncOperation.Updated);
+        repository.UpsertFromSyncAsync(
+                1002, context, payload, SyncOperation.Updated, Arg.Any<CancellationToken>())
+            .Returns(new ItemGroupSyncApplyResult(
+                false,
+                false,
+                true,
+                null,
+                "Codigo ocupado por otro GlobalId.",
+                "SYNC_ITEM_GROUP_CODE_CONFLICT"));
+        var applier = new ItemGroupSyncEventApplier(repository);
+
+        var result = await applier.ApplyAsync(context, CancellationToken.None);
+
+        result.Applied.Should().BeFalse();
+        result.Retryable.Should().BeFalse();
+        result.Terminal.Should().BeTrue();
+        result.ErrorCode.Should().Be("SYNC_ITEM_GROUP_CODE_CONFLICT");
+    }
+
+    [Fact]
     public void Persistence_UsesStoredProcedureAndProtectsInboxIdempotency()
     {
         var repository = ReadSourceFile(
             "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync", "ItemGroupSyncApplyRepository.cs");
+        var tenantScript = ReadSourceFile("database", "sql", "129_tenant_item_group_transactional_outbox.sql");
 
         repository.Should().Contain("SP_NA_POST_ITEM_GROUP_SYNC_APPLY");
         repository.Should().Contain("CommandType.StoredProcedure");
         repository.Should().Contain("WHERE EventId = @EventId");
         repository.Should().Contain("Status = N'Applied'");
+        repository.Should().Contain("Status = N'DeadLetter'");
+        tenantScript.Should().Contain("CONVERT(int, -2) AS ResultCode");
+        tenantScript.Should().Contain("@ConflictingItemGroupId IS NOT NULL");
+        tenantScript.Should().NotContain("SET GlobalId = @GlobalId")
+            .And.NotContain("SET @GlobalId =");
     }
 
     private static ItemGroupSyncPayload CreatePayload(bool isActive = true)

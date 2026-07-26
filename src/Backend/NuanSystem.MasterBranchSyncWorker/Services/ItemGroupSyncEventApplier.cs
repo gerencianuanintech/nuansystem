@@ -30,7 +30,11 @@ public sealed class ItemGroupSyncEventApplier(
         var payload = ReadPayload(context.PayloadJson);
         if (payload.GlobalId == Guid.Empty || payload.GlobalId != context.EntityGlobalId)
         {
-            return new SyncEventApplyResult(false, "Payload ItemGroups no coincide con EntityGlobalId.", "SYNC_PAYLOAD_GLOBAL_ID_MISMATCH");
+            return new SyncEventApplyResult(
+                false,
+                "Payload ItemGroups no coincide con EntityGlobalId.",
+                "SYNC_PAYLOAD_GLOBAL_ID_MISMATCH",
+                Terminal: true);
         }
 
         var operation = Enum.Parse<SyncOperation>(context.Operation, ignoreCase: true);
@@ -58,7 +62,11 @@ public sealed class ItemGroupSyncEventApplier(
                 cancellationToken)
         };
 
-        return new SyncEventApplyResult(result.Applied, result.Message);
+        return new SyncEventApplyResult(
+            result.Applied,
+            result.Message,
+            result.ErrorCode,
+            Terminal: result.TerminalConflict);
     }
 
     private static ItemGroupSyncPayload ReadPayload(string payloadJson)
