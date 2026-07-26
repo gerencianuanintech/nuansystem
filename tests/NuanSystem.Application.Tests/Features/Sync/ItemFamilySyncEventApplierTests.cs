@@ -134,7 +134,7 @@ public sealed class ItemFamilySyncEventApplierTests
 
         catalog.Should().Contain("new(ItemFamilies, ItemFamilies")
             .And.Contain("Dependencies: [ItemGroups]")
-            .And.Contain("Dependencies: [ItemGroups, ItemFamilies]");
+            .And.Contain("Dependencies: [ItemGroups, ItemFamilies, UnitOfMeasures]");
         worker.Should().Contain("ItemFamilySyncEventApplier");
         persistence.Should().Contain("ItemFamilyFullEntitySource")
             .And.Contain("ItemFamilySyncApplyRepository");

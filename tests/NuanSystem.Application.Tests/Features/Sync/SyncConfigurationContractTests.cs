@@ -348,9 +348,9 @@ public sealed class SyncConfigurationContractTests
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Geography", "Commands", "CitySyncPublisher.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "FinancialCatalogs", "Catalogs", "Commands", "CurrencySyncPublisher.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "BusinessPartners", "Commands", "BusinessPartnerSyncEventFactory.cs"),
-            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "GeneralInventory", "ItemGroups", "Commands", "ItemGroupSyncPublisher.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "GeneralInventory", "ItemGroups", "Commands", "ItemGroupSyncEventFactory.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Items", "Commands", "ItemSyncEventFactory.cs"),
-            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "GeneralInventory", "Warehouses", "Commands", "WarehouseSyncPublisher.cs"));
+            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "GeneralInventory", "Warehouses", "Commands", "WarehouseSyncEventFactory.cs"));
         var fullSources = ReadSourceFile(
             "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync", "SyncFullEntitySources.cs");
         var appliers = string.Join(Environment.NewLine,
@@ -390,6 +390,46 @@ public sealed class SyncConfigurationContractTests
         appliers.Should().Contain("SyncMasterBranchEntityCodes.ItemGroups");
         appliers.Should().Contain("SyncMasterBranchEntityCodes.Item");
         appliers.Should().Contain("SyncMasterBranchEntityCodes.Warehouse");
+    }
+
+    [Fact]
+    public void IterationEightCatalogIntegration_ShouldRegisterWritersMigrationsDependenciesAndDisabledAppliers()
+    {
+        var applicationRegistration = ReadSourceFile(
+            "src", "Backend", "NuanSystem.Application", "DependencyInjection", "ApplicationServiceRegistration.cs");
+        var tenantInitializer = ReadSourceFile(
+            "src", "Backend", "NuanSystem.Persistence", "Services", "SqlServerTenantDatabaseInitializer.cs");
+        var masterInitializer = ReadSourceFile(
+            "src", "Backend", "NuanSystem.Persistence", "Services", "SqlServerMasterDatabaseInitializer.cs");
+        var developmentSettings = ReadSourceFile(
+            "src", "Backend", "NuanSystem.MasterBranchSyncWorker", "appsettings.Development.json");
+
+        applicationRegistration.Should().Contain("AddScoped<IItemGroupLocalOutboxWriter, ItemGroupLocalOutboxWriter>()")
+            .And.Contain("AddScoped<IWarehouseLocalOutboxWriter, WarehouseLocalOutboxWriter>()");
+        tenantInitializer.Should().Contain("129_tenant_item_group_transactional_outbox.sql")
+            .And.Contain("131_tenant_item_sync_payload_v2.sql")
+            .And.Contain("133_tenant_warehouse_transactional_outbox.sql");
+        masterInitializer.Should().Contain("130_master_item_group_sync_registration.sql")
+            .And.Contain("132_master_item_unit_of_measure_dependency.sql")
+            .And.Contain("134_master_warehouse_sync_registration.sql");
+        developmentSettings.Should().Contain("\"Enabled\": false")
+            .And.Contain("\"SkeletonMode\": true")
+            .And.Contain("\"UnitOfMeasure\"")
+            .And.Contain("\"ItemGroups\"")
+            .And.Contain("\"ItemFamilies\"")
+            .And.Contain("\"Item\"")
+            .And.Contain("\"Warehouse\"");
+
+        var unitOfMeasure = SyncMasterBranchEntityCodes.Find(SyncMasterBranchEntityCodes.UnitOfMeasures);
+        unitOfMeasure.Should().NotBeNull();
+        unitOfMeasure!.SupportsIncremental.Should().BeFalse();
+
+        var item = SyncMasterBranchEntityCodes.Find(SyncMasterBranchEntityCodes.Item);
+        item.Should().NotBeNull();
+        item!.Dependencies.Should().Equal(
+            SyncMasterBranchEntityCodes.ItemGroups,
+            SyncMasterBranchEntityCodes.ItemFamilies,
+            SyncMasterBranchEntityCodes.UnitOfMeasures);
     }
 
     [Fact]

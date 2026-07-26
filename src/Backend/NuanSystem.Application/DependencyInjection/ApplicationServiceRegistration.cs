@@ -15,6 +15,8 @@ using NuanSystem.Application.Features.Operations;
 using NuanSystem.Application.Features.SriDocuments.Services;
 using NuanSystem.Application.Features.BusinessPartners.Commands;
 using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Commands;
+using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Commands;
+using NuanSystem.Application.Features.GeneralInventory.Warehouses.Commands;
 using NuanSystem.Application.Features.Items.Commands;
 using NuanSystem.Application.Features.Sync.Configuration.Services;
 using NuanSystem.Application.Features.Sync.Execution.Services;
@@ -67,6 +69,8 @@ public static class ApplicationServiceRegistration
         services.AddScoped<IBusinessPartnerLocalOutboxWriter, BusinessPartnerLocalOutboxWriter>();
         services.AddScoped<IItemLocalOutboxWriter, ItemLocalOutboxWriter>();
         services.AddScoped<IItemFamilyLocalOutboxWriter, ItemFamilyLocalOutboxWriter>();
+        services.AddScoped<IItemGroupLocalOutboxWriter, ItemGroupLocalOutboxWriter>();
+        services.AddScoped<IWarehouseLocalOutboxWriter, WarehouseLocalOutboxWriter>();
         services.AddSingleton<ISyncDistributionPolicyEvaluator, SyncDistributionPolicyEvaluator>();
         services.AddScoped<ISyncProfileValidationService, SyncProfileValidationService>();
         services.AddScoped<ISyncEntityCatalogService, SyncEntityCatalogService>();

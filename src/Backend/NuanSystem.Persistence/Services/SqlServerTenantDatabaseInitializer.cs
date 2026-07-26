@@ -59,6 +59,9 @@ public sealed class SqlServerTenantDatabaseInitializer(
                       ,"123_tenant_sri_document_monitor_summary_bigint_fix.sql"
                       ,"124_tenant_local_outbox_relay.sql"
                       ,"127_tenant_item_family_master_branch_sync.sql"
+                      ,"129_tenant_item_group_transactional_outbox.sql"
+                      ,"131_tenant_item_sync_payload_v2.sql"
+                      ,"133_tenant_warehouse_transactional_outbox.sql"
                    })
         {
             var scriptPath = FindDatabaseScriptPath(fileName);
