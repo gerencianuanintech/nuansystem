@@ -92,6 +92,18 @@ public sealed class ItemGroupSyncEventApplierTests
         repository.Should().Contain("Status = N'DeadLetter'");
         tenantScript.Should().Contain("CONVERT(int, -2) AS ResultCode");
         tenantScript.Should().Contain("@ConflictingItemGroupId IS NOT NULL");
+        tenantScript.Replace("\r\n", "\n").Should()
+            .Contain(
+                """
+                WHERE Code = @Code
+                  AND (@ItemGroupId IS NULL OR Id <> @ItemGroupId);
+                """)
+            .And.NotContain(
+                """
+                WHERE Code = @Code
+                  AND IsDeleted = 0
+                  AND (@ItemGroupId IS NULL OR Id <> @ItemGroupId);
+                """);
         tenantScript.Should().NotContain("SET GlobalId = @GlobalId")
             .And.NotContain("SET @GlobalId =");
     }

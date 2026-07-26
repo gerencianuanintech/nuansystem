@@ -200,7 +200,6 @@ BEGIN
     SELECT @ConflictingItemGroupId = Id
     FROM dbo.ItemGroups WITH (UPDLOCK, HOLDLOCK)
     WHERE Code = @Code
-      AND IsDeleted = 0
       AND (@ItemGroupId IS NULL OR Id <> @ItemGroupId);
 
     IF @ConflictingItemGroupId IS NOT NULL
