@@ -619,7 +619,8 @@ applicable, with configuration disabled by default; Cañaris remains unchanged.
 Remigio runtime evidence is validated for ItemFamily. The authoritative scope is
 `docs/architecture/MASTER-BRANCH-ITERATION-8-4B-ITEM-FAMILY-BLUEPRINT.md`.
 
-The next catalog wave is code- and SQL-complete but not runtime-validated:
+The catalog wave is code- and SQL-complete. ItemGroup, UnitOfMeasure applier
+behavior and Item payload v2 are runtime-validated from DEMO to Remigio:
 
 ```text
 ItemGroup
@@ -631,6 +632,12 @@ UnitOfMeasure (Full)
   -> terminal collision without adoption
   -> Item v2 inventory/purchase/sales UOM GlobalIds
   -> scripts 131/132
+  -> worker/applier runtime validated
+
+Item v2
+  -> transactional LocalOutbox
+  -> five dependencies resolved only by GlobalId
+  -> CRUD, rollback, idempotency, tombstone and terminal collision validated
 
 Warehouse
   -> transactional LocalOutbox
@@ -639,4 +646,6 @@ Warehouse
   -> scripts 133/134
 ```
 
-All three paths remain disabled and require separate runtime authorization.
+Warehouse remains disabled and requires separate runtime authorization. The
+UnitOfMeasure full-profile administrative launcher remains pending because the
+shared pilot profile has unrelated historical dependency defects.

@@ -315,7 +315,7 @@ fases está desplegada ni validada en runtime:
 | Alcance | Tenant | Master | Estado |
 |---|---|---|---|
 | ItemGroup | 129 | 130 | SQL y piloto runtime DEMO a Remigio validados |
-| Item v2 y UnitOfMeasure | 131 | 132 | Código listo; SQL/runtime pendiente |
+| Item v2 y UnitOfMeasure | 131 | 132 | SQL y piloto runtime DEMO a Remigio validados |
 | Warehouse | 133 | 134 | Código listo; SQL/runtime pendiente |
 
 El orden obligatorio para el piloto es:
@@ -375,3 +375,39 @@ La ruta se cambió temporalmente de `Full` a `Incremental` y la matriz de
 Cañaris se deshabilitó solamente durante el piloto. Ambos valores originales
 fueron restaurados al finalizar. Los fixtures `I8IGRT1*` y toda su trazabilidad
 fueron eliminados. Los respaldos runtime verificados se conservan.
+
+## Piloto runtime UnitOfMeasure e Item payload v2 — 2026-07-27
+
+La validación utilizó DEMO como Matriz y Remigio como única sucursal destino.
+Se verificaron respaldos `COPY_ONLY WITH CHECKSUM` de Master, DEMO y Remigio
+antes de crear fixtures. Cañaris permaneció en solo lectura y recibió cero
+targets.
+
+Respaldos conservados:
+
+- `NuanSystem_Master-item-uom-v2-runtime-20260727-000256.bak`;
+- `NuanSystem_DEMO-item-uom-v2-runtime-20260727-000256.bak`;
+- `NuanSystem_DEMO_REMIGIO-item-uom-v2-runtime-20260727-000256.bak`.
+
+UnitOfMeasure aprobó create/upsert, update, disable, tombstone, reproceso del
+mismo `EventId` y colisión terminal sin adopción por código. Como el perfil
+piloto completo contiene dependencias históricas que impiden una ejecución
+administrativa Full aislada, los eventos UOM identificables se publicaron
+directamente en `SyncOutbox` con un único target explícito a Remigio; este
+piloto valida el worker/applier, no declara validado el launcher Full del
+perfil completo.
+
+Item v2 aprobó rollback atómico del agregado y `LocalOutbox`, create, update,
+disable, eliminación lógica, promoción repetida del mismo evento, aplicación
+en Remigio y colisión terminal. La fila aplicada resolvió por `GlobalId` y
+conservó separadamente ItemGroup, ItemFamily y las tres unidades de medida.
+
+Durante el primer create se detectaron perfiles históricos `SYNC-*` con rutas
+Item activas hacia `SYNC-WH-BRANCH-TEST`. La corrida se detuvo, el fixture se
+retiró y esas matrices se deshabilitaron temporalmente antes de repetir. El
+segundo recorrido tuvo exclusivamente Remigio como target. Todas las rutas,
+incluidas las históricas, fueron restauradas exactamente al finalizar.
+
+Los fixtures `I8IURT1`, trazas Inbox/Outbox y el trigger temporal de rollback
+fueron eliminados. El snapshot final confirmó cero residuos, cero procesos,
+perfil Item/UOM nuevamente Full y ausencia de datos de prueba en Cañaris.

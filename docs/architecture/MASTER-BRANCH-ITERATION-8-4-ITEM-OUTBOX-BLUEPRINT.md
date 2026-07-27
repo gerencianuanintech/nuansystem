@@ -187,6 +187,34 @@ Detener la fase cuando:
 - un fixture no puede identificarse y retirarse con seguridad;
 - se inicia SAP o SRI.
 
+## Evidencia runtime payload v2 — 2026-07-27
+
+El alcance posterior 8.4B validó la aplicación real DEMO a Remigio del payload
+Item v2. La sucursal resolvió exclusivamente por `GlobalId`:
+
+- `ItemGroupGlobalId`;
+- `ItemFamilyGlobalId`;
+- `InventoryUnitOfMeasureGlobalId`;
+- `PurchaseUnitOfMeasureGlobalId`;
+- `SalesUnitOfMeasureGlobalId`.
+
+Create, update, disable y delete lógico conservaron esas cinco relaciones. El
+rollback forzado de `LocalOutbox` dejó cero Item y cero evento. La promoción
+repetida mantuvo un solo evento Master. El tombstone preservó las relaciones
+locales y la colisión de código terminó en DeadLetter sin adopción.
+
+UnitOfMeasure fue validado antes de Item mediante eventos identificables con
+target explícito únicamente a Remigio: upsert, update, disable, delete,
+idempotencia y conflicto terminal. El launcher Full administrativo del perfil
+completo permanece fuera de esta evidencia porque el perfil piloto contiene
+dependencias históricas no relacionadas que impiden validarlo de forma
+aislada.
+
+Se detectaron y aislaron temporalmente rutas Item de perfiles `SYNC-*` hacia
+una sucursal técnica. Cero eventos del recorrido aprobado fueron enviados a
+Cañaris o a esa sucursal. La configuración original y todos los fixtures se
+restauraron o eliminaron al cerrar.
+
 ## Criterio de salida documental
 
 La implementación 8.4A puede comenzar cuando el propietario apruebe

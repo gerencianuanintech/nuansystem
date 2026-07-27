@@ -305,9 +305,9 @@ These are related but non-interchangeable pipelines. Route through `$nuansystem-
 | BusinessPartner | Transactional LocalOutbox | None | Integrated | Validated |
 | Item 8.4A | Transactional LocalOutbox | Limited payload | Integrated | Validated in ObserveOnly |
 | ItemFamily | Transactional LocalOutbox | ItemGroup | Integrated | Validated DEMO to Remigio |
-| ItemGroup | Transactional LocalOutbox | None | Scripts 129/130 deployed | Runtime pending |
-| Item v2 | Existing transactional LocalOutbox | ItemGroup, ItemFamily, three UOM identities | Scripts 131/132 deployed | Runtime pending |
-| UnitOfMeasure | Full source | None | Script 132 deployed | Runtime pending |
+| ItemGroup | Transactional LocalOutbox | None | Scripts 129/130 deployed | Validated DEMO to Remigio |
+| Item v2 | Existing transactional LocalOutbox | ItemGroup, ItemFamily, three UOM identities | Scripts 131/132 deployed | Validated DEMO to Remigio |
+| UnitOfMeasure | Full source; controlled applier events used by the pilot | None | Script 132 deployed | Worker/applier validated DEMO to Remigio; full-profile launcher pending |
 | Warehouse | Transactional LocalOutbox | None | Scripts 133/134 deployed | Runtime pending |
 
 For every row marked pending, the relay and worker remain disabled. Code-ready

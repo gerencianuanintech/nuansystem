@@ -25,8 +25,13 @@ applicable, but Warehouse remains runtime-unvalidated.
 Item payload v2 carries `ItemGroupGlobalId`, `ItemFamilyGlobalId` and separate
 inventory, purchase and sales UOM `GlobalId` values. `UnitOfMeasure` remains a
 Full source with terminal no-adoption behavior. Scripts `131`/`132` are
-deployed idempotently in Master, DEMO and Remigio as applicable, but remain
-runtime-unvalidated. All worker and relay paths remain disabled.
+deployed idempotently in Master, DEMO and Remigio as applicable. The
+DEMO-to-Remigio pilot validated the UnitOfMeasure worker/applier contract and
+Item v2 CRUD, rollback, idempotent promotion, five-GlobalId resolution,
+tombstone and terminal collision. The shared profile's Full administrative
+launcher remains pending because unrelated historical dependencies prevent an
+isolated execution. All worker and relay paths remain disabled after the
+pilot.
 
 `BusinessPartnerPaymentTerms` is operative through `PaymentTermFullEntitySource`, `ReferenceCatalogSyncEventApplier`, and `ReferenceCatalogSyncApplyRepository`. Its approved upstream source is SAP B1 `PaymentTermsTypes`; read `docs/architecture/SAP-PAYMENT-TERMS-SYNC.md` and the SAP synchronization skill before changing that pipeline. Tenant script `112` and Master scripts `113`/`114` install its contracts but do not activate profiles or workers.
 
