@@ -171,6 +171,15 @@ public sealed class SriTxtFileParser : ISriTxtFileParser
         ISet<string> identities)
     {
         var rowHash = SHA256.HashData(encoding.GetBytes(line));
+        if (line.Any(character => char.IsControl(character) && character != '\t'))
+        {
+            return InvalidRow(
+                lineNumber,
+                rowHash,
+                "SRI_TXT_CONTROL_CHARACTER_INVALID",
+                "La fila contiene caracteres de control no permitidos.");
+        }
+
         var columns = line.Split('\t', StringSplitOptions.None);
         if (columns.Length != ExpectedHeader.Length)
         {
@@ -189,7 +198,7 @@ public sealed class SriTxtFileParser : ISriTxtFileParser
         var accessKey = columns[4];
         var accessKeyHash = string.IsNullOrEmpty(accessKey)
             ? null
-            : SHA256.HashData(Encoding.ASCII.GetBytes(accessKey));
+            : SHA256.HashData(Encoding.UTF8.GetBytes(accessKey));
         var maskedAccessKey = MaskAccessKey(accessKey);
         var documentTypeCode = ResolveDocumentType(columns[2]);
         var environment = ResolveEnvironment(accessKey);

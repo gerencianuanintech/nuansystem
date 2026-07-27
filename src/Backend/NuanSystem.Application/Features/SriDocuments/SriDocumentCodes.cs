@@ -32,6 +32,7 @@ public static class SriDocumentTypeCodes
 
 public static class SriDocumentQueueStatusCodes
 {
+    public const string Staged = "Staged";
     public const string Pending = "Pending";
     public const string Querying = "Querying";
     public const string RetryScheduled = "RetryScheduled";
@@ -40,9 +41,23 @@ public static class SriDocumentQueueStatusCodes
     public const string Failed = "Failed";
     public const string DeadLetter = "DeadLetter";
     public const string Cancelled = "Cancelled";
-    public static readonly IReadOnlyCollection<string> All = [Pending, Querying, RetryScheduled, Authorized, NotFound, Failed, DeadLetter, Cancelled];
+    public static readonly IReadOnlyCollection<string> All = [Staged, Pending, Querying, RetryScheduled, Authorized, NotFound, Failed, DeadLetter, Cancelled];
     public static bool IsValid(string? value) => string.IsNullOrWhiteSpace(value) || All.Contains(value.Trim(), StringComparer.OrdinalIgnoreCase);
     public static string? NormalizeOptional(string? value) => string.IsNullOrWhiteSpace(value) ? null : All.Single(item => item.Equals(value.Trim(), StringComparison.OrdinalIgnoreCase));
+    public static string GetDisplayName(string? value) =>
+        value switch
+        {
+            Staged => "Preparado",
+            Pending => "Pendiente de consulta",
+            Querying => "Consultando",
+            RetryScheduled => "Reintento programado",
+            Authorized => "Autorizado",
+            NotFound => "No encontrado",
+            Failed => "Fallido",
+            DeadLetter => "Requiere intervencion",
+            Cancelled => "Cancelado",
+            _ => value ?? string.Empty
+        };
 }
 
 public static class SriAccessKey
