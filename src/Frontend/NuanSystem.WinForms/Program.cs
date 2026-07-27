@@ -50,6 +50,7 @@ using NuanSystem.WinForms.Forms.TaxCatalogs.RetentionTypes;
 using NuanSystem.WinForms.Forms.TaxCatalogs.TaxRegimes;
 using NuanSystem.WinForms.Forms.TaxCatalogs.TaxSupports;
 using NuanSystem.WinForms.Forms.TaxCatalogs.TaxpayerTypes;
+using NuanSystem.WinForms.Forms.TaxCatalogs.Taxes;
 using NuanSystem.WinForms.Forms.Geography.Cities;
 using NuanSystem.WinForms.Forms.Geography.Countries;
 using NuanSystem.WinForms.Forms.Geography.Provinces;
@@ -89,6 +90,7 @@ using NuanSystem.WinForms.Services.GridColumnSettings;
 using NuanSystem.WinForms.Services.FinancialCatalogs.Catalogs;
 using NuanSystem.WinForms.Services.FinancialCatalogs.PriceLists;
 using NuanSystem.WinForms.Services.TaxCatalogs.Catalogs;
+using NuanSystem.WinForms.Services.TaxCatalogs.Taxes;
 using NuanSystem.WinForms.Services.Geography;
 using NuanSystem.WinForms.Services.GeneralInventory.Catalogs;
 using NuanSystem.WinForms.Services.GeneralSupplier.Catalogs;
@@ -113,6 +115,7 @@ using NuanSystem.WinForms.ViewModels.Accounting.ChartOfAccounts;
 using NuanSystem.WinForms.ViewModels.Auth;
 using NuanSystem.WinForms.ViewModels.BusinessPartners;
 using NuanSystem.WinForms.ViewModels.Carriers;
+using NuanSystem.WinForms.ViewModels.TaxCatalogs.Taxes;
 using NuanSystem.WinForms.ViewModels.Companies;
 using NuanSystem.WinForms.ViewModels.ConfigurationCompanies;
 using NuanSystem.WinForms.ViewModels.ConfigurationSettings;
@@ -246,6 +249,7 @@ internal sealed class FrontendComposition : IDisposable
     private readonly FinancialCatalogClient financialCatalogClient;
     private readonly PriceListClient priceListClient;
     private readonly TaxCatalogClient taxCatalogClient;
+    private readonly TaxClient taxClient;
     private readonly GeographyClient geographyClient;
     private readonly GeneralSupplierCatalogClient generalSupplierCatalogClient;
     private readonly GeneralInventoryCatalogClient generalInventoryCatalogClient;
@@ -296,6 +300,7 @@ internal sealed class FrontendComposition : IDisposable
         financialCatalogClient = new FinancialCatalogClient(apiClient);
         priceListClient = new PriceListClient(apiClient);
         taxCatalogClient = new TaxCatalogClient(apiClient);
+        taxClient = new TaxClient(apiClient);
         geographyClient = new GeographyClient(apiClient);
         generalSupplierCatalogClient = new GeneralSupplierCatalogClient(apiClient);
         generalInventoryCatalogClient = new GeneralInventoryCatalogClient(apiClient);
@@ -386,6 +391,7 @@ internal sealed class FrontendComposition : IDisposable
             CreateCostCentersForm,
             CreateProjectsForm,
             CreateTaxRegimesForm,
+            CreateTaxesForm,
             CreateTaxpayerTypesForm,
             CreateRetentionTypesForm,
             CreateRetentionConceptsForm,
@@ -472,6 +478,7 @@ internal sealed class FrontendComposition : IDisposable
             "cost-centers" => CreateCostCentersForm(),
             "projects" => CreateProjectsForm(),
             "tax-regimes" => CreateTaxRegimesForm(),
+            "taxes" => CreateTaxesForm(),
             "taxpayer-types" => CreateTaxpayerTypesForm(),
             "retention-types" => CreateRetentionTypesForm(),
             "retention-concepts" => CreateRetentionConceptsForm(),
@@ -574,6 +581,11 @@ internal sealed class FrontendComposition : IDisposable
             new PriceListsViewModel(priceListClient, financialCatalogClient),
             session,
             gridColumnSettingsClient);
+    }
+
+    public TaxesForm CreateTaxesForm()
+    {
+        return new TaxesForm(new TaxesViewModel(taxClient, auditClient), session, gridColumnSettingsClient);
     }
 
     public PurchasingAgentsForm CreatePurchasingAgentsForm()

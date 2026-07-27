@@ -42,6 +42,7 @@ using NuanSystem.WinForms.Forms.TaxCatalogs.RetentionConcepts;
 using NuanSystem.WinForms.Forms.TaxCatalogs.TaxRegimes;
 using NuanSystem.WinForms.Forms.TaxCatalogs.TaxSupports;
 using NuanSystem.WinForms.Forms.TaxCatalogs.TaxpayerTypes;
+using NuanSystem.WinForms.Forms.TaxCatalogs.Taxes;
 using NuanSystem.WinForms.Forms.Geography.Cities;
 using NuanSystem.WinForms.Forms.Geography.Countries;
 using NuanSystem.WinForms.Forms.Geography.Provinces;
@@ -112,6 +113,7 @@ public sealed class MainForm : RibbonForm
     private readonly Func<CostCentersForm> costCentersFormFactory;
     private readonly Func<ProjectsForm> projectsFormFactory;
     private readonly Func<TaxRegimesForm> taxRegimesFormFactory;
+    private readonly Func<TaxesForm> taxesFormFactory;
     private readonly Func<TaxpayerTypesForm> taxpayerTypesFormFactory;
     private readonly Func<RetentionTypesForm> retentionTypesFormFactory;
     private readonly Func<RetentionConceptsForm> retentionConceptsFormFactory;
@@ -204,6 +206,7 @@ public sealed class MainForm : RibbonForm
         costCentersFormFactory = null!;
         projectsFormFactory = null!;
         taxRegimesFormFactory = null!;
+        taxesFormFactory = null!;
         taxpayerTypesFormFactory = null!;
         retentionTypesFormFactory = null!;
         retentionConceptsFormFactory = null!;
@@ -268,6 +271,7 @@ public sealed class MainForm : RibbonForm
         Func<CostCentersForm> costCentersFormFactory,
         Func<ProjectsForm> projectsFormFactory,
         Func<TaxRegimesForm> taxRegimesFormFactory,
+        Func<TaxesForm> taxesFormFactory,
         Func<TaxpayerTypesForm> taxpayerTypesFormFactory,
         Func<RetentionTypesForm> retentionTypesFormFactory,
         Func<RetentionConceptsForm> retentionConceptsFormFactory,
@@ -329,6 +333,7 @@ public sealed class MainForm : RibbonForm
         this.costCentersFormFactory = costCentersFormFactory;
         this.projectsFormFactory = projectsFormFactory;
         this.taxRegimesFormFactory = taxRegimesFormFactory;
+        this.taxesFormFactory = taxesFormFactory;
         this.taxpayerTypesFormFactory = taxpayerTypesFormFactory;
         this.retentionTypesFormFactory = retentionTypesFormFactory;
         this.retentionConceptsFormFactory = retentionConceptsFormFactory;
@@ -1803,6 +1808,7 @@ public sealed class MainForm : RibbonForm
             "cost-centers" => costCentersFormFactory(),
             "projects" => projectsFormFactory(),
             "tax-regimes" => taxRegimesFormFactory(),
+            "taxes" => taxesFormFactory(),
             "taxpayer-types" => taxpayerTypesFormFactory(),
             "retention-types" => retentionTypesFormFactory(),
             "retention-concepts" => retentionConceptsFormFactory(),
