@@ -24,6 +24,14 @@ DEMO-to-Remigio runtime pilot are validated. Warehouse preserves branch-local
 fields, rejects code adoption and restores all temporary routing after the
 pilot.
 
+`Currencies` now uses a transactional `LocalOutbox` producer and a terminal
+no-adoption branch applier. It preserves `ExternalSystem` and `ExternalCode`,
+does not add `SapCode`, and does not call SAP. Tenant script `136` and Master
+script `137` were deployed twice and validated in Master, DEMO, Remigio and
+Cañaris as applicable, disabled by default. The runtime pilot remains pending;
+read
+`docs/architecture/MASTER-BRANCH-ITERATION-8-5-CURRENCY-BLUEPRINT.md`.
+
 Item payload v2 carries `ItemGroupGlobalId`, `ItemFamilyGlobalId` and separate
 inventory, purchase and sales UOM `GlobalId` values. `UnitOfMeasure` remains a
 Full source with terminal no-adoption behavior. Scripts `131`/`132` are
@@ -48,5 +56,5 @@ Supplier groups/classes, economic activities, zones, and supply methods have no 
 - monitor/manual actions: `Application/Features/Sync/Queries` and `Commands`
 - worker/appliers: `NuanSystem.MasterBranchSyncWorker`
 - API: `SyncEndpoints.cs`, `SyncConfigurationEndpoints.cs`, `SyncEntityDefinitionEndpoints.cs`
-- SQL: `064` through `105`, plus forward contracts `112` through `135`;
+- SQL: `064` through `105`, plus forward contracts `112` through `137`;
   inspect the exact entity blueprint before deployment.

@@ -444,18 +444,20 @@ y 524 pruebas aprobadas, 5 diagnósticas omitidas y 0 fallidas.
 
 ## Discovery Currency 8.5 — 2026-07-27
 
-Currency fue seleccionada como siguiente entidad porque ya tiene publicador
+Currency fue seleccionada como siguiente entidad porque ya tenía productor
 incremental, fuente Full, aplicador e identidad `GlobalId`, y es dependencia
-obligatoria de PriceList. El discovery detectó dos contratos que deben
-corregirse antes de un piloto:
+obligatoria de PriceList. El discovery detectó dos contratos que fueron
+corregidos antes del piloto:
 
 - el CRUD guarda en tenant y luego publica directamente a Master;
 - el aplicador adopta por `Code` cuando no encuentra `GlobalId`.
 
-La propuesta migra solo `currencies` a `LocalOutbox` transaccional, conserva
-sin cambios los demás FinancialCatalogs y reemplaza la adopción por conflicto
-terminal con reserva de tombstone. Los scripts propuestos son 136 tenant y 137
-Master, deshabilitados por defecto. No fueron creados ni ejecutados.
+La implementación migra solo `currencies` a `LocalOutbox` transaccional,
+conserva sin cambios los demás FinancialCatalogs y reemplaza la adopción por
+conflicto terminal con reserva de tombstone. Los scripts 136 tenant y 137
+Master fueron ejecutados dos veces y validados en Master, DEMO, Remigio y
+Cañaris según corresponda. Permanecen deshabilitados por defecto. El runtime
+está pendiente.
 
-El detalle, decisiones pendientes y matriz futura están en
+El detalle, decisiones aprobadas, evidencia SQL y matriz runtime están en
 [MASTER-BRANCH-ITERATION-8-5-CURRENCY-BLUEPRINT.md](../architecture/MASTER-BRANCH-ITERATION-8-5-CURRENCY-BLUEPRINT.md).

@@ -4,8 +4,8 @@
 
 - **Fecha de discovery:** 2026-07-27.
 - **Rama:** `refactor/codex-skills-v8-5-currency`.
-- **Estado:** implementación y pruebas automáticas aprobadas; SQL/runtime
-  requieren autorización independiente.
+- **Estado:** implementación, pruebas automáticas y despliegue SQL aprobados;
+  runtime requiere autorización independiente.
 - **Predecesores:** BusinessPartner 8.2/8.3, ItemGroup, ItemFamily,
   UnitOfMeasure, Item payload v2 y Warehouse 8.4C validados.
 - **Siguiente dependencia propuesta:** PriceList, únicamente después de validar
@@ -285,12 +285,31 @@ Mismo EventId con identidad/contenido incompatible
 - Segundo EventId idempotente según contrato.
 - SQL 136/137 y sus inicializadores permanecen alineados.
 
-### SQL/runtime, sujeto a autorización independiente
+### SQL — validado 2026-07-27
 
-- respaldos verificados de Master, DEMO, Remigio y Cañaris;
-- scripts 136/137 ejecutados dos veces;
-- una sola versión y cero objetos duplicados;
-- workers deshabilitados durante despliegue;
+- respaldos `COPY_ONLY + CHECKSUM` verificados mediante `RESTORE VERIFYONLY`
+  para Master, DEMO, Remigio y Cañaris;
+- script 137 ejecutado dos veces en Master;
+- script 136 ejecutado dos veces en DEMO, Remigio y Cañaris;
+- una sola versión 137 en Master y una sola versión 136 en cada tenant;
+- procedimiento de aplicación, búsqueda por código e índice único no filtrado
+  presentes en los tres tenants;
+- dependencia PriceList → Currencies conservada;
+- cero configuraciones y ownership Currency habilitados;
+- cero códigos duplicados y conteos de Currency, LocalOutbox, SyncInbox y
+  SyncAudit sin cambios;
+- workers y relay deshabilitados durante todo el despliegue;
+- cero llamadas SAP/SRI.
+
+Respaldos verificados:
+
+- `NuanSystem_Master-currency-85-20260727-115232.bak`
+- `NuanSystem_DEMO-currency-85-20260727-115232.bak`
+- `NuanSystem_DEMO_REMIGIO-currency-85-20260727-115232.bak`
+- `NuanSystem_DEMO_CANARIS-currency-85-20260727-115232.bak`
+
+### Runtime — sujeto a autorización independiente
+
 - fixtures inequívocos;
 - create, update, disable y delete lógico;
 - rollback atómico;
@@ -339,5 +358,5 @@ Mismo EventId con identidad/contenido incompatible
 5. `test(currency): verify transactional publishing and apply conflicts`
 6. `docs(sync): record Currency SQL and runtime validation`
 
-La implementación automática no ejecuta SQL, no activa workers y no modifica
-datos. El despliegue y runtime conservan un gate de autorización separado.
+El despliegue SQL no activó workers, relay, perfiles ni ownership. El piloto
+runtime conserva un gate de autorización separado.
