@@ -224,12 +224,14 @@ manteniendo perfiles y rutas deshabilitados por defecto.
 
 ## Implementación estática
 
-La implementación quedó completada en cuatro commits lineales:
+La implementación quedó completada en commits lineales y revisables:
 
 - `723212f1` — discovery y decisiones;
 - `1d470bbf` — CRUD transaccional, LocalOutbox y aplicador dedicado;
 - `bf0de76f` — scripts tenant 144 y Master 145;
-- `a43a9517` — WinForms independiente y pruebas.
+- `a43a9517` — WinForms independiente y pruebas;
+- `6f628640` — evidencia documental;
+- `f21fad3` — validadores y preflight Master reforzado.
 
 La compilación completa finalizó con cero errores y cero advertencias. Las
 pruebas focalizadas Tax aprobaron 7/7 y la suite completa 546/546 ejecutadas,
