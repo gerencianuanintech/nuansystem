@@ -490,3 +490,23 @@ La repetición de un `EventId` ya promovido no incrementó SyncOutbox, targets n
 SyncInbox. Todos los fixtures `PL86*` se eliminaron, PriceList volvió a `Full`,
 las dos rutas originales quedaron activas y no permanecieron procesos,
 ejecuciones o eventos reclamables. SAP y SRI no fueron iniciados.
+
+## Plan de Fase 8.7 — Tax
+
+Tax fue seleccionado después de PriceList porque es una dependencia anterior
+de Item y PurchaseOrder y conserva dos contratos incompatibles con Iteración
+8: no tiene CRUD incremental transaccional y el aplicador genérico puede
+adoptar por código.
+
+Las decisiones funcionales, frontend, payload, scripts reservados `144/145`,
+gates SQL y matriz runtime se definen en
+[MASTER-BRANCH-ITERATION-8-7-TAX-BLUEPRINT.md](../architecture/MASTER-BRANCH-ITERATION-8-7-TAX-BLUEPRINT.md).
+
+Estado:
+
+- discovery: aprobado;
+- decisiones del propietario: aprobadas;
+- implementación: en curso;
+- SQL real: no autorizado;
+- runtime: no autorizado;
+- SAP y SRI: fuera de alcance.
