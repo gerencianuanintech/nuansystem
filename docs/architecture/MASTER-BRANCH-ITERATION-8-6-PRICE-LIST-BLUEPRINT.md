@@ -2,7 +2,7 @@
 
 ## 1. Estado
 
-- **Tipo:** discovery y blueprint; sin implementación.
+- **Tipo:** contrato aprobado e implementación en curso.
 - **Rama:** `refactor/codex-skills-v8-6-price-list`.
 - **Base:** `master` en `a5ce921ff478f594dc35f6d960ac48e843f4cee6`.
 - **Dominio:** Pricing / FinancialCatalogs / PriceList.
@@ -11,8 +11,9 @@
 - **SQL ejecutado:** no.
 - **Workers o relay activados:** no.
 - **Llamadas SAP/SRI:** no.
-- **Aptitud para implementación:** bloqueada hasta aprobar las decisiones del
-  apartado 16.
+- **Aptitud para implementación:** aprobada con las nueve decisiones del
+  apartado 16. El despliegue SQL y la validación runtime conservan gates de
+  autorización independientes.
 
 ## 2. Resultado del discovery
 
@@ -145,9 +146,8 @@ No se reutilizan como verdad de PriceList:
 
 ### Confidence
 
-Alta para el patrón transaccional y el límite de integración. Media para las
-reglas `IsDefault`, eliminación con referencias y dependencia histórica con
-Item, porque requieren decisión del propietario.
+Alta para el patrón transaccional, el límite de integración y las reglas de
+negocio aprobadas.
 
 ## 4. Contrato funcional actual
 
@@ -290,10 +290,12 @@ BusinessPartnerPaymentTerms y otros contratos compartidos.
 
 ## 8. SQL previsto, no ejecutado
 
-Numeración estimada después de `137`:
+La numeración `138`/`139` fue reservada por el módulo SRI TXT desarrollado en
+una rama independiente. Para evitar una colisión al integrar ambas líneas,
+PriceList utilizará:
 
-- `138_tenant_price_list_transactional_outbox.sql`;
-- `139_master_price_list_transactional_registration.sql`.
+- `140_tenant_price_list_transactional_outbox.sql`;
+- `141_master_price_list_transactional_registration.sql`.
 
 El script tenant deberá:
 
@@ -403,8 +405,8 @@ referencias activas queda pendiente de aprobación.
 | Application | cambiar a contratos/handlers dedicados y LocalOutbox |
 | Persistence | repositorio PriceList dedicado o extensión aislada |
 | API | endpoints dedicados bajo la ruta existente |
-| Database tenant | migración 138 |
-| Database Master | migración 139 |
+| Database tenant | migración 140 |
+| Database Master | migración 141 |
 | Frontend services | modelos y cliente PriceList dedicados |
 | Frontend forms/Designer | completar campos y controles corporativos |
 | Security/menu | verificar sin nuevos permisos |
@@ -471,33 +473,28 @@ Con fixtures identificables:
 9. La pantalla actual duplica botones del formulario base y no usa el lookup
    corporativo de Currency.
 
-## 16. Decisiones pendientes del propietario
+## 16. Decisiones aprobadas por el propietario
 
-1. **Campos CRUD:** aprobar que el formulario administre
-   `Code`, `Name`, `Description`, `Currency`, `AppliesTo`, `IsDefault` e
-   `IsActive`.
-2. **Regla de predeterminada:** elegir:
-   - una sola PriceList predeterminada por tenant; o
-   - una predeterminada efectiva para Sales y otra para Purchasing, donde
-     `Both` ocupa ambos ámbitos.
-   Se recomienda la segunda opción.
-3. **Moneda:** aprobar mantener `CurrencyCode` local, transportar
-   `CurrencyGlobalId` y no agregar `CurrencyId` en esta fase.
-4. **Dependencia Item:** aprobar retirar en una migración forward la dependencia
-   histórica `PriceList -> Item`; conservar solo `PriceList -> Currencies`.
-5. **Colisión:** aprobar conflicto terminal sin adopción automática para código
-   activo o tombstone.
-6. **Eliminación:** decidir si se bloquea cuando existen BusinessPartners u
-   operaciones activas que la referencian, o si basta eliminación lógica que
-   preserve referencias históricas. Se recomienda bloquear cuando existan
-   referencias operativas activas.
-7. **Referencias externas:** aprobar preservar
-   `ExternalSystem`/`ExternalCode`/`SapCode` sin editarlos en UI y sin llamar
+1. **Campos CRUD:** el formulario administra `Code`, `Name`, `Description`,
+   `Currency`, `AppliesTo`, `IsDefault` e `IsActive`.
+2. **Regla de predeterminada:** existe una sola lista predeterminada efectiva
+   para Sales y una para Purchasing. Una lista `Both` ocupa ambos ámbitos.
+3. **Moneda:** se mantiene `CurrencyCode` local, se transporta
+   `CurrencyGlobalId` y no se agrega `CurrencyId`.
+4. **Dependencia Item:** se retira mediante migración forward la dependencia
+   histórica `PriceList -> Item`; se conserva exclusivamente
+   `PriceList -> Currencies`.
+5. **Colisión:** un código activo o tombstone perteneciente a otro `GlobalId`
+   produce conflicto terminal sin adopción automática.
+6. **Eliminación:** se bloquea cuando existen referencias operativas activas;
+   en caso contrario se ejecuta eliminación lógica y se preservan referencias
+   históricas.
+7. **Referencias externas:** se preservan
+   `ExternalSystem`/`ExternalCode`/`SapCode`, no se editan en UI y no se llama
    SAP.
-8. **Pilotos:** confirmar DEMO como Matriz y Remigio más Cañaris como
-   sucursales piloto.
-9. **Modo:** aprobar Incremental para CRUD y conservar Full para reconciliación
-   manual, ambos deshabilitados por defecto.
+8. **Pilotos:** DEMO es Matriz; Remigio y Cañaris son sucursales piloto.
+9. **Modo:** Incremental para CRUD y Full para reconciliación manual; ambos
+   permanecen deshabilitados por defecto.
 
 ## 17. Plan de implementación propuesto
 
