@@ -4,8 +4,9 @@
 
 El núcleo `TXT -> Staged -> Pending` ya fue validado en runtime bajo autorización separada. Este plan
 se amplía exclusivamente para el CRUD paginado y el formulario WinForms de importaciones. No se deben
-repetir los scripts `138`/`139` ni sus pruebas SQL acreditadas. Las nuevas migraciones `140`/`141`,
+repetir los scripts `138`/`139` ni sus pruebas SQL acreditadas. Las nuevas migraciones `142`/`143`,
 la API CRUD y WinForms no pueden ejecutarse sin otra autorización. SAP, worker y llamadas SRI siguen excluidos.
+Los scripts `140`/`141` pertenecen exclusivamente a PriceList 8.6.
 
 ## Evidencia automática de implementación
 
@@ -13,12 +14,14 @@ Validación final del CRUD, sin ejecutar SQL ni runtime:
 
 - `git diff --check`: correcto.
 - `dotnet build NuanSystem.sln --no-restore -v minimal`: correcto, 0 errores y 0 advertencias.
-- pruebas focalizadas SRI TXT: 29 aprobadas.
-- pruebas SRI completas: 88 aprobadas.
-- suite completa: 559 aprobadas, 5 omitidas por requerir infraestructura explícita, 0 fallidas.
+- pruebas focalizadas SRI TXT: 30 aprobadas.
+- pruebas SRI completas: 89 aprobadas.
+- suite completa: 569 aprobadas, 5 omitidas por requerir infraestructura explícita, 0 fallidas.
 - los contratos cubren permisos VIEW/UPLOAD/ENQUEUE separados, paginación de servidor, filtros,
   deserialización, saneamiento de DTO, conexión tenant y estructura corporativa/Designer del formulario.
-- los scripts `140`/`141` fueron revisados estáticamente y no se ejecutaron.
+- los scripts `142`/`143` fueron revisados estáticamente y no se ejecutaron.
+- la secuencia `138`–`143` tiene un único propietario y una única versión por migración:
+  SRI núcleo `138`/`139`, PriceList `140`/`141` y SRI CRUD `142`/`143`.
 
 Evidencia previa del núcleo, que no se repitió:
 
@@ -28,7 +31,7 @@ Evidencia previa del núcleo, que no se repitió:
 
 La evidencia histórica del núcleo incluye despliegue idempotente de `138`/`139`, concurrencia SQL,
 rollback, permisos con JWT, multipart y aislamiento tenant. Esa evidencia se conserva y no se repite.
-No validado todavía: scripts `140`/`141`, consultas CRUD reales, navegación WinForms y Designer del
+No validado todavía: scripts `142`/`143`, consultas CRUD reales, navegación WinForms y Designer del
 nuevo formulario.
 
 ## Principios de evidencia
@@ -139,8 +142,8 @@ nuevo formulario.
 
 ### Fase E — CRUD API y WinForms
 
-- Ejecutar `140` dos veces solo en tenants autorizados y `141` dos veces solo en Master.
-- Renovar JWT después de `141` y probar perfiles VIEW, UPLOAD y ENQUEUE por separado.
+- Ejecutar `142` dos veces solo en tenants autorizados y `143` dos veces solo en Master.
+- Renovar JWT después de `143` y probar perfiles VIEW, UPLOAD y ENQUEUE por separado.
 - Validar listado, detalle y filas con límites 1, página intermedia y página vacía.
 - Repetir filtros por fecha, estado, archivo y ambiente y contrastar totales con SQL saneado.
 - Probar aislamiento cruzado entre DEMO, REMIGIO y CANARIS sin revelar datos.
@@ -173,7 +176,7 @@ nuevo formulario.
 2. Retención indefinida provisional y minimización de claves aprobadas.
 3. Modelo SQL y política de concurrencia aprobados para implementación; ejecución SQL requiere autorización independiente.
 4. Permisos aprobados sin grants automáticos a roles existentes.
-5. WinForms, FormKey, menú y UX aprobados para implementación; ejecución de `140`/`141` y runtime diferidos.
+5. WinForms, FormKey, menú y UX aprobados para implementación; ejecución de `142`/`143` y runtime diferidos.
 6. UDT, payload mínimo y Service Layer aprobados como dirección futura; todo código SAP permanece diferido.
 7. Plan de despliegue/recuperación documentado antes de ejecutar SQL.
 

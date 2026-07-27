@@ -53,10 +53,12 @@
 - The authorized CRUD extension adds server-paged list/detail/row projections, safe `QueueId`
   navigation and an independent corporate WinForms monitor. It must never project the complete
   access key, raw TXT/header line, XML, JWT, connection or secret.
-- Forward scripts `140`/`141` are implementation artifacts only until separately authorized. They
-  must not auto-grant existing roles. Query, upload and enqueue permissions remain independent.
-- CRUD implementation evidence: full solution build has zero errors/warnings; 29 focused TXT tests,
-  88 SRI tests and 559 full-suite tests pass, with 5 infrastructure tests explicitly skipped.
+- Forward SRI scripts `142`/`143` are implementation artifacts only until separately authorized and
+  must not auto-grant existing roles. Scripts `140`/`141` are owned exclusively by PriceList 8.6.
+  Query, upload and enqueue permissions remain independent.
+- CRUD implementation evidence after the PriceList merge: full solution build has zero
+  errors/warnings; 30 focused TXT tests, 89 SRI tests and 569 full-suite tests pass, with 5
+  infrastructure tests explicitly skipped.
 - SAP remains outside this implementation.
 
 ## Approved pilot direction

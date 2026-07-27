@@ -1,5 +1,5 @@
 /*
-    SRI TXT Import - consultas paginadas y saneadas (tenant).
+    Migracion 142 - SRI TXT Import, consultas paginadas y saneadas (tenant).
 
     No modifica el flujo TXT -> Staged -> Pending.
     No devuelve AccessKey, HeaderLine, linea TXT, XML ni secretos.
@@ -11,13 +11,13 @@ SET XACT_ABORT ON;
 GO
 
 IF OBJECT_ID(N'dbo.SchemaHistory', N'U') IS NULL
-    THROW 51140, 'SchemaHistory is required before migration 140.', 1;
+    THROW 51142, 'SchemaHistory is required before migration 142.', 1;
 IF OBJECT_ID(N'dbo.SriTxtImports', N'U') IS NULL
-    THROW 51140, 'SriTxtImports is required before migration 140.', 1;
+    THROW 51142, 'SriTxtImports is required before migration 142.', 1;
 IF OBJECT_ID(N'dbo.SriTxtImportRows', N'U') IS NULL
-    THROW 51140, 'SriTxtImportRows is required before migration 140.', 1;
+    THROW 51142, 'SriTxtImportRows is required before migration 142.', 1;
 IF OBJECT_ID(N'dbo.SriDocumentQueue', N'U') IS NULL
-    THROW 51140, 'SriDocumentQueue is required before migration 140.', 1;
+    THROW 51142, 'SriDocumentQueue is required before migration 142.', 1;
 GO
 
 IF NOT EXISTS
@@ -47,7 +47,7 @@ BEGIN
     SET NOCOUNT ON;
 
     IF @Page < 1 OR @PageSize NOT BETWEEN 1 AND 500
-        THROW 51140, 'Invalid SRI TXT import paging.', 1;
+        THROW 51142, 'Invalid SRI TXT import paging.', 1;
 
     DECLARE @EscapedFileName nvarchar(780) =
         REPLACE(REPLACE(REPLACE(NULLIF(LTRIM(RTRIM(@FileName)), N''), N'\', N'\\'), N'%', N'\%'), N'_', N'\_');
@@ -196,9 +196,9 @@ BEGIN
     SET NOCOUNT ON;
 
     IF @Page < 1 OR @PageSize NOT BETWEEN 1 AND 500
-        THROW 51140, 'Invalid SRI TXT row paging.', 1;
+        THROW 51142, 'Invalid SRI TXT row paging.', 1;
     IF @Validity NOT IN ('All', 'Valid', 'Invalid')
-        THROW 51140, 'Invalid SRI TXT row validity filter.', 1;
+        THROW 51142, 'Invalid SRI TXT row validity filter.', 1;
 
     DECLARE @Exists bit =
         CASE WHEN EXISTS
@@ -273,13 +273,13 @@ IF NOT EXISTS
 (
     SELECT 1
     FROM dbo.SchemaHistory
-    WHERE Version = N'20260727.140'
+    WHERE Version = N'20260727.142'
 )
 BEGIN
     INSERT dbo.SchemaHistory(Version, Description)
     VALUES
     (
-        N'20260727.140',
+        N'20260727.142',
         N'Consultas paginadas y saneadas del CRUD SRI TXT Import'
     );
 END;

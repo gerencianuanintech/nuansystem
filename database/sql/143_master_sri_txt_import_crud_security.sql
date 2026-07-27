@@ -1,5 +1,5 @@
 /*
-    SRI TXT Import - formulario, menu y operaciones Master.
+    Migracion 143 - SRI TXT Import, formulario, menu y operaciones Master.
 
     No concede permisos, menus ni operaciones a ningun rol existente.
 */
@@ -10,13 +10,13 @@ SET XACT_ABORT ON;
 GO
 
 IF OBJECT_ID(N'dbo.MasterSchemaHistory', N'U') IS NULL
-    THROW 51141, 'MasterSchemaHistory is required before migration 141.', 1;
+    THROW 51143, 'MasterSchemaHistory is required before migration 143.', 1;
 IF OBJECT_ID(N'dbo.SecurityForms', N'U') IS NULL
-    THROW 51141, 'SecurityForms is required before migration 141.', 1;
+    THROW 51143, 'SecurityForms is required before migration 143.', 1;
 IF OBJECT_ID(N'dbo.SecurityMenus', N'U') IS NULL
-    THROW 51141, 'SecurityMenus is required before migration 141.', 1;
+    THROW 51143, 'SecurityMenus is required before migration 143.', 1;
 IF OBJECT_ID(N'dbo.SecurityOperations', N'U') IS NULL
-    THROW 51141, 'SecurityOperations is required before migration 141.', 1;
+    THROW 51143, 'SecurityOperations is required before migration 143.', 1;
 GO
 
 DECLARE @ParentId int =
@@ -28,7 +28,7 @@ DECLARE @ParentId int =
 );
 
 IF @ParentId IS NULL
-    THROW 51141, 'MENU.ADMINISTRATION is required before migration 141.', 1;
+    THROW 51143, 'MENU.ADMINISTRATION is required before migration 143.', 1;
 
 DECLARE @FormId int =
 (
@@ -169,13 +169,13 @@ IF NOT EXISTS
 (
     SELECT 1
     FROM dbo.MasterSchemaHistory
-    WHERE Version = N'20260727.141'
+    WHERE Version = N'20260727.143'
 )
 BEGIN
     INSERT dbo.MasterSchemaHistory(Version, Description)
     VALUES
     (
-        N'20260727.141',
+        N'20260727.143',
         N'Formulario y navegacion SRI TXT Import sin concesiones automaticas'
     );
 END;

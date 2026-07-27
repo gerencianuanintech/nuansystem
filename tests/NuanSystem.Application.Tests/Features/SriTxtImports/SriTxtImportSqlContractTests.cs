@@ -87,8 +87,8 @@ public sealed class SriTxtImportSqlContractTests
     [Fact]
     public void CrudScripts_ArePagedSanitizedAndDoNotGrantExistingRoles()
     {
-        var tenant = ReadSourceFile("database", "sql", "140_tenant_sri_txt_import_crud.sql");
-        var master = ReadSourceFile("database", "sql", "141_master_sri_txt_import_crud_security.sql");
+        var tenant = ReadSourceFile("database", "sql", "142_tenant_sri_txt_import_crud.sql");
+        var master = ReadSourceFile("database", "sql", "143_master_sri_txt_import_crud_security.sql");
 
         tenant.Should().Contain("SP_NA_GET_SRITXTIMPORT_LISTAR");
         tenant.Should().Contain("SP_NA_GET_SRITXTIMPORT_PORID");
@@ -96,7 +96,8 @@ public sealed class SriTxtImportSqlContractTests
         tenant.Should().Contain("OFFSET (@Page - 1) * @PageSize ROWS");
         tenant.Should().Contain("queue.Status = N'Staged'");
         tenant.Should().Contain("queue.Status = N'Pending'");
-        tenant.Should().Contain("20260727.140");
+        tenant.Should().Contain("20260727.142");
+        tenant.Should().Contain("THROW 51142");
         tenant.Should().NotContain("queue.AccessKey");
         tenant.Should().NotContain("import.HeaderLine");
         tenant.Should().NotContain("INSERT dbo.SriDocument");
@@ -104,10 +105,37 @@ public sealed class SriTxtImportSqlContractTests
 
         master.Should().Contain("sri-txt-imports");
         master.Should().Contain("ACTION.SRI_TXT_IMPORTS.ENQUEUE");
-        master.Should().Contain("20260727.141");
+        master.Should().Contain("20260727.143");
+        master.Should().Contain("THROW 51143");
         master.Should().NotContain("RolePermissions");
         master.Should().NotContain("SecurityRoleMenus");
         master.Should().NotContain("SecurityRoleFormOperations");
+    }
+
+    [Fact]
+    public void MigrationSequence_AssignsEachNumberAndVersionToOneOwner()
+    {
+        var expected = new Dictionary<string, string>
+        {
+            ["138_tenant_sri_txt_import.sql"] = "20260727.138",
+            ["139_master_sri_txt_import_security.sql"] = "20260727.139",
+            ["140_tenant_price_list_transactional_outbox.sql"] = "20260727.140",
+            ["141_master_price_list_transactional_registration.sql"] = "20260727.141",
+            ["142_tenant_sri_txt_import_crud.sql"] = "20260727.142",
+            ["143_master_sri_txt_import_crud_security.sql"] = "20260727.143"
+        };
+        var sqlDirectory = Path.Combine(RepositoryRoot(), "database", "sql");
+        var numberedFiles = Directory.GetFiles(sqlDirectory, "*.sql")
+            .Select(Path.GetFileName)
+            .OfType<string>()
+            .Where(name => int.TryParse(name[..3], out var number) && number is >= 138 and <= 143)
+            .ToArray();
+
+        numberedFiles.Should().BeEquivalentTo(expected.Keys);
+        foreach (var item in expected)
+            File.ReadAllText(Path.Combine(sqlDirectory, item.Key)).Should().Contain(item.Value);
+
+        expected.Values.Should().OnlyHaveUniqueItems();
     }
 
     [Fact]
@@ -193,18 +221,22 @@ public sealed class SriTxtImportSqlContractTests
 
     private static string ReadSourceFile(params string[] pathParts)
     {
+        var path = Path.Combine(new[] { RepositoryRoot() }.Concat(pathParts).ToArray());
+        return File.Exists(path)
+            ? File.ReadAllText(path)
+            : throw new FileNotFoundException($"No se encontro {Path.Combine(pathParts)}.");
+    }
+
+    private static string RepositoryRoot()
+    {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            var path = Path.Combine(new[] { directory.FullName }.Concat(pathParts).ToArray());
-            if (File.Exists(path))
-            {
-                return File.ReadAllText(path);
-            }
-
+            if (Directory.Exists(Path.Combine(directory.FullName, ".git")))
+                return directory.FullName;
             directory = directory.Parent;
         }
 
-        throw new FileNotFoundException($"No se encontro {Path.Combine(pathParts)}.");
+        throw new DirectoryNotFoundException("No se encontro la raiz del repositorio.");
     }
 }

@@ -25,8 +25,8 @@ Esa evidencia no se repite en la fase CRUD.
 
 Autorizado el 2026-07-27: cerrar la consulta paginada de importaciones y filas, el detalle saneado,
 la navegación hacia `SriDocumentQueue` y un formulario WinForms independiente. Las nuevas migraciones
-propuestas son `140_tenant_sri_txt_import_crud.sql` y
-`141_master_sri_txt_import_crud_security.sql`; se generan, pero no se ejecutan sin una autorización
+propuestas son `142_tenant_sri_txt_import_crud.sql` y
+`143_master_sri_txt_import_crud_security.sql`; se generan, pero no se ejecutan sin una autorización
 posterior. SAP, llamadas SRI y ejecución del worker continúan excluidos.
 
 ## 1. Discovery Record
@@ -556,7 +556,7 @@ Permisos aprobados, sin concesión automática a ningún rol existente:
 - `SRI.TXT_IMPORTS.VIEW_SAP_STATUS`
 
 Abrir/descargar un documento SRI conserva los permisos existentes del monitor/XML. El script `139`
-ya sembró los códigos en `Permissions` sin concesiones. El script `141` registra el formulario,
+ya sembró los códigos en `Permissions` sin concesiones. El script `143` registra el formulario,
 menú y operaciones de esta fase, también sin insertar concesiones en `RolePermissions`,
 `SecurityRoleMenus` ni `SecurityRoleFormOperations`. Consulta, carga y enqueue conservan permisos
 independientes; una concesión posterior requiere aprobación separada y un JWT renovado.
@@ -695,7 +695,8 @@ Decisiones aprobadas el 2026-07-27:
 - consultas CRUD paginadas y saneadas, formulario WinForms y navegación autorizada a la cola.
 
 Quedan excluidos SAP, ejecución SQL, runtime API/WinForms, workers y cualquier llamada externa.
-Los scripts `140`/`141` o el runtime CRUD requieren autorizaciones independientes.
+Los scripts `142`/`143` o el runtime CRUD requieren autorizaciones independientes. Los números
+`140`/`141` pertenecen exclusivamente a PriceList 8.6 y no deben reutilizarse.
 
 ## 17. Plan de implementación en commits pequeños
 
