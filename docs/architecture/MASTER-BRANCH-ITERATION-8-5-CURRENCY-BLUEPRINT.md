@@ -4,8 +4,8 @@
 
 - **Fecha de discovery:** 2026-07-27.
 - **Rama:** `refactor/codex-skills-v8-5-currency`.
-- **Estado:** decisiones aprobadas; implementación y pruebas automáticas en
-  curso. SQL/runtime requieren autorización independiente.
+- **Estado:** implementación y pruebas automáticas aprobadas; SQL/runtime
+  requieren autorización independiente.
 - **Predecesores:** BusinessPartner 8.2/8.3, ItemGroup, ItemFamily,
   UnitOfMeasure, Item payload v2 y Warehouse 8.4C validados.
 - **Siguiente dependencia propuesta:** PriceList, únicamente después de validar
