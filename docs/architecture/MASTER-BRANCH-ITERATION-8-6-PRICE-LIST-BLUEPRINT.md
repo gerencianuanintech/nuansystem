@@ -509,3 +509,45 @@ Con fixtures identificables:
 
 La implementación, despliegue SQL, activación temporal y piloto runtime requieren
 autorizaciones posteriores y separadas.
+
+## 18. Cierre SQL y runtime — 2026-07-27
+
+La implementación fue desplegada y validada con autorización expresa:
+
+- `141_master_price_list_transactional_registration.sql` se ejecutó dos veces
+  en `NuanSystem_Master`;
+- `140_tenant_price_list_transactional_outbox.sql` se ejecutó dos veces en
+  `NuanSystem_DEMO`, `NuanSystem_DEMO_REMIGIO` y
+  `NuanSystem_DEMO_CANARIS`;
+- cada base conserva una sola versión de historial;
+- PriceList permanece deshabilitado globalmente y en ownership;
+- la dependencia activa es exclusivamente `PriceList -> Currencies`;
+- la dependencia histórica `PriceList -> Item` quedó eliminada lógicamente;
+- `UX_PriceLists_Code` es único y no filtrado en los tres tenants.
+
+Antes del despliegue se crearon y verificaron mediante
+`RESTORE VERIFYONLY WITH CHECKSUM` estos respaldos:
+
+- `NuanSystem_Master-price-list-86-20260727-142623.bak`;
+- `NuanSystem_DEMO-price-list-86-20260727-142623.bak`;
+- `NuanSystem_DEMO_REMIGIO-price-list-86-20260727-142623.bak`;
+- `NuanSystem_DEMO_CANARIS-price-list-86-20260727-142623.bak`.
+
+El piloto runtime utilizó DEMO como Matriz y Remigio/Cañaris como sucursales.
+`PriceList` cambió temporalmente de `Full` a `Incremental` sin alterar sus dos
+rutas `All`. Aprobaron:
+
+- rechazo de una segunda lista predeterminada para `Sales`;
+- rollback atómico de PriceList y LocalOutbox;
+- create, update, disable y eliminación lógica mediante la API;
+- reserva del código tombstone;
+- cinco eventos LocalOutbox promovidos una sola vez;
+- diez targets, cinco por sucursal;
+- cuatro operaciones aplicadas y una colisión terminal por sucursal;
+- preservación de los registros locales que provocaron la colisión;
+- repetición del mismo `EventId` sin duplicar SyncOutbox, targets o inbox.
+
+La configuración regresó exactamente a `Full`, ambas rutas quedaron activas,
+todos los fixtures `PL86*` fueron retirados y el snapshot final confirmó cero
+eventos reclamables, cero ejecuciones activas y cero procesos NuanSystem.
+SAP y SRI permanecieron fuera del alcance.
