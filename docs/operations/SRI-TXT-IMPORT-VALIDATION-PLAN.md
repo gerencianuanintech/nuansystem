@@ -8,6 +8,47 @@ repetir los scripts `138`/`139` ni sus pruebas SQL acreditadas. Las nuevas migra
 la API CRUD y WinForms no pueden ejecutarse sin otra autorización. SAP, worker y llamadas SRI siguen excluidos.
 Los scripts `140`/`141` pertenecen exclusivamente a PriceList 8.6.
 
+## Evidencia runtime CRUD — 2026-07-27
+
+Validación autorizada sobre la rama `refactor/codex-skills-v9-sri-txt-import`, partiendo de
+`748324cf682cc225b3bbe21b9389629bc278b05b`:
+
+- **Validated — respaldo:** se reutilizó y verificó con `RESTORE VERIFYONLY WITH CHECKSUM`
+  `NuanSystem_Master_SRI_TXT_CRUD_PRE143_20260727_201157.bak`.
+- **Validated — migración Master:** `143_master_sri_txt_import_crud_security.sql` se ejecutó dos
+  veces exclusivamente en `NuanSystem_Master`. Quedó una versión `20260727.143`, un formulario,
+  un menú, las operaciones compartidas `ACTION.REFRESH` y `ACTION.CONSULT`, y una sola instancia
+  de `ACTION.SRI_TXT_IMPORTS.ENQUEUE` y `ACTION.SRI_TXT_IMPORTS.OPEN_QUEUE`. No quedaron códigos
+  legacy, nombres duplicados ni concesiones automáticas.
+- **Validated — seguridad HTTP:** 401 sin autenticación, 403 sin VIEW y 200 con VIEW; VIEW,
+  UPLOAD y ENQUEUE se comprobaron por separado y los JWT se renovaron después de asignar permisos.
+- **Validated — CRUD API:** listado, detalle, filas válidas/inválidas, filtros combinados, seis
+  totales y páginas inicial, intermedia, final, vacía y fuera de rango.
+- **Validated — tenant y saneamiento:** DEMO, REMIGIO y CANARIS permanecieron aislados. Respuestas
+  y logs temporales no expusieron clave completa, línea TXT, XML, JWT, conexiones ni secretos.
+- **Validated — enqueue controlado:** un fixture nuevo realizó una sola transición
+  `Staged -> Pending`; la segunda solicitud fue idempotente y no agregó otra auditoría.
+- **Validated — limpieza:** usuarios, roles, grants y fixtures temporales quedaron en cero. Los
+  conteos finales coincidieron con la línea base: DEMO conservó 0 importaciones, 0 filas, 4 colas,
+  1 intento, 1 documento y 13 auditorías de cola; REMIGIO y CANARIS conservaron todos esos conteos
+  en cero. `QueueId=10004` continuó `Authorized` y su huella saneada coincidió exactamente.
+- **Validated — WinForms parcial:** Visual Studio Designer abrió sin error; el formulario usa
+  `AutoScaleMode.Font`, controles corporativos, filtros, paginación, estados vacío/busy/error,
+  botones condicionados por permisos y navegación por `QueueId`. A DPI 96, el layout normal
+  (`982/1011` px) y maximizado (`982/2560` px) no recortó los KPI.
+- **Failed — tamaño mínimo WinForms:** al usar el mínimo efectivo, los KPI requieren 982 px dentro
+  de 889 px disponibles. El último KPI queda recortado. No se corrigió durante la validación.
+- **Blocked — reconfirmación SQL posterior:** la comparación final ya había aprobado dentro del
+  arnés runtime y la limpieza; una reconfirmación de solo lectura posterior no pudo abrir una nueva
+  conexión por un fallo TLS local. No hubo escritura ni evidencia de cambio de datos.
+- **Validated — regresión:** `git diff --check`; build completo con 0 errores/advertencias;
+  30/30 pruebas SRI TXT; 89/89 pruebas SRI; suite completa 569 aprobadas, 5 omitidas por requerir
+  infraestructura explícita y 0 fallidas.
+- **Not applicable:** no se iniciaron workers ni se realizaron llamadas al SRI o SAP.
+
+La integración queda **no recomendada** hasta corregir y repetir el gate de tamaño mínimo y
+reconfirmar los conteos finales mediante una conexión SQL estable.
+
 ## Evidencia automática de implementación
 
 Validación final del CRUD, sin ejecutar SQL ni runtime:
