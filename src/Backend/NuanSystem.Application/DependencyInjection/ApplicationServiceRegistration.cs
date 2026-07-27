@@ -13,6 +13,7 @@ using NuanSystem.Application.Features.SapSync.Handlers;
 using NuanSystem.Application.Features.SapSync.Services;
 using NuanSystem.Application.Features.Operations;
 using NuanSystem.Application.Features.SriDocuments.Services;
+using NuanSystem.Application.Features.SriTxtImports.Services;
 using NuanSystem.Application.Features.BusinessPartners.Commands;
 using NuanSystem.Application.Features.FinancialCatalogs.Catalogs.Commands;
 using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Commands;
@@ -61,6 +62,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<ITenantFeatureService, TenantFeatureService>();
         services.AddScoped<ITenantIntegrationService, TenantIntegrationService>();
         services.AddScoped<ISriDocumentQueuePolicy, SriDocumentQueuePolicy>();
+        services.AddSingleton<ISriTxtFileParser, SriTxtFileParser>();
         services.AddScoped<IEntityOwnershipService, EntityOwnershipService>();
         services.AddSingleton<ISystemClock, SystemClock>();
         services.AddScoped<ISyncEventPublisher, SyncEventPublisher>();
