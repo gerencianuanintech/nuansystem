@@ -1,16 +1,16 @@
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Forms.FinancialCatalogs.Catalogs;
-using NuanSystem.WinForms.Services.FinancialCatalogs.Catalogs.Models;
+using NuanSystem.WinForms.Services.FinancialCatalogs.PriceLists;
 using NuanSystem.WinForms.Services.GridColumnSettings;
 using NuanSystem.WinForms.Services.Session;
-using NuanSystem.WinForms.ViewModels.FinancialCatalogs.Catalogs;
+using NuanSystem.WinForms.ViewModels.FinancialCatalogs.PriceLists;
 
 namespace NuanSystem.WinForms.Forms.FinancialCatalogs.PriceLists;
 
 public sealed partial class PriceListsForm : BaseGridCrudListForm
 {
     private static readonly FinancialCatalogDescriptor Descriptor = FinancialCatalogDescriptors.PriceLists;
-    private readonly FinancialCatalogsViewModel viewModel;
+    private readonly PriceListsViewModel viewModel;
     private readonly ApiSession session;
 
     public PriceListsForm()
@@ -21,7 +21,7 @@ public sealed partial class PriceListsForm : BaseGridCrudListForm
         WirePermissions();
     }
 
-    public PriceListsForm(FinancialCatalogsViewModel viewModel, ApiSession session, IGridColumnSettingsClient columnSettingsClient)
+    public PriceListsForm(PriceListsViewModel viewModel, ApiSession session, IGridColumnSettingsClient columnSettingsClient)
     {
         this.viewModel = viewModel;
         this.session = session;
@@ -47,7 +47,7 @@ public sealed partial class PriceListsForm : BaseGridCrudListForm
 
     protected override async Task CreateAsync()
     {
-        using var form = new PriceListEditForm();
+        using var form = new PriceListEditForm(viewModel.Currencies);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -66,7 +66,7 @@ public sealed partial class PriceListsForm : BaseGridCrudListForm
         }
 
         var fullItem = await viewModel.GetByIdAsync(item.Id);
-        using var form = new PriceListEditForm(fullItem);
+        using var form = new PriceListEditForm(viewModel.Currencies, fullItem);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -85,7 +85,7 @@ public sealed partial class PriceListsForm : BaseGridCrudListForm
         }
 
         var fullItem = await viewModel.GetByIdAsync(item.Id);
-        using var form = new PriceListEditForm(fullItem, copyMode: true);
+        using var form = new PriceListEditForm(viewModel.Currencies, fullItem, copyMode: true);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -126,14 +126,16 @@ public sealed partial class PriceListsForm : BaseGridCrudListForm
             column.Visible = false;
         }
 
-        ConfigureColumn(nameof(FinancialCatalogItem.Code), "Codigo", 1, 120);
-        ConfigureColumn(nameof(FinancialCatalogItem.Name), "Nombre", 2, 240);
-        ConfigureColumn(nameof(FinancialCatalogItem.Description), "Descripcion", 3, 360);
-        ConfigureColumn(nameof(FinancialCatalogItem.IsActive), "Activo", 4, 80);
+        ConfigureColumn(nameof(PriceListItem.Code), "Código", 1, 100);
+        ConfigureColumn(nameof(PriceListItem.Name), "Nombre", 2, 220);
+        ConfigureColumn(nameof(PriceListItem.CurrencyCode), "Moneda", 3, 80);
+        ConfigureColumn(nameof(PriceListItem.AppliesTo), "Aplica a", 4, 110);
+        ConfigureColumn(nameof(PriceListItem.IsDefault), "Predeterminada", 5, 100);
+        ConfigureColumn(nameof(PriceListItem.IsActive), "Activo", 6, 70);
         GridView.OptionsSelection.CheckBoxSelectorColumnWidth = 30;
     }
 
-    private FinancialCatalogItem? SelectedItem() => SelectedGridItem<FinancialCatalogItem>();
+    private PriceListItem? SelectedItem() => SelectedGridItem<PriceListItem>();
 
     private void ConfigureColumn(string fieldName, string caption, int visibleIndex, int width)
     {

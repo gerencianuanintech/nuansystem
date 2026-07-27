@@ -72,6 +72,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ISriWorkerCompanyRepository, SriWorkerRepository>();
         services.AddScoped<ISriWorkerQueueRepository, SriWorkerRepository>();
         services.AddScoped<IFinancialCatalogRepository, FinancialCatalogRepository>();
+        services.AddScoped<IPriceListRepository, PriceListRepository>();
         services.AddScoped<IGeographyRepository, GeographyRepository>();
         services.AddScoped<IGeneralInventoryCatalogRepository, GeneralInventoryCatalogRepository>();
         services.AddScoped<IGeneralSupplierCatalogRepository, GeneralSupplierCatalogRepository>();
@@ -152,6 +153,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IProvinceSyncApplyRepository, ProvinceSyncApplyRepository>();
         services.AddScoped<ICitySyncApplyRepository, CitySyncApplyRepository>();
         services.AddScoped<ICurrencySyncApplyRepository, CurrencySyncApplyRepository>();
+        services.AddScoped<IPriceListSyncApplyRepository, PriceListSyncApplyRepository>();
         services.AddScoped<IReferenceCatalogSyncApplyRepository, ReferenceCatalogSyncApplyRepository>();
         services.AddScoped<IPurchaseOrderRoutingRepository, PurchaseOrderRoutingRepository>();
         services.AddScoped<IPurchaseOrderSyncApplyRepository, PurchaseOrderSyncApplyRepository>();

@@ -90,6 +90,7 @@ using NuanSystem.WinForms.Services.Carriers;
 using NuanSystem.WinForms.Services.Http;
 using NuanSystem.WinForms.Services.GridColumnSettings;
 using NuanSystem.WinForms.Services.FinancialCatalogs.Catalogs;
+using NuanSystem.WinForms.Services.FinancialCatalogs.PriceLists;
 using NuanSystem.WinForms.Services.TaxCatalogs.Catalogs;
 using NuanSystem.WinForms.Services.Geography;
 using NuanSystem.WinForms.Services.GeneralInventory.Catalogs;
@@ -121,6 +122,7 @@ using NuanSystem.WinForms.ViewModels.ConfigurationSettings;
 using NuanSystem.WinForms.ViewModels.Documents.SecurityDocumentSeries;
 using NuanSystem.WinForms.ViewModels.OperationalCatalogs;
 using NuanSystem.WinForms.ViewModels.FinancialCatalogs.Catalogs;
+using NuanSystem.WinForms.ViewModels.FinancialCatalogs.PriceLists;
 using NuanSystem.WinForms.ViewModels.TaxCatalogs.Catalogs;
 using NuanSystem.WinForms.ViewModels.Geography;
 using NuanSystem.WinForms.ViewModels.GeneralInventory.Catalogs;
@@ -245,6 +247,7 @@ internal sealed class FrontendComposition : IDisposable
     private readonly CarrierClient carrierClient;
     private readonly ChartOfAccountClient chartOfAccountClient;
     private readonly FinancialCatalogClient financialCatalogClient;
+    private readonly PriceListClient priceListClient;
     private readonly TaxCatalogClient taxCatalogClient;
     private readonly GeographyClient geographyClient;
     private readonly GeneralSupplierCatalogClient generalSupplierCatalogClient;
@@ -295,6 +298,7 @@ internal sealed class FrontendComposition : IDisposable
         carrierClient = new CarrierClient(apiClient);
         chartOfAccountClient = new ChartOfAccountClient(apiClient);
         financialCatalogClient = new FinancialCatalogClient(apiClient);
+        priceListClient = new PriceListClient(apiClient);
         taxCatalogClient = new TaxCatalogClient(apiClient);
         geographyClient = new GeographyClient(apiClient);
         generalSupplierCatalogClient = new GeneralSupplierCatalogClient(apiClient);
@@ -573,7 +577,7 @@ internal sealed class FrontendComposition : IDisposable
     public PriceListsForm CreatePriceListsForm()
     {
         return new PriceListsForm(
-            new FinancialCatalogsViewModel(financialCatalogClient, FinancialCatalogDescriptors.PriceLists.Route),
+            new PriceListsViewModel(priceListClient, financialCatalogClient),
             session,
             gridColumnSettingsClient);
     }

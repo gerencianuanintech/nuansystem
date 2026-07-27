@@ -466,3 +466,27 @@ alcance.
 
 El detalle, decisiones aprobadas, evidencia SQL y matriz runtime están en
 [MASTER-BRANCH-ITERATION-8-5-CURRENCY-BLUEPRINT.md](../architecture/MASTER-BRANCH-ITERATION-8-5-CURRENCY-BLUEPRINT.md).
+
+## Piloto runtime PriceList 8.6 — 2026-07-27
+
+PriceList fue validada con DEMO como Matriz y Remigio/Cañaris como sucursales
+piloto. Los scripts `140` tenant y `141` Master se ejecutaron dos veces, con
+una sola versión final por base y sin habilitar configuraciones permanentes.
+
+Se verificaron cuatro respaldos `COPY_ONLY WITH CHECKSUM`:
+
+- `NuanSystem_Master-price-list-86-20260727-142623.bak`;
+- `NuanSystem_DEMO-price-list-86-20260727-142623.bak`;
+- `NuanSystem_DEMO_REMIGIO-price-list-86-20260727-142623.bak`;
+- `NuanSystem_DEMO_CANARIS-price-list-86-20260727-142623.bak`.
+
+El recorrido aprobó rollback conjunto PriceList/LocalOutbox, conflicto de lista
+predeterminada, CRUD completo, tombstone, promoción idempotente, resolución de
+Currency por `GlobalId` y colisión terminal sin adopción automática. Se
+produjeron cinco eventos y diez targets; cada sucursal aplicó cuatro eventos y
+cerró uno en `DeadLetter`, conservando la fila local en conflicto.
+
+La repetición de un `EventId` ya promovido no incrementó SyncOutbox, targets ni
+SyncInbox. Todos los fixtures `PL86*` se eliminaron, PriceList volvió a `Full`,
+las dos rutas originales quedaron activas y no permanecieron procesos,
+ejecuciones o eventos reclamables. SAP y SRI no fueron iniciados.
