@@ -107,8 +107,6 @@ public sealed class SriTxtImportRowDto
     public long? QueueId { get; set; }
     public string? QueueStatus { get; set; }
     public string? QueueStatusDisplayName { get; set; }
-    public string? ValidationCode { get; set; }
-    public string? ValidationMessage { get; set; }
     public DateTime CreatedAt { get; set; }
     public byte[] RowVersion { get; set; } = [];
 }

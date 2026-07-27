@@ -127,6 +127,22 @@ public sealed class SriTxtImportSqlContractTests
     }
 
     [Fact]
+    public void CrudPersistence_UsesOnlyAuthenticatedTenantConnectionBoundary()
+    {
+        var repository = ReadSourceFile(
+            "src",
+            "Backend",
+            "NuanSystem.Persistence",
+            "Repositories",
+            "SriTxtImportRepository.cs");
+
+        repository.Should().Contain("ITenantConnectionFactory");
+        repository.Should().Contain("connectionFactory.CreateConnection()");
+        repository.Should().NotContain("IMasterConnectionFactory");
+        repository.Should().NotContain("MasterConnection");
+    }
+
+    [Fact]
     public void QueueDto_MasksAccessKeyAndDisplaysStagedDistinctly()
     {
         var key = new string('1', 49);
