@@ -411,3 +411,33 @@ incluidas las históricas, fueron restauradas exactamente al finalizar.
 Los fixtures `I8IURT1`, trazas Inbox/Outbox y el trigger temporal de rollback
 fueron eliminados. El snapshot final confirmó cero residuos, cero procesos,
 perfil Item/UOM nuevamente Full y ausencia de datos de prueba en Cañaris.
+
+## Piloto runtime Warehouse 8.4C — 2026-07-27
+
+Warehouse fue validado con DEMO como Matriz y Remigio como única sucursal
+temporal. Aprobaron rollback atómico, create, update, disable, delete lógico,
+promoción idempotente, aplicación por `GlobalId`, preservación de campos
+locales, colisión terminal sin adopción y tombstone.
+
+El intento inicial reveló cuatro perfiles históricos activos hacia
+`SYNC-WH-BRANCH-TEST`. Los fixtures fueron retirados antes de repetir. Con
+autorización explícita se deshabilitaron temporalmente únicamente esas cuatro
+matrices; `DEMO-ITEMS-PILOT` quedó temporalmente `Incremental`, con distribución
+`All` hacia Remigio y Cañaris deshabilitada. Todas las rutas fueron restauradas
+exactamente.
+
+La primera prueba de reserva tombstone detectó reutilización indebida del
+código eliminado. La migración tenant `135` corrigió el procedimiento de
+existencia y sustituyó el índice filtrado por `UX_Warehouses_Code`, único y no
+filtrado. Fue desplegada dos veces en DEMO y Remigio con una sola versión,
+cero duplicados y rechazo HTTP 400 al intentar reutilizar el código eliminado.
+Cañaris permaneció en solo lectura y no recibió `135`.
+
+Respaldos adicionales de la corrección:
+
+- `NuanSystem_DEMO-warehouse-135-20260727-145314.bak`;
+- `NuanSystem_DEMO_REMIGIO-warehouse-135-20260727-145314.bak`.
+
+El cierre confirmó cero fixtures `I8WHRT1`, cero procesos NuanSystem, workers
+deshabilitados, rutas originales restauradas, build sin errores ni advertencias
+y 524 pruebas aprobadas, 5 diagnósticas omitidas y 0 fallidas.

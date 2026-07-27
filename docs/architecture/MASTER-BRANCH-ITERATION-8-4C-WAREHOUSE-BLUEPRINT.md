@@ -2,12 +2,12 @@
 
 ## Estado
 
-- Fecha: 2026-07-26.
-- Estado: implementación y despliegue SQL validados; runtime pendiente.
+- Fecha: 2026-07-27.
+- Estado: implementación, despliegue SQL y runtime DEMO -> Remigio validados.
 - Worker: deshabilitado por defecto.
-- Sucursal piloto futura: Remigio, sujeta a autorización separada.
+- Sucursal piloto validada: Remigio.
 
-Este estado no autoriza ejecutar los scripts, activar el relay ni aplicar eventos.
+Este cierre no habilita permanentemente el relay ni los workers.
 
 ## Contrato aprobado
 
@@ -26,6 +26,8 @@ Este estado no autoriza ejecutar los scripts, activar el relay ni aplicar evento
 - Fuente Full: `WarehouseSyncFullEntitySource`.
 - Aplicador: `WarehouseSyncEventApplier` y `WarehouseSyncApplyRepository`.
 - Migración tenant: `133_tenant_warehouse_transactional_outbox.sql`.
+- Corrección de reserva tombstone:
+  `135_tenant_warehouse_tombstone_code_reservation.sql`.
 - Registro Master: `134_master_warehouse_sync_registration.sql`.
 
 ## Despliegue SQL validado
@@ -36,17 +38,47 @@ Este estado no autoriza ejecutar los scripts, activar el relay ni aplicar evento
 - Cada versión quedó registrada exactamente una vez.
 - Los conteos Warehouse permanecieron en 35 para DEMO y 4 para Remigio.
 - `NuanSystem_DEMO_CANARIS` permaneció en solo lectura y no recibió `133`.
+- `135` fue ejecutado dos veces en `NuanSystem_DEMO` y
+  `NuanSystem_DEMO_REMIGIO`; quedó una sola versión `20260727.135`, el índice
+  único no filtrado `UX_Warehouses_Code` y cero códigos duplicados.
+- Cañaris permaneció en solo lectura y no recibió `135`.
 - Master ya tenía una configuración Warehouse habilitada antes de esta
   ejecución. El script 134 no la activó ni la desactivó; worker y relay
-  permanecen apagados. Debe revisarse expresamente antes del runtime.
+  permanecen apagados.
 
-## Quality gates pendientes
+## Validación runtime
 
-- prueba de commit atómico y rollback tenant;
+El piloto utilizó DEMO como Matriz y Remigio como única sucursal temporal.
+Se verificaron respaldos `COPY_ONLY WITH CHECKSUM` de Master, DEMO y Remigio
+antes del recorrido completo, y respaldos adicionales de DEMO y Remigio antes
+de desplegar `135`.
+
+Aprobaron:
+
+- commit atómico y rollback de Warehouse + `LocalOutbox`;
 - create, update, disable y delete lógico;
-- promoción repetida e idempotente;
-- preservación de campos locales;
-- colisión terminal, `GlobalId` inmutable y reserva de tombstone;
-- aplicación controlada DEMO → Remigio;
-- limpieza completa de fixtures;
-- build y suite completos posteriores al despliegue.
+- promoción repetida e idempotente con el mismo `EventId`;
+- aplicación controlada DEMO -> Remigio por `GlobalId`;
+- preservación de descripción, dirección, responsables y banderas locales de
+  Remigio;
+- colisión terminal por código sin adopción automática;
+- tombstone aplicado y código permanentemente reservado;
+- cero targets y cero fixtures en Cañaris;
+- limpieza completa de `I8WHRT1`, Inbox, Outbox y auditoría;
+- restauración exacta de todas las rutas temporales;
+- build con 0 errores y 0 advertencias;
+- 524 pruebas aprobadas, 5 diagnósticas omitidas y 0 fallidas.
+
+Durante el primer recorrido se detectaron cuatro perfiles históricos activos
+(`SYNC-001`, `SYNC-002`, `SYNC-003` y `SYNC-005`) que también distribuían
+Warehouse hacia `SYNC-WH-BRANCH-TEST`. El recorrido se detuvo, los fixtures se
+retiraron y, con autorización explícita, esas cuatro matrices se deshabilitaron
+temporalmente. El perfil `DEMO-ITEMS-PILOT` operó como `Incremental`, con
+distribución `All` exclusivamente hacia Remigio y Cañaris deshabilitada.
+Todos los valores originales fueron restaurados al finalizar.
+
+El gate de reserva tombstone detectó que el procedimiento CRUD de `133`
+ignoraba filas eliminadas. La migración `135` reemplazó el índice filtrado por
+un índice único permanente y corrigió la búsqueda por código. Después del
+despliegue, crear, eliminar lógicamente e intentar reutilizar el mismo código
+produjo HTTP 400, sin crear una segunda fila.
