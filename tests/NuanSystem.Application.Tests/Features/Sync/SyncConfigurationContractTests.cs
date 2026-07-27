@@ -346,7 +346,7 @@ public sealed class SyncConfigurationContractTests
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Geography", "Commands", "CountrySyncPublisher.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Geography", "Commands", "ProvinceSyncPublisher.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Geography", "Commands", "CitySyncPublisher.cs"),
-            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "FinancialCatalogs", "Catalogs", "Commands", "CurrencySyncPublisher.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "FinancialCatalogs", "Catalogs", "Commands", "CurrencySyncEventFactory.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "BusinessPartners", "Commands", "BusinessPartnerSyncEventFactory.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "GeneralInventory", "ItemGroups", "Commands", "ItemGroupSyncEventFactory.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Items", "Commands", "ItemSyncEventFactory.cs"),
@@ -405,13 +405,17 @@ public sealed class SyncConfigurationContractTests
             "src", "Backend", "NuanSystem.MasterBranchSyncWorker", "appsettings.Development.json");
 
         applicationRegistration.Should().Contain("AddScoped<IItemGroupLocalOutboxWriter, ItemGroupLocalOutboxWriter>()")
-            .And.Contain("AddScoped<IWarehouseLocalOutboxWriter, WarehouseLocalOutboxWriter>()");
+            .And.Contain("AddScoped<IWarehouseLocalOutboxWriter, WarehouseLocalOutboxWriter>()")
+            .And.Contain("AddScoped<ICurrencyLocalOutboxWriter, CurrencyLocalOutboxWriter>()");
         tenantInitializer.Should().Contain("129_tenant_item_group_transactional_outbox.sql")
             .And.Contain("131_tenant_item_sync_payload_v2.sql")
-            .And.Contain("133_tenant_warehouse_transactional_outbox.sql");
+            .And.Contain("133_tenant_warehouse_transactional_outbox.sql")
+            .And.Contain("135_tenant_warehouse_tombstone_code_reservation.sql")
+            .And.Contain("136_tenant_currency_transactional_outbox.sql");
         masterInitializer.Should().Contain("130_master_item_group_sync_registration.sql")
             .And.Contain("132_master_item_unit_of_measure_dependency.sql")
-            .And.Contain("134_master_warehouse_sync_registration.sql");
+            .And.Contain("134_master_warehouse_sync_registration.sql")
+            .And.Contain("137_master_currency_transactional_registration.sql");
         developmentSettings.Should().Contain("\"Enabled\": false")
             .And.Contain("\"SkeletonMode\": true")
             .And.Contain("\"UnitOfMeasure\"")

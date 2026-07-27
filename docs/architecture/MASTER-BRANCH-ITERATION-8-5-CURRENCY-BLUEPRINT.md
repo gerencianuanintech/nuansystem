@@ -4,7 +4,8 @@
 
 - **Fecha de discovery:** 2026-07-27.
 - **Rama:** `refactor/codex-skills-v8-5-currency`.
-- **Estado:** discovery completado; implementación, SQL y runtime no autorizados.
+- **Estado:** decisiones aprobadas; implementación y pruebas automáticas en
+  curso. SQL/runtime requieren autorización independiente.
 - **Predecesores:** BusinessPartner 8.2/8.3, ItemGroup, ItemFamily,
   UnitOfMeasure, Item payload v2 y Warehouse 8.4C validados.
 - **Siguiente dependencia propuesta:** PriceList, únicamente después de validar
@@ -33,6 +34,8 @@ aplicación en sucursal.
 - No se habilitan perfiles, rutas, relay ni workers por scripts.
 - El cambio compartido no puede convertir otros FinancialCatalogs en
   productores.
+- Remigio y Cañaris serán sucursales piloto en la validación runtime.
+- `ExternalSystem` y `ExternalCode` se conservan; no se agrega `SapCode`.
 
 **Affected layers:** Application, Persistence, SQL tenant, SQL Master,
 MasterBranchSyncWorker, pruebas y documentación. API y WinForms se verifican;
@@ -284,7 +287,7 @@ Mismo EventId con identidad/contenido incompatible
 
 ### SQL/runtime, sujeto a autorización independiente
 
-- respaldos verificados de Master, DEMO y la sucursal piloto;
+- respaldos verificados de Master, DEMO, Remigio y Cañaris;
 - scripts 136/137 ejecutados dos veces;
 - una sola versión y cero objetos duplicados;
 - workers deshabilitados durante despliegue;
@@ -293,10 +296,9 @@ Mismo EventId con identidad/contenido incompatible
 - rollback atómico;
 - Master no disponible;
 - promoción idempotente;
-- aplicación en una única sucursal;
+- aplicación controlada en Remigio y Cañaris;
 - tombstone y colisión terminal;
 - PriceList no procesada;
-- Cañaris solo lectura;
 - cero llamadas SAP/SRI;
 - restauración exacta de configuración temporal;
 - limpieza de fixtures, locks y procesos.
@@ -317,16 +319,16 @@ Mismo EventId con identidad/contenido incompatible
 6. La documentación de entidades implementadas todavía describía Warehouse
    como pendiente de runtime y deberá actualizarse junto con esta fase.
 
-## Decisiones requeridas del propietario
+## Decisiones aprobadas por el propietario
 
-1. Confirmar Remigio como única sucursal piloto y Cañaris en solo lectura.
-2. Confirmar que 8.5 se limita al endurecimiento transaccional/sync, dejando
-   símbolo y moneda base fuera del CRUD visual.
-3. Confirmar que un `Code` existente con otro `GlobalId`, incluso USD/EUR o
-   tombstone, será conflicto terminal sin adopción automática.
-4. Confirmar que las referencias `ExternalSystem`, `ExternalCode` y `SapCode`
-   se preservan/replican cuando existan, sin llamar SAP.
-5. Confirmar que PriceList queda fuera hasta cerrar Currency.
+1. Remigio y Cañaris serán sucursales piloto.
+2. 8.5 se limita al endurecimiento transaccional/sync; símbolo y moneda base
+   quedan fuera del CRUD visual.
+3. Un `Code` existente con otro `GlobalId`, incluido seed o tombstone, será
+   conflicto terminal sin adopción automática.
+4. Se preservan `ExternalSystem` y `ExternalCode`; no se agrega `SapCode` y no
+   se llama SAP.
+5. PriceList queda fuera hasta cerrar Currency.
 
 ## Plan de commits propuesto
 
@@ -337,5 +339,5 @@ Mismo EventId con identidad/contenido incompatible
 5. `test(currency): verify transactional publishing and apply conflicts`
 6. `docs(sync): record Currency SQL and runtime validation`
 
-Los commits 2 a 6 requieren aprobación posterior. Este discovery no los
-autoriza.
+La implementación automática no ejecuta SQL, no activa workers y no modifica
+datos. El despliegue y runtime conservan un gate de autorización separado.

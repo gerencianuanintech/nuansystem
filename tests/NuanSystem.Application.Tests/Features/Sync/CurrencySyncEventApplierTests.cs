@@ -18,7 +18,7 @@ public sealed class CurrencySyncEventApplierTests
         var payload = CreatePayload();
         var context = CreateContext(payload, SyncOperation.Created);
         repository.UpsertFromSyncAsync(2, context, payload, SyncOperation.Created, Arg.Any<CancellationToken>())
-            .Returns(new CurrencySyncApplyResult(true, false, 1, "Creada."));
+            .Returns(new CurrencySyncApplyResult(true, false, false, 1, "Creada."));
         var applier = new CurrencySyncEventApplier(repository);
 
         var result = await applier.ApplyAsync(context, CancellationToken.None);
@@ -39,7 +39,7 @@ public sealed class CurrencySyncEventApplierTests
         var payload = CreatePayload(isActive: false);
         var context = CreateContext(payload, SyncOperation.Deleted);
         repository.DisableFromSyncAsync(2, context, payload, true, Arg.Any<CancellationToken>())
-            .Returns(new CurrencySyncApplyResult(true, false, 1, "Eliminada."));
+            .Returns(new CurrencySyncApplyResult(true, false, false, 1, "Eliminada."));
         var applier = new CurrencySyncEventApplier(repository);
 
         var result = await applier.ApplyAsync(context, CancellationToken.None);
@@ -54,16 +54,40 @@ public sealed class CurrencySyncEventApplierTests
     }
 
     [Fact]
-    public void Persistence_ReconcilesLegacyRowsByCodeAndProtectsInboxIdempotency()
+    public async Task CodeCollision_ReturnsTerminalConflictWithoutAutomaticAdoption()
+    {
+        var repository = Substitute.For<ICurrencySyncApplyRepository>();
+        var payload = CreatePayload();
+        var context = CreateContext(payload, SyncOperation.Created);
+        repository.UpsertFromSyncAsync(2, context, payload, SyncOperation.Created, Arg.Any<CancellationToken>())
+            .Returns(new CurrencySyncApplyResult(
+                false,
+                false,
+                true,
+                null,
+                "Conflicto terminal.",
+                "SYNC_CURRENCY_CODE_CONFLICT"));
+        var applier = new CurrencySyncEventApplier(repository);
+
+        var result = await applier.ApplyAsync(context, CancellationToken.None);
+
+        result.Applied.Should().BeFalse();
+        result.Terminal.Should().BeTrue();
+        result.ErrorCode.Should().Be("SYNC_CURRENCY_CODE_CONFLICT");
+    }
+
+    [Fact]
+    public void Persistence_UsesStoredProcedureAndProtectsInboxIdempotency()
     {
         var repository = ReadSourceFile(
             "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync", "CurrencySyncApplyRepository.cs");
 
         repository.Should().Contain("WHERE GlobalId = @GlobalId");
-        repository.Should().Contain("WHERE Code = @Code");
         repository.Should().Contain("WHERE EventId = @EventId");
         repository.Should().Contain("Status = N'Applied'");
-        repository.Should().Contain("IsBaseCurrency = @IsBaseCurrency");
+        repository.Should().Contain("SP_NA_POST_CURRENCY_SYNC_APPLY");
+        repository.Should().Contain("SYNC_CURRENCY_CODE_CONFLICT");
+        repository.ToLowerInvariant().Should().NotContain("adopt");
     }
 
     private static CurrencySyncPayload CreatePayload(bool isActive = true)
