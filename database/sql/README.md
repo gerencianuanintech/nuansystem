@@ -27,6 +27,8 @@ La compatibilidad futura con MySQL se trabajara desde abstracciones de persisten
 - `127_tenant_item_family_master_branch_sync.sql`: normaliza ItemFamilies, agrega GlobalId, repara las proyecciones CRUD y crea el aplicador idempotente sin adopcion automatica por codigo.
 - `128_master_item_family_sync_registration.sql`: registra ItemFamilies y sus dependencias ItemGroups -> ItemFamilies -> Item, manteniendo perfiles y workers deshabilitados.
 - `135_tenant_warehouse_tombstone_code_reservation.sql`: reserva los codigos de Warehouse eliminados logicamente mediante validacion CRUD e indice unico no filtrado.
+- `136_tenant_currency_transactional_outbox.sql`: endurece Currency con LocalOutbox transaccional, reserva de tombstones y aplicacion por GlobalId sin adopcion por codigo.
+- `137_master_currency_transactional_registration.sql`: registra el contrato Currency transaccional, deshabilitado por defecto, y conserva la dependencia PriceList -> Currencies.
 | `100_tenant_purchase_reference_catalog_sync.sql` | Tenant | Normaliza impuestos, unidades de medida y listas de precios para sincronizacion previa a ordenes. |
 | `101_tenant_sap_purchase_order_import.sql` | Tenant | Agrega identidad, version SAP y estado de enrutamiento a ordenes de compra. |
 | `112_tenant_sap_payment_terms_sync.sql` | Tenant | Importacion idempotente SAP B1 y aplicacion por GlobalId de condiciones de pago. |
