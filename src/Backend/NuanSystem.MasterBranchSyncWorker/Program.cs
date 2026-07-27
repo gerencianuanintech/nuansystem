@@ -69,6 +69,7 @@ try
             services.AddScoped<ISyncEntityEventApplier, ProvinceSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, CitySyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, CurrencySyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, PriceListSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, ReferenceCatalogSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, PurchaseOrderSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, BusinessPartnerSyncEventApplier>();

@@ -152,6 +152,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IProvinceSyncApplyRepository, ProvinceSyncApplyRepository>();
         services.AddScoped<ICitySyncApplyRepository, CitySyncApplyRepository>();
         services.AddScoped<ICurrencySyncApplyRepository, CurrencySyncApplyRepository>();
+        services.AddScoped<IPriceListSyncApplyRepository, PriceListSyncApplyRepository>();
         services.AddScoped<IReferenceCatalogSyncApplyRepository, ReferenceCatalogSyncApplyRepository>();
         services.AddScoped<IPurchaseOrderRoutingRepository, PurchaseOrderRoutingRepository>();
         services.AddScoped<IPurchaseOrderSyncApplyRepository, PurchaseOrderSyncApplyRepository>();
