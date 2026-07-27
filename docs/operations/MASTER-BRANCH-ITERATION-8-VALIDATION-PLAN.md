@@ -510,8 +510,8 @@ Estado:
 - build: 0 errores / 0 advertencias;
 - pruebas Tax: 7 aprobadas / 0 fallidas;
 - suite completa: 546 aprobadas / 5 diagnósticas omitidas / 0 fallidas;
-- SQL real: no autorizado;
-- runtime: no autorizado;
+- SQL real: aprobado;
+- runtime Matriz-Sucursal: aprobado;
 - SAP y SRI: fuera de alcance.
 
 ### Gate SQL Tax 8.7 — 2026-07-27
@@ -532,4 +532,29 @@ Estado:
   `-0.000001` y `1.000001`.
 - Los conteos y huellas de Taxes, LocalOutbox, SyncInbox y auditoría Tax
   coincidieron exactamente antes y después. El gate SQL queda aprobado; el
-  runtime Matriz–Sucursal continúa requiriendo autorización separada.
+  runtime Matriz–Sucursal fue autorizado y validado posteriormente.
+
+### Gate runtime Tax 8.7 — 2026-07-27
+
+- Se crearon y verificaron respaldos `COPY_ONLY WITH CHECKSUM` de Master, DEMO,
+  Remigio y Cañaris antes de las pruebas.
+- La API y `MasterBranchSyncWorker` se iniciaron temporalmente con conexiones,
+  `EncryptionKey` y JWT solo en memoria. SAP y SRI permanecieron detenidos.
+- Se validaron create, update, disable, eliminación lógica, historial, bloqueo
+  por dependencia Item y rollback atómico de Tax junto con LocalOutbox.
+- La reserva del código después del tombstone rechazó la recreación.
+- Cinco eventos LocalOutbox se promovieron una sola vez a cinco eventos Master
+  y diez targets. El replay de un `EventId` existente no creó duplicados.
+- Remigio y Cañaris aplicaron por `GlobalId` las cuatro transiciones del
+  lifecycle y conservaron el tombstone final.
+- Una colisión de código con otro `GlobalId` terminó en `DeadLetter` en ambas
+  sucursales, sin adopción automática ni alteración de los registros locales.
+- Los siete eventos ajenos preexistentes se protegieron mediante locks de fila
+  no mutantes. Su conteo y fingerprint fueron idénticos antes y después.
+- Se eliminaron fixtures, rol y grants temporales, auditorías, inbox, outbox y
+  triggers de fallo. Tax volvió a `Full`, ambas rutas quedaron habilitadas y
+  no permanecieron procesos NuanSystem.
+- Las huellas y conteos finales de Taxes, Items, LocalOutbox, SyncInbox y
+  auditoría coincidieron exactamente con la línea base en los cuatro ámbitos.
+- Build completo: 0 errores / 0 advertencias. Suite: 546 aprobadas, 5
+  diagnósticas omitidas y 0 fallidas.

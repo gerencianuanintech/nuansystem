@@ -274,3 +274,29 @@ Cada tenant conserva una sola versión 146 y una única restricción
 Las pruebas transaccionales confirmaron que valores negativos y mayores que
 uno son rechazados; todas las transacciones se revirtieron y las huellas Tax,
 outbox, inbox y auditoría permanecieron intactas.
+
+## Validación runtime Matriz-Sucursal
+
+El 27 de julio de 2026 se validó Tax usando DEMO como Matriz y Remigio y
+Cañaris como sucursales piloto. La configuración `Full` se cambió
+temporalmente a `Incremental`; las dos rutas originales permanecieron activas.
+
+La prueba confirmó:
+
+- CRUD, deshabilitación, historial y eliminación lógica;
+- bloqueo de eliminación mientras un Item activo referencia el impuesto;
+- rollback conjunto de Tax y LocalOutbox ante un fallo inducido;
+- promoción idempotente por `EventId`;
+- aplicación ordenada por `GlobalId` y tombstone en ambas sucursales;
+- colisión terminal por código sin adopción automática;
+- cinco eventos Master y diez targets exactos;
+- cuatro inbox aplicados y un inbox `DeadLetter` por sucursal.
+
+Los eventos ajenos existentes en Master se protegieron sin cambiar sus estados
+ni huella. Al finalizar se retiraron todos los fixtures y permisos temporales,
+se restauró Tax a `Full`, se conservaron las dos rutas y los conteos y
+fingerprints de las cuatro bases coincidieron con la línea base.
+
+La compilación terminó con cero errores y cero advertencias. La suite completa
+registró 546 pruebas aprobadas, cinco diagnósticas omitidas y cero fallos. No
+hubo llamadas a SAP o SRI, push, PR ni integración a master.
