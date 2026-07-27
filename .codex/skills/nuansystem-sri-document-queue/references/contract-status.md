@@ -55,6 +55,8 @@
   access key, raw TXT/header line, XML, JWT, connection or secret.
 - Forward scripts `140`/`141` are implementation artifacts only until separately authorized. They
   must not auto-grant existing roles. Query, upload and enqueue permissions remain independent.
+- CRUD implementation evidence: full solution build has zero errors/warnings; 29 focused TXT tests,
+  88 SRI tests and 559 full-suite tests pass, with 5 infrastructure tests explicitly skipped.
 - SAP remains outside this implementation.
 
 ## Approved pilot direction

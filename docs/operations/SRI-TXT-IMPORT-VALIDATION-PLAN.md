@@ -9,12 +9,19 @@ la API CRUD y WinForms no pueden ejecutarse sin otra autorización. SAP, worker 
 
 ## Evidencia automática de implementación
 
-Validado sin ejecutar SQL ni runtime:
+Validación final del CRUD, sin ejecutar SQL ni runtime:
 
+- `git diff --check`: correcto.
 - `dotnet build NuanSystem.sln --no-restore -v minimal`: correcto, 0 errores y 0 advertencias.
-- pruebas focalizadas SRI TXT: 16 aprobadas.
-- pruebas SRI completas: 75 aprobadas.
-- suite completa: 546 aprobadas, 5 omitidas por requerir infraestructura explícita, 0 fallidas.
+- pruebas focalizadas SRI TXT: 29 aprobadas.
+- pruebas SRI completas: 88 aprobadas.
+- suite completa: 559 aprobadas, 5 omitidas por requerir infraestructura explícita, 0 fallidas.
+- los contratos cubren permisos VIEW/UPLOAD/ENQUEUE separados, paginación de servidor, filtros,
+  deserialización, saneamiento de DTO, conexión tenant y estructura corporativa/Designer del formulario.
+- los scripts `140`/`141` fueron revisados estáticamente y no se ejecutaron.
+
+Evidencia previa del núcleo, que no se repitió:
+
 - las tres muestras locales fueron procesadas de forma transitoria: 7.028, 2.722 y 1.322 filas, Windows-1252 y sin filas inválidas; no se copiaron al repositorio ni se imprimieron claves.
 - contrato estático: claim de script `117` conserva exclusivamente `Pending` y `RetryScheduled`.
 - contrato estático: script `139` no contiene grants a `RolePermissions`.
