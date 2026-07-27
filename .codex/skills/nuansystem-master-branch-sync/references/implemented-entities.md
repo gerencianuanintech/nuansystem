@@ -28,8 +28,10 @@ pilot.
 no-adoption branch applier. It preserves `ExternalSystem` and `ExternalCode`,
 does not add `SapCode`, and does not call SAP. Tenant script `136` and Master
 script `137` were deployed twice and validated in Master, DEMO, Remigio and
-Cañaris as applicable, disabled by default. The runtime pilot remains pending;
-read
+Cañaris as applicable, disabled by default. The DEMO-to-Remigio-and-Cañaris
+runtime pilot is validated, including atomic rollback, idempotent promotion,
+full CRUD propagation, tombstone reservation and terminal code collision. All
+temporary routing was restored and all fixtures were removed; read
 `docs/architecture/MASTER-BRANCH-ITERATION-8-5-CURRENCY-BLUEPRINT.md`.
 
 Item payload v2 carries `ItemGroupGlobalId`, `ItemFamilyGlobalId` and separate

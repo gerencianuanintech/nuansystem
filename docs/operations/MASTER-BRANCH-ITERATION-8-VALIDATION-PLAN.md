@@ -457,7 +457,12 @@ conserva sin cambios los demás FinancialCatalogs y reemplaza la adopción por
 conflicto terminal con reserva de tombstone. Los scripts 136 tenant y 137
 Master fueron ejecutados dos veces y validados en Master, DEMO, Remigio y
 Cañaris según corresponda. Permanecen deshabilitados por defecto. El runtime
-está pendiente.
+fue validado con DEMO como Matriz y Remigio/Cañaris como sucursales piloto:
+CRUD completo, rollback atómico, promoción idempotente, aplicación en ambas
+sucursales, tombstone y colisión terminal sin adopción. La configuración
+temporal volvió a `Full`, se limpiaron todos los fixtures y quedaron cero
+procesos y eventos reclamables. PriceList, SAP y SRI permanecieron fuera de
+alcance.
 
 El detalle, decisiones aprobadas, evidencia SQL y matriz runtime están en
 [MASTER-BRANCH-ITERATION-8-5-CURRENCY-BLUEPRINT.md](../architecture/MASTER-BRANCH-ITERATION-8-5-CURRENCY-BLUEPRINT.md).

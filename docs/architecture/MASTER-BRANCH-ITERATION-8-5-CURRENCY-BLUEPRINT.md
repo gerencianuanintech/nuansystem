@@ -4,8 +4,8 @@
 
 - **Fecha de discovery:** 2026-07-27.
 - **Rama:** `refactor/codex-skills-v8-5-currency`.
-- **Estado:** implementación, pruebas automáticas y despliegue SQL aprobados;
-  runtime requiere autorización independiente.
+- **Estado:** implementación, pruebas automáticas, despliegue SQL y piloto
+  runtime aprobados.
 - **Predecesores:** BusinessPartner 8.2/8.3, ItemGroup, ItemFamily,
   UnitOfMeasure, Item payload v2 y Warehouse 8.4C validados.
 - **Siguiente dependencia propuesta:** PriceList, únicamente después de validar
@@ -308,19 +308,30 @@ Respaldos verificados:
 - `NuanSystem_DEMO_REMIGIO-currency-85-20260727-115232.bak`
 - `NuanSystem_DEMO_CANARIS-currency-85-20260727-115232.bak`
 
-### Runtime — sujeto a autorización independiente
+### Runtime — validado 2026-07-27
 
-- fixtures inequívocos;
-- create, update, disable y delete lógico;
-- rollback atómico;
-- Master no disponible;
-- promoción idempotente;
-- aplicación controlada en Remigio y Cañaris;
-- tombstone y colisión terminal;
-- PriceList no procesada;
-- cero llamadas SAP/SRI;
-- restauración exacta de configuración temporal;
-- limpieza de fixtures, locks y procesos.
+- preflight inicial con cero fixtures, cero eventos reclamables y cero workers;
+- fixtures inequívocos `X85`, `Y85` y `Z85`;
+- create, update, disable y delete lógico ejecutados por la API en DEMO;
+- fallo controlado del writer validó rollback atómico de Currency +
+  `LocalOutbox`, sin residuos;
+- cinco eventos de ciclo de vida distintos fueron promovidos una sola vez;
+- la repetición de una promoción `Updated` mantuvo tres eventos Master para
+  tres `EventId`, sin duplicar eventos ni targets;
+- Remigio y Cañaris aplicaron create, update, disable y tombstone de `X85`;
+- la colisión `Z85` terminó en `DeadLetter` para ambos targets, conservó los
+  `GlobalId` locales y no realizó adopción automática;
+- la recreación de `X85` después del tombstone fue rechazada con HTTP 400;
+- Currency operó temporalmente en `Incremental` con ambas rutas piloto
+  activas; al cierre volvió exactamente a `Full`;
+- PriceList no fue habilitada ni procesada;
+- SAP Worker y SRI Worker permanecieron apagados y no hubo llamadas SAP/SRI;
+- API y MasterBranchSyncWorker se detuvieron; fixtures, Inbox, Outbox, locks y
+  procesos quedaron en cero.
+
+La indisponibilidad real de Master no se repitió en este piloto runtime. El
+contrato de conservación tenant + reintento de `LocalOutbox` permanece cubierto
+por las pruebas automáticas de la fase.
 
 ## Riesgos
 
@@ -359,4 +370,4 @@ Respaldos verificados:
 6. `docs(sync): record Currency SQL and runtime validation`
 
 El despliegue SQL no activó workers, relay, perfiles ni ownership. El piloto
-runtime conserva un gate de autorización separado.
+runtime fue temporal, limitado a `Currencies` y restauró toda configuración.
