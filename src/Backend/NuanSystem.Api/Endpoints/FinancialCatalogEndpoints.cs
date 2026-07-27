@@ -3,6 +3,8 @@ using MediatR;
 using NuanSystem.Api.Extensions;
 using NuanSystem.Application.Features.FinancialCatalogs.Catalogs.Commands;
 using NuanSystem.Application.Features.FinancialCatalogs.Catalogs.Queries;
+using NuanSystem.Application.Features.FinancialCatalogs.PriceLists.Commands;
+using NuanSystem.Application.Features.FinancialCatalogs.PriceLists.Queries;
 using NuanSystem.Shared.Constants;
 
 namespace NuanSystem.Api.Endpoints;
@@ -14,7 +16,7 @@ public static class FinancialCatalogEndpoints
         MapCatalog(app, "banks");
         MapCatalog(app, "bank-account-types");
         MapCatalog(app, "currencies");
-        MapCatalog(app, "price-lists");
+        MapPriceLists(app);
         MapCatalog(app, "purchasing-agents");
         MapCatalog(app, "accounting-payment-methods");
         MapCatalog(app, "payment-priorities");
@@ -27,6 +29,64 @@ public static class FinancialCatalogEndpoints
         MapCatalog(app, "projects");
 
         return app;
+    }
+
+    private static void MapPriceLists(IEndpointRouteBuilder app)
+    {
+        const string route = "/api/financial-catalogs/price-lists";
+
+        app.MapGet(route, async (ISender sender, CancellationToken cancellationToken) =>
+            (await sender.Send(new GetPriceListsQuery(), cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.FinancialCatalogsPriceListsRead);
+
+        app.MapGet($"{route}/lookup", async (
+            string? appliesTo,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+            (await sender.Send(new GetPriceListLookupQuery(appliesTo), cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.FinancialCatalogsPriceListsRead);
+
+        app.MapGet($"{route}/{{id:int}}", async (int id, ISender sender, CancellationToken cancellationToken) =>
+            (await sender.Send(new GetPriceListByIdQuery(id), cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.FinancialCatalogsPriceListsRead);
+
+        app.MapPost(route, async (
+            SavePriceListRequest request,
+            ISender sender,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken) =>
+        {
+            var auditUser = user.GetAuditUser();
+            return (await sender.Send(new CreatePriceListCommand(
+                request.Code, request.Name, request.Description, request.CurrencyCode,
+                request.AppliesTo, request.IsDefault, request.IsActive,
+                auditUser.UserId, auditUser.UserName), cancellationToken)).ToHttpResult();
+        }).RequirePermission(PermissionCodes.FinancialCatalogsPriceListsManage);
+
+        app.MapPut($"{route}/{{id:int}}", async (
+            int id,
+            SavePriceListRequest request,
+            ISender sender,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken) =>
+        {
+            var auditUser = user.GetAuditUser();
+            return (await sender.Send(new UpdatePriceListCommand(
+                id, request.Code, request.Name, request.Description, request.CurrencyCode,
+                request.AppliesTo, request.IsDefault, request.IsActive,
+                auditUser.UserId, auditUser.UserName), cancellationToken)).ToHttpResult();
+        }).RequirePermission(PermissionCodes.FinancialCatalogsPriceListsManage);
+
+        app.MapDelete($"{route}/{{id:int}}", async (
+            int id,
+            ISender sender,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken) =>
+        {
+            var auditUser = user.GetAuditUser();
+            return (await sender.Send(new DeletePriceListCommand(
+                id, auditUser.UserId, auditUser.UserName), cancellationToken)).ToHttpResult();
+        }).RequirePermission(PermissionCodes.FinancialCatalogsPriceListsManage);
     }
 
     private static void MapCatalog(IEndpointRouteBuilder app, string catalogKey)
@@ -143,6 +203,15 @@ public static class FinancialCatalogEndpoints
         string Code,
         string Name,
         string? Description,
+        bool IsActive);
+
+    private sealed record SavePriceListRequest(
+        string Code,
+        string Name,
+        string? Description,
+        string CurrencyCode,
+        string AppliesTo,
+        bool IsDefault,
         bool IsActive);
 
     private sealed record CatalogPermissions(string Read, string Manage);

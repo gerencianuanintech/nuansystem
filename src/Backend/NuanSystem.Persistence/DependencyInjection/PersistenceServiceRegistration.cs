@@ -71,6 +71,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ISriWorkerCompanyRepository, SriWorkerRepository>();
         services.AddScoped<ISriWorkerQueueRepository, SriWorkerRepository>();
         services.AddScoped<IFinancialCatalogRepository, FinancialCatalogRepository>();
+        services.AddScoped<IPriceListRepository, PriceListRepository>();
         services.AddScoped<IGeographyRepository, GeographyRepository>();
         services.AddScoped<IGeneralInventoryCatalogRepository, GeneralInventoryCatalogRepository>();
         services.AddScoped<IGeneralSupplierCatalogRepository, GeneralSupplierCatalogRepository>();
