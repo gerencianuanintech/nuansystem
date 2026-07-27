@@ -124,6 +124,7 @@ try
     app.MapSyncConfigurationEndpoints();
     app.MapSyncEntityDefinitionEndpoints();
     app.MapSriDocumentEndpoints();
+    app.MapSriTxtImportEndpoints();
 
     app.MapAccountingEndpoints();
     app.MapBusinessPartnerEndpoints();

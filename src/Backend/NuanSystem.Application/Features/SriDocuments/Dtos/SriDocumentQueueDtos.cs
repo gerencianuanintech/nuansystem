@@ -1,15 +1,23 @@
+using System.Text.Json.Serialization;
+
 namespace NuanSystem.Application.Features.SriDocuments.Dtos;
 
 public class SriDocumentQueueListItemDto
 {
     public long Id { get; set; }
     public string Environment { get; set; } = string.Empty;
+    [JsonIgnore]
     public string AccessKey { get; set; } = string.Empty;
+    public string MaskedAccessKey =>
+        string.IsNullOrEmpty(AccessKey)
+            ? string.Empty
+            : $"********{AccessKey[^Math.Min(8, AccessKey.Length)..]}";
     public string DocumentTypeCode { get; set; } = string.Empty;
     public string SourceType { get; set; } = string.Empty;
     public string SourceReference { get; set; } = string.Empty;
     public string? BranchCode { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string StatusDisplayName => SriDocumentQueueStatusCodes.GetDisplayName(Status);
     public int Priority { get; set; }
     public int AttemptCount { get; set; }
     public int? MaxAttempts { get; set; }
@@ -67,6 +75,7 @@ public class SriDocumentMonitorListItemDto
     public string SourceReference { get; set; } = string.Empty;
     public string? BranchCode { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string StatusDisplayName => SriDocumentQueueStatusCodes.GetDisplayName(Status);
     public int AttemptCount { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTimeOffset? AuthorizationAt { get; set; }

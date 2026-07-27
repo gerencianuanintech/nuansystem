@@ -925,6 +925,12 @@ END;
         {
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
         }
+
+        scriptPath = FindDatabaseScriptPath("139_master_sri_txt_import_security.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
     }
 
     private static async Task ExecuteScriptFileAsync(

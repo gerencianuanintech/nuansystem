@@ -163,6 +163,15 @@ public static class PermissionCodes
     public const string SriDocumentsReprocess = "SRI.DOCUMENTS.REPROCESS";
     public const string SriDocumentsViewPayload = "SRI.DOCUMENTS.VIEW_PAYLOAD";
     public const string SriDocumentsDownloadXml = "SRI.DOCUMENTS.DOWNLOAD_XML";
+    public const string SriTxtImportsView = "SRI.TXT_IMPORTS.VIEW";
+    public const string SriTxtImportsUpload = "SRI.TXT_IMPORTS.UPLOAD";
+    public const string SriTxtImportsValidate = "SRI.TXT_IMPORTS.VALIDATE";
+    public const string SriTxtImportsEnqueue = "SRI.TXT_IMPORTS.ENQUEUE";
+    public const string SriTxtImportsReprocess = "SRI.TXT_IMPORTS.REPROCESS";
+    public const string SriTxtImportsDelete = "SRI.TXT_IMPORTS.DELETE";
+    public const string SriTxtImportsViewErrors = "SRI.TXT_IMPORTS.VIEW_ERRORS";
+    public const string SriTxtImportsViewHistory = "SRI.TXT_IMPORTS.VIEW_HISTORY";
+    public const string SriTxtImportsViewSapStatus = "SRI.TXT_IMPORTS.VIEW_SAP_STATUS";
     public const string SriWorkerHealthView = "SRI.WORKER.HEALTH.VIEW";
     public const string SettingsManage = "SETTINGS.PARAMETERS.MANAGE";
 
@@ -325,6 +334,15 @@ public static class PermissionCodes
         SriDocumentsReprocess,
         SriDocumentsViewPayload,
         SriDocumentsDownloadXml,
+        SriTxtImportsView,
+        SriTxtImportsUpload,
+        SriTxtImportsValidate,
+        SriTxtImportsEnqueue,
+        SriTxtImportsReprocess,
+        SriTxtImportsDelete,
+        SriTxtImportsViewErrors,
+        SriTxtImportsViewHistory,
+        SriTxtImportsViewSapStatus,
         SriWorkerHealthView,
         SettingsManage
     ];
