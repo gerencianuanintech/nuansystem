@@ -178,6 +178,13 @@ Representa una carga por empresa. Conserva identidad global, nombre seguro, hash
 
 Representa una línea inmutable del archivo: número de línea, hash de fila/clave, datos normalizados permitidos, resultado de validación, estado de encolado, errores saneados y vínculo opcional a la cola.
 
+Una fila válida crea o vincula durante el upload una única `SriDocumentQueue`:
+
+- si la identidad tributaria no existe, se crea con estado `Staged`;
+- si ya existe en cualquier estado, solo se vincula;
+- una fila inválida nunca crea cola;
+- `SriTxtImportRows` conserva hash, máscara y `QueueId`, no la clave completa.
+
 #### `SriTxtImportAudit`
 
 Registra acciones de negocio de la carga que no pueden depender de una cola todavía inexistente.
@@ -195,6 +202,9 @@ Registra intención durable de enviar a SAP solamente cuando exista un contrato 
 - La API vuelve a validar extensión, tamaño, cabecera, codificación, columnas y contenido.
 - El frontend nunca suministra conteos o estados autoritativos.
 - Una clave existente vincula la fila con la cola/documento existente.
+- `Staged` significa preparado por una carga validada, pero todavía no elegible para consulta.
+- Solo la acción explícita Encolar puede ejecutar `Staged -> Pending`.
+- Encolar una fila ya vinculada a un estado distinto de `Staged` es idempotente y no reinicia el documento.
 - Una discrepancia de identidad produce `Conflict`; no se adopta por coincidencia parcial.
 - Eliminar lógicamente una carga no elimina cola, XML, auditoría ni outbox.
 - Reprocesar no borra evidencia previa; crea un nuevo intento/auditoría y respeta idempotencia.
@@ -356,15 +366,27 @@ Una carga `Failed` o incompleta se retoma mediante `ReprocessRequested`, con mot
 Parsed
   -> Valid / Invalid / DuplicateInFile / Conflict
 Valid
-  -> PendingEnqueue
-       -> Enqueued
-       -> LinkedExisting
-       -> LinkedAuthorized
-       -> Rejected
-       -> Conflict
+  -> Staged                 (cola nueva, aún no reclamable)
+  -> LinkedExisting         (cola preexistente)
+  -> LinkedAuthorized       (cola/documento autorizado)
+Staged
+  -> Enqueued               (transición atómica de cola Staged -> Pending)
+  -> Staged                 (segunda acción idempotente)
+LinkedExisting/Authorized
+  -> sin reinicio ni cambio de estado de cola
 ```
 
 La cola SRI conserva sus estados vigentes. El importador no redefine ni duplica ese ciclo.
+
+La cola amplía su contrato con `Staged`:
+
+```text
+Staged -> Pending           (única transición aprobada en esta fase)
+Pending -> Querying | Cancelled
+RetryScheduled -> Querying | Cancelled
+```
+
+`NuanSystem.SriWorker` continúa reclamando exclusivamente `Pending` y `RetryScheduled`. No se aprueba cancelación, edición o transición arbitraria desde `Staged`.
 
 ### SAP condicionado
 
@@ -400,9 +422,10 @@ Pending -> InProcess -> Applied
   Sí -> ¿misma clave se repite dentro del archivo?
           Sí -> primera fila candidata; posteriores DuplicateInFile.
           No -> buscar por Environment + AccessKey en cola.
-                  No existe -> encolar idempotentemente.
+                  No existe -> crear cola Staged y vincular.
                   Existe -> ¿identidad coherente?
-                              Sí, no autorizada -> LinkedExisting.
+                              Sí, Staged -> vincular y esperar acción Encolar.
+                              Sí, no autorizada -> LinkedExisting sin reiniciar.
                               Sí, autorizada -> LinkedAuthorized.
                               No -> Conflict sin adopción automática.
 ```
@@ -435,7 +458,7 @@ Grupo candidato: `/api/sri/txt-imports`.
 | `GET /{id}/rows` | Filas paginadas, filtros y errores autorizados |
 | `POST /upload` | Multipart; registra y analiza archivo |
 | `POST /{id}/validate` | Revalidación explícita cuando el estado lo permita |
-| `POST /{id}/enqueue` | Vincula/encola filas válidas |
+| `POST /{id}/enqueue` | Cambia atómicamente colas propias `Staged -> Pending`; ignora de forma idempotente colas ya avanzadas |
 | `POST /{id}/reprocess` | Recuperación autorizada con motivo y `RowVersion` |
 | `DELETE /{id}` | Eliminación lógica restringida |
 | `GET /{id}/history` | Historial corporativo |
@@ -513,6 +536,8 @@ Abrir/descargar un documento SRI conserva los permisos existentes del monitor/XM
 - archivo: `FileSha256` único por base tenant;
 - fila: `(ImportId, LineNumber)` y `RowSha256`;
 - documento: restricción vigente de cola `(Environment, AccessKey)`;
+- preparación: upload crea o encuentra la cola bajo la misma restricción y nunca crea cola para filas inválidas;
+- enqueue: actualización condicionada `Status = 'Staged'`, auditada; repetirla no crea cola, intento ni evento;
 - SAP: `ExternalId` + `PayloadSha256`;
 - acciones: `RowVersion`, estados legales y auditoría de cada intento.
 
@@ -531,6 +556,7 @@ Abrir/descargar un documento SRI conserva los permisos existentes del monitor/XM
 - fallo durante inserción de detalle: rollback de la transacción tenant;
 - carga incompleta: acción explícita sobre la misma cabecera/hash;
 - fallo al encolar: rollback del lote o estado recuperable claramente delimitado;
+- fallo del upload: no deja importación, detalle o colas `Staged` parcialmente confirmadas;
 - SRI no disponible: retry/dead letter existentes;
 - SAP no disponible: outbox conserva `Retry`, sin revertir SRI;
 - lease vencido SAP: recuperable por el procesador aprobado;
@@ -612,6 +638,10 @@ Decisiones aprobadas el 2026-07-27:
 10. SAP queda aplazado. La fase actual implementa y valida únicamente `TXT -> SriDocumentQueue`.
 11. La UDT futura recibe metadatos mínimos y hash/referencia del XML, nunca el XML completo.
 12. Cabecera, detalle y auditoría mantienen retención indefinida provisional hasta aprobar una política legal definitiva.
+13. Incorporar `Staged` en `SriDocumentQueue`. Upload crea o vincula filas válidas como `Staged`; la acción Encolar es la única transición aprobada `Staged -> Pending`.
+14. El worker conserva el claim exclusivo sobre `Pending` y `RetryScheduled`; `Staged` nunca es reclamable.
+15. Cualquier cola preexistente se vincula sin reiniciar estado. Una segunda acción Encolar es idempotente.
+16. Los contratos API distinguen `Staged` como “Preparado” y `Pending` como “Pendiente de consulta”, sin exponer la clave.
 
 ### Alcance autorizado de implementación
 
@@ -620,6 +650,7 @@ Decisiones aprobadas el 2026-07-27:
 - persistencia tenant idempotente mediante procedimientos almacenados;
 - upload multipart que registra y valida;
 - acción explícita de vinculación/encolado con `SriDocumentQueue`;
+- ampliación forward-only del constraint de estados para agregar `Staged`, sin modificar filas existentes;
 - permisos Master sin grants automáticos;
 - pruebas automáticas.
 
@@ -630,9 +661,9 @@ Quedan excluidos WinForms, SAP, ejecución SQL, runtime API, workers y cualquier
 1. `docs(sri): aprobar contrato TXT y decisiones de seguridad`
 2. `feat(sri): agregar modelo y validadores Application de cargas`
 3. `feat(sql): agregar persistencia tenant SRI TXT idempotente`
-4. `feat(sri): implementar repositorio Dapper y transacción de importación`
-5. `feat(api): agregar transporte multipart compartido y endpoints de carga`
-6. `feat(sri): vincular y encolar filas con SriDocumentQueue`
+4. `feat(sri): implementar parser streaming, repositorio Dapper y transacción de importación`
+5. `feat(api): agregar endpoint multipart de carga`
+6. `feat(sri): activar Staged de forma explícita e idempotente`
 7. `feat(security): agregar permisos y navegación SRI TXT`
 8. `feat(winforms): agregar cliente, ViewModel y monitor de cargas`
 9. `test(sri): cubrir parsing, concurrencia, tenant, permisos y rollback`

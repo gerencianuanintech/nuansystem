@@ -37,8 +37,14 @@ Plan aprobado para validar el núcleo `TXT -> SriDocumentQueue`. La aprobación 
 | Persistencia | Rollback al fallar TVP/procedimiento | Sin cabecera/detalle/conteos parciales | SQL integration |
 | Persistencia | Reejecutar script tenant/Master | Sin duplicados ni pérdida | SQL real |
 | Encolado | Clave válida no existente | Una fila de cola y vínculo | SQL integration |
+| Encolado | Upload de fila válida | Cola nueva queda `Staged`, sin intento | SQL integration |
+| Encolado | Upload de fila inválida | No crea cola | SQL integration |
+| Encolado | Claim con colas `Staged` | Ninguna fila `Staged` es reclamada | SQL contract/integration |
+| Encolado | Encolar `Staged` | Transición atómica a `Pending` y auditoría | SQL integration |
 | Encolado | Repetir enqueue | Misma cola, sin duplicado | SQL integration |
+| Encolado | Enqueue concurrente | Una transición/auditoría; segunda ejecución idempotente | SQL integration |
 | Encolado | Documento ya en cola | `LinkedExisting` | SQL integration |
+| Encolado | Cola preexistente en estado posterior | Se vincula sin reiniciar estado, intento o retry | SQL integration |
 | Encolado | Documento autorizado | `LinkedAuthorized`, XML intacto | SQL integration |
 | Encolado | Conflicto de identidad | `Conflict`, sin adopción | SQL integration |
 | SRI | Servicio temporalmente no disponible | Retry existente; carga no se revierte | Worker test autorizado |
@@ -94,7 +100,8 @@ Plan aprobado para validar el núcleo `TXT -> SriDocumentQueue`. La aprobación 
 
 - Usar dobles/stubs para el importador.
 - Comprobar que carga/validación no llaman al SRI.
-- Verificar una sola cola, vínculo existente/autorizado y no alteración del XML.
+- Verificar una sola cola, creación `Staged`, exclusión del claim, transición explícita, vínculo existente/autorizado y no alteración del XML.
+- Probar que el claim conserva literalmente los únicos estados `Pending` y `RetryScheduled`.
 - Una prueba real SRI no queda autorizada por este plan.
 
 ### Fase E — WinForms
