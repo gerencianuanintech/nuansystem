@@ -10,6 +10,10 @@ GO
 
 IF OBJECT_ID(N'dbo.SyncEntityDefinitions',N'U') IS NULL THROW 51145,'SyncEntityDefinitions is required.',1;
 IF OBJECT_ID(N'dbo.MasterSchemaHistory',N'U') IS NULL THROW 51145,'MasterSchemaHistory is required.',1;
+IF OBJECT_ID(N'dbo.Modules',N'U') IS NULL THROW 51145,'Modules is required.',1;
+IF OBJECT_ID(N'dbo.Permissions',N'U') IS NULL THROW 51145,'Permissions is required.',1;
+IF OBJECT_ID(N'dbo.SecurityForms',N'U') IS NULL THROW 51145,'SecurityForms is required.',1;
+IF OBJECT_ID(N'dbo.SecurityMenus',N'U') IS NULL THROW 51145,'SecurityMenus is required.',1;
 GO
 
 IF EXISTS(SELECT 1 FROM dbo.SyncEntityDefinitions WHERE Code=N'Tax')
