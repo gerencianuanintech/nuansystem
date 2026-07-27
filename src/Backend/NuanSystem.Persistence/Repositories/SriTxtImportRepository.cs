@@ -1,6 +1,7 @@
 using System.Data;
 using Dapper;
 using NuanSystem.Application.Abstractions.Data;
+using NuanSystem.Application.Features.SriDocuments;
 using NuanSystem.Application.Features.SriTxtImports.Dtos;
 
 namespace NuanSystem.Persistence.Repositories;
@@ -8,6 +9,70 @@ namespace NuanSystem.Persistence.Repositories;
 public sealed class SriTxtImportRepository(ITenantConnectionFactory connectionFactory)
     : ISriTxtImportRepository
 {
+    public async Task<SriTxtImportPageDto> SearchAsync(
+        SriTxtImportFilter filter,
+        CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        using var results = await connection.QueryMultipleAsync(
+            Command("dbo.SP_NA_GET_SRITXTIMPORT_LISTAR", filter, cancellationToken));
+        var control = await results.ReadSingleAsync<ListControlRow>();
+        var items = (await results.ReadAsync<SriTxtImportListItemDto>()).AsList();
+        return new SriTxtImportPageDto(
+            items,
+            control.TotalCount,
+            filter.Page,
+            filter.PageSize,
+            new SriTxtImportSummaryDto
+            {
+                TotalRows = control.TotalRows,
+                ValidRows = control.ValidRows,
+                InvalidRows = control.InvalidRows,
+                LinkedRows = control.LinkedRows,
+                StagedRows = control.StagedRows,
+                PendingRows = control.PendingRows
+            });
+    }
+
+    public async Task<SriTxtImportDetailDto?> GetByIdAsync(
+        long importId,
+        CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        return await connection.QuerySingleOrDefaultAsync<SriTxtImportDetailDto>(
+            Command(
+                "dbo.SP_NA_GET_SRITXTIMPORT_PORID",
+                new { ImportId = importId },
+                cancellationToken));
+    }
+
+    public async Task<SriTxtImportRowPageDto?> GetRowsAsync(
+        long importId,
+        SriTxtImportRowFilter filter,
+        CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        using var results = await connection.QueryMultipleAsync(
+            Command(
+                "dbo.SP_NA_GET_SRITXTIMPORT_FILAS",
+                new
+                {
+                    ImportId = importId,
+                    filter.Validity,
+                    filter.Page,
+                    filter.PageSize
+                },
+                cancellationToken));
+        var control = await results.ReadSingleAsync<RowsControlRow>();
+        if (!control.Exists)
+            return null;
+
+        var items = (await results.ReadAsync<SriTxtImportRowDto>()).AsList();
+        foreach (var item in items)
+            item.QueueStatusDisplayName = SriDocumentQueueStatusCodes.GetDisplayName(item.QueueStatus);
+        return new SriTxtImportRowPageDto(items, control.TotalCount, filter.Page, filter.PageSize);
+    }
+
     public async Task<SriTxtImportPersistenceResult> RegisterValidatedAsync(
         RegisterValidatedSriTxtImportData data,
         CancellationToken cancellationToken = default)
@@ -140,5 +205,22 @@ public sealed class SriTxtImportRepository(ITenantConnectionFactory connectionFa
     private sealed class EnqueueControlRow
     {
         public int ResultCode { get; set; }
+    }
+
+    private sealed class ListControlRow
+    {
+        public int TotalCount { get; set; }
+        public long TotalRows { get; set; }
+        public long ValidRows { get; set; }
+        public long InvalidRows { get; set; }
+        public long LinkedRows { get; set; }
+        public long StagedRows { get; set; }
+        public long PendingRows { get; set; }
+    }
+
+    private sealed class RowsControlRow
+    {
+        public bool Exists { get; set; }
+        public int TotalCount { get; set; }
     }
 }

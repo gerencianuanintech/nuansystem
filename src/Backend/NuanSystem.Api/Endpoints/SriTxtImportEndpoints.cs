@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using NuanSystem.Api.Extensions;
 using NuanSystem.Application.Features.SriTxtImports;
 using NuanSystem.Application.Features.SriTxtImports.Commands;
+using NuanSystem.Application.Features.SriTxtImports.Dtos;
+using NuanSystem.Application.Features.SriTxtImports.Queries;
 using NuanSystem.Shared.Constants;
 
 namespace NuanSystem.Api.Endpoints;
@@ -15,6 +17,56 @@ public static class SriTxtImportEndpoints
     public static IEndpointRouteBuilder MapSriTxtImportEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/sri/txt-imports");
+
+        group.MapGet(
+                "",
+                async (
+                    DateTime? createdFrom,
+                    DateTime? createdTo,
+                    string? status,
+                    string? fileName,
+                    string? environment,
+                    int? page,
+                    int? pageSize,
+                    ISender sender,
+                    CancellationToken cancellationToken) =>
+                    (await sender.Send(
+                        new GetSriTxtImportsQuery(
+                            new SriTxtImportFilter(
+                                createdFrom,
+                                createdTo,
+                                status,
+                                fileName,
+                                environment,
+                                page ?? 1,
+                                pageSize ?? 50)),
+                        cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.SriTxtImportsView);
+
+        group.MapGet(
+                "/{id:long}",
+                async (long id, ISender sender, CancellationToken cancellationToken) =>
+                    (await sender.Send(new GetSriTxtImportByIdQuery(id), cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.SriTxtImportsView);
+
+        group.MapGet(
+                "/{id:long}/rows",
+                async (
+                    long id,
+                    string? validity,
+                    int? page,
+                    int? pageSize,
+                    ISender sender,
+                    CancellationToken cancellationToken) =>
+                    (await sender.Send(
+                        new GetSriTxtImportRowsQuery(
+                            id,
+                            new SriTxtImportRowFilter(
+                                validity ?? SriTxtRowValidityCodes.All,
+                                page ?? 1,
+                                pageSize ?? 100)),
+                        cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.SriTxtImportsView);
 
         group.MapPost(
                 "/upload",

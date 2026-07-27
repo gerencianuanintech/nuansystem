@@ -2,6 +2,7 @@ using System.Text.Json;
 using FluentAssertions;
 using NuanSystem.Application.Features.SriDocuments;
 using NuanSystem.Application.Features.SriDocuments.Dtos;
+using NuanSystem.Application.Features.SriTxtImports.Dtos;
 using NuanSystem.Shared.Constants;
 
 namespace NuanSystem.Application.Tests.Features.SriTxtImports;
@@ -84,6 +85,48 @@ public sealed class SriTxtImportSqlContractTests
     }
 
     [Fact]
+    public void CrudScripts_ArePagedSanitizedAndDoNotGrantExistingRoles()
+    {
+        var tenant = ReadSourceFile("database", "sql", "140_tenant_sri_txt_import_crud.sql");
+        var master = ReadSourceFile("database", "sql", "141_master_sri_txt_import_crud_security.sql");
+
+        tenant.Should().Contain("SP_NA_GET_SRITXTIMPORT_LISTAR");
+        tenant.Should().Contain("SP_NA_GET_SRITXTIMPORT_PORID");
+        tenant.Should().Contain("SP_NA_GET_SRITXTIMPORT_FILAS");
+        tenant.Should().Contain("OFFSET (@Page - 1) * @PageSize ROWS");
+        tenant.Should().Contain("queue.Status = N'Staged'");
+        tenant.Should().Contain("queue.Status = N'Pending'");
+        tenant.Should().Contain("20260727.140");
+        tenant.Should().NotContain("queue.AccessKey");
+        tenant.Should().NotContain("import.HeaderLine");
+        tenant.Should().NotContain("INSERT dbo.SriDocument");
+        tenant.Should().NotContain("UPDATE dbo.SriDocument");
+
+        master.Should().Contain("sri-txt-imports");
+        master.Should().Contain("ACTION.SRI_TXT_IMPORTS.ENQUEUE");
+        master.Should().Contain("20260727.141");
+        master.Should().NotContain("RolePermissions");
+        master.Should().NotContain("SecurityRoleMenus");
+        master.Should().NotContain("SecurityRoleFormOperations");
+    }
+
+    [Fact]
+    public void Api_CrudRoutesRequireViewWithoutMergingMutationPermissions()
+    {
+        var endpoints = ReadSourceFile(
+            "src",
+            "Backend",
+            "NuanSystem.Api",
+            "Endpoints",
+            "SriTxtImportEndpoints.cs");
+
+        endpoints.Split("PermissionCodes.SriTxtImportsView").Should().HaveCount(4);
+        endpoints.Split("PermissionCodes.SriTxtImportsUpload").Should().HaveCount(2);
+        endpoints.Split("PermissionCodes.SriTxtImportsEnqueue").Should().HaveCount(2);
+        endpoints.Should().Contain("\"/{id:long}/rows\"");
+    }
+
+    [Fact]
     public void QueueDto_MasksAccessKeyAndDisplaysStagedDistinctly()
     {
         var key = new string('1', 49);
@@ -100,6 +143,23 @@ public sealed class SriTxtImportSqlContractTests
         json.Should().Contain("Preparado");
         SriDocumentQueueStatusCodes.GetDisplayName(SriDocumentQueueStatusCodes.Pending)
             .Should().Be("Pendiente de consulta");
+    }
+
+    [Fact]
+    public void ImportDetail_DoesNotSerializeStoredHeaderLine()
+    {
+        const string originalHeader = "CLAVE DE ACCESO\tRAZON SOCIAL";
+        var dto = new SriTxtImportDetailDto
+        {
+            Id = 1,
+            HeaderLine = originalHeader,
+            OriginalFileName = "fixture.txt"
+        };
+
+        var json = JsonSerializer.Serialize(dto);
+
+        json.Should().NotContain(originalHeader);
+        json.Should().NotContain("HeaderLine");
     }
 
     private static IReadOnlyCollection<string> ApprovedPermissions() =>
