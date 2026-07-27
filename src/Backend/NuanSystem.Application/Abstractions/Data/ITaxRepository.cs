@@ -8,6 +8,7 @@ public interface ITaxRepository : IRepository
     Task<IReadOnlyCollection<TaxDto>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<TaxLookupDto>> GetLookupAsync(CancellationToken cancellationToken = default);
     Task<TaxDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<TaxAuditChangeDto>> GetHistoryAsync(int id, CancellationToken cancellationToken = default);
     Task<TaxDto?> GetByIdAsync(int id, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
     Task<bool> ExistsByCodeAsync(string code, int? excludingId, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
     Task<bool> HasActiveItemReferencesAsync(int id, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);

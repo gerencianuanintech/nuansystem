@@ -21,6 +21,16 @@ public sealed class TaxDto
 
 public sealed record TaxLookupDto(int Id, string Code, string Name, decimal Rate, bool IsActive);
 
+public sealed record TaxAuditChangeDto(
+    string RecordId,
+    string Action,
+    string FieldName,
+    string? OldValue,
+    string? NewValue,
+    int? UserId,
+    string? UserName,
+    DateTime CreatedAt);
+
 public sealed record CreateTaxData(
     Guid GlobalId,
     string Code,

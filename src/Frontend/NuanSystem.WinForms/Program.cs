@@ -585,7 +585,7 @@ internal sealed class FrontendComposition : IDisposable
 
     public TaxesForm CreateTaxesForm()
     {
-        return new TaxesForm(new TaxesViewModel(taxClient, auditClient), session, gridColumnSettingsClient);
+        return new TaxesForm(new TaxesViewModel(taxClient), session, gridColumnSettingsClient);
     }
 
     public PurchasingAgentsForm CreatePurchasingAgentsForm()

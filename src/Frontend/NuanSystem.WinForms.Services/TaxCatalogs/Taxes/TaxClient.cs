@@ -9,6 +9,8 @@ public sealed class TaxClient(INuanApiClient apiClient) : ITaxClient
         await apiClient.GetAsync<List<TaxItem>>(Route, cancellationToken);
     public Task<TaxItem> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         apiClient.GetAsync<TaxItem>($"{Route}/{id}", cancellationToken);
+    public Task<IReadOnlyCollection<TaxAuditChange>> GetHistoryAsync(int id, CancellationToken cancellationToken = default) =>
+        apiClient.GetAsync<IReadOnlyCollection<TaxAuditChange>>($"{Route}/{id}/history", cancellationToken);
     public Task<TaxItem> CreateAsync(SaveTaxRequest request, CancellationToken cancellationToken = default) =>
         apiClient.PostAsync<SaveTaxRequest, TaxItem>(Route, request, cancellationToken);
     public Task<TaxItem> UpdateAsync(int id, SaveTaxRequest request, CancellationToken cancellationToken = default) =>

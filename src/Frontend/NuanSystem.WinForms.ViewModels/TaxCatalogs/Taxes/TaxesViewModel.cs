@@ -1,11 +1,9 @@
 using NuanSystem.WinForms.Services.TaxCatalogs.Taxes;
-using NuanSystem.WinForms.Services.Audit;
-using NuanSystem.WinForms.Services.Audit.Models;
 using NuanSystem.WinForms.ViewModels.Common;
 
 namespace NuanSystem.WinForms.ViewModels.TaxCatalogs.Taxes;
 
-public sealed class TaxesViewModel(ITaxClient client, IAuditClient auditClient) : CrudViewModel<TaxItem, SaveTaxRequest>
+public sealed class TaxesViewModel(ITaxClient client) : CrudViewModel<TaxItem, SaveTaxRequest>
 {
     public override Task LoadAsync(CancellationToken cancellationToken = default) =>
         LoadItemsAsync(client.GetAsync, cancellationToken);
@@ -17,6 +15,6 @@ public sealed class TaxesViewModel(ITaxClient client, IAuditClient auditClient) 
         client.UpdateAsync(id, request, cancellationToken);
     public override Task DeleteAsync(int id, CancellationToken cancellationToken = default) =>
         client.DeleteAsync(id, cancellationToken);
-    public Task<IReadOnlyCollection<SecurityChangeItem>> GetHistoryAsync(int id, CancellationToken cancellationToken = default) =>
-        auditClient.GetInventoryChangesAsync("Taxes", id.ToString(), cancellationToken: cancellationToken);
+    public Task<IReadOnlyCollection<TaxAuditChange>> GetHistoryAsync(int id, CancellationToken cancellationToken = default) =>
+        client.GetHistoryAsync(id, cancellationToken);
 }

@@ -25,6 +25,15 @@ public sealed class TaxRepository(ITenantConnectionFactory connectionFactory) : 
         return await GetByIdAsync(id, connection, null!, cancellationToken);
     }
 
+    public async Task<IReadOnlyCollection<TaxAuditChangeDto>> GetHistoryAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        return (await connection.QueryAsync<TaxAuditChangeDto>(Command(
+            "dbo.SP_NA_GET_TAXES_HISTORIAL", new { Id = id }, null, cancellationToken))).AsList();
+    }
+
     public Task<TaxDto?> GetByIdAsync(int id, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default) =>
         connection.QuerySingleOrDefaultAsync<TaxDto>(Command(
             "dbo.SP_NA_GET_TAXES_BUSCARPORID", new { Id = id }, transaction, cancellationToken));

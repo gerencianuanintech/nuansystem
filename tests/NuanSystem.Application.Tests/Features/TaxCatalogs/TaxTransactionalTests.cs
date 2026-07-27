@@ -106,7 +106,10 @@ public sealed class TaxTransactionalTests
         tenant.Should().Contain("CREATE UNIQUE INDEX UQ_Taxes_Code ON dbo.Taxes(Code)")
             .And.Contain("Rate < 0 OR Rate > 1")
             .And.Contain("GlobalId<>@GlobalId")
-            .And.Contain("Status=N'DeadLetter'");
+            .And.Contain("Status=N'DeadLetter'")
+            .And.Contain("SP_NA_GET_TAXES_HISTORIAL")
+            .And.Contain("dbo.AuditCatalogChanges")
+            .And.Contain("N'MasterBranchSyncWorker'");
         master.Should().Contain("N'Tax'").And.Contain("CONVERT(bit,0)")
             .And.NotContain("RolePermissions").And.NotContain("SecurityRoleMenus");
         designer.Should().Contain("Controls.SetChildIndex(btnGuardar")

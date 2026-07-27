@@ -32,3 +32,13 @@ public sealed class GetTaxByIdQueryHandler(ITaxRepository repository)
             : Result<TaxDto>.Success(tax);
     }
 }
+
+public sealed class GetTaxHistoryQueryHandler(ITaxRepository repository)
+    : IQueryHandler<GetTaxHistoryQuery, IReadOnlyCollection<TaxAuditChangeDto>>
+{
+    public async Task<Result<IReadOnlyCollection<TaxAuditChangeDto>>> Handle(
+        GetTaxHistoryQuery request,
+        CancellationToken cancellationToken) =>
+        Result<IReadOnlyCollection<TaxAuditChangeDto>>.Success(
+            await repository.GetHistoryAsync(request.Id, cancellationToken));
+}

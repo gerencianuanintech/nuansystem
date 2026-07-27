@@ -3,6 +3,7 @@ using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Forms.Audit;
 using NuanSystem.WinForms.Services.GridColumnSettings;
 using NuanSystem.WinForms.Services.Session;
+using NuanSystem.WinForms.Services.Audit.Models;
 using NuanSystem.WinForms.Services.TaxCatalogs.Taxes;
 using NuanSystem.WinForms.ViewModels.TaxCatalogs.Taxes;
 
@@ -80,7 +81,14 @@ public sealed partial class TaxesForm : BaseGridCrudListForm
         using var form = new RecordHistoryForm(
             "Historial de impuesto",
             $"{item.Code} - {item.Name}",
-            cancellationToken => viewModel.GetHistoryAsync(item.Id, cancellationToken));
+            async cancellationToken =>
+            {
+                var changes = await viewModel.GetHistoryAsync(item.Id, cancellationToken);
+                return changes.Select(change => new SecurityChangeItem(
+                    0, "Tax", item.Id.ToString(), change.Action, change.FieldName,
+                    change.OldValue, change.NewValue, change.UserId, change.UserName,
+                    "API", change.CreatedAt)).ToList();
+            });
         form.ShowDialog(this);
         return Task.CompletedTask;
     }

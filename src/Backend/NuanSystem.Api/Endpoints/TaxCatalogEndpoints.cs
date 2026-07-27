@@ -36,6 +36,9 @@ public static class TaxCatalogEndpoints
         app.MapGet($"{route}/{{id:int}}", async (int id, ISender sender, CancellationToken cancellationToken) =>
             (await sender.Send(new GetTaxByIdQuery(id), cancellationToken)).ToHttpResult())
             .RequirePermission(PermissionCodes.TaxRatesRead);
+        app.MapGet($"{route}/{{id:int}}/history", async (int id, ISender sender, CancellationToken cancellationToken) =>
+            (await sender.Send(new GetTaxHistoryQuery(id), cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.TaxRatesRead);
         app.MapPost(route, async (SaveTaxRequest request, ISender sender, ClaimsPrincipal user, CancellationToken cancellationToken) =>
         {
             var audit = user.GetAuditUser();

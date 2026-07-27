@@ -14,3 +14,13 @@ public sealed class TaxItem
 }
 
 public sealed record SaveTaxRequest(string Code, string Name, string? Description, decimal Rate, bool IsActive);
+
+public sealed record TaxAuditChange(
+    string RecordId,
+    string Action,
+    string FieldName,
+    string? OldValue,
+    string? NewValue,
+    int? UserId,
+    string? UserName,
+    DateTime CreatedAt);
