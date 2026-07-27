@@ -50,6 +50,21 @@ public sealed class WarehouseSyncPublishingTests
         migration.Should().NotContain("WHERE Code=@Code AND IsDeleted=0 AND GlobalId<>@GlobalId");
     }
 
+    [Fact]
+    public void TombstoneReservationMigration_RejectsCodeReuse_InCrudAndDatabase()
+    {
+        var migration = ReadSource(
+            "database", "sql", "135_tenant_warehouse_tombstone_code_reservation.sql");
+
+        migration.Should().Contain("DROP INDEX UX_Warehouses_Code_Active ON dbo.Warehouses");
+        migration.Should().Contain("CREATE UNIQUE INDEX UX_Warehouses_Code ON dbo.Warehouses(Code)");
+        migration.Should().Contain("CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_WAREHOUSESBUSCARPORCODIGO");
+        migration.Should().Contain("WHERE Code = @Code");
+        migration.Should().Contain("AND (@ExcluirId IS NULL OR Id <> @ExcluirId)");
+        migration.Should().NotContain("WHERE Code = @Code AND IsDeleted = 0");
+        migration.Should().Contain("Version = N'20260727.135'");
+    }
+
     private static WarehouseDto CreateWarehouse() => new()
     {
         Id = 25,
