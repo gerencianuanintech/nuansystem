@@ -2,7 +2,10 @@
 
 ## Estado
 
-Plan aprobado para validar el núcleo `TXT -> SriDocumentQueue`. La aprobación no autoriza ejecutar API, SQL Server, SAP HANA, workers, WinForms ni llamadas SRI.
+El núcleo `TXT -> Staged -> Pending` ya fue validado en runtime bajo autorización separada. Este plan
+se amplía exclusivamente para el CRUD paginado y el formulario WinForms de importaciones. No se deben
+repetir los scripts `138`/`139` ni sus pruebas SQL acreditadas. Las nuevas migraciones `140`/`141`,
+la API CRUD y WinForms no pueden ejecutarse sin otra autorización. SAP, worker y llamadas SRI siguen excluidos.
 
 ## Evidencia automática de implementación
 
@@ -16,7 +19,10 @@ Validado sin ejecutar SQL ni runtime:
 - contrato estático: claim de script `117` conserva exclusivamente `Pending` y `RetryScheduled`.
 - contrato estático: script `139` no contiene grants a `RolePermissions`.
 
-No validado por falta de autorización de ejecución: sintaxis contra motor SQL Server, doble ejecución de scripts, concurrencia SQL real, rollback tenant real, permisos con JWT, multipart runtime y aislamiento entre bases tenant.
+La evidencia histórica del núcleo incluye despliegue idempotente de `138`/`139`, concurrencia SQL,
+rollback, permisos con JWT, multipart y aislamiento tenant. Esa evidencia se conserva y no se repite.
+No validado todavía: scripts `140`/`141`, consultas CRUD reales, navegación WinForms y Designer del
+nuevo formulario.
 
 ## Principios de evidencia
 
@@ -88,6 +94,12 @@ No validado por falta de autorización de ejecución: sintaxis contra motor SQL 
 | Layout | Resize, DPI, tab order, clipping | Sin solapamientos; acciones accesibles | Manual/UI |
 | Build | Proyectos tocados | 0 errores; warnings reportados | Build |
 | Regression | Suite completa | Sin regresiones | Automated |
+| CRUD | Listado filtrado | Paginación estable y totales calculados sobre el mismo filtro | SQL/API |
+| CRUD | Detalle tenant | Solo la empresa activa puede consultar la importación | SQL/API |
+| CRUD | Filas válidas/inválidas | Filtro y paginación estables; ninguna clave o línea completa | SQL/API |
+| CRUD | Saneamiento | DTO/JSON/logs omiten `AccessKey`, cabecera/línea original, XML y secretos | Contract/API |
+| CRUD | Permisos independientes | VIEW no concede UPLOAD ni ENQUEUE; cada ruta aplica su permiso | API/security |
+| CRUD | Navegación de fila | Solo filas con `QueueId` habilitan apertura del monitor | UI |
 
 ## Fases de validación propuestas
 
@@ -118,12 +130,21 @@ No validado por falta de autorización de ejecución: sintaxis contra motor SQL 
 - Probar que el claim conserva literalmente los únicos estados `Pending` y `RetryScheduled`.
 - Una prueba real SRI no queda autorizada por este plan.
 
-### Fase E — WinForms
+### Fase E — CRUD API y WinForms
 
+- Ejecutar `140` dos veces solo en tenants autorizados y `141` dos veces solo en Master.
+- Renovar JWT después de `141` y probar perfiles VIEW, UPLOAD y ENQUEUE por separado.
+- Validar listado, detalle y filas con límites 1, página intermedia y página vacía.
+- Repetir filtros por fecha, estado, archivo y ambiente y contrastar totales con SQL saneado.
+- Probar aislamiento cruzado entre DEMO, REMIGIO y CANARIS sin revelar datos.
+- Verificar por inspección de respuestas que no aparecen clave completa, línea/cabecera TXT, XML,
+  JWT, conexión o secreto.
 - Cliente tipado a través de `NuanApiClient`.
 - Revisión de `.Designer.cs`, controles corporativos, FormKey y permisos.
-- Abrir Visual Studio Designer y validar layout/resizing/DPI.
-- Probar monitor, historial y navegación al documento.
+- Abrir Visual Studio Designer y validar layout, resizing, DPI, tab order y estados empty/error/busy.
+- Probar paginación de ambos grids, enqueue condicionado y navegación por `QueueId` al monitor.
+- No cargar TXT ni volver a probar `Staged -> Pending` salvo que la autorización runtime lo incluya
+  expresamente; la fase CRUD puede usar fixtures controlados ya preparados.
 
 ### Fase F — SAP, después de aprobación
 
@@ -145,7 +166,7 @@ No validado por falta de autorización de ejecución: sintaxis contra motor SQL 
 2. Retención indefinida provisional y minimización de claves aprobadas.
 3. Modelo SQL y política de concurrencia aprobados para implementación; ejecución SQL requiere autorización independiente.
 4. Permisos aprobados sin grants automáticos a roles existentes.
-5. WinForms, FormKey, menú y UX diferidos.
+5. WinForms, FormKey, menú y UX aprobados para implementación; ejecución de `140`/`141` y runtime diferidos.
 6. UDT, payload mínimo y Service Layer aprobados como dirección futura; todo código SAP permanece diferido.
 7. Plan de despliegue/recuperación documentado antes de ejecutar SQL.
 

@@ -506,15 +506,21 @@ The approved pilot traverses only `Environment + AccessKey -> authorization look
 The approved TXT capture extension adds:
 
 ```text
-multipart TXT upload [implemented; runtime not executed]
+multipart TXT upload [implemented and runtime-validated]
   -> strict UTF-8 / Windows-1252 streaming parser
-  -> tenant SriTxtImports + normalized SriTxtImportRows + audit [script 138; not deployed]
+  -> tenant SriTxtImports + normalized SriTxtImportRows + audit [script 138 deployed in pilot tenants]
   -> valid identity creates/links SriDocumentQueue as Staged
   -> explicit permission-controlled Staged -> Pending
   -> existing SriWorker claim (Pending | RetryScheduled only)
+  -> safe paged CRUD + independent WinForms monitor [implementation authorized; runtime pending]
 ```
 
-`Staged` is not worker-claimable. Invalid TXT rows never create queue records. The complete access key remains transient during upload and persists only in `SriDocumentQueue`; public queue/import projections expose a mask and display status. Master script `139` registers independent TXT upload/enqueue permissions without role grants. SAP and WinForms are not consumers of this extension yet.
+`Staged` is not worker-claimable. Invalid TXT rows never create queue records. The complete access key
+remains transient during upload and persists only in `SriDocumentQueue`; public queue/import
+projections expose a mask and display status. Master script `139` registers independent TXT
+view/upload/enqueue permissions without role grants. The CRUD extension uses `140`/`141` for
+server-side paging and navigation metadata, also without automatic role grants. SAP is not a
+consumer of this extension.
 
 Iteration 6 adds implemented and runtime-validated operational contracts:
 

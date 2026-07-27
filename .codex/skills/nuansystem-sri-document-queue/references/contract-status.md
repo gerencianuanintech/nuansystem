@@ -38,7 +38,7 @@
 - Forward repair `123` aligns every monitor-summary aggregate with the public `long` DTO by returning non-null SQL `bigint` values. It was executed twice in `NuanSystem_DEMO`, `NuanSystem_DEMO_REMIGIO`, and `NuanSystem_DEMO_CANARIS`; each tenant retained one schema-history version and one procedure with five `bigint` result columns. Real Dapper materialization returned `4/0/0/1/0` in DEMO and `0/0/0/0/0` in both branches, with protected counts unchanged. The DEMO monitor was opened and refreshed visually; branch validation was persistence-only. No worker or SRI call was started, and Master was not changed by this repair.
 - The detailed sanitized evidence is `docs/operations/SRI-DOCUMENT-MONITOR.md`; retain only this summary in the skill reference.
 
-## Implemented for SRI TXT Import (not deployed)
+## Implemented and runtime-validated for SRI TXT Import core
 
 - `Application/Features/SriTxtImports` implements bounded streaming parsing for strict UTF-8 and Windows-1252, normalized 12-column rows, SHA-256 identities, masking, validation and explicit enqueue commands.
 - Tenant script `138_tenant_sri_txt_import.sql` defines import header/detail/audit, file-hash idempotency, TVP persistence, queue linking and the forward-only `Staged` state.
@@ -47,8 +47,15 @@
 - The worker claim procedure in script `117` remains unchanged and continues selecting only `Pending` and `RetryScheduled`.
 - `SriTxtImportEndpoints` exposes multipart upload and explicit enqueue through independent permissions.
 - Master script `139_master_sri_txt_import_security.sql` registers the approved aliases without grants to existing roles and without WinForms/menu records.
-- SAP and WinForms remain outside this implementation.
-- Automated parser, handler, security, serialization and static SQL contract tests exist. Scripts `138`/`139`, API runtime, SQL concurrency and tenant isolation have not been executed or deployed.
+- Scripts `138`/`139`, API multipart, SQL concurrency, idempotent enqueue, rollback, claim exclusion,
+  permissions and isolation were runtime-validated under the approved gate; do not repeat that
+  evidence when validating the CRUD extension.
+- The authorized CRUD extension adds server-paged list/detail/row projections, safe `QueueId`
+  navigation and an independent corporate WinForms monitor. It must never project the complete
+  access key, raw TXT/header line, XML, JWT, connection or secret.
+- Forward scripts `140`/`141` are implementation artifacts only until separately authorized. They
+  must not auto-grant existing roles. Query, upload and enqueue permissions remain independent.
+- SAP remains outside this implementation.
 
 ## Approved pilot direction
 

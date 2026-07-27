@@ -19,7 +19,15 @@ Implementado en la rama `refactor/codex-skills-v9-sri-txt-import`:
 - redacción de claves y estados legibles en DTO;
 - pruebas automatizadas y contractuales.
 
-No ejecutado ni desplegado: scripts SQL, API runtime, worker, WinForms, SRI o SAP. WinForms y SAP no fueron implementados.
+Los scripts `138_tenant_sri_txt_import.sql` y `139_master_sri_txt_import_security.sql` y el runtime del núcleo
+`TXT -> Staged -> Pending` fueron validados bajo autorización separada en Master y los tres tenants piloto.
+Esa evidencia no se repite en la fase CRUD.
+
+Autorizado el 2026-07-27: cerrar la consulta paginada de importaciones y filas, el detalle saneado,
+la navegación hacia `SriDocumentQueue` y un formulario WinForms independiente. Las nuevas migraciones
+propuestas son `140_tenant_sri_txt_import_crud.sql` y
+`141_master_sri_txt_import_crud_security.sql`; se generan, pero no se ejecutan sin una autorización
+posterior. SAP, llamadas SRI y ejecución del worker continúan excluidos.
 
 ## 1. Discovery Record
 
@@ -466,9 +474,9 @@ Grupo candidato: `/api/sri/txt-imports`.
 
 | Método/ruta | Propósito |
 | --- | --- |
-| `GET /` | Lista paginada con fecha, estado, usuario y nombre |
-| `GET /{id}` | Cabecera y conteos |
-| `GET /{id}/rows` | Filas paginadas, filtros y errores autorizados |
+| `GET /` | Lista paginada con fecha, estado, nombre de archivo y ambiente; incluye totales filtrados |
+| `GET /{id}` | Cabecera y conteos saneados |
+| `GET /{id}/rows` | Filas paginadas por validez, con máscara y vínculo opcional a cola |
 | `POST /upload` | Multipart; registra y analiza archivo |
 | `POST /{id}/validate` | Revalidación explícita cuando el estado lo permita |
 | `POST /{id}/enqueue` | Cambia atómicamente colas propias `Staged -> Pending`; ignora de forma idempotente colas ya avanzadas |
@@ -478,7 +486,14 @@ Grupo candidato: `/api/sri/txt-imports`.
 | `GET /{id}/sap-status` | Resumen de integración SAP |
 | `GET /{id}/rows/{rowId}/sri-document` | Identidad/ruta autorizada para abrir Monitor SRI |
 
-La subida requiere una extensión estrecha y compatible hacia atrás en `INuanApiClient`, por ejemplo `PostMultipartAsync` o `PostFileAsync`. JSON Base64 se descarta por costo de memoria y expansión del contenido.
+La subida requiere multipart en API. El CRUD WinForms autorizado no incorpora carga en esta fase y,
+por tanto, no amplía `INuanApiClient`: consume únicamente consultas JSON y el enqueue ya existente.
+JSON Base64 se descarta por costo de memoria y expansión del contenido.
+
+Las proyecciones públicas nunca incluyen `AccessKey`, `HeaderLine`, la línea TXT original, XML,
+conexiones, JWT ni secretos. Una fila vinculada expone únicamente `QueueId`, estado visible,
+hash y máscara; `QueueId` permite abrir el monitor documental, cuya autorización sigue siendo
+independiente.
 
 ### Límites iniciales propuestos
 
@@ -510,15 +525,15 @@ Si el piloto demuestra que 50.000 filas no caben de forma segura en el límite, 
 
 ### Superficie
 
-- filtros: rango de fecha, estado, usuario y archivo;
-- acciones: `Cargar TXT`, refrescar, validar, encolar, reprocesar, eliminar lógico, historial;
-- KPI: total de cargas/filas, válidas, inválidas, vinculadas/encoladas, conflictos y SAP pendiente;
+- filtros: rango de fecha, estado, archivo y ambiente;
+- acciones de esta fase: refrescar, limpiar filtros, encolar y abrir la cola vinculada;
+- KPI: filas totales, válidas, inválidas, vinculadas, `Staged` y `Pending`;
 - grid principal de cargas con `NuanDataGridControl`;
 - panel/pestaña de resumen y grid de filas paginado;
 - errores saneados y máscara de clave;
 - indicador SAP con texto y estado, no solo color;
 - acción por fila para abrir el documento relacionado en el Monitor SRI;
-- historial mediante `RecordHistoryForm`.
+- detalle de cabecera sin la línea TXT original.
 
 Se usan `NuanActionButton`, `BrandResources`, `AppTypography`, `FormStyler` y controles corporativos. Los catálogos cerrados de estado pueden usar el editor corporativo aplicable; `NuanLookupEdit` se usa solamente si el contrato de datos lo justifica.
 
@@ -540,7 +555,11 @@ Permisos aprobados, sin concesión automática a ningún rol existente:
 - `SRI.TXT_IMPORTS.VIEW_HISTORY`
 - `SRI.TXT_IMPORTS.VIEW_SAP_STATUS`
 
-Abrir/descargar un documento SRI conserva los permisos existentes del monitor/XML. El script Master futuro debe sembrar los códigos en `Permissions`, pero no debe insertar concesiones en `RolePermissions` para roles existentes. WinForms, formulario, menú y operaciones quedan fuera de esta fase. Una concesión posterior requerirá aprobación separada y un JWT renovado.
+Abrir/descargar un documento SRI conserva los permisos existentes del monitor/XML. El script `139`
+ya sembró los códigos en `Permissions` sin concesiones. El script `141` registra el formulario,
+menú y operaciones de esta fase, también sin insertar concesiones en `RolePermissions`,
+`SecurityRoleMenus` ni `SecurityRoleFormOperations`. Consulta, carga y enqueue conservan permisos
+independientes; una concesión posterior requiere aprobación separada y un JWT renovado.
 
 ## 13. Idempotencia, auditoría y recuperación
 
@@ -655,6 +674,13 @@ Decisiones aprobadas el 2026-07-27:
 14. El worker conserva el claim exclusivo sobre `Pending` y `RetryScheduled`; `Staged` nunca es reclamable.
 15. Cualquier cola preexistente se vincula sin reiniciar estado. Una segunda acción Encolar es idempotente.
 16. Los contratos API distinguen `Staged` como “Preparado” y `Pending` como “Pendiente de consulta”, sin exponer la clave.
+17. El CRUD propio de importaciones expone listado, detalle y filas mediante paginación de servidor,
+    con filtros por fecha, estado, nombre de archivo y ambiente.
+18. Los totales filtrados distinguen filas totales, válidas, inválidas, vinculadas, `Staged` y `Pending`.
+19. Ninguna respuesta pública incluye clave completa, cabecera/línea TXT original, XML, JWT,
+    conexiones o secretos. La navegación al monitor se hace solo mediante `QueueId`.
+20. El formulario WinForms es un monitor operacional independiente, usa controles corporativos y
+    Designer, y no implementa SAP ni acceso directo a SQL/SRI.
 
 ### Alcance autorizado de implementación
 
@@ -666,8 +692,10 @@ Decisiones aprobadas el 2026-07-27:
 - ampliación forward-only del constraint de estados para agregar `Staged`, sin modificar filas existentes;
 - permisos Master sin grants automáticos;
 - pruebas automáticas.
+- consultas CRUD paginadas y saneadas, formulario WinForms y navegación autorizada a la cola.
 
-Quedan excluidos WinForms, SAP, ejecución SQL, runtime API, workers y cualquier llamada externa. SQL o runtime requieren autorizaciones independientes.
+Quedan excluidos SAP, ejecución SQL, runtime API/WinForms, workers y cualquier llamada externa.
+Los scripts `140`/`141` o el runtime CRUD requieren autorizaciones independientes.
 
 ## 17. Plan de implementación en commits pequeños
 
@@ -689,4 +717,7 @@ Cada commit debe compilar y probar su alcance, no modificar scripts históricos 
 
 ## 18. Criterio de salida del blueprint
 
-El núcleo `TXT -> SriDocumentQueue` está aprobado para implementación bajo el alcance de la sección 16. WinForms y SAP permanecen diferidos. La ausencia del contrato técnico detallado de la UDT no bloquea el núcleo ni autoriza una integración SAP improvisada.
+El núcleo `TXT -> Staged -> Pending` está implementado y fue validado bajo su autorización previa.
+El CRUD de consulta y su formulario quedan autorizados para implementación, pero no para ejecutar
+sus nuevas migraciones ni su runtime. SAP permanece diferido. La ausencia del contrato técnico
+detallado de la UDT no autoriza una integración SAP improvisada.
