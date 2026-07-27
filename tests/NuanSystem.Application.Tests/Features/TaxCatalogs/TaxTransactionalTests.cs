@@ -101,6 +101,7 @@ public sealed class TaxTransactionalTests
     {
         var tenant = ReadSource("database", "sql", "144_tenant_tax_transactional_outbox.sql");
         var master = ReadSource("database", "sql", "145_master_tax_transactional_registration.sql");
+        var rateHardening = ReadSource("database", "sql", "146_tenant_tax_rate_constraint_hardening.sql");
         var designer = ReadSource("src", "Frontend", "NuanSystem.WinForms.Forms", "TaxCatalogs", "Taxes", "TaxEditForm.Designer.cs");
 
         tenant.Should().Contain("CREATE UNIQUE INDEX UQ_Taxes_Code ON dbo.Taxes(Code)")
@@ -112,6 +113,10 @@ public sealed class TaxTransactionalTests
             .And.Contain("N'MasterBranchSyncWorker'");
         master.Should().Contain("N'Tax'").And.Contain("CONVERT(bit,0)")
             .And.NotContain("RolePermissions").And.NotContain("SecurityRoleMenus");
+        rateHardening.Should().Contain("Rate < 0 OR Rate > 1")
+            .And.Contain("CHECK (Rate >= 0 AND Rate <= 1)")
+            .And.Contain("WITH CHECK CHECK CONSTRAINT CK_Taxes_Rate")
+            .And.Contain("20260727.146");
         designer.Should().Contain("Controls.SetChildIndex(btnGuardar")
             .And.NotContain("SimpleButton btnSave").And.NotContain("SimpleButton btnCancel");
     }

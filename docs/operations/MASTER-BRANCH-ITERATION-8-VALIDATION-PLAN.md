@@ -513,3 +513,17 @@ Estado:
 - SQL real: no autorizado;
 - runtime: no autorizado;
 - SAP y SRI: fuera de alcance.
+
+### Gate SQL Tax 8.7 — 2026-07-27
+
+- Los respaldos verificados de Master, DEMO, Remigio y Cañaris se conservaron.
+- Los scripts 144 y 145 aprobaron dos pases y dejaron una sola versión por
+  base.
+- Master conserva Tax deshabilitado y sin grants automáticos.
+- Los tres tenants conservan dos filas Tax idénticas, sin duplicados, tasas
+  fuera de rango, tombstones, nuevos outbox o nuevas auditorías.
+- Se detuvo el cierre al comprobar que `CK_Taxes_Rate` solo exige
+  `Rate >= 0`.
+- La migración correctiva 146 está preparada y probada estáticamente, pero no
+  ejecutada. Requiere autorización separada, dos pases y pruebas negativas
+  reales antes de continuar al runtime Matriz–Sucursal.

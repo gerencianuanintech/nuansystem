@@ -247,3 +247,23 @@ La Fase 8.7 solo se aprobará cuando CRUD/LocalOutbox sean atómicos, Full e
 incremental compartan payload, las sucursales resuelvan por GlobalId, ninguna
 colisión adopte códigos, el tombstone permanezca reservado, frontend y Designer
 aprueben, se restaure toda configuración y no queden fixtures o eventos.
+
+## Despliegue SQL controlado
+
+El 27 de julio de 2026 se ejecutaron dos veces, con workers y relay
+deshabilitados:
+
+- `145_master_tax_transactional_registration.sql` en `NuanSystem_Master`;
+- `144_tenant_tax_transactional_outbox.sql` en DEMO, Remigio y Cañaris.
+
+Los cuatro respaldos `COPY_ONLY WITH CHECKSUM` aprobaron
+`RESTORE VERIFYONLY WITH CHECKSUM`. Cada historial contiene una sola versión,
+no se concedieron permisos automáticamente y no se alteraron datos Tax,
+outbox, inbox ni auditorías existentes.
+
+El gate profundo detectó que la restricción histórica `CK_Taxes_Rate` de los
+tres tenants solo protege `Rate >= 0`. Aunque los datos y procedimientos
+cumplen `0..1`, la base todavía no impide directamente `Rate > 1`.
+`146_tenant_tax_rate_constraint_hardening.sql` queda preparado como migración
+correctiva hacia adelante, pero no desplegado. La fase permanece bloqueada
+hasta ejecutar y validar 146 con autorización independiente.
