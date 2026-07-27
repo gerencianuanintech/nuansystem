@@ -162,8 +162,8 @@ Los valores externos no podrán sobrescribirse desde el CRUD.
 
 ## Seguridad
 
-- `TAXCATALOGS.TAXES.READ`
-- `TAXCATALOGS.TAXES.MANAGE`
+- `TAX.RATES.READ`
+- `TAX.RATES.MANAGE`
 - `FormKey`: `taxes`
 - menú: Catálogos tributarios > Impuestos
 
@@ -219,7 +219,25 @@ manteniendo perfiles y rutas deshabilitados por defecto.
 3. Índices históricos filtrados permiten reutilizar tombstones.
 4. Item depende de Tax y puede impedir eliminación.
 5. El contrato SAP de líneas usa otra representación; no se mezcla en esta fase.
-6. Tax no tiene aún frontend ni permisos propios.
+6. El historial depende del contrato corporativo de auditoría de inventario y
+   debe comprobarse en runtime con un registro real.
+
+## Implementación estática
+
+La implementación quedó completada en cuatro commits lineales:
+
+- `723212f1` — discovery y decisiones;
+- `1d470bbf` — CRUD transaccional, LocalOutbox y aplicador dedicado;
+- `bf0de76f` — scripts tenant 144 y Master 145;
+- `a43a9517` — WinForms independiente y pruebas.
+
+La compilación completa finalizó con cero errores y cero advertencias. Las
+pruebas focalizadas Tax aprobaron 7/7 y la suite completa 546/546 ejecutadas,
+con cinco diagnósticas omitidas por infraestructura.
+
+No se ejecutó SQL, no se activaron perfiles, rutas o workers y no se llamó a
+SAP ni SRI. La siguiente puerta es el despliegue idempotente de 144/145 con
+respaldos verificados y autorización separada.
 
 ## Criterio de cierre
 

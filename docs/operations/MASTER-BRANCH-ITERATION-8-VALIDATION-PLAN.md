@@ -506,7 +506,10 @@ Estado:
 
 - discovery: aprobado;
 - decisiones del propietario: aprobadas;
-- implementación: en curso;
+- implementación estática: completada;
+- build: 0 errores / 0 advertencias;
+- pruebas Tax: 7 aprobadas / 0 fallidas;
+- suite completa: 546 aprobadas / 5 diagnósticas omitidas / 0 fallidas;
 - SQL real: no autorizado;
 - runtime: no autorizado;
 - SAP y SRI: fuera de alcance.
