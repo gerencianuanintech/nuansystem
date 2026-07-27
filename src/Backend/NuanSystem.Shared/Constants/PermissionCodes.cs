@@ -72,6 +72,8 @@ public static class PermissionCodes
     public const string GeographyCitiesManage = "GEOGRAPHY.CITIES.MANAGE";
     public const string TaxRegimesRead = "TAX.REGIMES.READ";
     public const string TaxRegimesManage = "TAX.REGIMES.MANAGE";
+    public const string TaxRatesRead = "TAX.RATES.READ";
+    public const string TaxRatesManage = "TAX.RATES.MANAGE";
     public const string TaxpayerTypesRead = "TAX.TAXPAYERTYPES.READ";
     public const string TaxpayerTypesManage = "TAX.TAXPAYERTYPES.MANAGE";
     public const string RetentionTypesRead = "TAX.RETENTIONTYPES.READ";
@@ -234,6 +236,8 @@ public static class PermissionCodes
         GeographyCitiesManage,
         TaxRegimesRead,
         TaxRegimesManage,
+        TaxRatesRead,
+        TaxRatesManage,
         TaxpayerTypesRead,
         TaxpayerTypesManage,
         RetentionTypesRead,

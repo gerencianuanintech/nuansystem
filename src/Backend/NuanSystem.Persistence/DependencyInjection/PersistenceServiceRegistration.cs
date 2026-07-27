@@ -82,6 +82,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ISapPurchaseOrderImportRepository, SapPurchaseOrderImportRepository>();
         services.AddScoped<ISapPaymentTermImportRepository, SapPaymentTermImportRepository>();
         services.AddScoped<ITaxCatalogRepository, TaxCatalogRepository>();
+        services.AddScoped<ITaxRepository, TaxRepository>();
         services.AddScoped<ICompanyAdminRepository, CompanyAdminRepository>();
         services.AddScoped<IConfigurationCompanyRepository, ConfigurationCompanyRepository>();
         services.AddScoped<ITenantFeatureRepository, TenantFeatureRepository>();
@@ -153,6 +154,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ICitySyncApplyRepository, CitySyncApplyRepository>();
         services.AddScoped<ICurrencySyncApplyRepository, CurrencySyncApplyRepository>();
         services.AddScoped<IPriceListSyncApplyRepository, PriceListSyncApplyRepository>();
+        services.AddScoped<ITaxSyncApplyRepository, TaxSyncApplyRepository>();
         services.AddScoped<IReferenceCatalogSyncApplyRepository, ReferenceCatalogSyncApplyRepository>();
         services.AddScoped<IPurchaseOrderRoutingRepository, PurchaseOrderRoutingRepository>();
         services.AddScoped<IPurchaseOrderSyncApplyRepository, PurchaseOrderSyncApplyRepository>();

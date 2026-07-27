@@ -3,6 +3,8 @@ using MediatR;
 using NuanSystem.Api.Extensions;
 using NuanSystem.Application.Features.TaxCatalogs.Catalogs.Commands;
 using NuanSystem.Application.Features.TaxCatalogs.Catalogs.Queries;
+using NuanSystem.Application.Features.TaxCatalogs.Taxes.Commands;
+using NuanSystem.Application.Features.TaxCatalogs.Taxes.Queries;
 using NuanSystem.Shared.Constants;
 
 namespace NuanSystem.Api.Endpoints;
@@ -16,8 +18,43 @@ public static class TaxCatalogEndpoints
         MapCatalog(app, "retention-types");
         MapCatalog(app, "tax-supports");
         MapRetentionConcepts(app);
+        MapTaxes(app);
 
         return app;
+    }
+
+    private static void MapTaxes(IEndpointRouteBuilder app)
+    {
+        const string route = "/api/tax-catalogs/taxes";
+
+        app.MapGet(route, async (ISender sender, CancellationToken cancellationToken) =>
+            (await sender.Send(new GetTaxesQuery(), cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.TaxRatesRead);
+        app.MapGet($"{route}/lookup", async (ISender sender, CancellationToken cancellationToken) =>
+            (await sender.Send(new GetTaxLookupQuery(), cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.TaxRatesRead);
+        app.MapGet($"{route}/{{id:int}}", async (int id, ISender sender, CancellationToken cancellationToken) =>
+            (await sender.Send(new GetTaxByIdQuery(id), cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.TaxRatesRead);
+        app.MapPost(route, async (SaveTaxRequest request, ISender sender, ClaimsPrincipal user, CancellationToken cancellationToken) =>
+        {
+            var audit = user.GetAuditUser();
+            return (await sender.Send(new CreateTaxCommand(
+                request.Code, request.Name, request.Description, request.Rate,
+                request.IsActive, audit.UserId, audit.UserName), cancellationToken)).ToHttpResult();
+        }).RequirePermission(PermissionCodes.TaxRatesManage);
+        app.MapPut($"{route}/{{id:int}}", async (int id, SaveTaxRequest request, ISender sender, ClaimsPrincipal user, CancellationToken cancellationToken) =>
+        {
+            var audit = user.GetAuditUser();
+            return (await sender.Send(new UpdateTaxCommand(
+                id, request.Code, request.Name, request.Description, request.Rate,
+                request.IsActive, audit.UserId, audit.UserName), cancellationToken)).ToHttpResult();
+        }).RequirePermission(PermissionCodes.TaxRatesManage);
+        app.MapDelete($"{route}/{{id:int}}", async (int id, ISender sender, ClaimsPrincipal user, CancellationToken cancellationToken) =>
+        {
+            var audit = user.GetAuditUser();
+            return (await sender.Send(new DeleteTaxCommand(id, audit.UserId, audit.UserName), cancellationToken)).ToHttpResult();
+        }).RequirePermission(PermissionCodes.TaxRatesManage);
     }
 
     private static void MapCatalog(IEndpointRouteBuilder app, string catalogKey)
@@ -207,6 +244,13 @@ public static class TaxCatalogEndpoints
         decimal Percent,
         bool AppliesIva,
         bool AppliesIncome,
+        bool IsActive);
+
+    private sealed record SaveTaxRequest(
+        string Code,
+        string Name,
+        string? Description,
+        decimal Rate,
         bool IsActive);
 
     private sealed record CatalogPermissions(string Read, string Manage);
