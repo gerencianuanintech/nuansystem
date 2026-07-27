@@ -30,6 +30,12 @@ public sealed class UploadSriTxtImportCommandValidator : AbstractValidator<Uploa
             .Must(stream => stream.CanRead && stream.CanSeek)
             .WithMessage("El flujo del archivo no es valido.")
             .WithErrorCode("SRI_TXT_STREAM_INVALID");
+
+        RuleFor(x => x.Content)
+            .Must((command, stream) =>
+                !stream.CanSeek || stream.Length == command.FileSizeBytes)
+            .WithMessage("El tamaño declarado no coincide con el contenido del archivo.")
+            .WithErrorCode("SRI_TXT_FILE_SIZE_MISMATCH");
     }
 }
 

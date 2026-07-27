@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace NuanSystem.Application.Features.SriTxtImports.Dtos;
 
 public sealed class SriTxtImportDetailDto
@@ -35,7 +37,7 @@ public sealed record SriTxtParsedRow(
     Guid RowGlobalId,
     int LineNumber,
     byte[] RowSha256,
-    string? AccessKey,
+    [property: JsonIgnore] string? AccessKey,
     byte[]? AccessKeySha256,
     string? MaskedAccessKey,
     string? IssuerRuc,

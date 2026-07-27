@@ -1,5 +1,6 @@
 using FluentAssertions;
 using NSubstitute;
+using System.Text.Json;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.SriDocuments;
@@ -30,6 +31,35 @@ public sealed class SriTxtImportCommandTests
         var result = new UploadSriTxtImportCommandValidator().Validate(command);
 
         result.Errors.Should().Contain(error => error.ErrorCode == "SRI_TXT_ENCODING_NOT_ALLOWED");
+    }
+
+    [Fact]
+    public void UploadValidator_RejectsLengthDifferentFromStream()
+    {
+        using var stream = new MemoryStream([1, 2]);
+        var command = new UploadSriTxtImportCommand(
+            "received.txt",
+            1,
+            "text/plain",
+            stream,
+            Guid.NewGuid(),
+            1,
+            "tester");
+
+        var result = new UploadSriTxtImportCommandValidator().Validate(command);
+
+        result.Errors.Should().Contain(error => error.ErrorCode == "SRI_TXT_FILE_SIZE_MISMATCH");
+    }
+
+    [Fact]
+    public void ParsedRow_DoesNotSerializeTransientAccessKey()
+    {
+        var row = ParsedFile(SriTxtRowValidationStatusCodes.Valid).Rows.Single();
+
+        var json = JsonSerializer.Serialize(row);
+
+        json.Should().NotContain(row.AccessKey!);
+        json.Should().Contain(row.MaskedAccessKey!);
     }
 
     [Fact]

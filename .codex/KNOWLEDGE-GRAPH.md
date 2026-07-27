@@ -503,6 +503,19 @@ The SRI graph has no edge to `SyncOutbox`, SAP outbox, `NuanSystem.SyncWorker`, 
 
 The approved pilot traverses only `Environment + AccessKey -> authorization lookup -> immutable authorized XML`. Generation, signing, submission, cancellation, and portal scraping have no edge in this pilot. Queue/worker/XML runtime, one expressly authorized Production round trip and the Phase 5.5 protected download/monitor are validated. See `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md` and `docs/operations/SRI-DOCUMENT-MONITOR.md`.
 
+The approved TXT capture extension adds:
+
+```text
+multipart TXT upload [implemented; runtime not executed]
+  -> strict UTF-8 / Windows-1252 streaming parser
+  -> tenant SriTxtImports + normalized SriTxtImportRows + audit [script 138; not deployed]
+  -> valid identity creates/links SriDocumentQueue as Staged
+  -> explicit permission-controlled Staged -> Pending
+  -> existing SriWorker claim (Pending | RetryScheduled only)
+```
+
+`Staged` is not worker-claimable. Invalid TXT rows never create queue records. The complete access key remains transient during upload and persists only in `SriDocumentQueue`; public queue/import projections expose a mask and display status. Master script `139` registers independent TXT upload/enqueue permissions without role grants. SAP and WinForms are not consumers of this extension yet.
+
 Iteration 6 adds implemented and runtime-validated operational contracts:
 
 ```text

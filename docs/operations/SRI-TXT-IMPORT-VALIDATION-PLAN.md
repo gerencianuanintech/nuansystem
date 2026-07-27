@@ -4,6 +4,20 @@
 
 Plan aprobado para validar el núcleo `TXT -> SriDocumentQueue`. La aprobación no autoriza ejecutar API, SQL Server, SAP HANA, workers, WinForms ni llamadas SRI.
 
+## Evidencia automática de implementación
+
+Validado sin ejecutar SQL ni runtime:
+
+- `dotnet build NuanSystem.sln --no-restore -v minimal`: correcto, 0 errores y 0 advertencias.
+- pruebas focalizadas SRI TXT: 16 aprobadas.
+- pruebas SRI completas: 75 aprobadas.
+- suite completa: 546 aprobadas, 5 omitidas por requerir infraestructura explícita, 0 fallidas.
+- las tres muestras locales fueron procesadas de forma transitoria: 7.028, 2.722 y 1.322 filas, Windows-1252 y sin filas inválidas; no se copiaron al repositorio ni se imprimieron claves.
+- contrato estático: claim de script `117` conserva exclusivamente `Pending` y `RetryScheduled`.
+- contrato estático: script `139` no contiene grants a `RolePermissions`.
+
+No validado por falta de autorización de ejecución: sintaxis contra motor SQL Server, doble ejecución de scripts, concurrencia SQL real, rollback tenant real, permisos con JWT, multipart runtime y aislamiento entre bases tenant.
+
 ## Principios de evidencia
 
 - Usar base tenant de prueba autorizada y datos sintéticos; nunca copiar claves reales a fixtures del repositorio.

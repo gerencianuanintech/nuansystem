@@ -6,7 +6,20 @@
 
 Este documento define un módulo tenant para registrar cargas TXT, validar sus filas y vincular las filas válidas con la cola durable SRI existente. También presenta alternativas para una integración posterior con SAP Business One sobre HANA.
 
-Esta ejecución no implementa código ni scripts SQL, no modifica bases de datos, no inicia API, WinForms o workers y no llama al SRI ni a SAP.
+### Estado de implementación del núcleo
+
+Implementado en la rama `refactor/codex-skills-v9-sri-txt-import`:
+
+- contratos, handlers y validadores Application;
+- parser streaming UTF-8 estricto/Windows-1252;
+- script tenant `138` y repositorio Dapper;
+- estado `Staged` y transición explícita `Staged -> Pending`;
+- script Master `139` sin grants automáticos;
+- API multipart y permisos independientes de upload/enqueue;
+- redacción de claves y estados legibles en DTO;
+- pruebas automatizadas y contractuales.
+
+No ejecutado ni desplegado: scripts SQL, API runtime, worker, WinForms, SRI o SAP. WinForms y SAP no fueron implementados.
 
 ## 1. Discovery Record
 

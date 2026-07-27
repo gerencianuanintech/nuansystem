@@ -38,6 +38,18 @@
 - Forward repair `123` aligns every monitor-summary aggregate with the public `long` DTO by returning non-null SQL `bigint` values. It was executed twice in `NuanSystem_DEMO`, `NuanSystem_DEMO_REMIGIO`, and `NuanSystem_DEMO_CANARIS`; each tenant retained one schema-history version and one procedure with five `bigint` result columns. Real Dapper materialization returned `4/0/0/1/0` in DEMO and `0/0/0/0/0` in both branches, with protected counts unchanged. The DEMO monitor was opened and refreshed visually; branch validation was persistence-only. No worker or SRI call was started, and Master was not changed by this repair.
 - The detailed sanitized evidence is `docs/operations/SRI-DOCUMENT-MONITOR.md`; retain only this summary in the skill reference.
 
+## Implemented for SRI TXT Import (not deployed)
+
+- `Application/Features/SriTxtImports` implements bounded streaming parsing for strict UTF-8 and Windows-1252, normalized 12-column rows, SHA-256 identities, masking, validation and explicit enqueue commands.
+- Tenant script `138_tenant_sri_txt_import.sql` defines import header/detail/audit, file-hash idempotency, TVP persistence, queue linking and the forward-only `Staged` state.
+- Valid upload rows create or link one `SriDocumentQueue`; invalid rows never create queue records. The complete access key is transient in Application/TVP and persists only in `SriDocumentQueue`.
+- `Staged -> Pending` is the only newly approved transition. It is atomic, concurrency-controlled and audited. Repeated enqueue does not create a queue, attempt or duplicate event.
+- The worker claim procedure in script `117` remains unchanged and continues selecting only `Pending` and `RetryScheduled`.
+- `SriTxtImportEndpoints` exposes multipart upload and explicit enqueue through independent permissions.
+- Master script `139_master_sri_txt_import_security.sql` registers the approved aliases without grants to existing roles and without WinForms/menu records.
+- SAP and WinForms remain outside this implementation.
+- Automated parser, handler, security, serialization and static SQL contract tests exist. Scripts `138`/`139`, API runtime, SQL concurrency and tenant isolation have not been executed or deployed.
+
 ## Approved pilot direction
 
 The first pilot is query and download by access key for previously authorized documents. Emission, signing, submission, cancellation, and portal scraping are excluded. Its functional contract, identity, states, security rules, and unresolved infrastructure decisions live in `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`.

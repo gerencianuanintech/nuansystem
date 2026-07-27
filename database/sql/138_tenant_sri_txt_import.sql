@@ -515,9 +515,16 @@ BEGIN
         (SELECT COUNT(1) FROM dbo.SriTxtImportRows WHERE ImportId = @ImportId AND EnqueueStatus IN ('LinkedExisting', 'LinkedAuthorized'));
     DECLARE @ConflictRows int =
         (SELECT COUNT(1) FROM dbo.SriTxtImportRows WHERE ImportId = @ImportId AND EnqueueStatus = 'Conflict');
+    DECLARE @FinalValidationStatus varchar(30) =
+        CASE
+            WHEN @InvalidRows + @DuplicateRows + @ConflictRows > 0
+                THEN 'ValidatedWithErrors'
+            ELSE 'Validated'
+        END;
 
     UPDATE dbo.SriTxtImports
-    SET StagedRows = @StagedRows,
+    SET Status = @FinalValidationStatus,
+        StagedRows = @StagedRows,
         LinkedRows = @LinkedRows,
         ConflictRows = @ConflictRows,
         ValidRows = @ValidRows - @ConflictRows,
@@ -531,7 +538,7 @@ BEGIN
     )
     VALUES
     (
-        @ImportId, N'UploadValidated', NULL, @InitialStatus,
+        @ImportId, N'UploadValidated', NULL, @FinalValidationStatus,
         CONCAT(N'Filas=', @TotalRows, N';Validas=', @ValidRows - @ConflictRows,
                N';Invalidas=', @InvalidRows + @ConflictRows, N';Duplicadas=', @DuplicateRows),
         @AuditUserId, @AuditUserName, @TraceId

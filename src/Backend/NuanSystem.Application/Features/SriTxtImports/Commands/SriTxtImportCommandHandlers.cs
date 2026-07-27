@@ -32,7 +32,7 @@ public sealed class UploadSriTxtImportCommandHandler(
         var result = await repository.RegisterValidatedAsync(
             new RegisterValidatedSriTxtImportData(
                 Guid.NewGuid(),
-                Path.GetFileName(request.OriginalFileName),
+                Path.GetFileName(request.OriginalFileName.Replace('\\', '/')),
                 parsed.FileSha256,
                 request.FileSizeBytes,
                 parsed.EncodingCode,
