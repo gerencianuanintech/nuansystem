@@ -524,6 +524,12 @@ Estado:
   fuera de rango, tombstones, nuevos outbox o nuevas auditorías.
 - Se detuvo el cierre al comprobar que `CK_Taxes_Rate` solo exige
   `Rate >= 0`.
-- La migración correctiva 146 está preparada y probada estáticamente, pero no
-  ejecutada. Requiere autorización separada, dos pases y pruebas negativas
-  reales antes de continuar al runtime Matriz–Sucursal.
+- La migración correctiva 146 se ejecutó dos veces en DEMO, Remigio y
+  Cañaris, con respaldos nuevos previamente verificados.
+- Cada tenant conserva una sola versión 146 y `CK_Taxes_Rate` habilitada,
+  confiable y cerrada sobre `0..1`.
+- Las pruebas reales dentro de transacciones revertidas rechazaron
+  `-0.000001` y `1.000001`.
+- Los conteos y huellas de Taxes, LocalOutbox, SyncInbox y auditoría Tax
+  coincidieron exactamente antes y después. El gate SQL queda aprobado; el
+  runtime Matriz–Sucursal continúa requiriendo autorización separada.

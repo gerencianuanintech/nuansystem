@@ -264,6 +264,13 @@ outbox, inbox ni auditorías existentes.
 El gate profundo detectó que la restricción histórica `CK_Taxes_Rate` de los
 tres tenants solo protege `Rate >= 0`. Aunque los datos y procedimientos
 cumplen `0..1`, la base todavía no impide directamente `Rate > 1`.
-`146_tenant_tax_rate_constraint_hardening.sql` queda preparado como migración
-correctiva hacia adelante, pero no desplegado. La fase permanece bloqueada
-hasta ejecutar y validar 146 con autorización independiente.
+
+La corrección hacia adelante
+`146_tenant_tax_rate_constraint_hardening.sql` se desplegó posteriormente dos
+veces en DEMO, Remigio y Cañaris, después de crear respaldos nuevos
+`COPY_ONLY WITH CHECKSUM` y aprobar `RESTORE VERIFYONLY WITH CHECKSUM`.
+Cada tenant conserva una sola versión 146 y una única restricción
+`CK_Taxes_Rate` habilitada y confiable con el contrato cerrado `0..1`.
+Las pruebas transaccionales confirmaron que valores negativos y mayores que
+uno son rechazados; todas las transacciones se revirtieron y las huellas Tax,
+outbox, inbox y auditoría permanecieron intactas.
