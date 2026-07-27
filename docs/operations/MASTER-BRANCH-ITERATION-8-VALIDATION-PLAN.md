@@ -441,3 +441,21 @@ Respaldos adicionales de la corrección:
 El cierre confirmó cero fixtures `I8WHRT1`, cero procesos NuanSystem, workers
 deshabilitados, rutas originales restauradas, build sin errores ni advertencias
 y 524 pruebas aprobadas, 5 diagnósticas omitidas y 0 fallidas.
+
+## Discovery Currency 8.5 — 2026-07-27
+
+Currency fue seleccionada como siguiente entidad porque ya tiene publicador
+incremental, fuente Full, aplicador e identidad `GlobalId`, y es dependencia
+obligatoria de PriceList. El discovery detectó dos contratos que deben
+corregirse antes de un piloto:
+
+- el CRUD guarda en tenant y luego publica directamente a Master;
+- el aplicador adopta por `Code` cuando no encuentra `GlobalId`.
+
+La propuesta migra solo `currencies` a `LocalOutbox` transaccional, conserva
+sin cambios los demás FinancialCatalogs y reemplaza la adopción por conflicto
+terminal con reserva de tombstone. Los scripts propuestos son 136 tenant y 137
+Master, deshabilitados por defecto. No fueron creados ni ejecutados.
+
+El detalle, decisiones pendientes y matriz futura están en
+[MASTER-BRANCH-ITERATION-8-5-CURRENCY-BLUEPRINT.md](../architecture/MASTER-BRANCH-ITERATION-8-5-CURRENCY-BLUEPRINT.md).

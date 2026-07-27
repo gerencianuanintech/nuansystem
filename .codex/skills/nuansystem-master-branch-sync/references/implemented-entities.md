@@ -19,8 +19,10 @@ terminal no-adoption appliers. ItemGroups scripts `129`/`130` and its
 DEMO-to-Remigio runtime pilot are validated, including atomic rollback,
 idempotent promotion, tombstone and terminal code collision. Its temporary
 Incremental/Remigio-only routing was restored after the pilot. Warehouse
-scripts `133`/`134` are deployed idempotently in Master, DEMO and Remigio as
-applicable, but Warehouse remains runtime-unvalidated.
+scripts `133`/`134`, forward tombstone reservation `135` and its
+DEMO-to-Remigio runtime pilot are validated. Warehouse preserves branch-local
+fields, rejects code adoption and restores all temporary routing after the
+pilot.
 
 Item payload v2 carries `ItemGroupGlobalId`, `ItemFamilyGlobalId` and separate
 inventory, purchase and sales UOM `GlobalId` values. `UnitOfMeasure` remains a
@@ -46,5 +48,5 @@ Supplier groups/classes, economic activities, zones, and supply methods have no 
 - monitor/manual actions: `Application/Features/Sync/Queries` and `Commands`
 - worker/appliers: `NuanSystem.MasterBranchSyncWorker`
 - API: `SyncEndpoints.cs`, `SyncConfigurationEndpoints.cs`, `SyncEntityDefinitionEndpoints.cs`
-- SQL: `064` through `105`, plus forward contracts `112` through `134`;
+- SQL: `064` through `105`, plus forward contracts `112` through `135`;
   inspect the exact entity blueprint before deployment.
