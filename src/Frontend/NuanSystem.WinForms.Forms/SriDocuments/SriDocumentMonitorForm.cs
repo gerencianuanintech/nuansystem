@@ -12,6 +12,7 @@ public sealed partial class SriDocumentMonitorForm : XtraForm
 {
     public const string FormKey = "sri-document-monitor";
     private readonly SriDocumentMonitorViewModel viewModel;
+    private readonly long? initialQueueId;
 
     public SriDocumentMonitorForm()
     {
@@ -19,9 +20,13 @@ public sealed partial class SriDocumentMonitorForm : XtraForm
         InitializeComponent();
     }
 
-    public SriDocumentMonitorForm(SriDocumentMonitorViewModel viewModel, ApiSession session)
+    public SriDocumentMonitorForm(
+        SriDocumentMonitorViewModel viewModel,
+        ApiSession session,
+        long? initialQueueId = null)
     {
         this.viewModel = viewModel;
+        this.initialQueueId = initialQueueId;
         InitializeComponent();
         FormStyler.ApplyBase(this);
         btnDownload.Visible = session.HasPermission(PermissionCodes.SriDocumentsDownloadXml);
@@ -29,7 +34,13 @@ public sealed partial class SriDocumentMonitorForm : XtraForm
         WireEvents();
     }
 
-    protected override async void OnShown(EventArgs e) { base.OnShown(e); await RefreshAsync(); }
+    protected override async void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        await RefreshAsync();
+        if (initialQueueId is long queueId)
+            await LoadQueueAsync(queueId, direct: true);
+    }
 
     private void WireEvents()
     {
@@ -85,9 +96,17 @@ public sealed partial class SriDocumentMonitorForm : XtraForm
     {
         var selected=documentGrid.GetFocusedRow<SriDocumentMonitorItem>();
         if(selected is null) return;
+        await LoadQueueAsync(selected.QueueId, direct: false);
+    }
+
+    private async Task LoadQueueAsync(long queueId, bool direct)
+    {
         await UiExceptionHandler.RunAsync(this,Text,async () =>
         {
-            await viewModel.LoadDetailAsync(selected.QueueId);
+            if (direct)
+                await viewModel.LoadDirectAsync(queueId);
+            else
+                await viewModel.LoadDetailAsync(queueId);
             var d=viewModel.Detail;
             lblDetail.Text=d is null ? "Detalle restringido por permisos." : $"Documento {d.QueueId} | {d.Status} | {d.SourceReference} | {d.SizeBytes:N0} bytes | SHA-256: {d.Sha256Hex}";
             attemptGrid.SetData(viewModel.Attempts.ToList());

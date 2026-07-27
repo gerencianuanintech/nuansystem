@@ -22,6 +22,28 @@ public sealed class SriDocumentMonitorViewModel(ISriDocumentMonitorClient client
         Attempts=await client.GetAttemptsAsync(queueId,cancellationToken);
         Audit=canViewDetail ? await client.GetAuditAsync(queueId,cancellationToken) : [];
     }
+    public async Task LoadDirectAsync(long queueId,CancellationToken cancellationToken=default)
+    {
+        Detail=canViewDetail ? await client.GetDetailAsync(queueId,cancellationToken) : null;
+        if(Detail is not null)
+        {
+            Selected=new SriDocumentMonitorItem(
+                Detail.QueueId,
+                Detail.Environment,
+                Detail.DocumentTypeCode,
+                Detail.SourceType,
+                Detail.SourceReference,
+                Detail.BranchCode,
+                Detail.Status,
+                Detail.AttemptCount,
+                Detail.CreatedAt,
+                Detail.AuthorizationAt,
+                Detail.HasXml,
+                Detail.TotalCount);
+        }
+        Attempts=await client.GetAttemptsAsync(queueId,cancellationToken);
+        Audit=canViewDetail ? await client.GetAuditAsync(queueId,cancellationToken) : [];
+    }
     public Task<ApiFileResponse> DownloadAsync(CancellationToken cancellationToken=default)
     {
         if(!CanDownload || Selected is null) throw new InvalidOperationException("El documento seleccionado no esta disponible para descarga.");
