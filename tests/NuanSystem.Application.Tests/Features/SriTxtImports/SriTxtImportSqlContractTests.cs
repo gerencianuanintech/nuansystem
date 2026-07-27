@@ -104,7 +104,17 @@ public sealed class SriTxtImportSqlContractTests
         tenant.Should().NotContain("UPDATE dbo.SriDocument");
 
         master.Should().Contain("sri-txt-imports");
+        master.Should().Contain("Code = N'ACTION.REFRESH'");
+        master.Should().Contain("Code = N'ACTION.CONSULT'");
         master.Should().Contain("ACTION.SRI_TXT_IMPORTS.ENQUEUE");
+        master.Should().Contain("ACTION.SRI_TXT_IMPORTS.OPEN_QUEUE");
+        master.Should().Contain("Encolar TXT SRI");
+        master.Should().Contain("Abrir cola SRI");
+        master.Should().NotContain("ACTION.SRI_TXT_IMPORTS.REFRESH");
+        master.Should().NotContain("ACTION.SRI_TXT_IMPORTS.CONSULT");
+        master.Should().Contain("BEGIN TRANSACTION");
+        master.Should().Contain("ROLLBACK TRANSACTION");
+        master.Should().Contain("COMMIT TRANSACTION");
         master.Should().Contain("20260727.143");
         master.Should().Contain("THROW 51143");
         master.Should().NotContain("RolePermissions");

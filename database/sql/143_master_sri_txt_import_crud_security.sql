@@ -19,6 +19,9 @@ IF OBJECT_ID(N'dbo.SecurityOperations', N'U') IS NULL
     THROW 51143, 'SecurityOperations is required before migration 143.', 1;
 GO
 
+BEGIN TRY
+BEGIN TRANSACTION;
+
 DECLARE @ParentId int =
 (
     SELECT TOP (1) Id
@@ -29,6 +32,26 @@ DECLARE @ParentId int =
 
 IF @ParentId IS NULL
     THROW 51143, 'MENU.ADMINISTRATION is required before migration 143.', 1;
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM dbo.SecurityOperations
+    WHERE Code = N'ACTION.REFRESH'
+      AND IsActive = 1
+      AND IsDeleted = 0
+)
+    THROW 51143, 'ACTION.REFRESH is required before migration 143.', 1;
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM dbo.SecurityOperations
+    WHERE Code = N'ACTION.CONSULT'
+      AND IsActive = 1
+      AND IsDeleted = 0
+)
+    THROW 51143, 'ACTION.CONSULT is required before migration 143.', 1;
 
 DECLARE @FormId int =
 (
@@ -134,10 +157,17 @@ DECLARE @Operations table
 
 INSERT @Operations(Code, Name, Description, ActionKey, DisplayOrder)
 VALUES
-    (N'ACTION.SRI_TXT_IMPORTS.REFRESH', N'Actualizar', N'Recargar importaciones y filas.', N'refresh', 10),
-    (N'ACTION.SRI_TXT_IMPORTS.CONSULT', N'Consultar', N'Consultar detalle y filas.', N'consult', 20),
-    (N'ACTION.SRI_TXT_IMPORTS.ENQUEUE', N'Encolar', N'Cambiar filas preparadas a pendientes.', N'enqueue', 30),
-    (N'ACTION.SRI_TXT_IMPORTS.OPEN_QUEUE', N'Abrir cola', N'Abrir la cola SRI vinculada.', N'open-queue', 40);
+    (N'ACTION.SRI_TXT_IMPORTS.ENQUEUE', N'Encolar TXT SRI', N'Cambiar filas preparadas a pendientes.', N'enqueue', 30),
+    (N'ACTION.SRI_TXT_IMPORTS.OPEN_QUEUE', N'Abrir cola SRI', N'Abrir la cola SRI vinculada.', N'open-queue', 40);
+
+IF EXISTS
+(
+    SELECT 1
+    FROM @Operations source
+    INNER JOIN dbo.SecurityOperations target ON target.Name = source.Name
+    WHERE target.Code <> source.Code
+)
+    THROW 51143, 'A required SRI TXT operation name belongs to another operation.', 1;
 
 MERGE dbo.SecurityOperations AS target
 USING @Operations AS source
@@ -163,7 +193,6 @@ WHEN NOT MATCHED THEN
         source.Code, source.Name, source.Description, source.ActionKey, source.DisplayOrder,
         1, N'Sistema', SYSUTCDATETIME(), 0
     );
-GO
 
 IF NOT EXISTS
 (
@@ -179,4 +208,12 @@ BEGIN
         N'Formulario y navegacion SRI TXT Import sin concesiones automaticas'
     );
 END;
+
+COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0
+        ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
 GO
