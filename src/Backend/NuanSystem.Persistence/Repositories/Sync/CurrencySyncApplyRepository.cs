@@ -73,16 +73,49 @@ WHERE GlobalId = @GlobalId;
             if (inbox?.Status == SyncEventStatus.Applied.ToString())
             {
                 await transaction.CommitAsync(cancellationToken);
-                return new CurrencySyncApplyResult(true, true, null, "Evento ya aplicado en SyncInbox.");
+                return new CurrencySyncApplyResult(true, true, false, null, "Evento ya aplicado en SyncInbox.");
+            }
+
+            if (inbox?.Status == SyncEventStatus.DeadLetter.ToString())
+            {
+                await transaction.CommitAsync(cancellationToken);
+                return new CurrencySyncApplyResult(
+                    false,
+                    false,
+                    true,
+                    null,
+                    inbox.LastErrorMessage ?? "Evento ya clasificado como conflicto terminal.",
+                    "SYNC_CURRENCY_CODE_CONFLICT");
             }
 
             var inboxId = inbox?.Id ?? await InsertInboxAsync(connection, transaction, context, cancellationToken);
-            var currencyId = await UpsertCurrencyAsync(connection, transaction, payload, operation, markDeleted, cancellationToken);
+            var applyResult = await UpsertCurrencyAsync(
+                connection, transaction, payload, operation, markDeleted, cancellationToken);
+            if (applyResult.ResultCode == -2)
+            {
+                const string conflictMessage =
+                    "El codigo de Currency ya pertenece a otro GlobalId en la sucursal; no se realizo adopcion automatica.";
+                await MarkInboxDeadLetterAsync(
+                    connection, transaction, inboxId, conflictMessage, cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return new CurrencySyncApplyResult(
+                    false,
+                    false,
+                    true,
+                    null,
+                    conflictMessage,
+                    "SYNC_CURRENCY_CODE_CONFLICT");
+            }
 
             await MarkInboxAppliedAsync(connection, transaction, inboxId, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            return new CurrencySyncApplyResult(true, false, currencyId, $"Moneda sincronizada por GlobalId {payload.GlobalId}.");
+            return new CurrencySyncApplyResult(
+                true,
+                false,
+                false,
+                applyResult.CurrencyId,
+                $"Moneda sincronizada por GlobalId {payload.GlobalId}.");
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -99,7 +132,7 @@ WHERE GlobalId = @GlobalId;
         CancellationToken cancellationToken)
     {
         const string sql = """
-SELECT TOP (1) Id, Status
+SELECT TOP (1) Id, Status, LastErrorMessage
 FROM dbo.SyncInbox WITH (UPDLOCK, HOLDLOCK)
 WHERE EventId = @EventId;
 """;
@@ -145,7 +178,7 @@ SELECT CAST(SCOPE_IDENTITY() AS bigint);
             cancellationToken: cancellationToken));
     }
 
-    private static async Task<int> UpsertCurrencyAsync(
+    private static Task<CurrencyApplyProcedureResult> UpsertCurrencyAsync(
         SqlConnection connection,
         IDbTransaction transaction,
         CurrencySyncPayload payload,
@@ -156,61 +189,8 @@ SELECT CAST(SCOPE_IDENTITY() AS bigint);
         var isDeleted = markDeleted || operation == SyncOperation.Deleted;
         var isActive = !isDeleted && operation != SyncOperation.Disabled && payload.IsActive;
 
-        const string sql = """
-DECLARE @CurrencyId int;
-
-SELECT @CurrencyId = CurrencyId
-FROM dbo.Currencies WITH (UPDLOCK, HOLDLOCK)
-WHERE GlobalId = @GlobalId;
-
--- Adopta por codigo los registros creados antes de incorporar GlobalId.
-IF @CurrencyId IS NULL
-BEGIN
-    SELECT @CurrencyId = CurrencyId
-    FROM dbo.Currencies WITH (UPDLOCK, HOLDLOCK)
-    WHERE Code = @Code;
-END;
-
-IF @CurrencyId IS NULL
-BEGIN
-    INSERT INTO dbo.Currencies
-    (
-        GlobalId, Code, Name, Symbol, Description, IsBaseCurrency,
-        IsActive, IsDeleted, ExternalSystem, ExternalCode,
-        CreatedAt, CreatedByUserName
-    )
-    VALUES
-    (
-        @GlobalId, @Code, @Name, @Symbol, @Description, @IsBaseCurrency,
-        @IsActive, @IsDeleted, @ExternalSystem, @ExternalCode,
-        @CreatedAt, N'MasterBranchSyncWorker'
-    );
-
-    SET @CurrencyId = CONVERT(int, SCOPE_IDENTITY());
-END
-ELSE
-BEGIN
-    UPDATE dbo.Currencies
-    SET GlobalId = @GlobalId,
-        Code = @Code,
-        Name = @Name,
-        Symbol = @Symbol,
-        Description = @Description,
-        IsBaseCurrency = @IsBaseCurrency,
-        IsActive = @IsActive,
-        IsDeleted = @IsDeleted,
-        ExternalSystem = @ExternalSystem,
-        ExternalCode = @ExternalCode,
-        UpdatedAt = @UpdatedAt,
-        UpdatedByUserName = N'MasterBranchSyncWorker'
-    WHERE CurrencyId = @CurrencyId;
-END;
-
-SELECT @CurrencyId;
-""";
-
-        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
-            sql,
+        return connection.QuerySingleAsync<CurrencyApplyProcedureResult>(new CommandDefinition(
+            "dbo.SP_NA_POST_CURRENCY_SYNC_APPLY",
             new
             {
                 payload.GlobalId,
@@ -226,6 +206,30 @@ SELECT @CurrencyId;
                 CreatedAt = payload.CreatedAt == default ? DateTime.UtcNow : payload.CreatedAt,
                 UpdatedAt = payload.UpdatedAt ?? DateTime.UtcNow
             },
+            transaction,
+            cancellationToken: cancellationToken,
+            commandType: CommandType.StoredProcedure));
+    }
+
+    private static Task MarkInboxDeadLetterAsync(
+        SqlConnection connection,
+        IDbTransaction transaction,
+        long inboxId,
+        string message,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+UPDATE dbo.SyncInbox
+SET Status = N'DeadLetter',
+    AttemptCount = AttemptCount + 1,
+    ErrorMessage = @Message,
+    LastErrorMessage = @Message,
+    NextRetryAt = NULL
+WHERE Id = @InboxId;
+""";
+        return connection.ExecuteAsync(new CommandDefinition(
+            sql,
+            new { InboxId = inboxId, Message = message },
             transaction,
             cancellationToken: cancellationToken));
     }
@@ -330,5 +334,6 @@ END;
         return trimmed[..Math.Min(trimmed.Length, maxLength)];
     }
 
-    private sealed record InboxState(long Id, string Status);
+    private sealed record InboxState(long Id, string Status, string? LastErrorMessage);
+    private sealed record CurrencyApplyProcedureResult(int ResultCode, int? CurrencyId);
 }

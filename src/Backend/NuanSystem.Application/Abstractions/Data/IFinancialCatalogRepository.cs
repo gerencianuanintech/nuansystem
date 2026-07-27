@@ -1,3 +1,4 @@
+using System.Data;
 using NuanSystem.Application.Features.FinancialCatalogs.Catalogs.Dtos;
 
 namespace NuanSystem.Application.Abstractions.Data;
@@ -10,13 +11,51 @@ public interface IFinancialCatalogRepository : IRepository
 
     Task<FinancialCatalogDto?> GetByIdAsync(string catalogKey, int id, CancellationToken cancellationToken = default);
 
+    Task<FinancialCatalogDto?> GetByIdAsync(
+        string catalogKey,
+        int id,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default);
+
     Task<int> CreateAsync(string catalogKey, CreateFinancialCatalogData catalog, CancellationToken cancellationToken = default);
+
+    Task<int> CreateAsync(
+        string catalogKey,
+        CreateFinancialCatalogData catalog,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default);
 
     Task<bool> ExistsByCodeAsync(string catalogKey, string code, CancellationToken cancellationToken = default);
 
     Task<bool> ExistsByCodeAsync(string catalogKey, string code, int excludingId, CancellationToken cancellationToken = default);
 
+    Task<bool> ExistsByCodeAsync(
+        string catalogKey,
+        string code,
+        int? excludingId,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default);
+
     Task<bool> UpdateAsync(string catalogKey, UpdateFinancialCatalogData catalog, CancellationToken cancellationToken = default);
 
+    Task<bool> UpdateAsync(
+        string catalogKey,
+        UpdateFinancialCatalogData catalog,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default);
+
     Task<bool> DeleteAsync(string catalogKey, int id, int? deletedByUserId, string? deletedByUserName, CancellationToken cancellationToken = default);
+
+    Task<bool> DeleteAsync(
+        string catalogKey,
+        int id,
+        int? deletedByUserId,
+        string? deletedByUserName,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default);
 }

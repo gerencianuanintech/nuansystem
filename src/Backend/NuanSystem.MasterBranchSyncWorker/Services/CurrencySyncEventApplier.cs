@@ -59,7 +59,11 @@ public sealed class CurrencySyncEventApplier(
                 cancellationToken)
         };
 
-        return new SyncEventApplyResult(result.Applied, result.Message);
+        return new SyncEventApplyResult(
+            result.Applied,
+            result.Message,
+            result.ErrorCode,
+            Terminal: result.TerminalConflict);
     }
 
     private static CurrencySyncPayload ReadPayload(string payloadJson)

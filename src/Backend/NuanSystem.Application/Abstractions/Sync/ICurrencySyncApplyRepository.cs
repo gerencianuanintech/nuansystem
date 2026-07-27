@@ -29,5 +29,7 @@ public interface ICurrencySyncApplyRepository
 public sealed record CurrencySyncApplyResult(
     bool Applied,
     bool AlreadyApplied,
+    bool TerminalConflict,
     int? CurrencyId,
-    string Message);
+    string Message,
+    string? ErrorCode = null);

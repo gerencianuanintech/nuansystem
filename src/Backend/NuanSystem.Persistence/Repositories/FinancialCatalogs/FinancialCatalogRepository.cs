@@ -146,37 +146,71 @@ public sealed class FinancialCatalogRepository(ITenantConnectionFactory connecti
     public async Task<FinancialCatalogDto?> GetByIdAsync(string catalogKey, int id, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        return await connection.QuerySingleOrDefaultAsync<FinancialCatalogDto>(
-            new CommandDefinition(GetProcedures(catalogKey).GetById, new { Id = id }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        return await GetByIdCoreAsync(catalogKey, id, connection, transaction: null, cancellationToken);
+    }
+
+    public Task<FinancialCatalogDto?> GetByIdAsync(
+        string catalogKey,
+        int id,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        return GetByIdCoreAsync(catalogKey, id, connection, transaction, cancellationToken);
     }
 
     public async Task<int> CreateAsync(string catalogKey, CreateFinancialCatalogData catalog, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(GetProcedures(catalogKey).Create, catalog, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        return await CreateCoreAsync(catalogKey, catalog, connection, transaction: null, cancellationToken);
+    }
+
+    public Task<int> CreateAsync(
+        string catalogKey,
+        CreateFinancialCatalogData catalog,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        return CreateCoreAsync(catalogKey, catalog, connection, transaction, cancellationToken);
     }
 
     public async Task<bool> ExistsByCodeAsync(string catalogKey, string code, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        var count = await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(
-                GetProcedures(catalogKey).ExistsByCode,
-                new { Code = code, ExcluirId = (int?)null },
-                cancellationToken: cancellationToken,
-                commandType: CommandType.StoredProcedure));
-
-        return count > 0;
+        return await ExistsByCodeCoreAsync(catalogKey, code, null, connection, transaction: null, cancellationToken);
     }
 
     public async Task<bool> ExistsByCodeAsync(string catalogKey, string code, int excludingId, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
+        return await ExistsByCodeCoreAsync(catalogKey, code, excludingId, connection, transaction: null, cancellationToken);
+    }
+
+    public Task<bool> ExistsByCodeAsync(
+        string catalogKey,
+        string code,
+        int? excludingId,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        return ExistsByCodeCoreAsync(catalogKey, code, excludingId, connection, transaction, cancellationToken);
+    }
+
+    private async Task<bool> ExistsByCodeCoreAsync(
+        string catalogKey,
+        string code,
+        int? excludingId,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
         var count = await connection.ExecuteScalarAsync<int>(
             new CommandDefinition(
                 GetProcedures(catalogKey).ExistsByCode,
                 new { Code = code, ExcluirId = excludingId },
+                transaction,
                 cancellationToken: cancellationToken,
                 commandType: CommandType.StoredProcedure));
 
@@ -186,8 +220,33 @@ public sealed class FinancialCatalogRepository(ITenantConnectionFactory connecti
     public async Task<bool> UpdateAsync(string catalogKey, UpdateFinancialCatalogData catalog, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
+        return await UpdateCoreAsync(catalogKey, catalog, connection, transaction: null, cancellationToken);
+    }
+
+    public Task<bool> UpdateAsync(
+        string catalogKey,
+        UpdateFinancialCatalogData catalog,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        return UpdateCoreAsync(catalogKey, catalog, connection, transaction, cancellationToken);
+    }
+
+    private async Task<bool> UpdateCoreAsync(
+        string catalogKey,
+        UpdateFinancialCatalogData catalog,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
         var affectedRows = await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(GetProcedures(catalogKey).Update, catalog, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+            new CommandDefinition(
+                GetProcedures(catalogKey).Update,
+                catalog,
+                transaction,
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
 
         return affectedRows > 0;
     }
@@ -200,14 +259,85 @@ public sealed class FinancialCatalogRepository(ITenantConnectionFactory connecti
         CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
+        return await DeleteCoreAsync(
+            catalogKey,
+            id,
+            deletedByUserId,
+            deletedByUserName,
+            connection,
+            transaction: null,
+            cancellationToken);
+    }
+
+    public Task<bool> DeleteAsync(
+        string catalogKey,
+        int id,
+        int? deletedByUserId,
+        string? deletedByUserName,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        return DeleteCoreAsync(
+            catalogKey,
+            id,
+            deletedByUserId,
+            deletedByUserName,
+            connection,
+            (IDbTransaction?)transaction,
+            cancellationToken);
+    }
+
+    private async Task<bool> DeleteCoreAsync(
+        string catalogKey,
+        int id,
+        int? deletedByUserId,
+        string? deletedByUserName,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
         var affectedRows = await connection.ExecuteScalarAsync<int>(
             new CommandDefinition(
                 GetProcedures(catalogKey).Delete,
                 new { Id = id, DeletedByUserId = deletedByUserId, DeletedByUserName = deletedByUserName },
+                transaction,
                 cancellationToken: cancellationToken,
                 commandType: CommandType.StoredProcedure));
 
         return affectedRows > 0;
+    }
+
+    private async Task<FinancialCatalogDto?> GetByIdCoreAsync(
+        string catalogKey,
+        int id,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
+        return await connection.QuerySingleOrDefaultAsync<FinancialCatalogDto>(
+            new CommandDefinition(
+                GetProcedures(catalogKey).GetById,
+                new { Id = id },
+                transaction,
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
+    }
+
+    private async Task<int> CreateCoreAsync(
+        string catalogKey,
+        CreateFinancialCatalogData catalog,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
+        return await connection.ExecuteScalarAsync<int>(
+            new CommandDefinition(
+                GetProcedures(catalogKey).Create,
+                catalog,
+                transaction,
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
     }
 
     private static CatalogProcedures GetProcedures(string catalogKey)

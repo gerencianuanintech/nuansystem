@@ -14,6 +14,7 @@ using NuanSystem.Application.Features.SapSync.Services;
 using NuanSystem.Application.Features.Operations;
 using NuanSystem.Application.Features.SriDocuments.Services;
 using NuanSystem.Application.Features.BusinessPartners.Commands;
+using NuanSystem.Application.Features.FinancialCatalogs.Catalogs.Commands;
 using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Commands;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Commands;
 using NuanSystem.Application.Features.GeneralInventory.Warehouses.Commands;
@@ -67,6 +68,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<ISyncRoutingService, SyncRoutingService>();
         services.AddScoped<ILocalSyncOutboxPromotionService, LocalSyncOutboxPromotionService>();
         services.AddScoped<IBusinessPartnerLocalOutboxWriter, BusinessPartnerLocalOutboxWriter>();
+        services.AddScoped<ICurrencyLocalOutboxWriter, CurrencyLocalOutboxWriter>();
         services.AddScoped<IItemLocalOutboxWriter, ItemLocalOutboxWriter>();
         services.AddScoped<IItemFamilyLocalOutboxWriter, ItemFamilyLocalOutboxWriter>();
         services.AddScoped<IItemGroupLocalOutboxWriter, ItemGroupLocalOutboxWriter>();
