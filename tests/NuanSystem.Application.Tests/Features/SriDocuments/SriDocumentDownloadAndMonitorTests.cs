@@ -99,14 +99,62 @@ public sealed class SriDocumentDownloadAndMonitorTests
     }
 
     [Fact]
-    public void Frontend_UsesTypedTransportDesignerControlsAndSaveFileDialog()
+    public void Frontend_UsesTypedTransportRibbonOperationsDesignerControlsAndSaveFileDialog()
     {
         var client=Read("src","Frontend","NuanSystem.WinForms.Services","SriDocuments","SriDocumentMonitorClient.cs");
         var form=Read("src","Frontend","NuanSystem.WinForms.Forms","SriDocuments","SriDocumentMonitorForm.cs");
         var designer=Read("src","Frontend","NuanSystem.WinForms.Forms","SriDocuments","SriDocumentMonitorForm.Designer.cs");
+        var filterDialog=Read("src","Frontend","NuanSystem.WinForms.Forms","SriDocuments","SriDocumentMonitorFilterDialog.cs");
+        var filterDesigner=Read("src","Frontend","NuanSystem.WinForms.Forms","SriDocuments","SriDocumentMonitorFilterDialog.Designer.cs");
         client.Should().Contain("INuanApiClient").And.NotContain("new HttpClient");
         form.Should().Contain("SaveFileDialog").And.Contain("DialogResult.OK").And.Contain("File.WriteAllBytesAsync").And.NotContain("Path.GetTempPath");
-        designer.Should().Contain("NuanDataGridControl").And.Contain("NuanKpiCardControl").And.Contain("NuanActionButton");
+        form.Should().Contain("SriDocumentMonitorForm : BaseCrudListForm")
+            .And.Contain("CanExecuteCustomOperation")
+            .And.Contain("ExecuteCustomOperationAsync")
+            .And.Contain("\"filter\"")
+            .And.Contain("\"downloadxml\"");
+        designer.Should().Contain("NuanDataGridControl").And.Contain("NuanKpiCardControl");
+        designer.Should().NotContain("filterPanel")
+            .And.NotContain("btnRefresh")
+            .And.NotContain("btnClear")
+            .And.NotContain("btnDownload")
+            .And.NotContain("cmbEnvironment")
+            .And.NotContain("txtSearch");
+        filterDialog.Should().Contain("\"Staged\"")
+            .And.Contain("SriDocumentMonitorFilter")
+            .And.Contain("CreatedTo")
+            .And.Contain("DocumentTypeCode")
+            .And.Contain("SourceType");
+        filterDesigner.Should().Contain("NuanActionButton")
+            .And.Contain("TextEditStyles.DisableTextEditor")
+            .And.Contain("StartPosition=FormStartPosition.CenterParent")
+            .And.Contain("AcceptButton=btnApply")
+            .And.Contain("CancelButton=btnCancel");
+    }
+
+    [Fact]
+    public void MonitorRibbonMigration_MapsExistingPermissionsWithoutGrantingApiAccess()
+    {
+        var baseline=Read("database","sql","119_master_sri_document_monitor_security.sql");
+        var script=Read("database","sql","149_master_sri_document_monitor_ribbon_operations.sql");
+
+        baseline.Should().Contain("N'ACTION.FILTER'")
+            .And.Contain("N'filter'")
+            .And.Contain("N'Operaciones/xml_32.svg'")
+            .And.Contain("N'Ribbon/filtro_32.svg'");
+        script.Should().Contain("N'20260728.149'")
+            .And.Contain("N'sri-document-monitor'")
+            .And.Contain("N'ACTION.REFRESH'")
+            .And.Contain("N'ACTION.CONSULT'")
+            .And.Contain("N'ACTION.FILTER'")
+            .And.Contain("N'ACTION.DOWNLOAD_XML'")
+            .And.Contain("N'SRI.DOCUMENTS.VIEW'")
+            .And.Contain("N'SRI.DOCUMENTS.DOWNLOAD_XML'")
+            .And.Contain("N'Operaciones/xml_32.svg'")
+            .And.Contain("SecurityRoleFormOperations");
+        script.Should().NotContain("INSERT dbo.RolePermissions")
+            .And.NotContain("INSERT dbo.Permissions")
+            .And.NotContain("INSERT dbo.SecurityMenus");
     }
 
     [Fact]

@@ -8,11 +8,14 @@ using NuanSystem.WinForms.ViewModels.SriDocuments;
 
 namespace NuanSystem.WinForms.Forms.SriDocuments;
 
-public sealed partial class SriDocumentMonitorForm : XtraForm
+public sealed partial class SriDocumentMonitorForm : BaseCrudListForm
 {
     public const string FormKey = "sri-document-monitor";
     private readonly SriDocumentMonitorViewModel viewModel;
     private readonly long? initialQueueId;
+    private readonly bool canDownload;
+    private bool initialQueueLoaded;
+    private bool busy;
 
     public SriDocumentMonitorForm()
     {
@@ -27,27 +30,17 @@ public sealed partial class SriDocumentMonitorForm : XtraForm
     {
         this.viewModel = viewModel;
         this.initialQueueId = initialQueueId;
+        canDownload = session.HasPermission(PermissionCodes.SriDocumentsDownloadXml);
         InitializeComponent();
         FormStyler.ApplyBase(this);
-        btnDownload.Visible = session.HasPermission(PermissionCodes.SriDocumentsDownloadXml);
         ConfigureGrids();
         WireEvents();
     }
 
-    protected override async void OnShown(EventArgs e)
-    {
-        base.OnShown(e);
-        await RefreshAsync();
-        if (initialQueueId is long queueId)
-            await LoadQueueAsync(queueId, direct: true);
-    }
-
     private void WireEvents()
     {
-        btnRefresh.Click += async (_,_) => await RefreshAsync();
-        btnClear.Click += async (_,_) => { cmbEnvironment.EditValue=null; cmbStatus.EditValue=null; cmbDocumentType.EditValue=null; cmbSourceType.EditValue=null; txtSearch.Text=string.Empty; dateFrom.EditValue=null; dateTo.EditValue=null; await RefreshAsync(); };
         documentGrid.FocusedRowChanged += async (_,_) => await LoadSelectedAsync();
-        btnDownload.Click += async (_,_) => await DownloadAsync();
+        documentGrid.GridView.DoubleClick += async (_,_) => await ExecuteConsultAsync();
     }
 
     private void ConfigureGrids()
@@ -69,23 +62,53 @@ public sealed partial class SriDocumentMonitorForm : XtraForm
         auditGrid.ConfigureColumns(new NuanGridColumnDefinition { FieldName=nameof(SriDocumentAudit.Action),Caption="Accion",VisibleIndex=0,Width=120 },new NuanGridColumnDefinition { FieldName=nameof(SriDocumentAudit.NewStatus),Caption="Estado",VisibleIndex=1,Width=110 },new NuanGridColumnDefinition { FieldName=nameof(SriDocumentAudit.UserName),Caption="Usuario",VisibleIndex=2,Width=140 },new NuanGridColumnDefinition { FieldName=nameof(SriDocumentAudit.CreatedAt),Caption="Fecha UTC",VisibleIndex=3,Width=150,Format=NuanGridColumnFormat.DateTime });
     }
 
-    private async Task RefreshAsync() => await UiExceptionHandler.RunAsync(this,Text,async () =>
+    protected override async Task LoadDataAsync()
     {
-        viewModel.Filter.Environment=Convert.ToString(cmbEnvironment.EditValue);
-        viewModel.Filter.Status=Convert.ToString(cmbStatus.EditValue);
-        viewModel.Filter.DocumentTypeCode=Convert.ToString(cmbDocumentType.EditValue);
-        viewModel.Filter.SourceType=Convert.ToString(cmbSourceType.EditValue);
-        viewModel.Filter.Search=string.IsNullOrWhiteSpace(txtSearch.Text)?null:txtSearch.Text.Trim();
-        viewModel.Filter.CreatedFrom=dateFrom.EditValue as DateTime?;
-        viewModel.Filter.CreatedTo=dateTo.EditValue as DateTime?;
-        await viewModel.LoadAsync();
+        if (busy || viewModel is null)
+            return;
+
+        await RunBusyAsync(async () =>
+        {
+            await viewModel.LoadAsync();
+            RenderMonitor();
+            if (!initialQueueLoaded && initialQueueId is long queueId)
+            {
+                initialQueueLoaded = true;
+                await LoadQueueCoreAsync(queueId, direct: true);
+            }
+            else if (viewModel.Items.FirstOrDefault() is { } first)
+            {
+                await LoadQueueCoreAsync(first.QueueId, direct: false);
+            }
+        });
+    }
+
+    protected override async Task ConsultAsync()
+    {
+        if (documentGrid.GetFocusedRow<SriDocumentMonitorItem>() is not { } selected)
+        {
+            ShowWarning("Seleccione un documento SRI.");
+            return;
+        }
+
+        await RunBusyAsync(() => LoadQueueCoreAsync(selected.QueueId, direct: false));
+    }
+
+    private void RenderMonitor()
+    {
         documentGrid.SetData(viewModel.Items.ToList());
         cardTotal.ValueText=(viewModel.Summary?.Total ?? 0).ToString("N0");
         cardPending.ValueText=(viewModel.Summary?.Pending ?? 0).ToString("N0");
         cardAuthorized.ValueText=(viewModel.Summary?.Authorized ?? 0).ToString("N0");
         cardErrors.ValueText=(viewModel.Summary?.Errors ?? 0).ToString("N0");
         RenderWorkerHealth();
-    });
+        if (viewModel.Items.Count==0)
+        {
+            lblDetail.Text="No existen documentos para los filtros seleccionados.";
+            attemptGrid.SetData(Array.Empty<SriDocumentAttempt>());
+            auditGrid.SetData(Array.Empty<SriDocumentAudit>());
+        }
+    }
 
     private void RenderWorkerHealth()
     {
@@ -94,38 +117,114 @@ public sealed partial class SriDocumentMonitorForm : XtraForm
 
     private async Task LoadSelectedAsync()
     {
+        if (busy)
+            return;
+
         var selected=documentGrid.GetFocusedRow<SriDocumentMonitorItem>();
         if(selected is null) return;
-        await LoadQueueAsync(selected.QueueId, direct: false);
+        await RunBusyAsync(() => LoadQueueCoreAsync(selected.QueueId, direct: false));
     }
 
-    private async Task LoadQueueAsync(long queueId, bool direct)
+    private async Task LoadQueueCoreAsync(long queueId, bool direct)
     {
-        await UiExceptionHandler.RunAsync(this,Text,async () =>
-        {
-            if (direct)
-                await viewModel.LoadDirectAsync(queueId);
-            else
-                await viewModel.LoadDetailAsync(queueId);
-            var d=viewModel.Detail;
-            lblDetail.Text=d is null ? "Detalle restringido por permisos." : $"Documento {d.QueueId} | {d.Status} | {d.SourceReference} | {d.SizeBytes:N0} bytes | SHA-256: {d.Sha256Hex}";
-            attemptGrid.SetData(viewModel.Attempts.ToList());
-            auditGrid.SetData(viewModel.Audit.ToList());
-            btnDownload.Enabled=viewModel.CanDownload;
-        });
+        if (direct)
+            await viewModel.LoadDirectAsync(queueId);
+        else
+            await viewModel.LoadDetailAsync(queueId);
+
+        var detail=viewModel.Detail;
+        lblDetail.Text=detail is null
+            ? "Detalle restringido por permisos."
+            : $"Documento {detail.QueueId} | {detail.Status} | {detail.SourceReference} | {detail.SizeBytes:N0} bytes | SHA-256: {detail.Sha256Hex}";
+        attemptGrid.SetData(viewModel.Attempts.ToList());
+        auditGrid.SetData(viewModel.Audit.ToList());
     }
 
     private async Task DownloadAsync()
     {
-        if(!viewModel.CanDownload) return;
+        if(busy || !canDownload || !viewModel.CanDownload) return;
         using var dialog=new SaveFileDialog { Filter="XML (*.xml)|*.xml",AddExtension=true,DefaultExt="xml",FileName=$"sri-{viewModel.Selected!.QueueId}.xml",OverwritePrompt=true };
         if(dialog.ShowDialog(this)!=DialogResult.OK) return;
-        await UiExceptionHandler.RunAsync(this,Text,async () =>
+        await RunBusyAsync(async () =>
         {
             var file=await viewModel.DownloadAsync();
             await File.WriteAllBytesAsync(dialog.FileName,file.Content);
             XtraMessageBox.Show(this,"XML descargado correctamente.",Text,MessageBoxButtons.OK,MessageBoxIcon.Information);
-            await LoadSelectedAsync();
+            if (viewModel.Selected is { } selected)
+                await LoadQueueCoreAsync(selected.QueueId, direct: false);
         });
+    }
+
+    private async Task OpenFiltersAsync()
+    {
+        if (busy)
+            return;
+
+        using var dialog=new SriDocumentMonitorFilterDialog(viewModel.Filter);
+        if (dialog.ShowDialog(this)!=DialogResult.OK)
+            return;
+
+        viewModel.Filter.Environment=dialog.EnvironmentCode;
+        viewModel.Filter.Status=dialog.Status;
+        viewModel.Filter.DocumentTypeCode=dialog.DocumentTypeCode;
+        viewModel.Filter.SourceType=dialog.SourceType;
+        viewModel.Filter.Search=dialog.Search;
+        viewModel.Filter.CreatedFrom=dialog.CreatedFrom;
+        viewModel.Filter.CreatedTo=dialog.CreatedTo?.Date.AddDays(1).AddTicks(-1);
+        viewModel.Filter.Page=1;
+        await LoadDataAsync();
+    }
+
+    public override bool CanExecuteCustomOperation(string operationKey)
+    {
+        return IsCustomOperation(operationKey,"filter","filters","filtro","filtros")
+            ? !busy
+            : IsCustomOperation(operationKey,"downloadxml","download-xml","descargarxml")
+                ? !busy && canDownload && viewModel.CanDownload
+                : base.CanExecuteCustomOperation(operationKey);
+    }
+
+    public override Task ExecuteCustomOperationAsync(string operationKey)
+    {
+        if (IsCustomOperation(operationKey,"filter","filters","filtro","filtros"))
+            return OpenFiltersAsync();
+
+        if (IsCustomOperation(operationKey,"downloadxml","download-xml","descargarxml"))
+            return DownloadAsync();
+
+        return base.ExecuteCustomOperationAsync(operationKey);
+    }
+
+    private async Task RunBusyAsync(Func<Task> action)
+    {
+        busy=true;
+        await RunWithBusyStateAsync(async () =>
+        {
+            try
+            {
+                await action();
+            }
+            finally
+            {
+                busy=false;
+            }
+        });
+    }
+
+    private static bool IsCustomOperation(string operationKey,params string[] aliases)
+    {
+        var normalized=NormalizeOperation(operationKey);
+        return aliases.Select(NormalizeOperation)
+            .Any(alias=>string.Equals(normalized,alias,StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string NormalizeOperation(string operationKey)
+    {
+        return operationKey
+            .Replace("ACTION.",string.Empty,StringComparison.OrdinalIgnoreCase)
+            .Replace("SRI_DOCUMENTS.",string.Empty,StringComparison.OrdinalIgnoreCase)
+            .Replace("_",string.Empty,StringComparison.OrdinalIgnoreCase)
+            .Replace("-",string.Empty,StringComparison.OrdinalIgnoreCase)
+            .Replace(" ",string.Empty,StringComparison.OrdinalIgnoreCase);
     }
 }
