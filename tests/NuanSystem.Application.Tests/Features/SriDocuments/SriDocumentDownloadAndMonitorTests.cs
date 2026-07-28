@@ -109,6 +109,24 @@ public sealed class SriDocumentDownloadAndMonitorTests
         designer.Should().Contain("NuanDataGridControl").And.Contain("NuanKpiCardControl").And.Contain("NuanActionButton");
     }
 
+    [Fact]
+    public void FrontendMonitor_UsesCompactCorporateKpiGrid()
+    {
+        var designer=Read("src","Frontend","NuanSystem.WinForms.Forms","SriDocuments","SriDocumentMonitorForm.Designer.cs");
+
+        designer.Should().Contain("kpiPanel=new TableLayoutPanel()");
+        designer.Should().Contain("kpiPanel.ColumnCount=4");
+        designer.Split("new ColumnStyle(SizeType.Percent,25F)",StringSplitOptions.None)
+            .Should().HaveCount(5);
+        designer.Should().Contain("kpiPanel.Height=100");
+        designer.Split("HeaderColor=BrandResources.Primary",StringSplitOptions.None)
+            .Should().HaveCount(5);
+        designer.Split("MinimumSize=Size.Empty",StringSplitOptions.None)
+            .Should().HaveCount(5);
+        designer.Split("Dock=DockStyle.Fill",StringSplitOptions.None)
+            .Should().HaveCountGreaterThanOrEqualTo(5);
+    }
+
     [Theory]
     [InlineData("Authorized",true,true)]
     [InlineData("Authorized",false,false)]
