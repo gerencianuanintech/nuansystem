@@ -8,6 +8,8 @@ namespace NuanSystem.Application.Tests.Features.SriDocuments;
 public sealed class SriDocumentMonitorPersistenceContractTests
 {
     private const string MigrationFileName = "123_tenant_sri_document_monitor_summary_bigint_fix.sql";
+    private const string ImportScopeMigrationFileName = "150_tenant_sri_document_monitor_import_scope.sql";
+    private const string ImportScopeRepairFileName = "151_tenant_sri_document_monitor_summary_bigint_repair.sql";
 
     [Fact]
     public void Dapper_MaterializesMonitorSummaryWhenEveryAggregateIsBigInt()
@@ -87,6 +89,44 @@ public sealed class SriDocumentMonitorPersistenceContractTests
         monitor.Should().BeGreaterThanOrEqualTo(0);
         operations.Should().BeGreaterThan(monitor);
         repair.Should().BeGreaterThan(operations);
+    }
+
+    [Theory]
+    [InlineData(ImportScopeMigrationFileName,"20260728.150")]
+    [InlineData(ImportScopeRepairFileName,"20260728.151")]
+    public void ImportScopeMigrations_PreserveDapperBigIntAggregateContract(
+        string migrationFileName,
+        string version)
+    {
+        var sql=Read("database","sql",migrationFileName);
+
+        sql.Should().Contain("CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_SRIDOCUMENTMONITOR_RESUMEN")
+            .And.Contain("@ImportId bigint = NULL")
+            .And.Contain($"Version=N'{version}'")
+            .And.Contain("COUNT_BIG(1)")
+            .And.Contain("FROM dbo.SriTxtImportRows r")
+            .And.NotContain("DROP PROCEDURE")
+            .And.NotContain("DROP TABLE");
+
+        foreach (var alias in new[] { "Pending","Querying","Authorized","Errors" })
+        {
+            sql.Should().Contain($"CONVERT(bigint,0)) AS {alias}");
+        }
+    }
+
+    [Fact]
+    public void TenantInitializer_AppliesImportScopeAndBigIntRepairInOrder()
+    {
+        var initializer=Read(
+            "src","Backend","NuanSystem.Persistence","Services","SqlServerTenantDatabaseInitializer.cs");
+
+        var imports=initializer.IndexOf("138_tenant_sri_txt_import.sql",StringComparison.Ordinal);
+        var scope=initializer.IndexOf(ImportScopeMigrationFileName,StringComparison.Ordinal);
+        var repair=initializer.IndexOf(ImportScopeRepairFileName,StringComparison.Ordinal);
+
+        imports.Should().BeGreaterThanOrEqualTo(0);
+        scope.Should().BeGreaterThan(imports);
+        repair.Should().BeGreaterThan(scope);
     }
 
     private static DataTable CreateSummaryTable(Type aggregateType)

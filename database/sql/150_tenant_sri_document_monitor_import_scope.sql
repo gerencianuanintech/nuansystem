@@ -32,11 +32,11 @@ BEGIN
     IF @ImportId IS NOT NULL AND @ImportId <= 0
         THROW 51150, 'ImportId must be greater than zero.', 1;
 
-    SELECT COUNT_BIG(1) Total,
-           COALESCE(SUM(CASE WHEN q.Status=N'Pending' THEN 1 ELSE 0 END), 0) Pending,
-           COALESCE(SUM(CASE WHEN q.Status=N'Querying' THEN 1 ELSE 0 END), 0) Querying,
-           COALESCE(SUM(CASE WHEN q.Status=N'Authorized' THEN 1 ELSE 0 END), 0) Authorized,
-           COALESCE(SUM(CASE WHEN q.Status IN(N'Failed',N'DeadLetter') THEN 1 ELSE 0 END), 0) Errors
+    SELECT COUNT_BIG(1) AS Total,
+           COALESCE(SUM(CASE WHEN q.Status=N'Pending' THEN CONVERT(bigint,1) ELSE CONVERT(bigint,0) END),CONVERT(bigint,0)) AS Pending,
+           COALESCE(SUM(CASE WHEN q.Status=N'Querying' THEN CONVERT(bigint,1) ELSE CONVERT(bigint,0) END),CONVERT(bigint,0)) AS Querying,
+           COALESCE(SUM(CASE WHEN q.Status=N'Authorized' THEN CONVERT(bigint,1) ELSE CONVERT(bigint,0) END),CONVERT(bigint,0)) AS Authorized,
+           COALESCE(SUM(CASE WHEN q.Status IN(N'Failed',N'DeadLetter') THEN CONVERT(bigint,1) ELSE CONVERT(bigint,0) END),CONVERT(bigint,0)) AS Errors
     FROM dbo.SriDocumentQueue q
     WHERE @ImportId IS NULL
        OR EXISTS

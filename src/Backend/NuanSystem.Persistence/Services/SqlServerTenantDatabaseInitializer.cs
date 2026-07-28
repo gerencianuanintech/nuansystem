@@ -65,6 +65,8 @@ public sealed class SqlServerTenantDatabaseInitializer(
                       ,"135_tenant_warehouse_tombstone_code_reservation.sql"
                       ,"136_tenant_currency_transactional_outbox.sql"
                       ,"138_tenant_sri_txt_import.sql"
+                      ,"150_tenant_sri_document_monitor_import_scope.sql"
+                      ,"151_tenant_sri_document_monitor_summary_bigint_repair.sql"
                    })
         {
             var scriptPath = FindDatabaseScriptPath(fileName);
