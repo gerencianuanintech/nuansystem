@@ -208,6 +208,30 @@ public sealed class SriTxtImportFrontendContractTests
     }
 
     [Fact]
+    public void Shell_LoadsFormOperationsAfterTheNewTabBecomesActive()
+    {
+        var shell = ReadSourceFile(
+            "src", "Frontend", "NuanSystem.WinForms.Forms",
+            "Shell", "MainForm.cs");
+
+        var selectTab = shell.IndexOf(
+            "tabControl.SelectedTabPage = page;",
+            StringComparison.Ordinal);
+        var showForm = shell.IndexOf(
+            "form.Show();",
+            selectTab,
+            StringComparison.Ordinal);
+        var loadOperations = shell.IndexOf(
+            "_ = ApplyOperationAccessAsync(module, activeCrudForm);",
+            showForm,
+            StringComparison.Ordinal);
+
+        selectTab.Should().BeGreaterThanOrEqualTo(0);
+        showForm.Should().BeGreaterThan(selectTab);
+        loadOperations.Should().BeGreaterThan(showForm);
+    }
+
+    [Fact]
     public void Form_DelegatesServerPagingToTheCorporateGrid()
     {
         var form = ReadSourceFile(

@@ -1298,7 +1298,6 @@ public sealed class MainForm : RibbonForm
         if (form is BaseCrudListForm crudForm)
         {
             crudForm.ActionStateChanged += ActiveCrudForm_ActionStateChanged;
-            _ = ApplyOperationAccessAsync(module, crudForm);
         }
 
         page.Controls.Add(form);
@@ -1306,6 +1305,11 @@ public sealed class MainForm : RibbonForm
         tabControl.TabPages.Add(page);
         tabControl.SelectedTabPage = page;
         form.Show();
+        if (form is BaseCrudListForm activeCrudForm)
+        {
+            _ = ApplyOperationAccessAsync(module, activeCrudForm);
+        }
+
         UpdateStatusBar(module.Title);
         UpdateRibbonActionState();
     }
