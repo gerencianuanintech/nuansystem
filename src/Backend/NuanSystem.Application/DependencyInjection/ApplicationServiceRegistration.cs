@@ -21,6 +21,7 @@ using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Commands;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Commands;
 using NuanSystem.Application.Features.GeneralInventory.Warehouses.Commands;
 using NuanSystem.Application.Features.Items.Commands;
+using NuanSystem.Application.Features.TaxCatalogs.Taxes.Commands;
 using NuanSystem.Application.Features.Sync.Configuration.Services;
 using NuanSystem.Application.Features.Sync.Execution.Services;
 using NuanSystem.Application.Features.Sync.EntityDefinitions.Services;
@@ -73,6 +74,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<IBusinessPartnerLocalOutboxWriter, BusinessPartnerLocalOutboxWriter>();
         services.AddScoped<ICurrencyLocalOutboxWriter, CurrencyLocalOutboxWriter>();
         services.AddScoped<IPriceListLocalOutboxWriter, PriceListLocalOutboxWriter>();
+        services.AddScoped<ITaxLocalOutboxWriter, TaxLocalOutboxWriter>();
         services.AddScoped<IItemLocalOutboxWriter, ItemLocalOutboxWriter>();
         services.AddScoped<IItemFamilyLocalOutboxWriter, ItemFamilyLocalOutboxWriter>();
         services.AddScoped<IItemGroupLocalOutboxWriter, ItemGroupLocalOutboxWriter>();

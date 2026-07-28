@@ -12,7 +12,6 @@ public sealed class ReferenceCatalogSyncEventApplier(IReferenceCatalogSyncApplyR
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly HashSet<string> Supported = new(StringComparer.OrdinalIgnoreCase)
     {
-        SyncMasterBranchEntityCodes.Taxes,
         SyncMasterBranchEntityCodes.UnitOfMeasures,
         SyncMasterBranchEntityCodes.PriceLists,
         SyncMasterBranchEntityCodes.BusinessPartnerPaymentTerms
