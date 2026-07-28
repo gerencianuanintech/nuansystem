@@ -203,7 +203,7 @@ partial class SriTxtImportForm
         Controls.Add(split);
         Controls.Add(kpiPanel);
         Controls.Add(filterPanel);
-        MinimumSize = new Size(1040, 700);
+        MinimumSize = new Size(1151, 700);
         Name = "SriTxtImportForm";
         Text = "Importaciones TXT SRI";
 

@@ -122,9 +122,21 @@ public sealed class SriTxtImportFrontendContractTests
         designer.Should().Contain("NuanDataGridControl");
         designer.Should().Contain("NuanKpiCardControl");
         designer.Should().Contain("NuanActionButton");
-        designer.Should().Contain("MinimumSize");
         designer.Should().Contain("AutoScaleMode = AutoScaleMode.Font");
         shell.Should().Contain("\"sri-txt-imports\" => sriTxtImportFormFactory()");
+    }
+
+    [Fact]
+    public void Form_MinimumWidthPreservesTheSixKpiCardsInOneRow()
+    {
+        var designer = ReadSourceFile(
+            "src", "Frontend", "NuanSystem.WinForms.Forms",
+            "SriTxtImports", "SriTxtImportForm.Designer.cs");
+
+        designer.Should().Contain("MinimumSize = new Size(1151, 700)");
+        designer.Should().Contain("kpiPanel.WrapContents = false");
+        designer.Should().Contain(
+            "kpiPanel.Controls.AddRange(new Control[] { cardTotal, cardValid, cardInvalid, cardLinked, cardStaged, cardPending })");
     }
 
     private static string ReadSourceFile(params string[] pathParts)
