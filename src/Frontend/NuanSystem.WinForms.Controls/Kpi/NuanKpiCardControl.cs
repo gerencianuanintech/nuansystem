@@ -353,18 +353,38 @@ public sealed class NuanKpiCardControl : XtraUserControl
     private void DrawText(Graphics graphics, Rectangle cardBounds)
     {
         var headerBounds = HeaderBounds(cardBounds);
-        var rightX = Math.Max(78, cardBounds.Width - 134);
-        var valueBounds = new Rectangle(rightX, headerBounds.Top + 12, cardBounds.Width - rightX - 20, 38);
-        var titleBounds = new Rectangle(rightX, headerBounds.Top + 50, cardBounds.Width - rightX - 20, 18);
+        var hasIcon = (useSvgIcon && svgIcon is not null)
+            || iconImage is not null
+            || !string.IsNullOrWhiteSpace(fallbackIconText);
+        var compactHeader = headerBounds.Height < 70;
+        var rightX = hasIcon ? Math.Max(78, cardBounds.Width - 134) : 12;
+        var rightPadding = hasIcon ? 20 : 12;
+        var valueBounds = new Rectangle(
+            rightX,
+            headerBounds.Top + (compactHeader ? 4 : 12),
+            cardBounds.Width - rightX - rightPadding,
+            compactHeader ? 30 : 38);
+        var titleBounds = new Rectangle(
+            rightX,
+            headerBounds.Top + (compactHeader ? 34 : 50),
+            cardBounds.Width - rightX - rightPadding,
+            18);
         var footerBounds = new Rectangle(16, headerBounds.Bottom + 9, cardBounds.Width - 32, Math.Max(16, cardBounds.Bottom - headerBounds.Bottom - 12));
 
-        using var valueFont = new Font("Segoe UI Semibold", 23F, FontStyle.Bold, GraphicsUnit.Point);
+        using var valueFont = CreateFittedValueFont(graphics, valueBounds);
         using var titleFont = new Font("Segoe UI Semibold", 9.5F, FontStyle.Bold, GraphicsUnit.Point);
         using var descriptionFont = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point);
         using var valueBrush = new SolidBrush(valueColor);
         using var titleBrush = new SolidBrush(titleColor);
         using var descriptionBrush = new SolidBrush(descriptionColor);
-        using var rightFormat = new StringFormat
+        using var valueFormat = new StringFormat
+        {
+            Alignment = StringAlignment.Far,
+            LineAlignment = StringAlignment.Center,
+            FormatFlags = StringFormatFlags.NoWrap,
+            Trimming = StringTrimming.None
+        };
+        using var titleFormat = new StringFormat
         {
             Alignment = StringAlignment.Far,
             LineAlignment = StringAlignment.Center,
@@ -377,9 +397,34 @@ public sealed class NuanKpiCardControl : XtraUserControl
             Trimming = StringTrimming.EllipsisCharacter
         };
 
-        graphics.DrawString(valueText, valueFont, valueBrush, valueBounds, rightFormat);
-        graphics.DrawString(title, titleFont, titleBrush, titleBounds, rightFormat);
+        graphics.DrawString(valueText, valueFont, valueBrush, valueBounds, valueFormat);
+        graphics.DrawString(title, titleFont, titleBrush, titleBounds, titleFormat);
         graphics.DrawString(description, descriptionFont, descriptionBrush, footerBounds, descriptionFormat);
+    }
+
+    private Font CreateFittedValueFont(Graphics graphics, Rectangle bounds)
+    {
+        const float minimumSize = 13F;
+        const float decrement = 0.5F;
+
+        var fontSize = bounds.Height <= 30 ? 20F : 23F;
+        while (fontSize > minimumSize)
+        {
+            using var candidate = new Font("Segoe UI Semibold", fontSize, FontStyle.Bold, GraphicsUnit.Point);
+            var measured = graphics.MeasureString(valueText, candidate, int.MaxValue, StringFormat.GenericTypographic);
+            if (measured.Width <= bounds.Width)
+            {
+                break;
+            }
+
+            fontSize -= decrement;
+        }
+
+        return new Font(
+            "Segoe UI Semibold",
+            Math.Max(fontSize, minimumSize),
+            FontStyle.Bold,
+            GraphicsUnit.Point);
     }
 
     private void DrawShadow(Graphics graphics, Rectangle cardBounds)

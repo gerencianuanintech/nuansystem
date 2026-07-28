@@ -121,10 +121,10 @@ Status values:
 
 - **Location:** `src/Frontend/NuanSystem.WinForms.Controls/Kpi/NuanKpiCardControl.cs`
 - **Status:** Active/specialized for KPI summaries.
-- **Responsibility:** Corporate KPI card with title, value, description, icon, colors, border, shadow, and style presets.
+- **Responsibility:** Corporate KPI card with title, value, description, icon, colors, border, shadow, style presets, and automatic numeric font fitting that preserves complete long counters without ellipsis.
 - **Use when:** a dashboard/monitor presents a compact metric summary.
 - **Do not use when:** displaying ordinary field values or editable data.
-- **Representative consumer:** `src/Frontend/NuanSystem.WinForms.Forms/Sync/SyncMonitorForm.Designer.cs`
+- **Representative consumers:** `src/Frontend/NuanSystem.WinForms.Forms/Sync/SyncMonitorForm.Designer.cs` and `src/Frontend/NuanSystem.WinForms.Forms/SriTxtImports/SriTxtImportForm.Designer.cs`.
 - **Antipatterns:** custom painted KPI panels or copied KPI styling.
 
 ## 5. Visual resources

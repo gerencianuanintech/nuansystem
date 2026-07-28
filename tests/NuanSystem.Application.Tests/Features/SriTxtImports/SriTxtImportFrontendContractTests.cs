@@ -235,11 +235,19 @@ public sealed class SriTxtImportFrontendContractTests
         var designer = ReadSourceFile(
             "src", "Frontend", "NuanSystem.WinForms.Forms",
             "SriTxtImports", "SriTxtImportForm.Designer.cs");
+        var kpiControl = ReadSourceFile(
+            "src", "Frontend", "NuanSystem.WinForms.Controls",
+            "Kpi", "NuanKpiCardControl.cs");
 
         designer.Should().Contain("MinimumSize = new Size(1151, 700)");
-        designer.Should().Contain("kpiPanel.WrapContents = false");
-        designer.Should().Contain(
-            "kpiPanel.Controls.AddRange(new Control[] { cardTotal, cardValid, cardInvalid, cardLinked, cardStaged, cardPending })");
+        designer.Should().Contain("kpiPanel = new TableLayoutPanel()");
+        designer.Should().Contain("kpiPanel.ColumnCount = 6");
+        designer.Should().Contain("cardPending.Dock = DockStyle.Fill");
+        designer.Should().Contain("cardPending.HeaderColor = BrandResources.Primary");
+        designer.Should().Contain("cardPending.MinimumSize = Size.Empty");
+        designer.Should().NotContain("ConfigureCard(");
+        kpiControl.Should().Contain("CreateFittedValueFont");
+        kpiControl.Should().Contain("Trimming = StringTrimming.None");
     }
 
     private static string ReadSourceFile(params string[] pathParts)

@@ -147,12 +147,17 @@ Decision edge: use the base CRUD form for a complete CRUD-list lifecycle; use `N
 SyncMonitorForm.Designer.cs
   -> NuanKpiCardControl
        location: Controls/Kpi/NuanKpiCardControl.cs
+       complete long counters through automatic font fitting
   -> NuanDataGridControl
   -> NuanActionButton
   -> typed frontend services
 ```
 
 This is the initial representative monitor/dashboard pattern, not a universal domain template.
+
+`SriTxtImportForm.Designer.cs` is the compact six-KPI reference: it uses a
+designer-owned proportional row so all cards remain visible under Windows font
+scaling, and it applies the corporate primary color through `BrandResources`.
 
 ### 4.7 Visual foundation
 
