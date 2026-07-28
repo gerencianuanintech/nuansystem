@@ -61,9 +61,9 @@ partial class SriTxtImportFilterDialog
         ((System.ComponentModel.ISupportInitialize)txtFileName.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)cmbValidity.Properties).BeginInit();
         SuspendLayout();
-        // 
+        //
         // lblDateFrom
-        // 
+        //
         lblDateFrom.Appearance.Font = AppTypography.LabelFont;
         lblDateFrom.Appearance.Options.UseFont = true;
         lblDateFrom.Location = new Point(16, 17);
@@ -71,9 +71,9 @@ partial class SriTxtImportFilterDialog
         lblDateFrom.Size = new Size(62, 15);
         lblDateFrom.TabIndex = 0;
         lblDateFrom.Text = "Fecha desde";
-        // 
+        //
         // dateFrom
-        // 
+        //
         dateFrom.EditValue = null;
         dateFrom.Location = new Point(142, 14);
         dateFrom.Name = "dateFrom";
@@ -84,9 +84,9 @@ partial class SriTxtImportFilterDialog
         dateFrom.Properties.NullText = "Todas";
         dateFrom.Size = new Size(264, 22);
         dateFrom.TabIndex = 1;
-        // 
+        //
         // lblDateTo
-        // 
+        //
         lblDateTo.Appearance.Font = AppTypography.LabelFont;
         lblDateTo.Appearance.Options.UseFont = true;
         lblDateTo.Location = new Point(16, 45);
@@ -94,9 +94,9 @@ partial class SriTxtImportFilterDialog
         lblDateTo.Size = new Size(59, 15);
         lblDateTo.TabIndex = 2;
         lblDateTo.Text = "Fecha hasta";
-        // 
+        //
         // dateTo
-        // 
+        //
         dateTo.EditValue = null;
         dateTo.Location = new Point(142, 42);
         dateTo.Name = "dateTo";
@@ -107,9 +107,9 @@ partial class SriTxtImportFilterDialog
         dateTo.Properties.NullText = "Todas";
         dateTo.Size = new Size(264, 22);
         dateTo.TabIndex = 3;
-        // 
+        //
         // lblStatus
-        // 
+        //
         lblStatus.Appearance.Font = AppTypography.LabelFont;
         lblStatus.Appearance.Options.UseFont = true;
         lblStatus.Location = new Point(16, 73);
@@ -117,9 +117,9 @@ partial class SriTxtImportFilterDialog
         lblStatus.Size = new Size(105, 15);
         lblStatus.TabIndex = 4;
         lblStatus.Text = "Estado importación";
-        // 
+        //
         // cmbStatus
-        // 
+        //
         cmbStatus.Location = new Point(142, 70);
         cmbStatus.Name = "cmbStatus";
         cmbStatus.Properties.Appearance.Font = AppTypography.InputFont;
@@ -130,9 +130,9 @@ partial class SriTxtImportFilterDialog
         cmbStatus.SelectedIndex = 0;
         cmbStatus.Size = new Size(264, 22);
         cmbStatus.TabIndex = 5;
-        // 
+        //
         // lblEnvironment
-        // 
+        //
         lblEnvironment.Appearance.Font = AppTypography.LabelFont;
         lblEnvironment.Appearance.Options.UseFont = true;
         lblEnvironment.Location = new Point(16, 101);
@@ -140,9 +140,9 @@ partial class SriTxtImportFilterDialog
         lblEnvironment.Size = new Size(49, 15);
         lblEnvironment.TabIndex = 6;
         lblEnvironment.Text = "Ambiente";
-        // 
+        //
         // cmbEnvironment
-        // 
+        //
         cmbEnvironment.Location = new Point(142, 98);
         cmbEnvironment.Name = "cmbEnvironment";
         cmbEnvironment.Properties.Appearance.Font = AppTypography.InputFont;
@@ -153,9 +153,9 @@ partial class SriTxtImportFilterDialog
         cmbEnvironment.SelectedIndex = 0;
         cmbEnvironment.Size = new Size(264, 22);
         cmbEnvironment.TabIndex = 7;
-        // 
+        //
         // lblFileName
-        // 
+        //
         lblFileName.Appearance.Font = AppTypography.LabelFont;
         lblFileName.Appearance.Options.UseFont = true;
         lblFileName.Location = new Point(16, 129);
@@ -163,9 +163,9 @@ partial class SriTxtImportFilterDialog
         lblFileName.Size = new Size(91, 15);
         lblFileName.TabIndex = 8;
         lblFileName.Text = "Nombre archivo";
-        // 
+        //
         // txtFileName
-        // 
+        //
         txtFileName.Location = new Point(142, 126);
         txtFileName.Name = "txtFileName";
         txtFileName.Properties.Appearance.Font = AppTypography.InputFont;
@@ -174,9 +174,9 @@ partial class SriTxtImportFilterDialog
         txtFileName.Properties.NullValuePrompt = "Contiene...";
         txtFileName.Size = new Size(264, 22);
         txtFileName.TabIndex = 9;
-        // 
+        //
         // lblValidity
-        // 
+        //
         lblValidity.Appearance.Font = AppTypography.LabelFont;
         lblValidity.Appearance.Options.UseFont = true;
         lblValidity.Location = new Point(16, 157);
@@ -184,9 +184,9 @@ partial class SriTxtImportFilterDialog
         lblValidity.Size = new Size(70, 15);
         lblValidity.TabIndex = 10;
         lblValidity.Text = "Filas del TXT";
-        // 
+        //
         // cmbValidity
-        // 
+        //
         cmbValidity.Location = new Point(142, 154);
         cmbValidity.Name = "cmbValidity";
         cmbValidity.Properties.Appearance.Font = AppTypography.InputFont;
@@ -197,9 +197,9 @@ partial class SriTxtImportFilterDialog
         cmbValidity.SelectedIndex = 0;
         cmbValidity.Size = new Size(264, 22);
         cmbValidity.TabIndex = 11;
-        // 
+        //
         // btnApply
-        // 
+        //
         btnApply.ButtonKind = NuanActionButtonKind.Save;
         btnApply.ButtonText = "Aplicar";
         btnApply.Location = new Point(318, 194);
@@ -208,9 +208,9 @@ partial class SriTxtImportFilterDialog
         btnApply.TabIndex = 12;
         btnApply.Text = "Aplicar";
         btnApply.Click += ApplyButton_Click;
-        // 
+        //
         // btnClear
-        // 
+        //
         btnClear.ButtonKind = NuanActionButtonKind.Cancel;
         btnClear.ButtonText = "Limpiar";
         btnClear.Location = new Point(224, 194);
@@ -219,9 +219,9 @@ partial class SriTxtImportFilterDialog
         btnClear.TabIndex = 13;
         btnClear.Text = "Limpiar";
         btnClear.Click += ClearButton_Click;
-        // 
+        //
         // btnCancel
-        // 
+        //
         btnCancel.ButtonKind = NuanActionButtonKind.Cancel;
         btnCancel.ButtonText = "Cancelar";
         btnCancel.DialogResult = DialogResult.Cancel;
@@ -230,9 +230,9 @@ partial class SriTxtImportFilterDialog
         btnCancel.Size = new Size(88, 34);
         btnCancel.TabIndex = 14;
         btnCancel.Text = "Cancelar";
-        // 
+        //
         // SriTxtImportFilterDialog
-        // 
+        //
         AcceptButton = btnApply;
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
