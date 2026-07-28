@@ -44,6 +44,27 @@ public sealed class NuanApiClient : INuanApiClient
         return await SendAsync<TResponse>(request, cancellationToken);
     }
 
+    public async Task<TResponse> PostFileAsync<TResponse>(
+        string path,
+        Stream content,
+        string fileName,
+        string formFieldName = "file",
+        string contentType = "application/octet-stream",
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(formFieldName);
+
+        using var request = CreateRequest(HttpMethod.Post, path);
+        using var multipart = new MultipartFormDataContent();
+        using var fileContent = new StreamContent(content);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        multipart.Add(fileContent, formFieldName, Path.GetFileName(fileName));
+        request.Content = multipart;
+        return await SendAsync<TResponse>(request, cancellationToken);
+    }
+
     public async Task<bool> IsAvailableAsync(string path = "/health", CancellationToken cancellationToken = default)
     {
         using var request = CreateRequest(HttpMethod.Get, path);

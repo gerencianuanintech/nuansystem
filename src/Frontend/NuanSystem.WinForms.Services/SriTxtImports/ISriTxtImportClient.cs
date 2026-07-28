@@ -4,6 +4,11 @@ namespace NuanSystem.WinForms.Services.SriTxtImports;
 
 public interface ISriTxtImportClient
 {
+    Task<SriTxtImportDetail> UploadAsync(
+        Stream content,
+        string fileName,
+        CancellationToken cancellationToken = default);
+
     Task<SriTxtImportPage> SearchAsync(
         SriTxtImportFilter filter,
         CancellationToken cancellationToken = default);

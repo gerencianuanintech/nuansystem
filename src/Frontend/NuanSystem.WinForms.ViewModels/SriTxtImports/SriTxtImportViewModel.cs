@@ -18,6 +18,21 @@ public sealed class SriTxtImportViewModel(ISriTxtImportClient client)
     public bool CanMoveRowsNext => RowPage * RowPageSize < Rows.TotalCount;
     public bool CanMoveRowsPrevious => RowPage > 1;
 
+    public async Task UploadAsync(
+        Stream content,
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        var uploaded = await client.UploadAsync(content, fileName, cancellationToken);
+        ResetPaging();
+        await LoadAsync(cancellationToken);
+        var selected = Page.Items.FirstOrDefault(item => item.Id == uploaded.Id);
+        if (selected is not null)
+        {
+            await SelectAsync(selected, cancellationToken);
+        }
+    }
+
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
         Page = await client.SearchAsync(Filter, cancellationToken);

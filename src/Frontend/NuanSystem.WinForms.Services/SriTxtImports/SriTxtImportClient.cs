@@ -6,6 +6,18 @@ namespace NuanSystem.WinForms.Services.SriTxtImports;
 
 public sealed class SriTxtImportClient(INuanApiClient apiClient) : ISriTxtImportClient
 {
+    public Task<SriTxtImportDetail> UploadAsync(
+        Stream content,
+        string fileName,
+        CancellationToken cancellationToken = default) =>
+        apiClient.PostFileAsync<SriTxtImportDetail>(
+            "/api/sri/txt-imports/upload",
+            content,
+            Path.GetFileName(fileName),
+            "file",
+            "text/plain",
+            cancellationToken);
+
     public Task<SriTxtImportPage> SearchAsync(
         SriTxtImportFilter filter,
         CancellationToken cancellationToken = default) =>

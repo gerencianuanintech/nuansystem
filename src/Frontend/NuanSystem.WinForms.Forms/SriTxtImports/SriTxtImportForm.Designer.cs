@@ -9,16 +9,6 @@ namespace NuanSystem.WinForms.Forms.SriTxtImports;
 partial class SriTxtImportForm
 {
     private System.ComponentModel.IContainer? components;
-    private PanelControl filterPanel = null!;
-    private DateEdit dateFrom = null!;
-    private DateEdit dateTo = null!;
-    private ComboBoxEdit cmbStatus = null!;
-    private ComboBoxEdit cmbEnvironment = null!;
-    private TextEdit txtFileName = null!;
-    private NuanActionButton btnRefresh = null!;
-    private NuanActionButton btnClear = null!;
-    private NuanActionButton btnEnqueue = null!;
-    private NuanActionButton btnOpenQueue = null!;
     private FlowLayoutPanel kpiPanel = null!;
     private NuanKpiCardControl cardTotal = null!;
     private NuanKpiCardControl cardValid = null!;
@@ -34,7 +24,6 @@ partial class SriTxtImportForm
     private NuanActionButton btnImportNext = null!;
     private PanelControl rowHeaderPanel = null!;
     private LabelControl lblDetail = null!;
-    private ComboBoxEdit cmbValidity = null!;
     private NuanDataGridControl rowGrid = null!;
     private PanelControl rowPagePanel = null!;
     private NuanActionButton btnRowPrevious = null!;
@@ -51,16 +40,6 @@ partial class SriTxtImportForm
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
-        filterPanel = new PanelControl();
-        dateFrom = new DateEdit();
-        dateTo = new DateEdit();
-        cmbStatus = new ComboBoxEdit();
-        cmbEnvironment = new ComboBoxEdit();
-        txtFileName = new TextEdit();
-        btnRefresh = new NuanActionButton();
-        btnClear = new NuanActionButton();
-        btnEnqueue = new NuanActionButton();
-        btnOpenQueue = new NuanActionButton();
         kpiPanel = new FlowLayoutPanel();
         cardTotal = new NuanKpiCardControl();
         cardValid = new NuanKpiCardControl();
@@ -76,19 +55,11 @@ partial class SriTxtImportForm
         btnImportNext = new NuanActionButton();
         rowHeaderPanel = new PanelControl();
         lblDetail = new LabelControl();
-        cmbValidity = new ComboBoxEdit();
         rowGrid = new NuanDataGridControl();
         rowPagePanel = new PanelControl();
         btnRowPrevious = new NuanActionButton();
         lblRowPage = new LabelControl();
         btnRowNext = new NuanActionButton();
-        ((System.ComponentModel.ISupportInitialize)filterPanel).BeginInit();
-        filterPanel.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)dateFrom.Properties).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)dateTo.Properties).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)cmbStatus.Properties).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)cmbEnvironment.Properties).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)txtFileName.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)split).BeginInit();
         ((System.ComponentModel.ISupportInitialize)split.Panel1).BeginInit();
         split.Panel1.SuspendLayout();
@@ -99,44 +70,9 @@ partial class SriTxtImportForm
         importPagePanel.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)rowHeaderPanel).BeginInit();
         rowHeaderPanel.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)cmbValidity.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)rowPagePanel).BeginInit();
         rowPagePanel.SuspendLayout();
         SuspendLayout();
-
-        filterPanel.Dock = DockStyle.Top;
-        filterPanel.Height = 88;
-        filterPanel.Padding = new Padding(12);
-        dateFrom.Location = new Point(12, 14);
-        dateFrom.Size = new Size(120, 22);
-        dateFrom.Properties.NullText = "Desde";
-        dateTo.Location = new Point(140, 14);
-        dateTo.Size = new Size(120, 22);
-        dateTo.Properties.NullText = "Hasta";
-        cmbStatus.Location = new Point(268, 14);
-        cmbStatus.Size = new Size(178, 22);
-        cmbStatus.Properties.NullText = "Estado";
-        cmbStatus.Properties.Items.AddRange(new object[] { "Validated", "ValidatedWithErrors", "Completed", "CompletedWithErrors" });
-        cmbEnvironment.Location = new Point(454, 14);
-        cmbEnvironment.Size = new Size(130, 22);
-        cmbEnvironment.Properties.NullText = "Ambiente";
-        cmbEnvironment.Properties.Items.AddRange(new object[] { "Test", "Production" });
-        txtFileName.Location = new Point(12, 50);
-        txtFileName.Size = new Size(432, 22);
-        txtFileName.Properties.NullValuePrompt = "Nombre de archivo";
-        btnRefresh.Location = new Point(604, 12);
-        btnRefresh.Size = new Size(108, 36);
-        btnRefresh.ButtonText = "Actualizar";
-        btnClear.Location = new Point(720, 12);
-        btnClear.Size = new Size(92, 36);
-        btnClear.ButtonText = "Limpiar";
-        btnEnqueue.Location = new Point(820, 12);
-        btnEnqueue.Size = new Size(104, 36);
-        btnEnqueue.ButtonText = "Encolar";
-        btnOpenQueue.Location = new Point(932, 12);
-        btnOpenQueue.Size = new Size(120, 36);
-        btnOpenQueue.ButtonText = "Abrir cola";
-        filterPanel.Controls.AddRange(new Control[] { dateFrom, dateTo, cmbStatus, cmbEnvironment, txtFileName, btnRefresh, btnClear, btnEnqueue, btnOpenQueue });
 
         kpiPanel.Dock = DockStyle.Top;
         kpiPanel.Height = 104;
@@ -175,12 +111,7 @@ partial class SriTxtImportForm
         lblDetail.AutoSizeMode = LabelAutoSizeMode.None;
         lblDetail.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.Wrap;
         lblDetail.Text = "Seleccione una importación.";
-        cmbValidity.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        cmbValidity.Location = new Point(1014, 18);
-        cmbValidity.Size = new Size(130, 22);
-        cmbValidity.Properties.Items.AddRange(new object[] { "All", "Valid", "Invalid" });
-        cmbValidity.EditValue = "All";
-        rowHeaderPanel.Controls.AddRange(new Control[] { lblDetail, cmbValidity });
+        rowHeaderPanel.Controls.Add(lblDetail);
         rowGrid.Dock = DockStyle.Fill;
         rowPagePanel.Dock = DockStyle.Bottom;
         rowPagePanel.Height = 42;
@@ -202,18 +133,10 @@ partial class SriTxtImportForm
         ClientSize = new Size(1180, 780);
         Controls.Add(split);
         Controls.Add(kpiPanel);
-        Controls.Add(filterPanel);
         MinimumSize = new Size(1151, 700);
         Name = "SriTxtImportForm";
         Text = "Importaciones TXT SRI";
 
-        ((System.ComponentModel.ISupportInitialize)filterPanel).EndInit();
-        filterPanel.ResumeLayout(false);
-        ((System.ComponentModel.ISupportInitialize)dateFrom.Properties).EndInit();
-        ((System.ComponentModel.ISupportInitialize)dateTo.Properties).EndInit();
-        ((System.ComponentModel.ISupportInitialize)cmbStatus.Properties).EndInit();
-        ((System.ComponentModel.ISupportInitialize)cmbEnvironment.Properties).EndInit();
-        ((System.ComponentModel.ISupportInitialize)txtFileName.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)split.Panel1).EndInit();
         split.Panel1.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)split.Panel2).EndInit();
@@ -224,7 +147,6 @@ partial class SriTxtImportForm
         importPagePanel.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)rowHeaderPanel).EndInit();
         rowHeaderPanel.ResumeLayout(false);
-        ((System.ComponentModel.ISupportInitialize)cmbValidity.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)rowPagePanel).EndInit();
         rowPagePanel.ResumeLayout(false);
         ResumeLayout(false);

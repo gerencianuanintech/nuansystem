@@ -1,4 +1,5 @@
 using DevExpress.XtraEditors;
+using System.ComponentModel;
 using NuanSystem.Shared.Constants;
 using NuanSystem.WinForms.Controls.Grids;
 using NuanSystem.WinForms.Forms.Common;
@@ -8,44 +9,45 @@ using NuanSystem.WinForms.ViewModels.SriTxtImports;
 
 namespace NuanSystem.WinForms.Forms.SriTxtImports;
 
-public sealed partial class SriTxtImportForm : XtraForm
+public sealed partial class SriTxtImportForm : BaseCrudListForm
 {
     public const string FormKey = "sri-txt-imports";
-    private readonly SriTxtImportViewModel viewModel;
-    private readonly Action<long> openQueue;
+    private const long MaxUploadSizeBytes = 10L * 1024L * 1024L;
+    private SriTxtImportViewModel? viewModel;
+    private ApiSession? session;
+    private Action<long>? openQueue;
+    private readonly bool canUpload;
     private readonly bool canEnqueue;
     private readonly bool canOpenQueue;
     private bool busy;
 
     public SriTxtImportForm()
     {
-        viewModel = null!;
-        openQueue = null!;
         InitializeComponent();
+        FormStyler.ApplyBase(this);
     }
 
     public SriTxtImportForm(
         SriTxtImportViewModel viewModel,
         ApiSession session,
         Action<long> openQueue)
+        : this()
     {
         this.viewModel = viewModel;
+        this.session = session;
         this.openQueue = openQueue;
+        canUpload = session.HasPermission(PermissionCodes.SriTxtImportsUpload);
         canEnqueue = session.HasPermission(PermissionCodes.SriTxtImportsEnqueue);
         canOpenQueue = session.HasPermission(PermissionCodes.SriDocumentsView);
-        InitializeComponent();
-        FormStyler.ApplyBase(this);
         ConfigureGrids();
         WireEvents();
-        btnEnqueue.Visible = canEnqueue;
-        btnOpenQueue.Visible = canOpenQueue;
     }
 
-    protected override async void OnShown(EventArgs e)
-    {
-        base.OnShown(e);
-        await RefreshAsync();
-    }
+    private SriTxtImportViewModel ViewModel =>
+        viewModel ?? throw new InvalidOperationException("El formulario debe abrirse mediante inyección de dependencias.");
+
+    private ApiSession Session =>
+        session ?? throw new InvalidOperationException("La sesión no está configurada.");
 
     private void ConfigureGrids()
     {
@@ -83,52 +85,41 @@ public sealed partial class SriTxtImportForm : XtraForm
 
     private void WireEvents()
     {
-        btnRefresh.Click += async (_, _) => await RefreshAsync();
-        btnClear.Click += async (_, _) => await ClearAsync();
         btnImportPrevious.Click += async (_, _) => await MoveImportPageAsync(-1);
         btnImportNext.Click += async (_, _) => await MoveImportPageAsync(1);
         btnRowPrevious.Click += async (_, _) => await MoveRowPageAsync(-1);
         btnRowNext.Click += async (_, _) => await MoveRowPageAsync(1);
         importGrid.FocusedRowChanged += async (_, _) => await LoadSelectedAsync();
-        rowGrid.FocusedRowChanged += (_, _) => UpdateActionState();
-        cmbValidity.SelectedIndexChanged += async (_, _) => await ChangeValidityAsync();
-        btnEnqueue.Click += async (_, _) => await EnqueueAsync();
-        btnOpenQueue.Click += (_, _) => OpenSelectedQueue();
+        importGrid.GridView.DoubleClick += async (_, _) => await ExecuteConsultAsync();
+        rowGrid.GridView.DoubleClick += (_, _) => OpenSelectedQueue();
     }
 
-    private async Task RefreshAsync()
+    protected override async Task LoadDataAsync()
     {
-        if (busy)
+        if (busy || IsInDesignMode() || viewModel is null)
             return;
 
-        ApplyFilters();
         await RunBusyAsync(async () =>
         {
-            await viewModel.LoadAsync();
+            await ViewModel.LoadAsync();
             RenderPage();
             await SelectFirstVisibleAsync();
         });
     }
 
-    private async Task ClearAsync()
+    protected override async Task ConsultAsync()
     {
-        dateFrom.EditValue = null;
-        dateTo.EditValue = null;
-        cmbStatus.EditValue = null;
-        cmbEnvironment.EditValue = null;
-        txtFileName.Text = string.Empty;
-        cmbValidity.EditValue = "All";
-        viewModel.ResetPaging();
-        await RefreshAsync();
-    }
+        if (importGrid.GetFocusedRow<SriTxtImportListItem>() is not { } selected)
+        {
+            ShowWarning("Seleccione una importación.");
+            return;
+        }
 
-    private void ApplyFilters()
-    {
-        viewModel.Filter.CreatedFrom = dateFrom.EditValue as DateTime?;
-        viewModel.Filter.CreatedTo = (dateTo.EditValue as DateTime?)?.Date.AddDays(1).AddTicks(-1);
-        viewModel.Filter.Status = Convert.ToString(cmbStatus.EditValue);
-        viewModel.Filter.Environment = Convert.ToString(cmbEnvironment.EditValue);
-        viewModel.Filter.FileName = string.IsNullOrWhiteSpace(txtFileName.Text) ? null : txtFileName.Text.Trim();
+        await RunBusyAsync(async () =>
+        {
+            await ViewModel.SelectAsync(selected);
+            RenderDetailAndRows();
+        });
     }
 
     private async Task LoadSelectedAsync()
@@ -138,33 +129,87 @@ public sealed partial class SriTxtImportForm : XtraForm
 
         await RunBusyAsync(async () =>
         {
-            await viewModel.SelectAsync(selected);
+            await ViewModel.SelectAsync(selected);
             RenderDetailAndRows();
         });
     }
 
-    private async Task ChangeValidityAsync()
+    private async Task OpenFiltersAsync()
     {
-        if (busy || viewModel.SelectedImport is null)
+        if (busy)
             return;
 
-        viewModel.RowValidity = Convert.ToString(cmbValidity.EditValue) ?? "All";
-        viewModel.ResetRowPaging();
+        using var dialog = new SriTxtImportFilterDialog(ViewModel.Filter, ViewModel.RowValidity);
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+            return;
+
+        ViewModel.Filter.CreatedFrom = dialog.CreatedFrom;
+        ViewModel.Filter.CreatedTo = dialog.CreatedTo?.Date.AddDays(1).AddTicks(-1);
+        ViewModel.Filter.Status = dialog.Status;
+        ViewModel.Filter.Environment = dialog.EnvironmentCode;
+        ViewModel.Filter.FileName = dialog.FileNameFilter;
+        ViewModel.RowValidity = dialog.RowValidity;
+        ViewModel.ResetPaging();
+        await LoadDataAsync();
+    }
+
+    private async Task UploadAsync()
+    {
+        if (busy || !canUpload)
+            return;
+
+        using var dialog = new OpenFileDialog
+        {
+            AddExtension = true,
+            CheckFileExists = true,
+            CheckPathExists = true,
+            DefaultExt = "txt",
+            Filter = "Archivos TXT (*.txt)|*.txt",
+            Multiselect = false,
+            RestoreDirectory = true,
+            Title = "Seleccionar archivo TXT del SRI"
+        };
+
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+            return;
+
+        var file = new FileInfo(dialog.FileName);
+        if (file.Length <= 0)
+        {
+            ShowWarning("El archivo seleccionado está vacío.");
+            return;
+        }
+
+        if (file.Length > MaxUploadSizeBytes)
+        {
+            ShowWarning("El archivo seleccionado supera el límite de 10 MiB.");
+            return;
+        }
+
         await RunBusyAsync(async () =>
         {
-            await viewModel.LoadSelectedAsync();
+            await using var stream = new FileStream(
+                file.FullName,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                bufferSize: 81920,
+                useAsync: true);
+            await ViewModel.UploadAsync(stream, file.Name);
+            RenderPage();
             RenderDetailAndRows();
+            ShowSuccess($"El archivo {file.Name} fue cargado y quedó preparado para revisión.");
         });
     }
 
     private async Task MoveImportPageAsync(int delta)
     {
-        if (busy || (delta < 0 && !viewModel.CanMoveImportPrevious) || (delta > 0 && !viewModel.CanMoveImportNext))
+        if (busy || (delta < 0 && !ViewModel.CanMoveImportPrevious) || (delta > 0 && !ViewModel.CanMoveImportNext))
             return;
 
         await RunBusyAsync(async () =>
         {
-            await viewModel.MoveImportPageAsync(delta);
+            await ViewModel.MoveImportPageAsync(delta);
             RenderPage();
             await SelectFirstVisibleAsync();
         });
@@ -172,20 +217,26 @@ public sealed partial class SriTxtImportForm : XtraForm
 
     private async Task MoveRowPageAsync(int delta)
     {
-        if (busy || (delta < 0 && !viewModel.CanMoveRowsPrevious) || (delta > 0 && !viewModel.CanMoveRowsNext))
+        if (busy || (delta < 0 && !ViewModel.CanMoveRowsPrevious) || (delta > 0 && !ViewModel.CanMoveRowsNext))
             return;
 
         await RunBusyAsync(async () =>
         {
-            await viewModel.MoveRowPageAsync(delta);
+            await ViewModel.MoveRowPageAsync(delta);
             RenderDetailAndRows();
         });
     }
 
     private async Task EnqueueAsync()
     {
-        if (!canEnqueue || viewModel.Detail is not { StagedRows: > 0 } detail)
+        if (!canEnqueue)
             return;
+
+        if (ViewModel.Detail is not { StagedRows: > 0 } detail)
+        {
+            ShowWarning("Seleccione una importación con documentos preparados.");
+            return;
+        }
 
         var confirmation = XtraMessageBox.Show(
             this,
@@ -198,7 +249,7 @@ public sealed partial class SriTxtImportForm : XtraForm
 
         await RunBusyAsync(async () =>
         {
-            await viewModel.EnqueueAsync();
+            await ViewModel.EnqueueAsync();
             RenderPage();
             RenderDetailAndRows();
         });
@@ -206,83 +257,134 @@ public sealed partial class SriTxtImportForm : XtraForm
 
     private void OpenSelectedQueue()
     {
-        if (!canOpenQueue || rowGrid.GetFocusedRow<SriTxtImportRow>()?.QueueId is not long queueId)
+        if (!canOpenQueue)
             return;
-        openQueue(queueId);
+
+        if (rowGrid.GetFocusedRow<SriTxtImportRow>()?.QueueId is not long queueId)
+        {
+            ShowWarning("Seleccione una fila vinculada a la cola SRI.");
+            return;
+        }
+
+        openQueue?.Invoke(queueId);
     }
 
     private void RenderPage()
     {
-        importGrid.SetData(viewModel.Page.Items.ToList());
-        cardTotal.ValueText = viewModel.Page.Summary.TotalRows.ToString("N0");
-        cardValid.ValueText = viewModel.Page.Summary.ValidRows.ToString("N0");
-        cardInvalid.ValueText = viewModel.Page.Summary.InvalidRows.ToString("N0");
-        cardLinked.ValueText = viewModel.Page.Summary.LinkedRows.ToString("N0");
-        cardStaged.ValueText = viewModel.Page.Summary.StagedRows.ToString("N0");
-        cardPending.ValueText = viewModel.Page.Summary.PendingRows.ToString("N0");
-        lblImportPage.Text = PageText(viewModel.Filter.Page, viewModel.Filter.PageSize, viewModel.Page.TotalCount);
-        btnImportPrevious.Enabled = viewModel.CanMoveImportPrevious;
-        btnImportNext.Enabled = viewModel.CanMoveImportNext;
-        if (viewModel.Page.Items.Count == 0)
+        importGrid.SetData(ViewModel.Page.Items.ToList());
+        cardTotal.ValueText = ViewModel.Page.Summary.TotalRows.ToString("N0");
+        cardValid.ValueText = ViewModel.Page.Summary.ValidRows.ToString("N0");
+        cardInvalid.ValueText = ViewModel.Page.Summary.InvalidRows.ToString("N0");
+        cardLinked.ValueText = ViewModel.Page.Summary.LinkedRows.ToString("N0");
+        cardStaged.ValueText = ViewModel.Page.Summary.StagedRows.ToString("N0");
+        cardPending.ValueText = ViewModel.Page.Summary.PendingRows.ToString("N0");
+        lblImportPage.Text = PageText(ViewModel.Filter.Page, ViewModel.Filter.PageSize, ViewModel.Page.TotalCount);
+        btnImportPrevious.Enabled = ViewModel.CanMoveImportPrevious;
+        btnImportNext.Enabled = ViewModel.CanMoveImportNext;
+        if (ViewModel.Page.Items.Count == 0)
         {
             lblDetail.Text = "No existen importaciones para los filtros seleccionados.";
             rowGrid.SetData(Array.Empty<SriTxtImportRow>());
         }
-        UpdateActionState();
     }
 
     private void RenderDetailAndRows()
     {
-        var detail = viewModel.Detail;
+        var detail = ViewModel.Detail;
         lblDetail.Text = detail is null
             ? "Seleccione una importación."
             : $"Carga {detail.Id} | {detail.OriginalFileName} | {detail.EncodingCode} | {detail.Status} | "
               + $"{detail.FileSizeBytes:N0} bytes | SHA-256: {detail.FileSha256Hex}";
-        rowGrid.SetData(viewModel.Rows.Items.ToList());
-        lblRowPage.Text = PageText(viewModel.RowPage, viewModel.RowPageSize, viewModel.Rows.TotalCount);
-        btnRowPrevious.Enabled = viewModel.CanMoveRowsPrevious;
-        btnRowNext.Enabled = viewModel.CanMoveRowsNext;
-        UpdateActionState();
+        rowGrid.SetData(ViewModel.Rows.Items.ToList());
+        lblRowPage.Text = PageText(ViewModel.RowPage, ViewModel.RowPageSize, ViewModel.Rows.TotalCount);
+        btnRowPrevious.Enabled = ViewModel.CanMoveRowsPrevious;
+        btnRowNext.Enabled = ViewModel.CanMoveRowsNext;
     }
 
     private async Task SelectFirstVisibleAsync()
     {
-        if (viewModel.Page.Items.FirstOrDefault() is not { } first)
+        if (ViewModel.Page.Items.FirstOrDefault() is not { } first)
             return;
-        await viewModel.SelectAsync(first);
+        await ViewModel.SelectAsync(first);
         RenderDetailAndRows();
     }
 
-    private void UpdateActionState()
+    public override bool CanExecuteCustomOperation(string operationKey)
     {
-        btnEnqueue.Enabled = !busy && canEnqueue && viewModel.Detail is { StagedRows: > 0 };
-        btnOpenQueue.Enabled = !busy
-            && canOpenQueue
-            && rowGrid.GetFocusedRow<SriTxtImportRow>()?.QueueId is not null;
+        return IsCustomOperation(operationKey, "upload", "load", "cargar")
+            ? !busy && canUpload
+            : IsCustomOperation(operationKey, "filter", "filters", "filtro", "filtros")
+                ? !busy && Session.HasPermission(PermissionCodes.SriTxtImportsView)
+                : IsCustomOperation(operationKey, "enqueue", "encolar")
+                    ? !busy && canEnqueue
+                    : IsCustomOperation(operationKey, "openqueue", "open-queue", "abrircola")
+                        ? !busy && canOpenQueue
+                        : base.CanExecuteCustomOperation(operationKey);
+    }
+
+    public override Task ExecuteCustomOperationAsync(string operationKey)
+    {
+        if (IsCustomOperation(operationKey, "upload", "load", "cargar"))
+            return UploadAsync();
+
+        if (IsCustomOperation(operationKey, "filter", "filters", "filtro", "filtros"))
+            return OpenFiltersAsync();
+
+        if (IsCustomOperation(operationKey, "enqueue", "encolar"))
+            return EnqueueAsync();
+
+        if (IsCustomOperation(operationKey, "openqueue", "open-queue", "abrircola"))
+        {
+            OpenSelectedQueue();
+            return Task.CompletedTask;
+        }
+
+        return base.ExecuteCustomOperationAsync(operationKey);
     }
 
     private async Task RunBusyAsync(Func<Task> action)
     {
         busy = true;
-        btnRefresh.Enabled = false;
-        btnClear.Enabled = false;
-        UpdateActionState();
-        try
+        await RunWithBusyStateAsync(async () =>
         {
-            await UiExceptionHandler.RunAsync(this, Text, action);
-        }
-        finally
-        {
-            busy = false;
-            btnRefresh.Enabled = true;
-            btnClear.Enabled = true;
-            UpdateActionState();
-        }
+            try
+            {
+                await action();
+            }
+            finally
+            {
+                busy = false;
+            }
+        });
     }
 
     private static string PageText(int page, int pageSize, int totalCount)
     {
         var pageCount = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
         return $"Página {page:N0} de {pageCount:N0} | {totalCount:N0} registros";
+    }
+
+    private static bool IsCustomOperation(string operationKey, params string[] aliases)
+    {
+        var normalized = NormalizeOperation(operationKey);
+        return aliases.Select(NormalizeOperation)
+            .Any(alias => string.Equals(normalized, alias, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string NormalizeOperation(string operationKey)
+    {
+        return operationKey
+            .Replace("ACTION.", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("SRI_TXT_IMPORTS.", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("_", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("-", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsInDesignMode()
+    {
+        return LicenseManager.UsageMode == LicenseUsageMode.Designtime
+            || DesignMode
+            || Site?.DesignMode == true;
     }
 }
