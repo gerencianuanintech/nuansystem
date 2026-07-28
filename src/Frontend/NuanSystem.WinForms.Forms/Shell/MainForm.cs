@@ -1397,7 +1397,6 @@ public sealed class MainForm : RibbonForm
         foreach (var operation in operations
             .Where(operation => operation.IsAllowed)
             .Where(operation => !IsBuiltInOperation(operation))
-            .Where(operation => crudForm.CanExecuteCustomOperation(OperationKey(operation)))
             .OrderBy(operation => operation.DisplayOrder)
             .ThenBy(operation => operation.Name))
         {

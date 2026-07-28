@@ -232,6 +232,22 @@ public sealed class SriTxtImportFrontendContractTests
     }
 
     [Fact]
+    public void Shell_CreatesAllowedCustomOperationsWhileTheFormIsLoading()
+    {
+        var shell = ReadSourceFile(
+            "src", "Frontend", "NuanSystem.WinForms.Forms",
+            "Shell", "MainForm.cs");
+
+        shell.Should().Contain(
+            ".Where(operation => operation.IsAllowed)\n" +
+            "            .Where(operation => !IsBuiltInOperation(operation))");
+        shell.Should().NotContain(
+            ".Where(operation => crudForm.CanExecuteCustomOperation(OperationKey(operation)))");
+        shell.Should().Contain(
+            "customButton.Button.Visibility = canExecuteCustomOperation ? BarItemVisibility.Always : BarItemVisibility.Never;");
+    }
+
+    [Fact]
     public void Form_DelegatesServerPagingToTheCorporateGrid()
     {
         var form = ReadSourceFile(
