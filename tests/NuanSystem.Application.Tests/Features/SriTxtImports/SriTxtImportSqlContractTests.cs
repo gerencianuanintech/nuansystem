@@ -126,7 +126,7 @@ public sealed class SriTxtImportSqlContractTests
     }
 
     [Fact]
-    public void RibbonMigration_RegistersUploadAndFilterWithoutGrantingApiPermissions()
+    public void RibbonMigration_MapsAllSRIImportActionsWithoutGrantingApiPermissions()
     {
         var script = ReadSourceFile(
             "database",
@@ -135,12 +135,18 @@ public sealed class SriTxtImportSqlContractTests
 
         script.Should().Contain("ACTION.SRI_TXT_IMPORTS.UPLOAD");
         script.Should().Contain("ACTION.FILTER");
+        script.Should().Contain("ACTION.SRI_TXT_IMPORTS.ENQUEUE");
+        script.Should().Contain("ACTION.SRI_TXT_IMPORTS.OPEN_QUEUE");
         script.Should().Contain("N'upload' AS ActionKey");
         script.Should().Contain("N'Inicio' AS RibbonPageName");
         script.Should().Contain("N'Acciones' AS RibbonGroupName");
         script.Should().Contain("Operaciones/importar_32.svg");
         script.Should().Contain("SRI.TXT_IMPORTS.VIEW");
         script.Should().Contain("SRI.TXT_IMPORTS.UPLOAD");
+        script.Should().Contain("SRI.TXT_IMPORTS.ENQUEUE");
+        script.Should().Contain("SRI.DOCUMENTS.VIEW");
+        script.Should().Contain("Ribbon/ejecutar_play_circulo_32.svg");
+        script.Should().Contain("Operaciones/ver_detalle_32.svg");
         script.Should().Contain("SecurityRoleFormOperations");
         script.Should().Contain("20260728.147");
         script.Should().Contain("THROW 51147");

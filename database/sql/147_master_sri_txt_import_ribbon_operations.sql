@@ -120,6 +120,48 @@ DECLARE @UploadOperationId int =
 IF @UploadOperationId IS NULL
     THROW 51147, 'The SRI TXT upload operation could not be registered.', 1;
 
+DECLARE @EnqueueOperationId int =
+(
+    SELECT TOP (1) Id
+    FROM dbo.SecurityOperations
+    WHERE Code = N'ACTION.SRI_TXT_IMPORTS.ENQUEUE'
+      AND IsActive = 1
+      AND IsDeleted = 0
+);
+
+IF @EnqueueOperationId IS NULL
+    THROW 51147, 'ACTION.SRI_TXT_IMPORTS.ENQUEUE is required before migration 147.', 1;
+
+DECLARE @OpenQueueOperationId int =
+(
+    SELECT TOP (1) Id
+    FROM dbo.SecurityOperations
+    WHERE Code = N'ACTION.SRI_TXT_IMPORTS.OPEN_QUEUE'
+      AND IsActive = 1
+      AND IsDeleted = 0
+);
+
+IF @OpenQueueOperationId IS NULL
+    THROW 51147, 'ACTION.SRI_TXT_IMPORTS.OPEN_QUEUE is required before migration 147.', 1;
+
+UPDATE dbo.SecurityOperations
+SET RibbonPageName = N'Inicio',
+    RibbonGroupName = N'Acciones',
+    IconLarge = N'Ribbon/ejecutar_play_circulo_32.svg',
+    IconSmall = N'Ribbon/ejecutar_play_circulo_16.svg',
+    UpdatedByUserName = N'Sistema',
+    UpdatedAt = SYSUTCDATETIME()
+WHERE Id = @EnqueueOperationId;
+
+UPDATE dbo.SecurityOperations
+SET RibbonPageName = N'Inicio',
+    RibbonGroupName = N'Acciones',
+    IconLarge = N'Operaciones/ver_detalle_32.svg',
+    IconSmall = N'Operaciones/ver_detalle_16.svg',
+    UpdatedByUserName = N'Sistema',
+    UpdatedAt = SYSUTCDATETIME()
+WHERE Id = @OpenQueueOperationId;
+
 DECLARE @RoleOperations table
 (
     RoleId int NOT NULL,
@@ -138,6 +180,18 @@ SELECT DISTINCT rolePermission.RoleId, @UploadOperationId
 FROM dbo.RolePermissions rolePermission
 INNER JOIN dbo.Permissions permission ON permission.Id = rolePermission.PermissionId
 WHERE permission.Code = N'SRI.TXT_IMPORTS.UPLOAD'
+  AND permission.IsActive = 1
+UNION
+SELECT DISTINCT rolePermission.RoleId, @EnqueueOperationId
+FROM dbo.RolePermissions rolePermission
+INNER JOIN dbo.Permissions permission ON permission.Id = rolePermission.PermissionId
+WHERE permission.Code = N'SRI.TXT_IMPORTS.ENQUEUE'
+  AND permission.IsActive = 1
+UNION
+SELECT DISTINCT rolePermission.RoleId, @OpenQueueOperationId
+FROM dbo.RolePermissions rolePermission
+INNER JOIN dbo.Permissions permission ON permission.Id = rolePermission.PermissionId
+WHERE permission.Code = N'SRI.DOCUMENTS.VIEW'
   AND permission.IsActive = 1;
 
 INSERT dbo.SecurityRoleFormOperations
