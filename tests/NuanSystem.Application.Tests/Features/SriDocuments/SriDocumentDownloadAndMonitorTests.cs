@@ -112,7 +112,10 @@ public sealed class SriDocumentDownloadAndMonitorTests
             .And.Contain("CanExecuteCustomOperation")
             .And.Contain("ExecuteCustomOperationAsync")
             .And.Contain("\"filter\"")
-            .And.Contain("\"downloadxml\"");
+            .And.Contain("\"downloadxml\"")
+            .And.Contain("documentGrid.PageRequested")
+            .And.Contain("documentGrid.SetPagedData(")
+            .And.Contain("viewModel.GoToPageAsync(args.Page,args.PageSize)");
         designer.Should().Contain("NuanDataGridControl").And.Contain("NuanKpiCardControl");
         designer.Should().NotContain("filterPanel")
             .And.NotContain("btnRefresh")
@@ -195,6 +198,35 @@ public sealed class SriDocumentDownloadAndMonitorTests
         await viewModel.LoadAsync(); await viewModel.LoadDetailAsync(7);
         viewModel.CanDownload.Should().BeFalse();
         await FluentActions.Invoking(()=>viewModel.DownloadAsync()).Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    [Fact]
+    public async Task FrontendMonitor_PageRequest_UsesServerPagingAndClearsPreviousSelection()
+    {
+        var client=Substitute.For<ISriDocumentMonitorClient>();
+        client.SearchAsync(
+                Arg.Any<NuanSystem.WinForms.Services.SriDocuments.Models.SriDocumentMonitorFilter>(),
+                Arg.Any<CancellationToken>())
+            .Returns(
+                [MonitorItem()],
+                [new SriDocumentMonitorItem(57,"Production","01","SriTxtImport","SAFE-REF-57",null,
+                    "Pending",0,DateTime.UtcNow,null,false,120)]);
+        client.GetSummaryAsync(Arg.Any<CancellationToken>())
+            .Returns(new SriDocumentMonitorSummary(120,119,0,1,0));
+        var viewModel=new SriDocumentMonitorViewModel(client,canViewDetail:false,canDownload:true);
+        await viewModel.LoadAsync();
+        await viewModel.LoadDetailAsync(7);
+
+        await viewModel.GoToPageAsync(2,50);
+
+        viewModel.Filter.Page.Should().Be(2);
+        viewModel.Filter.PageSize.Should().Be(50);
+        viewModel.Items.Should().ContainSingle(item=>item.QueueId==57 && item.TotalCount==120);
+        viewModel.Selected.Should().BeNull();
+        viewModel.CanDownload.Should().BeFalse();
+        await client.Received(2).SearchAsync(
+            Arg.Any<NuanSystem.WinForms.Services.SriDocuments.Models.SriDocumentMonitorFilter>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]

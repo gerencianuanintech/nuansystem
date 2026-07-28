@@ -14,7 +14,14 @@ public sealed class SriDocumentMonitorViewModel(ISriDocumentMonitorClient client
     public IReadOnlyCollection<SriDocumentAttempt> Attempts { get; private set; }=[];
     public IReadOnlyCollection<SriDocumentAudit> Audit { get; private set; }=[];
     public bool CanDownload => canDownload && Selected is { Status:"Authorized", HasXml:true };
-    public async Task LoadAsync(CancellationToken cancellationToken=default) { Summary=await client.GetSummaryAsync(cancellationToken); Items=await client.SearchAsync(Filter,cancellationToken); WorkerHealth=canViewWorkerHealth ? await client.GetWorkerHealthAsync(cancellationToken) : null; }
+    public async Task LoadAsync(CancellationToken cancellationToken=default) { ClearSelection(); Summary=await client.GetSummaryAsync(cancellationToken); Items=await client.SearchAsync(Filter,cancellationToken); WorkerHealth=canViewWorkerHealth ? await client.GetWorkerHealthAsync(cancellationToken) : null; }
+    public async Task GoToPageAsync(int page,int pageSize,CancellationToken cancellationToken=default)
+    {
+        ClearSelection();
+        Filter.Page=Math.Max(1,page);
+        Filter.PageSize=Math.Max(1,pageSize);
+        Items=await client.SearchAsync(Filter,cancellationToken);
+    }
     public async Task LoadDetailAsync(long queueId,CancellationToken cancellationToken=default)
     {
         Selected=Items.FirstOrDefault(item=>item.QueueId==queueId);
@@ -48,6 +55,14 @@ public sealed class SriDocumentMonitorViewModel(ISriDocumentMonitorClient client
     {
         if(!CanDownload || Selected is null) throw new InvalidOperationException("El documento seleccionado no esta disponible para descarga.");
         return client.DownloadXmlAsync(Selected.QueueId,cancellationToken);
+    }
+
+    private void ClearSelection()
+    {
+        Selected=null;
+        Detail=null;
+        Attempts=[];
+        Audit=[];
     }
 }
 

@@ -39,6 +39,7 @@ public sealed partial class SriDocumentMonitorForm : BaseCrudListForm
 
     private void WireEvents()
     {
+        documentGrid.PageRequested += async (_,args) => await GoToDocumentPageAsync(args);
         documentGrid.FocusedRowChanged += async (_,_) => await LoadSelectedAsync();
         documentGrid.GridView.DoubleClick += async (_,_) => await ExecuteConsultAsync();
     }
@@ -96,7 +97,12 @@ public sealed partial class SriDocumentMonitorForm : BaseCrudListForm
 
     private void RenderMonitor()
     {
-        documentGrid.SetData(viewModel.Items.ToList());
+        var totalCount=viewModel.Items.FirstOrDefault()?.TotalCount ?? 0;
+        documentGrid.SetPagedData(
+            viewModel.Items.ToList(),
+            viewModel.Filter.Page,
+            viewModel.Filter.PageSize,
+            ToGridTotalCount(totalCount));
         cardTotal.ValueText=(viewModel.Summary?.Total ?? 0).ToString("N0");
         cardPending.ValueText=(viewModel.Summary?.Pending ?? 0).ToString("N0");
         cardAuthorized.ValueText=(viewModel.Summary?.Authorized ?? 0).ToString("N0");
@@ -108,6 +114,20 @@ public sealed partial class SriDocumentMonitorForm : BaseCrudListForm
             attemptGrid.SetData(Array.Empty<SriDocumentAttempt>());
             auditGrid.SetData(Array.Empty<SriDocumentAudit>());
         }
+    }
+
+    private async Task GoToDocumentPageAsync(NuanGridPageRequestEventArgs args)
+    {
+        if (busy)
+            return;
+
+        await RunBusyAsync(async () =>
+        {
+            await viewModel.GoToPageAsync(args.Page,args.PageSize);
+            RenderMonitor();
+            if (viewModel.Items.FirstOrDefault() is { } first)
+                await LoadQueueCoreAsync(first.QueueId,direct:false);
+        });
     }
 
     private void RenderWorkerHealth()
@@ -227,4 +247,7 @@ public sealed partial class SriDocumentMonitorForm : BaseCrudListForm
             .Replace("-",string.Empty,StringComparison.OrdinalIgnoreCase)
             .Replace(" ",string.Empty,StringComparison.OrdinalIgnoreCase);
     }
+
+    private static int ToGridTotalCount(long totalCount) =>
+        totalCount >= int.MaxValue ? int.MaxValue : Math.Max(0,(int)totalCount);
 }
