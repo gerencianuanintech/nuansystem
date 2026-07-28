@@ -14,7 +14,10 @@ public sealed class SriTxtImportSqlContractTests
     {
         var script = ReadSourceFile("database", "sql", "138_tenant_sri_txt_import.sql");
         var detailTableStart = script.IndexOf("CREATE TABLE dbo.SriTxtImportRows", StringComparison.Ordinal);
-        var detailTableEnd = script.IndexOf("\n    );\nEND;", detailTableStart, StringComparison.Ordinal);
+        var detailTableEnd = script.IndexOf(
+            "CREATE INDEX IX_SriTxtImportRows_Import_Status",
+            detailTableStart,
+            StringComparison.Ordinal);
         var detailTable = script[detailTableStart..detailTableEnd];
 
         script.Should().Contain("Status IN\n            (\n                N'Staged', N'Pending'");
@@ -120,6 +123,29 @@ public sealed class SriTxtImportSqlContractTests
         master.Should().NotContain("RolePermissions");
         master.Should().NotContain("SecurityRoleMenus");
         master.Should().NotContain("SecurityRoleFormOperations");
+    }
+
+    [Fact]
+    public void RibbonMigration_RegistersUploadAndFilterWithoutGrantingApiPermissions()
+    {
+        var script = ReadSourceFile(
+            "database",
+            "sql",
+            "147_master_sri_txt_import_ribbon_operations.sql");
+
+        script.Should().Contain("ACTION.SRI_TXT_IMPORTS.UPLOAD");
+        script.Should().Contain("ACTION.FILTER");
+        script.Should().Contain("N'upload' AS ActionKey");
+        script.Should().Contain("N'Inicio' AS RibbonPageName");
+        script.Should().Contain("N'Acciones' AS RibbonGroupName");
+        script.Should().Contain("Operaciones/importar_32.svg");
+        script.Should().Contain("SRI.TXT_IMPORTS.VIEW");
+        script.Should().Contain("SRI.TXT_IMPORTS.UPLOAD");
+        script.Should().Contain("SecurityRoleFormOperations");
+        script.Should().Contain("20260728.147");
+        script.Should().Contain("THROW 51147");
+        script.Should().NotContain("INSERT dbo.RolePermissions");
+        script.Should().NotContain("INSERT INTO dbo.RolePermissions");
     }
 
     [Fact]
@@ -233,7 +259,7 @@ public sealed class SriTxtImportSqlContractTests
     {
         var path = Path.Combine(new[] { RepositoryRoot() }.Concat(pathParts).ToArray());
         return File.Exists(path)
-            ? File.ReadAllText(path)
+            ? File.ReadAllText(path).ReplaceLineEndings("\n")
             : throw new FileNotFoundException($"No se encontro {Path.Combine(pathParts)}.");
     }
 
@@ -242,7 +268,8 @@ public sealed class SriTxtImportSqlContractTests
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            if (Directory.Exists(Path.Combine(directory.FullName, ".git")))
+            var gitPath = Path.Combine(directory.FullName, ".git");
+            if (Directory.Exists(gitPath) || File.Exists(gitPath))
                 return directory.FullName;
             directory = directory.Parent;
         }

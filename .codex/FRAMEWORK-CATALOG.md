@@ -166,10 +166,14 @@ Status values:
   - `src/Frontend/NuanSystem.WinForms.Services/Http/INuanApiClient.cs`
   - `src/Frontend/NuanSystem.WinForms.Services/Http/NuanApiClient.cs`
 - **Status:** Active/authoritative transport path for frontend feature clients.
-- **Responsibility:** Registered HTTP transport with `ApiSession`, generic GET/POST/PUT/DELETE methods, availability check, authenticated session behavior, and company-aware communication.
+- **Responsibility:** Registered HTTP transport with `ApiSession`, generic GET/POST/PUT/DELETE
+  methods, streamed multipart file upload through `PostFileAsync`, file download, availability
+  check, authenticated session behavior, and company-aware communication.
 - **Use when:** a typed frontend service client communicates with NuanSystem API.
 - **Do not use when:** accessing SQL or SAP; those calls belong behind backend/integration boundaries.
-- **Extension rule:** add a typed feature client that depends on `INuanApiClient`; change the transport only for cross-cutting requirements.
+- **Extension rule:** add a typed feature client that depends on `INuanApiClient`; use
+  `PostFileAsync` for bounded multipart uploads instead of exposing `HttpClient`. Change the
+  transport only for cross-cutting requirements.
 - **Representative consumers:**
   - `src/Frontend/NuanSystem.WinForms.Services/Companies/CompanyClient.cs`
   - `src/Frontend/NuanSystem.WinForms.Services/Security/Menus/MenuClient.cs`

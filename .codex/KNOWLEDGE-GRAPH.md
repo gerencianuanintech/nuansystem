@@ -512,15 +512,20 @@ multipart TXT upload [implemented and runtime-validated]
   -> valid identity creates/links SriDocumentQueue as Staged
   -> explicit permission-controlled Staged -> Pending
   -> existing SriWorker claim (Pending | RetryScheduled only)
-  -> safe paged CRUD + independent WinForms monitor [implementation authorized; runtime pending]
+  -> safe paged CRUD + independent WinForms monitor [deployed and runtime-validated]
+  -> BaseCrudListForm + corporate MainForm Ribbon
+       -> typed multipart upload (no automatic enqueue)
+       -> modal list/row filters
+       -> explicit enqueue and queue navigation
 ```
 
 `Staged` is not worker-claimable. Invalid TXT rows never create queue records. The complete access key
 remains transient during upload and persists only in `SriDocumentQueue`; public queue/import
 projections expose a mask and display status. Master script `139` registers independent TXT
 view/upload/enqueue permissions without role grants. The CRUD extension uses `142`/`143` for
-server-side paging and navigation metadata, also without automatic role grants. SAP is not a
-consumer of this extension.
+server-side paging and navigation metadata. Forward migration `147` registers the missing upload
+Ribbon operation and reuses the shared filter operation; it does not grant API permissions. SAP is
+not a consumer of this extension.
 
 Iteration 6 adds implemented and runtime-validated operational contracts:
 

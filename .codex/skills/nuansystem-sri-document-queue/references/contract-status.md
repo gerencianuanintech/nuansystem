@@ -53,9 +53,13 @@
 - The authorized CRUD extension adds server-paged list/detail/row projections, safe `QueueId`
   navigation and an independent corporate WinForms monitor. It must never project the complete
   access key, raw TXT/header line, XML, JWT, connection or secret.
-- Forward SRI scripts `142`/`143` are implementation artifacts only until separately authorized and
-  must not auto-grant existing roles. Scripts `140`/`141` are owned exclusively by PriceList 8.6.
+- Scripts `142`/`143` and the CRUD runtime are validated. Forward script `147` registers the
+  corporate Ribbon upload/filter operations and remains pending independent SQL deployment.
+  It does not grant API permissions. Scripts `140`/`141` are owned exclusively by PriceList 8.6.
   Query, upload and enqueue permissions remain independent.
+- `SriTxtImportForm` derives from `BaseCrudListForm` so `MainForm` owns all business actions in the
+  corporate Ribbon. `Cargar TXT` uses typed multipart transport and never enqueues automatically;
+  `Filtro` opens a modal dialog and the screen has no parallel local action/filter toolbar.
 - CRUD implementation evidence after the PriceList merge: full solution build has zero
   errors/warnings; 30 focused TXT tests, 89 SRI tests and 569 full-suite tests pass, with 5
   infrastructure tests explicitly skipped.

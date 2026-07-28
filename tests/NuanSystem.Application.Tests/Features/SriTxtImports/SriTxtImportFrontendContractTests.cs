@@ -61,6 +61,25 @@ public sealed class SriTxtImportFrontendContractTests
     }
 
     [Fact]
+    public async Task Client_UploadsTxtThroughCorporateMultipartTransport()
+    {
+        var api = new CapturingApiClient
+        {
+            FileResponse = new SriTxtImportDetail { Id = 31, OriginalFileName = "julio.txt" }
+        };
+        var client = new SriTxtImportClient(api);
+        await using var content = new MemoryStream([1, 2, 3]);
+
+        var result = await client.UploadAsync(content, @"C:\temporal\julio.txt");
+
+        result.Id.Should().Be(31);
+        api.LastPath.Should().Be("/api/sri/txt-imports/upload");
+        api.LastFileName.Should().Be("julio.txt");
+        api.LastFormFieldName.Should().Be("file");
+        api.LastContentType.Should().Be("text/plain");
+    }
+
+    [Fact]
     public async Task ViewModel_PagesImportsAndRowsIndependently()
     {
         var client = Substitute.For<ISriTxtImportClient>();
@@ -97,6 +116,35 @@ public sealed class SriTxtImportFrontendContractTests
     }
 
     [Fact]
+    public async Task ViewModel_UploadRefreshesAndSelectsTheCreatedImport()
+    {
+        var client = Substitute.For<ISriTxtImportClient>();
+        client.UploadAsync(Arg.Any<Stream>(), "fixture.txt", Arg.Any<CancellationToken>())
+            .Returns(new SriTxtImportDetail { Id = 14, OriginalFileName = "fixture.txt" });
+        client.SearchAsync(Arg.Any<SriTxtImportFilter>(), Arg.Any<CancellationToken>())
+            .Returns(
+                new SriTxtImportPage
+                {
+                    Items = [new SriTxtImportListItem { Id = 14, OriginalFileName = "fixture.txt" }],
+                    TotalCount = 1,
+                    Page = 1,
+                    PageSize = 50
+                });
+        client.GetDetailAsync(14, Arg.Any<CancellationToken>())
+            .Returns(new SriTxtImportDetail { Id = 14, OriginalFileName = "fixture.txt" });
+        client.GetRowsAsync(14, "All", 1, 100, Arg.Any<CancellationToken>())
+            .Returns(new SriTxtImportRowPage());
+        var viewModel = new SriTxtImportViewModel(client);
+        await using var content = new MemoryStream([1]);
+
+        await viewModel.UploadAsync(content, "fixture.txt");
+
+        viewModel.SelectedImport.Should().NotBeNull();
+        viewModel.SelectedImport!.Id.Should().Be(14);
+        viewModel.Detail!.Id.Should().Be(14);
+    }
+
+    [Fact]
     public void Form_UsesCorporateDesignerAndSafeQueueNavigationContract()
     {
         var form = ReadSourceFile(
@@ -108,12 +156,26 @@ public sealed class SriTxtImportFrontendContractTests
         var shell = ReadSourceFile(
             "src", "Frontend", "NuanSystem.WinForms.Forms",
             "Shell", "MainForm.cs");
+        var filterDialog = ReadSourceFile(
+            "src", "Frontend", "NuanSystem.WinForms.Forms",
+            "SriTxtImports", "SriTxtImportFilterDialog.cs");
+        var filterDesigner = ReadSourceFile(
+            "src", "Frontend", "NuanSystem.WinForms.Forms",
+            "SriTxtImports", "SriTxtImportFilterDialog.Designer.cs");
+        var formsProject = ReadSourceFile(
+            "src", "Frontend", "NuanSystem.WinForms.Forms",
+            "NuanSystem.WinForms.Forms.csproj");
 
         form.Should().Contain("public const string FormKey = \"sri-txt-imports\"");
+        form.Should().Contain("SriTxtImportForm : BaseCrudListForm");
         form.Should().Contain("NuanGridColumnDefinition");
+        form.Should().Contain("PermissionCodes.SriTxtImportsUpload");
         form.Should().Contain("PermissionCodes.SriTxtImportsEnqueue");
         form.Should().Contain("PermissionCodes.SriDocumentsView");
-        form.Should().Contain("openQueue(queueId)");
+        form.Should().Contain("OpenFileDialog");
+        form.Should().Contain("SriTxtImportFilterDialog");
+        form.Should().Contain("ExecuteCustomOperationAsync");
+        form.Should().Contain("openQueue?.Invoke(queueId)");
         form.Should().NotContain("HttpClient");
         form.Should().NotContain("SqlConnection");
         form.Should().NotContain("AccessKey,");
@@ -123,6 +185,20 @@ public sealed class SriTxtImportFrontendContractTests
         designer.Should().Contain("NuanKpiCardControl");
         designer.Should().Contain("NuanActionButton");
         designer.Should().Contain("AutoScaleMode = AutoScaleMode.Font");
+        designer.Should().NotContain("filterPanel");
+        designer.Should().NotContain("btnRefresh");
+        designer.Should().NotContain("btnEnqueue");
+        designer.Should().NotContain("btnOpenQueue");
+        filterDialog.Should().Contain("DialogResult = DialogResult.OK");
+        filterDialog.Should().Contain("RowValidity");
+        filterDesigner.Should().Contain("NuanActionButton");
+        filterDesigner.Should().Contain("FormBorderStyle.FixedDialog");
+        filterDesigner.Should().Contain("AutoScaleMode = AutoScaleMode.Font");
+        formsProject.Should().Contain(
+            "<Compile Update=\"SriTxtImports\\SriTxtImportForm.cs\">");
+        formsProject.Should().Contain(
+            "<Compile Update=\"SriTxtImports\\SriTxtImportFilterDialog.cs\">");
+        formsProject.Should().Contain("<SubType>Form</SubType>");
         shell.Should().Contain("\"sri-txt-imports\" => sriTxtImportFormFactory()");
     }
 
@@ -156,6 +232,10 @@ public sealed class SriTxtImportFrontendContractTests
     private sealed class CapturingApiClient : INuanApiClient
     {
         public string LastPath { get; private set; } = string.Empty;
+        public string LastFileName { get; private set; } = string.Empty;
+        public string LastFormFieldName { get; private set; } = string.Empty;
+        public string LastContentType { get; private set; } = string.Empty;
+        public object? FileResponse { get; init; }
 
         public Task<TResponse> GetAsync<TResponse>(
             string path,
@@ -181,6 +261,21 @@ public sealed class SriTxtImportFrontendContractTests
             string path,
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
+
+        public Task<TResponse> PostFileAsync<TResponse>(
+            string path,
+            Stream content,
+            string fileName,
+            string formFieldName = "file",
+            string contentType = "application/octet-stream",
+            CancellationToken cancellationToken = default)
+        {
+            LastPath = path;
+            LastFileName = fileName;
+            LastFormFieldName = formFieldName;
+            LastContentType = contentType;
+            return Task.FromResult((TResponse)FileResponse!);
+        }
 
         public Task<ApiFileResponse> GetFileAsync(
             string path,

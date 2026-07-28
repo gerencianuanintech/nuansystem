@@ -2,11 +2,24 @@
 
 ## Estado
 
-El núcleo `TXT -> Staged -> Pending` ya fue validado en runtime bajo autorización separada. Este plan
-se amplía exclusivamente para el CRUD paginado y el formulario WinForms de importaciones. No se deben
-repetir los scripts `138`/`139` ni sus pruebas SQL acreditadas. Las nuevas migraciones `142`/`143`,
-la API CRUD y WinForms no pueden ejecutarse sin otra autorización. SAP, worker y llamadas SRI siguen excluidos.
-Los scripts `140`/`141` pertenecen exclusivamente a PriceList 8.6.
+El núcleo `TXT -> Staged -> Pending` y el CRUD paginado fueron validados en runtime bajo
+autorizaciones separadas. No se deben repetir los scripts `138`/`139`/`142`/`143` ni sus pruebas SQL
+acreditadas. La migración forward-only `147`, el nuevo Ribbon, la carga desde WinForms y el filtro
+modal requieren su propio gate runtime. SAP, worker y llamadas SRI siguen excluidos. Los scripts
+`140`/`141` pertenecen exclusivamente a PriceList 8.6.
+
+## Implementación Ribbon y carga — 2026-07-28
+
+- `SriTxtImportForm` deriva de `BaseCrudListForm` y reutiliza el Ribbon dinámico de `MainForm`.
+- Las acciones de negocio locales fueron retiradas; quedan en Ribbon: Consultar, Cargar TXT,
+  Actualizar, Encolar, Abrir cola y Filtro.
+- `ACTION.FILTER` abre `SriTxtImportFilterDialog`; aceptar aplica fecha/estado/archivo/ambiente y
+  validez de filas, cancelar conserva el filtro y limpiar restablece todos los criterios.
+- `INuanApiClient.PostFileAsync` centraliza el multipart autenticado y tenant-aware. El cliente SRI
+  envía el campo `file`; el formulario valida `.txt`, archivo no vacío y 10 MiB.
+- Una carga exitosa refresca y selecciona la importación, pero no encola automáticamente.
+- `147_master_sri_txt_import_ribbon_operations.sql` registra upload/reutiliza filter sin conceder
+  permisos API. No fue ejecutado en esta implementación.
 
 ## Cierre de gates pendientes — 2026-07-28
 

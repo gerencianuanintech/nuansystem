@@ -2,7 +2,7 @@
 
 ## Estado y alcance
 
-**Estado:** discovery y contrato del núcleo TXT aprobados por el propietario el 2026-07-27. La implementación autorizada se limita a `TXT -> SriDocumentQueue`; WinForms y SAP permanecen fuera de alcance.
+**Estado:** núcleo TXT y CRUD desplegados/validados. El frontend incorpora monitor, carga multipart, acciones en el Ribbon corporativo y filtros modales; la migración Ribbon `147` queda pendiente de autorización de despliegue. SAP permanece fuera de alcance.
 
 Este documento define un módulo tenant para registrar cargas TXT, validar sus filas y vincular las filas válidas con la cola durable SRI existente. También presenta alternativas para una integración posterior con SAP Business One sobre HANA.
 
@@ -40,7 +40,7 @@ posterior. SAP, llamadas SRI y ejecución del worker continúan excluidos.
 | Autorización SRI | Cola y `NuanSystem.SriWorker` existentes |
 | SAP | Integración opcional por empresa; no condiciona la operación SRI |
 | SAP HANA | No existe un contrato aprobado para la UDT/UDO ni un escritor SRI |
-| Transporte WinForms | `INuanApiClient`/`NuanApiClient`; no se encontró soporte multipart reutilizable |
+| Transporte WinForms | `INuanApiClient`/`NuanApiClient`; `PostFileAsync` centraliza multipart, sesión y empresa |
 | Patrón UI más cercano | `SriDocumentMonitorForm`, `NuanDataGridControl`, KPI corporativos, historial corporativo |
 | Patrón SQL | Scripts versionados e idempotentes, procedimientos almacenados, Dapper, `rowversion` |
 | Restricciones de seguridad | No exponer claves completas, XML, credenciales, SQL ni datos de otro tenant |
@@ -486,9 +486,10 @@ Grupo candidato: `/api/sri/txt-imports`.
 | `GET /{id}/sap-status` | Resumen de integración SAP |
 | `GET /{id}/rows/{rowId}/sri-document` | Identidad/ruta autorizada para abrir Monitor SRI |
 
-La subida requiere multipart en API. El CRUD WinForms autorizado no incorpora carga en esta fase y,
-por tanto, no amplía `INuanApiClient`: consume únicamente consultas JSON y el enqueue ya existente.
-JSON Base64 se descarta por costo de memoria y expansión del contenido.
+La subida requiere multipart en API. El formulario usa el contrato corporativo
+`INuanApiClient.PostFileAsync`; el cliente tipado envía un único campo `file`, conserva el flujo de
+sesión/empresa y nunca agrega JWT o cabeceras manuales. JSON Base64 se descarta por costo de memoria
+y expansión del contenido.
 
 Las proyecciones públicas nunca incluyen `AccessKey`, `HeaderLine`, la línea TXT original, XML,
 conexiones, JWT ni secretos. Una fila vinculada expone únicamente `QueueId`, estado visible,
@@ -519,14 +520,18 @@ Si el piloto demuestra que 50.000 filas no caben de forma segura en el límite, 
 ### Identidad y lifecycle
 
 - FormKey candidato: `sri-txt-imports`.
-- Formulario dedicado de monitor operacional, no `BaseGridCrudListForm`.
+- Formulario dedicado de monitor operacional derivado de `BaseCrudListForm`; no usa
+  `BaseGridCrudListForm` porque coordina dos grids y seis KPI.
 - Reutiliza el módulo/menú SRI existente.
 - `SriDocumentMonitorForm` sigue siendo el monitor documental; la nueva pantalla solo lo abre con el vínculo autorizado.
 
 ### Superficie
 
-- filtros: rango de fecha, estado, archivo y ambiente;
-- acciones de esta fase: refrescar, limpiar filtros, encolar y abrir la cola vinculada;
+- filtros modales: rango de fecha, estado, archivo, ambiente y validez de filas; se abren desde
+  `ACTION.FILTER`, aceptan, cancelan o limpian sin mantener una franja de filtros embebida;
+- acciones Ribbon: consultar, cargar TXT, actualizar, encolar, abrir cola y filtro;
+- `Cargar TXT` selecciona un solo `.txt`, valida vacío/10 MiB, registra y refresca la carga, pero no
+  ejecuta `Staged -> Pending`;
 - KPI: filas totales, válidas, inválidas, vinculadas, `Staged` y `Pending`;
 - grid principal de cargas con `NuanDataGridControl`;
 - panel/pestaña de resumen y grid de filas paginado;
@@ -560,6 +565,11 @@ ya sembró los códigos en `Permissions` sin concesiones. El script `143` regist
 menú y operaciones de esta fase, también sin insertar concesiones en `RolePermissions`,
 `SecurityRoleMenus` ni `SecurityRoleFormOperations`. Consulta, carga y enqueue conservan permisos
 independientes; una concesión posterior requiere aprobación separada y un JWT renovado.
+
+La migración forward-only `147_master_sri_txt_import_ribbon_operations.sql` registra
+`ACTION.SRI_TXT_IMPORTS.UPLOAD`, reutiliza `ACTION.FILTER` y proyecta únicamente las operaciones
+visuales faltantes para roles que ya poseen los permisos API `VIEW`/`UPLOAD`. No inserta
+`RolePermissions`, no concede menú y no sustituye la autorización del backend.
 
 ## 13. Idempotencia, auditoría y recuperación
 
@@ -693,9 +703,10 @@ Decisiones aprobadas el 2026-07-27:
 - permisos Master sin grants automáticos;
 - pruebas automáticas.
 - consultas CRUD paginadas y saneadas, formulario WinForms y navegación autorizada a la cola.
+- carga TXT desde el cliente tipado, Ribbon corporativo y diálogo modal de filtros.
 
 Quedan excluidos SAP, ejecución SQL, runtime API/WinForms, workers y cualquier llamada externa.
-Los scripts `142`/`143` o el runtime CRUD requieren autorizaciones independientes. Los números
+La migración `147` y su validación runtime requieren autorización independiente. Los números
 `140`/`141` pertenecen exclusivamente a PriceList 8.6 y no deben reutilizarse.
 
 ## 17. Plan de implementación en commits pequeños
