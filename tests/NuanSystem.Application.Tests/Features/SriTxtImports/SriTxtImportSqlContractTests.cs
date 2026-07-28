@@ -155,6 +155,27 @@ public sealed class SriTxtImportSqlContractTests
     }
 
     [Fact]
+    public void MaintenanceFormMigration_CorrectsOnlyFormClassification()
+    {
+        var script = ReadSourceFile(
+            "database",
+            "sql",
+            "148_master_sri_txt_import_maintenance_form.sql");
+
+        script.Should().Contain("DB_NAME() <> N'NuanSystem_Master'");
+        script.Should().Contain("FormKey = N'sri-txt-imports'");
+        script.Should().Contain("SET FormType = 1");
+        script.Should().Contain("20260728.148");
+        script.Should().Contain("THROW 51148");
+        script.Should().Contain("BEGIN TRANSACTION");
+        script.Should().Contain("ROLLBACK TRANSACTION");
+        script.Should().Contain("COMMIT TRANSACTION");
+        script.Should().NotContain("RolePermissions");
+        script.Should().NotContain("SecurityRoleMenus");
+        script.Should().NotContain("SecurityRoleFormOperations");
+    }
+
+    [Fact]
     public void MigrationSequence_AssignsEachNumberAndVersionToOneOwner()
     {
         var expected = new Dictionary<string, string>
