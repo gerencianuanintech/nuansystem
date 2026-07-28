@@ -106,9 +106,9 @@ public sealed class SriTxtImportFrontendContractTests
         var viewModel = new SriTxtImportViewModel(client);
 
         await viewModel.LoadAsync();
-        await viewModel.MoveImportPageAsync(1);
+        await viewModel.GoToImportPageAsync(2, 50);
         await viewModel.SelectAsync(viewModel.Page.Items.Single());
-        await viewModel.MoveRowPageAsync(1);
+        await viewModel.GoToRowPageAsync(2, 100);
 
         viewModel.Filter.Page.Should().Be(2);
         viewModel.RowPage.Should().Be(2);
@@ -183,8 +183,13 @@ public sealed class SriTxtImportFrontendContractTests
         form.Should().NotContain("SriProvider");
         designer.Should().Contain("NuanDataGridControl");
         designer.Should().Contain("NuanKpiCardControl");
-        designer.Should().Contain("NuanActionButton");
         designer.Should().Contain("AutoScaleMode = AutoScaleMode.Font");
+        designer.Should().NotContain("btnImportPrevious");
+        designer.Should().NotContain("btnImportNext");
+        designer.Should().NotContain("btnRowPrevious");
+        designer.Should().NotContain("btnRowNext");
+        designer.Should().NotContain("importPagePanel");
+        designer.Should().NotContain("rowPagePanel");
         designer.Should().NotContain("filterPanel");
         designer.Should().NotContain("btnRefresh");
         designer.Should().NotContain("btnEnqueue");
@@ -200,6 +205,28 @@ public sealed class SriTxtImportFrontendContractTests
             "<Compile Update=\"SriTxtImports\\SriTxtImportFilterDialog.cs\">");
         formsProject.Should().Contain("<SubType>Form</SubType>");
         shell.Should().Contain("\"sri-txt-imports\" => sriTxtImportFormFactory()");
+    }
+
+    [Fact]
+    public void Form_DelegatesServerPagingToTheCorporateGrid()
+    {
+        var form = ReadSourceFile(
+            "src", "Frontend", "NuanSystem.WinForms.Forms",
+            "SriTxtImports", "SriTxtImportForm.cs");
+        var grid = ReadSourceFile(
+            "src", "Frontend", "NuanSystem.WinForms.Controls",
+            "Grids", "NuanDataGridControl.cs");
+
+        form.Should().Contain("importGrid.PageRequested");
+        form.Should().Contain("rowGrid.PageRequested");
+        form.Should().Contain("importGrid.SetPagedData(");
+        form.Should().Contain("rowGrid.SetPagedData(");
+        form.Should().NotContain("PageText(");
+        form.Should().NotContain("MoveImportPageAsync(");
+        form.Should().NotContain("MoveRowPageAsync(");
+        grid.Should().Contain("event EventHandler<NuanGridPageRequestEventArgs>? PageRequested");
+        grid.Should().Contain("public void SetPagedData<T>(");
+        grid.Should().Contain("RequestServerPage(");
     }
 
     [Fact]

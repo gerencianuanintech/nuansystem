@@ -36,6 +36,9 @@ public sealed class NuanDataGridControl : XtraUserControl
     private NuanGridStatusBadgeProvider statusBadgeProvider = NuanGridStatusBadges.DefaultProvider;
     private int currentPage = 1;
     private int pageSize = 20;
+    private int totalItemCount;
+    private bool serverPaging;
+    private bool suppressPageRequests;
     private bool showPagination = true;
     private bool showFindPanel = true;
     private bool multiSelect;
@@ -67,6 +70,8 @@ public sealed class NuanDataGridControl : XtraUserControl
     public event EventHandler? RowDoubleClick;
 
     public event EventHandler? SelectionChanged;
+
+    public event EventHandler<NuanGridPageRequestEventArgs>? PageRequested;
 
     [Browsable(false)]
     public GridControl GridControl => grcData;
@@ -165,7 +170,41 @@ public sealed class NuanDataGridControl : XtraUserControl
         items.Clear();
         items.AddRange(data.Cast<object>());
         pageDataSourceFactory = pageItems => pageItems.Cast<T>().ToList();
+        serverPaging = false;
+        totalItemCount = items.Count;
         currentPage = 1;
+        ApplyPage();
+    }
+
+    public void SetPagedData<T>(
+        IEnumerable<T> data,
+        int page,
+        int requestedPageSize,
+        int totalCount)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(requestedPageSize, 1);
+        ArgumentOutOfRangeException.ThrowIfNegative(totalCount);
+
+        items.Clear();
+        items.AddRange(data.Cast<object>());
+        pageDataSourceFactory = pageItems => pageItems.Cast<T>().ToList();
+        serverPaging = true;
+        totalItemCount = totalCount;
+        pageSize = requestedPageSize;
+        currentPage = Math.Min(page, TotalPages());
+
+        suppressPageRequests = true;
+        try
+        {
+            EnsurePageSizeOption(requestedPageSize);
+            cmbPageSize.EditValue = requestedPageSize.ToString();
+        }
+        finally
+        {
+            suppressPageRequests = false;
+        }
+
         ApplyPage();
     }
 
@@ -371,8 +410,16 @@ public sealed class NuanDataGridControl : XtraUserControl
         btnLastPage.Click += (_, _) => GoToPage(TotalPages());
         cmbPageSize.SelectedIndexChanged += (_, _) =>
         {
-            if (int.TryParse(cmbPageSize.Text, out var selectedPageSize) && selectedPageSize > 0)
+            if (!suppressPageRequests
+                && int.TryParse(cmbPageSize.Text, out var selectedPageSize)
+                && selectedPageSize > 0)
             {
+                if (serverPaging)
+                {
+                    RequestServerPage(1, selectedPageSize);
+                    return;
+                }
+
                 pageSize = selectedPageSize;
                 currentPage = 1;
                 ApplyPage();
@@ -399,7 +446,7 @@ public sealed class NuanDataGridControl : XtraUserControl
 
         var totalPages = TotalPages();
         currentPage = Math.Max(1, Math.Min(currentPage, totalPages));
-        var pageItems = showPagination
+        var pageItems = showPagination && !serverPaging
             ? items.Skip((currentPage - 1) * pageSize).Take(pageSize)
             : items;
 
@@ -561,8 +608,27 @@ public sealed class NuanDataGridControl : XtraUserControl
 
     private void GoToPage(int page)
     {
-        currentPage = Math.Max(1, Math.Min(page, TotalPages()));
+        var requestedPage = Math.Max(1, Math.Min(page, TotalPages()));
+        if (requestedPage == currentPage)
+        {
+            return;
+        }
+
+        if (serverPaging)
+        {
+            RequestServerPage(requestedPage, pageSize);
+            return;
+        }
+
+        currentPage = requestedPage;
         ApplyPage();
+    }
+
+    private void RequestServerPage(int requestedPage, int requestedPageSize)
+    {
+        PageRequested?.Invoke(
+            this,
+            new NuanGridPageRequestEventArgs(requestedPage, requestedPageSize));
     }
 
     private int TotalPages()
@@ -572,14 +638,16 @@ public sealed class NuanDataGridControl : XtraUserControl
             return 1;
         }
 
-        return Math.Max(1, (int)Math.Ceiling(items.Count / (double)pageSize));
+        var itemCount = serverPaging ? totalItemCount : items.Count;
+        return Math.Max(1, (int)Math.Ceiling(itemCount / (double)pageSize));
     }
 
     private void UpdatePaginationInfo()
     {
         var totalPages = TotalPages();
         lblPageInfo.Text = $"Pagina {currentPage} de {totalPages}";
-        lblTotal.Text = $"Total: {items.Count:N0} registros";
+        var itemCount = serverPaging ? totalItemCount : items.Count;
+        lblTotal.Text = $"Total: {itemCount:N0} registros";
 
         btnFirstPage.Enabled = showPagination && currentPage > 1;
         btnPreviousPage.Enabled = showPagination && currentPage > 1;
@@ -591,5 +659,13 @@ public sealed class NuanDataGridControl : XtraUserControl
     {
         var selectedRows = grvData.GetSelectedRows().Count(rowHandle => rowHandle >= 0);
         lblSelection.Text = $"Seleccionados: {selectedRows:N0} de {items.Count:N0}";
+    }
+
+    private void EnsurePageSizeOption(int requestedPageSize)
+    {
+        if (!cmbPageSize.Properties.Items.Contains(requestedPageSize.ToString()))
+        {
+            cmbPageSize.Properties.Items.Add(requestedPageSize.ToString());
+        }
     }
 }

@@ -68,6 +68,8 @@ For coded fixed catalogs, display the approved readable label and the business v
 ## Paging, search, and filters
 
 - Use the established paging contract and page size.
+- Keep pagination controls inside `NuanDataGridControl`; forms must not add their own first, previous, next, last, page-size, page-count, or total-count controls.
+- For server-paged APIs, bind the returned slice through `SetPagedData` and handle `PageRequested` only to request and rebind the target page.
 - Keep server-side paging/filtering when data volume or the existing API requires it.
 - Reset or reconcile the current page when filters change.
 - Preserve filter/search intent across refresh when the existing form pattern does.

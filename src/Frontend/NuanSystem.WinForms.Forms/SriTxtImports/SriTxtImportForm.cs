@@ -53,7 +53,8 @@ public sealed partial class SriTxtImportForm : BaseCrudListForm
     {
         importGrid.FormKey = FormKey;
         importGrid.GridName = "Imports";
-        importGrid.ShowPagination = false;
+        importGrid.ShowPagination = true;
+        importGrid.PageSize = ViewModel.Filter.PageSize;
         importGrid.ShowFindPanel = false;
         importGrid.ConfigureColumns(
             new NuanGridColumnDefinition { FieldName = nameof(SriTxtImportListItem.Id), Caption = "Carga", VisibleIndex = 0, Width = 75, Format = NuanGridColumnFormat.Number },
@@ -68,7 +69,8 @@ public sealed partial class SriTxtImportForm : BaseCrudListForm
 
         rowGrid.FormKey = FormKey;
         rowGrid.GridName = "Rows";
-        rowGrid.ShowPagination = false;
+        rowGrid.ShowPagination = true;
+        rowGrid.PageSize = ViewModel.RowPageSize;
         rowGrid.ShowFindPanel = false;
         rowGrid.ConfigureColumns(
             new NuanGridColumnDefinition { FieldName = nameof(SriTxtImportRow.LineNumber), Caption = "Línea", VisibleIndex = 0, Width = 70, Format = NuanGridColumnFormat.Number },
@@ -85,10 +87,8 @@ public sealed partial class SriTxtImportForm : BaseCrudListForm
 
     private void WireEvents()
     {
-        btnImportPrevious.Click += async (_, _) => await MoveImportPageAsync(-1);
-        btnImportNext.Click += async (_, _) => await MoveImportPageAsync(1);
-        btnRowPrevious.Click += async (_, _) => await MoveRowPageAsync(-1);
-        btnRowNext.Click += async (_, _) => await MoveRowPageAsync(1);
+        importGrid.PageRequested += async (_, args) => await GoToImportPageAsync(args);
+        rowGrid.PageRequested += async (_, args) => await GoToRowPageAsync(args);
         importGrid.FocusedRowChanged += async (_, _) => await LoadSelectedAsync();
         importGrid.GridView.DoubleClick += async (_, _) => await ExecuteConsultAsync();
         rowGrid.GridView.DoubleClick += (_, _) => OpenSelectedQueue();
@@ -202,27 +202,27 @@ public sealed partial class SriTxtImportForm : BaseCrudListForm
         });
     }
 
-    private async Task MoveImportPageAsync(int delta)
+    private async Task GoToImportPageAsync(NuanGridPageRequestEventArgs args)
     {
-        if (busy || (delta < 0 && !ViewModel.CanMoveImportPrevious) || (delta > 0 && !ViewModel.CanMoveImportNext))
+        if (busy)
             return;
 
         await RunBusyAsync(async () =>
         {
-            await ViewModel.MoveImportPageAsync(delta);
+            await ViewModel.GoToImportPageAsync(args.Page, args.PageSize);
             RenderPage();
             await SelectFirstVisibleAsync();
         });
     }
 
-    private async Task MoveRowPageAsync(int delta)
+    private async Task GoToRowPageAsync(NuanGridPageRequestEventArgs args)
     {
-        if (busy || (delta < 0 && !ViewModel.CanMoveRowsPrevious) || (delta > 0 && !ViewModel.CanMoveRowsNext))
+        if (busy)
             return;
 
         await RunBusyAsync(async () =>
         {
-            await ViewModel.MoveRowPageAsync(delta);
+            await ViewModel.GoToRowPageAsync(args.Page, args.PageSize);
             RenderDetailAndRows();
         });
     }
@@ -271,20 +271,25 @@ public sealed partial class SriTxtImportForm : BaseCrudListForm
 
     private void RenderPage()
     {
-        importGrid.SetData(ViewModel.Page.Items.ToList());
+        importGrid.SetPagedData(
+            ViewModel.Page.Items,
+            ViewModel.Filter.Page,
+            ViewModel.Filter.PageSize,
+            ViewModel.Page.TotalCount);
         cardTotal.ValueText = ViewModel.Page.Summary.TotalRows.ToString("N0");
         cardValid.ValueText = ViewModel.Page.Summary.ValidRows.ToString("N0");
         cardInvalid.ValueText = ViewModel.Page.Summary.InvalidRows.ToString("N0");
         cardLinked.ValueText = ViewModel.Page.Summary.LinkedRows.ToString("N0");
         cardStaged.ValueText = ViewModel.Page.Summary.StagedRows.ToString("N0");
         cardPending.ValueText = ViewModel.Page.Summary.PendingRows.ToString("N0");
-        lblImportPage.Text = PageText(ViewModel.Filter.Page, ViewModel.Filter.PageSize, ViewModel.Page.TotalCount);
-        btnImportPrevious.Enabled = ViewModel.CanMoveImportPrevious;
-        btnImportNext.Enabled = ViewModel.CanMoveImportNext;
         if (ViewModel.Page.Items.Count == 0)
         {
             lblDetail.Text = "No existen importaciones para los filtros seleccionados.";
-            rowGrid.SetData(Array.Empty<SriTxtImportRow>());
+            rowGrid.SetPagedData(
+                Array.Empty<SriTxtImportRow>(),
+                1,
+                ViewModel.RowPageSize,
+                0);
         }
     }
 
@@ -295,10 +300,11 @@ public sealed partial class SriTxtImportForm : BaseCrudListForm
             ? "Seleccione una importación."
             : $"Carga {detail.Id} | {detail.OriginalFileName} | {detail.EncodingCode} | {detail.Status} | "
               + $"{detail.FileSizeBytes:N0} bytes | SHA-256: {detail.FileSha256Hex}";
-        rowGrid.SetData(ViewModel.Rows.Items.ToList());
-        lblRowPage.Text = PageText(ViewModel.RowPage, ViewModel.RowPageSize, ViewModel.Rows.TotalCount);
-        btnRowPrevious.Enabled = ViewModel.CanMoveRowsPrevious;
-        btnRowNext.Enabled = ViewModel.CanMoveRowsNext;
+        rowGrid.SetPagedData(
+            ViewModel.Rows.Items,
+            ViewModel.RowPage,
+            ViewModel.RowPageSize,
+            ViewModel.Rows.TotalCount);
     }
 
     private async Task SelectFirstVisibleAsync()
@@ -356,12 +362,6 @@ public sealed partial class SriTxtImportForm : BaseCrudListForm
                 busy = false;
             }
         });
-    }
-
-    private static string PageText(int page, int pageSize, int totalCount)
-    {
-        var pageCount = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
-        return $"Página {page:N0} de {pageCount:N0} | {totalCount:N0} registros";
     }
 
     private static bool IsCustomOperation(string operationKey, params string[] aliases)

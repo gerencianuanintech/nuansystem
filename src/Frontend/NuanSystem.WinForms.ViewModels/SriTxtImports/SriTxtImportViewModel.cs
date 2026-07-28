@@ -13,10 +13,6 @@ public sealed class SriTxtImportViewModel(ISriTxtImportClient client)
     public string RowValidity { get; set; } = "All";
     public int RowPage { get; private set; } = 1;
     public int RowPageSize { get; set; } = 100;
-    public bool CanMoveImportNext => Filter.Page * Filter.PageSize < Page.TotalCount;
-    public bool CanMoveImportPrevious => Filter.Page > 1;
-    public bool CanMoveRowsNext => RowPage * RowPageSize < Rows.TotalCount;
-    public bool CanMoveRowsPrevious => RowPage > 1;
 
     public async Task UploadAsync(
         Stream content,
@@ -80,15 +76,23 @@ public sealed class SriTxtImportViewModel(ISriTxtImportClient client)
             await SelectAsync(refreshed, cancellationToken);
     }
 
-    public async Task MoveImportPageAsync(int delta, CancellationToken cancellationToken = default)
+    public async Task GoToImportPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
     {
-        Filter.Page = Math.Max(1, Filter.Page + delta);
+        Filter.Page = Math.Max(1, page);
+        Filter.PageSize = Math.Max(1, pageSize);
         await LoadAsync(cancellationToken);
     }
 
-    public async Task MoveRowPageAsync(int delta, CancellationToken cancellationToken = default)
+    public async Task GoToRowPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
     {
-        RowPage = Math.Max(1, RowPage + delta);
+        RowPage = Math.Max(1, page);
+        RowPageSize = Math.Max(1, pageSize);
         await LoadSelectedAsync(cancellationToken);
     }
 

@@ -1,5 +1,4 @@
 using DevExpress.XtraEditors;
-using NuanSystem.WinForms.Controls.Buttons;
 using NuanSystem.WinForms.Controls.Grids;
 using NuanSystem.WinForms.Controls.Kpi;
 
@@ -18,17 +17,9 @@ partial class SriTxtImportForm
     private NuanKpiCardControl cardPending = null!;
     private SplitContainerControl split = null!;
     private NuanDataGridControl importGrid = null!;
-    private PanelControl importPagePanel = null!;
-    private NuanActionButton btnImportPrevious = null!;
-    private LabelControl lblImportPage = null!;
-    private NuanActionButton btnImportNext = null!;
     private PanelControl rowHeaderPanel = null!;
     private LabelControl lblDetail = null!;
     private NuanDataGridControl rowGrid = null!;
-    private PanelControl rowPagePanel = null!;
-    private NuanActionButton btnRowPrevious = null!;
-    private LabelControl lblRowPage = null!;
-    private NuanActionButton btnRowNext = null!;
 
     protected override void Dispose(bool disposing)
     {
@@ -49,29 +40,17 @@ partial class SriTxtImportForm
         cardPending = new NuanKpiCardControl();
         split = new SplitContainerControl();
         importGrid = new NuanDataGridControl();
-        importPagePanel = new PanelControl();
-        btnImportPrevious = new NuanActionButton();
-        lblImportPage = new LabelControl();
-        btnImportNext = new NuanActionButton();
         rowHeaderPanel = new PanelControl();
         lblDetail = new LabelControl();
         rowGrid = new NuanDataGridControl();
-        rowPagePanel = new PanelControl();
-        btnRowPrevious = new NuanActionButton();
-        lblRowPage = new LabelControl();
-        btnRowNext = new NuanActionButton();
         ((System.ComponentModel.ISupportInitialize)split).BeginInit();
         ((System.ComponentModel.ISupportInitialize)split.Panel1).BeginInit();
         split.Panel1.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)split.Panel2).BeginInit();
         split.Panel2.SuspendLayout();
         split.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)importPagePanel).BeginInit();
-        importPagePanel.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)rowHeaderPanel).BeginInit();
         rowHeaderPanel.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)rowPagePanel).BeginInit();
-        rowPagePanel.SuspendLayout();
         SuspendLayout();
 
         kpiPanel.Dock = DockStyle.Top;
@@ -90,19 +69,7 @@ partial class SriTxtImportForm
         split.Horizontal = false;
         split.SplitterPosition = 280;
         importGrid.Dock = DockStyle.Fill;
-        importPagePanel.Dock = DockStyle.Bottom;
-        importPagePanel.Height = 42;
-        btnImportPrevious.Location = new Point(10, 4);
-        btnImportPrevious.Size = new Size(90, 34);
-        btnImportPrevious.ButtonText = "Anterior";
-        lblImportPage.Location = new Point(112, 14);
-        lblImportPage.Text = "Página 1 de 1";
-        btnImportNext.Location = new Point(360, 4);
-        btnImportNext.Size = new Size(90, 34);
-        btnImportNext.ButtonText = "Siguiente";
-        importPagePanel.Controls.AddRange(new Control[] { btnImportPrevious, lblImportPage, btnImportNext });
         split.Panel1.Controls.Add(importGrid);
-        split.Panel1.Controls.Add(importPagePanel);
 
         rowHeaderPanel.Dock = DockStyle.Top;
         rowHeaderPanel.Height = 58;
@@ -113,20 +80,8 @@ partial class SriTxtImportForm
         lblDetail.Text = "Seleccione una importación.";
         rowHeaderPanel.Controls.Add(lblDetail);
         rowGrid.Dock = DockStyle.Fill;
-        rowPagePanel.Dock = DockStyle.Bottom;
-        rowPagePanel.Height = 42;
-        btnRowPrevious.Location = new Point(10, 4);
-        btnRowPrevious.Size = new Size(90, 34);
-        btnRowPrevious.ButtonText = "Anterior";
-        lblRowPage.Location = new Point(112, 14);
-        lblRowPage.Text = "Página 1 de 1";
-        btnRowNext.Location = new Point(360, 4);
-        btnRowNext.Size = new Size(90, 34);
-        btnRowNext.ButtonText = "Siguiente";
-        rowPagePanel.Controls.AddRange(new Control[] { btnRowPrevious, lblRowPage, btnRowNext });
         split.Panel2.Controls.Add(rowGrid);
         split.Panel2.Controls.Add(rowHeaderPanel);
-        split.Panel2.Controls.Add(rowPagePanel);
 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
@@ -143,12 +98,8 @@ partial class SriTxtImportForm
         split.Panel2.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)split).EndInit();
         split.ResumeLayout(false);
-        ((System.ComponentModel.ISupportInitialize)importPagePanel).EndInit();
-        importPagePanel.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)rowHeaderPanel).EndInit();
         rowHeaderPanel.ResumeLayout(false);
-        ((System.ComponentModel.ISupportInitialize)rowPagePanel).EndInit();
-        rowPagePanel.ResumeLayout(false);
         ResumeLayout(false);
     }
 

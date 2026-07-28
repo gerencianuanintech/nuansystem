@@ -107,14 +107,15 @@ Status values:
 
 - **Location:** `src/Frontend/NuanSystem.WinForms.Controls/Grids/NuanDataGridControl.cs`
 - **Status:** Active/preferred for reusable feature grids.
-- **Responsibility:** Corporate grid user control with pagination, find panel, multi-selection, selection checkboxes, column configuration, status badges, export, and column customization.
+- **Responsibility:** Corporate grid user control with local or server-driven pagination, find panel, multi-selection, selection checkboxes, column configuration, status badges, export, and column customization.
 - **Contract observed:** exposes inner `GridControl`/`GridView`; `SetData<T>`, focused/selected row helpers, `ConfigureColumns`, `SetStatusBadgeProvider`, `ApplyStandardGridStyle`, and `ExportVisibleColumns`.
 - **Use when:** a feature needs a reusable grid surface outside the inherited standard CRUD list or needs the control's paging/search/selection contract.
 - **Do not use when:** `BaseGridCrudListForm` already owns the complete standard CRUD list lifecycle and already contains this control internally; do not add a second `NuanDataGridControl` without evidence.
 - **Representative consumers:**
   - `src/Frontend/NuanSystem.WinForms.Forms/Sync/SyncMonitorForm.Designer.cs`
   - `src/Frontend/NuanSystem.WinForms.Forms/Sync/SyncOutboxDetailForm.Designer.cs`
-- **Antipatterns:** new grid wrapper, feature-local pagination/export framework, or bypassing its public contract to reproduce behavior.
+- **Server paging contract:** Bind an already paged result with `SetPagedData`; handle `PageRequested` only to execute the remote query and bind the returned page. First/previous/next/last controls, page-size selection, page count, and total count remain owned by `NuanDataGridControl`.
+- **Antipatterns:** new grid wrapper, feature-local pagination/export framework, form-owned previous/next buttons, or bypassing its public contract to reproduce behavior.
 
 ### 4.5 `NuanKpiCardControl`
 
