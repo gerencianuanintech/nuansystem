@@ -110,7 +110,7 @@ public sealed class SriDocumentAuditDto
     public Guid TraceId { get; set; }
     public DateTime CreatedAt { get; set; }
 }
-public sealed record SriDocumentMonitorFilter(string? Environment=null,string? Status=null,string? DocumentTypeCode=null,string? SourceType=null,DateTime? CreatedFrom=null,DateTime? CreatedTo=null,string? Search=null,int Page=1,int PageSize=50);
+public sealed record SriDocumentMonitorFilter(string? Environment=null,string? Status=null,string? DocumentTypeCode=null,string? SourceType=null,DateTime? CreatedFrom=null,DateTime? CreatedTo=null,string? Search=null,int Page=1,int PageSize=50,long? ImportId=null);
 public sealed record SriAuthorizedXmlDownloadData(long QueueId,int? AuditUserId,string? AuditUserName,Guid TraceId);
 public enum SriAuthorizedXmlDownloadCode { Success=1, NotFound=0, NotAuthorized=-3, MissingContent=-4 }
 public sealed record SriAuthorizedXmlPersistenceResult(SriAuthorizedXmlDownloadCode Code,long? DocumentId,long QueueId,byte[] XmlContent,string? ContentType,int SizeBytes);

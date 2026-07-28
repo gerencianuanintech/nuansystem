@@ -8,7 +8,7 @@ public interface ISriDocumentQueueRepository : IRepository
     Task<IReadOnlyCollection<SriDocumentQueueListItemDto>> SearchAsync(SriDocumentQueueFilter filter, CancellationToken cancellationToken = default);
     Task<SriDocumentQueueDetailDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<SriDocumentAttemptDto>> GetAttemptsAsync(long queueId, CancellationToken cancellationToken = default);
-    Task<SriDocumentMonitorSummaryDto> GetMonitorSummaryAsync(CancellationToken cancellationToken = default);
+    Task<SriDocumentMonitorSummaryDto> GetMonitorSummaryAsync(long? importId = null, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<SriDocumentMonitorListItemDto>> SearchMonitorAsync(SriDocumentMonitorFilter filter, CancellationToken cancellationToken = default);
     Task<SriDocumentMonitorDetailDto?> GetMonitorDetailAsync(long queueId, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<SriDocumentAuditDto>> GetAuditAsync(long queueId, CancellationToken cancellationToken = default);

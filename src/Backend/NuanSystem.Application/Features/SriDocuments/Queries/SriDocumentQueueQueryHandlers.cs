@@ -38,7 +38,7 @@ public sealed class GetSriDocumentAttemptsQueryHandler(ISriDocumentQueueReposito
 
 public sealed class GetSriDocumentMonitorSummaryQueryHandler(ISriDocumentQueueRepository repository) : IQueryHandler<GetSriDocumentMonitorSummaryQuery, SriDocumentMonitorSummaryDto>
 {
-    public async Task<Result<SriDocumentMonitorSummaryDto>> Handle(GetSriDocumentMonitorSummaryQuery request, CancellationToken cancellationToken) => Result<SriDocumentMonitorSummaryDto>.Success(await repository.GetMonitorSummaryAsync(cancellationToken));
+    public async Task<Result<SriDocumentMonitorSummaryDto>> Handle(GetSriDocumentMonitorSummaryQuery request, CancellationToken cancellationToken) => Result<SriDocumentMonitorSummaryDto>.Success(await repository.GetMonitorSummaryAsync(request.ImportId, cancellationToken));
 }
 
 public sealed class SearchSriDocumentMonitorQueryHandler(ISriDocumentQueueRepository repository) : IQueryHandler<SearchSriDocumentMonitorQuery, IReadOnlyCollection<SriDocumentMonitorListItemDto>>

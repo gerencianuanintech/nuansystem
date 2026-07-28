@@ -175,7 +175,10 @@ public sealed class SriTxtImportFrontendContractTests
         form.Should().Contain("OpenFileDialog");
         form.Should().Contain("SriTxtImportFilterDialog");
         form.Should().Contain("ExecuteCustomOperationAsync");
-        form.Should().Contain("openQueue?.Invoke(queueId)");
+        form.Should().Contain("OpenMonitorRequested?.Invoke")
+            .And.Contain("SriTxtImportMonitorRequestedEventArgs(detail.Id)");
+        shell.Should().Contain("SriTxtImportForm_OpenMonitorRequested")
+            .And.Contain("ApplyImportScopeAsync(e.ImportId)");
         form.Should().NotContain("HttpClient");
         form.Should().NotContain("SqlConnection");
         form.Should().NotContain("AccessKey,");

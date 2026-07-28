@@ -12,9 +12,7 @@ public sealed partial class SriDocumentMonitorForm : BaseCrudListForm
 {
     public const string FormKey = "sri-document-monitor";
     private readonly SriDocumentMonitorViewModel viewModel;
-    private readonly long? initialQueueId;
     private readonly bool canDownload;
-    private bool initialQueueLoaded;
     private bool busy;
 
     public SriDocumentMonitorForm()
@@ -26,10 +24,10 @@ public sealed partial class SriDocumentMonitorForm : BaseCrudListForm
     public SriDocumentMonitorForm(
         SriDocumentMonitorViewModel viewModel,
         ApiSession session,
-        long? initialQueueId = null)
+        long? importId = null)
     {
         this.viewModel = viewModel;
-        this.initialQueueId = initialQueueId;
+        this.viewModel.SetImportScope(importId);
         canDownload = session.HasPermission(PermissionCodes.SriDocumentsDownloadXml);
         InitializeComponent();
         FormStyler.ApplyBase(this);
@@ -72,12 +70,7 @@ public sealed partial class SriDocumentMonitorForm : BaseCrudListForm
         {
             await viewModel.LoadAsync();
             RenderMonitor();
-            if (!initialQueueLoaded && initialQueueId is long queueId)
-            {
-                initialQueueLoaded = true;
-                await LoadQueueCoreAsync(queueId, direct: true);
-            }
-            else if (viewModel.Items.FirstOrDefault() is { } first)
+            if (viewModel.Items.FirstOrDefault() is { } first)
             {
                 await LoadQueueCoreAsync(first.QueueId, direct: false);
             }
@@ -192,6 +185,15 @@ public sealed partial class SriDocumentMonitorForm : BaseCrudListForm
         viewModel.Filter.CreatedFrom=dialog.CreatedFrom;
         viewModel.Filter.CreatedTo=dialog.CreatedTo?.Date.AddDays(1).AddTicks(-1);
         viewModel.Filter.Page=1;
+        await LoadDataAsync();
+    }
+
+    public async Task ApplyImportScopeAsync(long? importId)
+    {
+        if (busy)
+            return;
+
+        viewModel.SetImportScope(importId);
         await LoadDataAsync();
     }
 

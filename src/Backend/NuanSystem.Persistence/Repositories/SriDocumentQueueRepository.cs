@@ -34,10 +34,10 @@ public sealed class SriDocumentQueueRepository(ITenantConnectionFactory connecti
         return rows.AsList();
     }
 
-    public async Task<SriDocumentMonitorSummaryDto> GetMonitorSummaryAsync(CancellationToken cancellationToken = default)
+    public async Task<SriDocumentMonitorSummaryDto> GetMonitorSummaryAsync(long? importId = null, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        return await connection.QuerySingleAsync<SriDocumentMonitorSummaryDto>(Command("dbo.SP_NA_GET_SRIDOCUMENTMONITOR_RESUMEN", new { }, cancellationToken));
+        return await connection.QuerySingleAsync<SriDocumentMonitorSummaryDto>(Command("dbo.SP_NA_GET_SRIDOCUMENTMONITOR_RESUMEN", new { ImportId = importId }, cancellationToken));
     }
 
     public async Task<IReadOnlyCollection<SriDocumentMonitorListItemDto>> SearchMonitorAsync(SriDocumentMonitorFilter filter, CancellationToken cancellationToken = default)

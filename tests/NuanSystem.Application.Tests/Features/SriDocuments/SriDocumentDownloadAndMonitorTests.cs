@@ -161,6 +161,64 @@ public sealed class SriDocumentDownloadAndMonitorTests
     }
 
     [Fact]
+    public void MonitorImportScope_UsesTenantSqlExistsAndPreservesGlobalMode()
+    {
+        var sql=Read("database","sql","150_tenant_sri_document_monitor_import_scope.sql");
+        var api=Read("src","Backend","NuanSystem.Api","Endpoints","SriDocumentEndpoints.cs");
+        var repository=Read("src","Backend","NuanSystem.Persistence","Repositories","SriDocumentQueueRepository.cs");
+        var client=Read("src","Frontend","NuanSystem.WinForms.Services","SriDocuments","SriDocumentMonitorClient.cs");
+        var shell=Read("src","Frontend","NuanSystem.WinForms.Forms","Shell","MainForm.cs");
+
+        sql.Should().Contain("N'20260728.150'")
+            .And.Contain("@ImportId bigint = NULL")
+            .And.Contain("FROM dbo.SriTxtImportRows r")
+            .And.Contain("r.ImportId=@ImportId")
+            .And.Contain("r.QueueId=q.Id")
+            .And.Contain("OFFSET (@Page-1)*@PageSize ROWS FETCH NEXT @PageSize ROWS ONLY")
+            .And.Contain("WHEN @PageSize>200 THEN 200");
+        sql.Should().NotContain("AccessKey");
+        api.Should().Contain("long? importId")
+            .And.Contain("GetSriDocumentMonitorSummaryQuery(importId)")
+            .And.Contain("page ?? 1, pageSize ?? 50, importId");
+        repository.Should().Contain("new { ImportId = importId }");
+        client.Should().Contain("[\"importId\"]")
+            .And.Contain("BuildImportQuery(importId)");
+        shell.Should().Contain("SriTxtImportForm_OpenMonitorRequested")
+            .And.Contain("ApplyImportScopeAsync(e.ImportId)")
+            .And.Contain("ApplyImportScopeAsync(null)");
+    }
+
+    [Fact]
+    public async Task FrontendMonitor_PropagatesImmutableImportScopeToSummaryAndList()
+    {
+        var client=Substitute.For<ISriDocumentMonitorClient>();
+        client.GetSummaryAsync(42,Arg.Any<CancellationToken>())
+            .Returns(new SriDocumentMonitorSummary(1,1,0,0,0));
+        client.SearchAsync(
+                Arg.Is<NuanSystem.WinForms.Services.SriDocuments.Models.SriDocumentMonitorFilter>(filter=>filter.ImportId==42),
+                Arg.Any<CancellationToken>())
+            .Returns([new SriDocumentMonitorItem(7,"Production","01","SriTxtImport","SAFE-REF",null,
+                "Pending",0,DateTime.UtcNow,null,false,1)]);
+        var viewModel=new SriDocumentMonitorViewModel(client,canViewDetail:false,canDownload:false);
+
+        viewModel.SetImportScope(42);
+        await viewModel.LoadAsync();
+
+        viewModel.IsImportScoped.Should().BeTrue();
+        viewModel.Filter.ImportId.Should().Be(42);
+        viewModel.Items.Should().ContainSingle(item=>item.QueueId==7);
+        await client.Received(1).GetSummaryAsync(42,Arg.Any<CancellationToken>());
+
+        viewModel.Filter.Status="Pending";
+        viewModel.Filter.Search="SAFE";
+        viewModel.SetImportScope(null);
+        viewModel.IsImportScoped.Should().BeFalse();
+        viewModel.Filter.Page.Should().Be(1);
+        viewModel.Filter.Status.Should().BeNull();
+        viewModel.Filter.Search.Should().BeNull();
+    }
+
+    [Fact]
     public void FrontendMonitor_UsesCompactCorporateKpiGrid()
     {
         var designer=Read("src","Frontend","NuanSystem.WinForms.Forms","SriDocuments","SriDocumentMonitorForm.Designer.cs");
@@ -211,7 +269,7 @@ public sealed class SriDocumentDownloadAndMonitorTests
                 [MonitorItem()],
                 [new SriDocumentMonitorItem(57,"Production","01","SriTxtImport","SAFE-REF-57",null,
                     "Pending",0,DateTime.UtcNow,null,false,120)]);
-        client.GetSummaryAsync(Arg.Any<CancellationToken>())
+        client.GetSummaryAsync(null,Arg.Any<CancellationToken>())
             .Returns(new SriDocumentMonitorSummary(120,119,0,1,0));
         var viewModel=new SriDocumentMonitorViewModel(client,canViewDetail:false,canDownload:true);
         await viewModel.LoadAsync();
@@ -299,7 +357,7 @@ public sealed class SriDocumentDownloadAndMonitorTests
 
     private sealed class FakeMonitorClient(SriDocumentMonitorItem item,SriWorkerHealthReport? workerHealth=null) : ISriDocumentMonitorClient
     {
-        public Task<SriDocumentMonitorSummary> GetSummaryAsync(CancellationToken cancellationToken=default)=>Task.FromResult(new SriDocumentMonitorSummary(1,0,0,1,0));
+        public Task<SriDocumentMonitorSummary> GetSummaryAsync(long? importId=null,CancellationToken cancellationToken=default)=>Task.FromResult(new SriDocumentMonitorSummary(1,0,0,1,0));
         public Task<SriWorkerHealthReport> GetWorkerHealthAsync(CancellationToken cancellationToken=default)=>
             Task.FromResult(workerHealth ?? new SriWorkerHealthReport("Unknown",DateTime.UtcNow,[]));
         public Task<IReadOnlyCollection<SriDocumentMonitorItem>> SearchAsync(NuanSystem.WinForms.Services.SriDocuments.Models.SriDocumentMonitorFilter filter,CancellationToken cancellationToken=default)=>Task.FromResult<IReadOnlyCollection<SriDocumentMonitorItem>>([item]);

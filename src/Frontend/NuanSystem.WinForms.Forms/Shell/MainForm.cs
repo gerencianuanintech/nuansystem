@@ -131,7 +131,7 @@ public sealed class MainForm : RibbonForm
     private readonly Func<PurchaseOrdersForm> purchaseOrdersFormFactory;
     private readonly Func<SapSyncLogForm> sapSyncLogFormFactory;
     private readonly Func<SyncMonitorForm> syncMonitorFormFactory;
-    private readonly Func<SriDocumentMonitorForm> sriDocumentMonitorFormFactory;
+    private readonly Func<long?, SriDocumentMonitorForm> sriDocumentMonitorFormFactory;
     private readonly Func<SriTxtImportForm> sriTxtImportFormFactory;
     private readonly Func<SyncProfileListForm> syncProfileListFormFactory;
     private readonly Func<SyncEntityListForm> syncEntityListFormFactory;
@@ -291,7 +291,7 @@ public sealed class MainForm : RibbonForm
         Func<PurchaseOrdersForm> purchaseOrdersFormFactory,
         Func<SapSyncLogForm> sapSyncLogFormFactory,
         Func<SyncMonitorForm> syncMonitorFormFactory,
-        Func<SriDocumentMonitorForm> sriDocumentMonitorFormFactory,
+        Func<long?, SriDocumentMonitorForm> sriDocumentMonitorFormFactory,
         Func<SriTxtImportForm> sriTxtImportFormFactory,
         Func<SyncProfileListForm> syncProfileListFormFactory,
         Func<SyncEntityListForm> syncEntityListFormFactory,
@@ -1269,11 +1269,16 @@ public sealed class MainForm : RibbonForm
         }
     }
 
-    private void OpenModule(ShellModuleItem module)
+    private async void OpenModule(ShellModuleItem module)
     {
         if (openModuleTabs.TryGetValue(module.Key, out var existingPage))
         {
             tabControl.SelectedTabPage = existingPage;
+            if (existingPage.Tag is SriDocumentMonitorForm monitorForm)
+            {
+                existingPage.Text = module.Title;
+                await monitorForm.ApplyImportScopeAsync(null);
+            }
             UpdateStatusBar(module.Title);
             return;
         }
@@ -1285,19 +1290,28 @@ public sealed class MainForm : RibbonForm
             return;
         }
 
+        OpenModulePage(module,form,module.Title);
+    }
+
+    private void OpenModulePage(ShellModuleItem module,Form form,string pageTitle)
+    {
         var page = new XtraTabPage
         {
-            Text = module.Title,
+            Text = pageTitle,
             Tag = form
         };
 
         form.TopLevel = false;
         form.FormBorderStyle = FormBorderStyle.None;
         form.Dock = DockStyle.Fill;
-        form.Text = module.Title;
+        form.Text = pageTitle;
         if (form is BaseCrudListForm crudForm)
         {
             crudForm.ActionStateChanged += ActiveCrudForm_ActionStateChanged;
+        }
+        if (form is SriTxtImportForm sriTxtImportForm)
+        {
+            sriTxtImportForm.OpenMonitorRequested += SriTxtImportForm_OpenMonitorRequested;
         }
 
         page.Controls.Add(form);
@@ -1310,8 +1324,37 @@ public sealed class MainForm : RibbonForm
             _ = ApplyOperationAccessAsync(module, activeCrudForm);
         }
 
-        UpdateStatusBar(module.Title);
+        UpdateStatusBar(pageTitle);
         UpdateRibbonActionState();
+    }
+
+    private async void SriTxtImportForm_OpenMonitorRequested(object? sender,SriTxtImportMonitorRequestedEventArgs e)
+    {
+        if (viewModel?.Modules.FirstOrDefault(module =>
+                string.Equals(module.Key,SriDocumentMonitorForm.FormKey,StringComparison.OrdinalIgnoreCase)) is not { } monitorModule)
+        {
+            XtraMessageBox.Show(
+                this,
+                "El Monitor SRI no estÃ¡ disponible para el usuario actual.",
+                "Monitor SRI",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            return;
+        }
+
+        var pageTitle=$"{monitorModule.Title} - Carga {e.ImportId}";
+        if (openModuleTabs.TryGetValue(monitorModule.Key,out var existingPage)
+            && existingPage.Tag is SriDocumentMonitorForm existingMonitor)
+        {
+            tabControl.SelectedTabPage=existingPage;
+            existingPage.Text=pageTitle;
+            await existingMonitor.ApplyImportScopeAsync(e.ImportId);
+            UpdateStatusBar(pageTitle);
+            ApplyActiveRibbonOperations();
+            return;
+        }
+
+        OpenModulePage(monitorModule,sriDocumentMonitorFormFactory(e.ImportId),pageTitle);
     }
 
     private async Task ApplyOperationAccessAsync(ShellModuleItem module, BaseCrudListForm crudForm)
@@ -1847,7 +1890,7 @@ public sealed class MainForm : RibbonForm
             "purchase-orders" => purchaseOrdersFormFactory(),
             "sap" => sapSyncLogFormFactory(),
             "sync-monitor" => syncMonitorFormFactory(),
-            "sri-document-monitor" => sriDocumentMonitorFormFactory(),
+            "sri-document-monitor" => sriDocumentMonitorFormFactory(null),
             "sri-txt-imports" => sriTxtImportFormFactory(),
             "sync-profiles" => syncProfileListFormFactory(),
             "sync-entities" => syncEntityListFormFactory(),

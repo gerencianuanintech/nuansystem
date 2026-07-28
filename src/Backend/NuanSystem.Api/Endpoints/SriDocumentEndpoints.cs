@@ -28,16 +28,16 @@ public static class SriDocumentEndpoints
             (await sender.Send(new GetSriDocumentAttemptsQuery(id), cancellationToken)).ToHttpResult())
             .RequirePermission(PermissionCodes.SriDocumentsView);
 
-        group.MapGet("/monitor/summary", async (ISender sender, CancellationToken cancellationToken) =>
-            (await sender.Send(new GetSriDocumentMonitorSummaryQuery(), cancellationToken)).ToHttpResult())
+        group.MapGet("/monitor/summary", async (long? importId, ISender sender, CancellationToken cancellationToken) =>
+            (await sender.Send(new GetSriDocumentMonitorSummaryQuery(importId), cancellationToken)).ToHttpResult())
             .RequirePermission(PermissionCodes.SriDocumentsView);
 
         group.MapGet("/monitor/worker-health", async (ISender sender, IConfiguration configuration, CancellationToken cancellationToken) =>
             (await sender.Send(new GetSriWorkerHealthQuery(configuration.GetSection("SriWorkerHealth").Get<WorkerHealthThresholds>() ?? new WorkerHealthThresholds()), cancellationToken)).ToHttpResult())
             .RequirePermission(PermissionCodes.SriWorkerHealthView);
 
-        group.MapGet("/monitor", async (string? environment, string? status, string? documentTypeCode, string? sourceType, DateTime? createdFrom, DateTime? createdTo, string? search, int? page, int? pageSize, ISender sender, CancellationToken cancellationToken) =>
-            (await sender.Send(new SearchSriDocumentMonitorQuery(new SriDocumentMonitorFilter(environment, status, documentTypeCode, sourceType, createdFrom, createdTo, search, page ?? 1, pageSize ?? 50)), cancellationToken)).ToHttpResult())
+        group.MapGet("/monitor", async (long? importId, string? environment, string? status, string? documentTypeCode, string? sourceType, DateTime? createdFrom, DateTime? createdTo, string? search, int? page, int? pageSize, ISender sender, CancellationToken cancellationToken) =>
+            (await sender.Send(new SearchSriDocumentMonitorQuery(new SriDocumentMonitorFilter(environment, status, documentTypeCode, sourceType, createdFrom, createdTo, search, page ?? 1, pageSize ?? 50, importId)), cancellationToken)).ToHttpResult())
             .RequirePermission(PermissionCodes.SriDocumentsView);
 
         group.MapGet("/monitor/{id:long}", async (long id, ISender sender, CancellationToken cancellationToken) =>

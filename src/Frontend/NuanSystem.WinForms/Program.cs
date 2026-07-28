@@ -413,7 +413,7 @@ internal sealed class FrontendComposition : IDisposable
             CreatePurchaseOrdersForm,
             CreateSapSyncLogForm,
             CreateSyncMonitorForm,
-            () => CreateSriDocumentMonitorForm(),
+            CreateSriDocumentMonitorForm,
             CreateSriTxtImportForm,
             CreateSyncProfileListForm,
             CreateSyncEntityListForm,
@@ -979,7 +979,7 @@ internal sealed class FrontendComposition : IDisposable
             session);
     }
 
-    public SriDocumentMonitorForm CreateSriDocumentMonitorForm(long? initialQueueId = null)
+    public SriDocumentMonitorForm CreateSriDocumentMonitorForm(long? importId = null)
     {
         return new SriDocumentMonitorForm(
             new SriDocumentMonitorViewModel(
@@ -988,15 +988,14 @@ internal sealed class FrontendComposition : IDisposable
                 session.HasPermission(NuanSystem.Shared.Constants.PermissionCodes.SriDocumentsDownloadXml),
                 session.HasPermission(NuanSystem.Shared.Constants.PermissionCodes.SriWorkerHealthView)),
             session,
-            initialQueueId);
+            importId);
     }
 
     public SriTxtImportForm CreateSriTxtImportForm()
     {
         return new SriTxtImportForm(
             new SriTxtImportViewModel(sriTxtImportClient),
-            session,
-            queueId => CreateSriDocumentMonitorForm(queueId).Show());
+            session);
     }
 
     public SyncProfileListForm CreateSyncProfileListForm()

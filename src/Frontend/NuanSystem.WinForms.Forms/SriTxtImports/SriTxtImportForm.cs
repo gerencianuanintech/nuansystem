@@ -12,10 +12,11 @@ namespace NuanSystem.WinForms.Forms.SriTxtImports;
 public sealed partial class SriTxtImportForm : BaseCrudListForm
 {
     public const string FormKey = "sri-txt-imports";
+    public event EventHandler<SriTxtImportMonitorRequestedEventArgs>? OpenMonitorRequested;
+
     private const long MaxUploadSizeBytes = 10L * 1024L * 1024L;
     private SriTxtImportViewModel? viewModel;
     private ApiSession? session;
-    private Action<long>? openQueue;
     private readonly bool canUpload;
     private readonly bool canEnqueue;
     private readonly bool canOpenQueue;
@@ -29,13 +30,11 @@ public sealed partial class SriTxtImportForm : BaseCrudListForm
 
     public SriTxtImportForm(
         SriTxtImportViewModel viewModel,
-        ApiSession session,
-        Action<long> openQueue)
+        ApiSession session)
         : this()
     {
         this.viewModel = viewModel;
         this.session = session;
-        this.openQueue = openQueue;
         canUpload = session.HasPermission(PermissionCodes.SriTxtImportsUpload);
         canEnqueue = session.HasPermission(PermissionCodes.SriTxtImportsEnqueue);
         canOpenQueue = session.HasPermission(PermissionCodes.SriDocumentsView);
@@ -91,7 +90,7 @@ public sealed partial class SriTxtImportForm : BaseCrudListForm
         rowGrid.PageRequested += async (_, args) => await GoToRowPageAsync(args);
         importGrid.FocusedRowChanged += async (_, _) => await LoadSelectedAsync();
         importGrid.GridView.DoubleClick += async (_, _) => await ExecuteConsultAsync();
-        rowGrid.GridView.DoubleClick += (_, _) => OpenSelectedQueue();
+        rowGrid.GridView.DoubleClick += (_, _) => OpenImportMonitor();
     }
 
     protected override async Task LoadDataAsync()
@@ -255,18 +254,24 @@ public sealed partial class SriTxtImportForm : BaseCrudListForm
         });
     }
 
-    private void OpenSelectedQueue()
+    private void OpenImportMonitor()
     {
         if (!canOpenQueue)
             return;
 
-        if (rowGrid.GetFocusedRow<SriTxtImportRow>()?.QueueId is not long queueId)
+        if (ViewModel.Detail is not { } detail)
         {
-            ShowWarning("Seleccione una fila vinculada a la cola SRI.");
+            ShowWarning("Seleccione una importaciÃ³n.");
             return;
         }
 
-        openQueue?.Invoke(queueId);
+        if (detail.LinkedRows<=0 && detail.StagedRows<=0 && detail.PendingRows<=0)
+        {
+            ShowWarning("La importaciÃ³n seleccionada no tiene documentos vinculados a la cola SRI.");
+            return;
+        }
+
+        OpenMonitorRequested?.Invoke(this,new SriTxtImportMonitorRequestedEventArgs(detail.Id));
     }
 
     private void RenderPage()
@@ -341,7 +346,7 @@ public sealed partial class SriTxtImportForm : BaseCrudListForm
 
         if (IsCustomOperation(operationKey, "openqueue", "open-queue", "abrircola"))
         {
-            OpenSelectedQueue();
+            OpenImportMonitor();
             return Task.CompletedTask;
         }
 
@@ -387,4 +392,9 @@ public sealed partial class SriTxtImportForm : BaseCrudListForm
             || DesignMode
             || Site?.DesignMode == true;
     }
+}
+
+public sealed class SriTxtImportMonitorRequestedEventArgs(long importId) : EventArgs
+{
+    public long ImportId { get; }=importId;
 }

@@ -24,3 +24,19 @@ public sealed class GetSriDocumentAttemptsQueryValidator : AbstractValidator<Get
 {
     public GetSriDocumentAttemptsQueryValidator() => RuleFor(x => x.QueueId).GreaterThan(0).WithErrorCode("SRI_QUEUE_ID_INVALID");
 }
+
+public sealed class GetSriDocumentMonitorSummaryQueryValidator : AbstractValidator<GetSriDocumentMonitorSummaryQuery>
+{
+    public GetSriDocumentMonitorSummaryQueryValidator() =>
+        RuleFor(x => x.ImportId).GreaterThan(0).When(x => x.ImportId.HasValue).WithErrorCode("SRI_IMPORT_ID_INVALID");
+}
+
+public sealed class SearchSriDocumentMonitorQueryValidator : AbstractValidator<SearchSriDocumentMonitorQuery>
+{
+    public SearchSriDocumentMonitorQueryValidator()
+    {
+        RuleFor(x => x.Filter.ImportId).GreaterThan(0).When(x => x.Filter.ImportId.HasValue).WithErrorCode("SRI_IMPORT_ID_INVALID");
+        RuleFor(x => x.Filter.Page).GreaterThan(0).WithErrorCode("SRI_PAGE_INVALID");
+        RuleFor(x => x.Filter.PageSize).InclusiveBetween(1, 200).WithErrorCode("SRI_PAGE_SIZE_INVALID");
+    }
+}
