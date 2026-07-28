@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "NuanSystem Local": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "NUANSYSTEM_API_URL": "http://localhost:5081"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "NuanSystem Local (API + WinForms)",
+    "Projects": [
+      {
+        "Path": "src\\Backend\\NuanSystem.Api\\NuanSystem.Api.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\Frontend\\NuanSystem.WinForms\\NuanSystem.WinForms.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
