@@ -8,6 +8,39 @@ repetir los scripts `138`/`139` ni sus pruebas SQL acreditadas. Las nuevas migra
 la API CRUD y WinForms no pueden ejecutarse sin otra autorización. SAP, worker y llamadas SRI siguen excluidos.
 Los scripts `140`/`141` pertenecen exclusivamente a PriceList 8.6.
 
+## Cierre de gates pendientes — 2026-07-28
+
+Este cierre complementa y reemplaza exclusivamente los dos gates fallidos o bloqueados de la
+evidencia runtime del 2026-07-27. No repite migraciones, fixtures, transiciones de cola ni llamadas
+externas.
+
+- **Validated — tamaño mínimo WinForms:** el commit `532545fe` establece `MinimumSize` en
+  `1151 x 700` y conserva el tamaño inicial `1180 x 780`. Una medición funcional del formulario
+  confirmó `985/985` px disponibles/requeridos en el ancho mínimo, `1178/985` en tamaño normal y
+  `2558/985` maximizado. Las seis tarjetas KPI y los cuatro botones protegidos permanecen visibles.
+  No se redujeron fuentes, no se ocultaron controles, no se creó layout en runtime y no se
+  modificaron controles compartidos.
+- **Validated — Visual Studio Designer:** `SriTxtImportForm.cs [Diseño]` se cerró y volvió a abrir
+  correctamente en Visual Studio, sin errores de carga o serialización. La prueba estructural
+  dedicada exige una sola fila, `WrapContents=false`, las seis tarjetas en orden y el ancho mínimo
+  corporativo.
+- **Validated — reconfirmación SQL posterior:** una nueva ejecución de solo lectura abrió
+  conexiones con `Encrypt=true` y `TrustServerCertificate=false`, manteniendo conexiones y
+  `EncryptionKey` únicamente en memoria. Master conservó una versión `143`, un formulario, un menú,
+  una operación ENQUEUE, una OPEN_QUEUE y cero grants automáticos. DEMO conservó una versión `142`,
+  0 importaciones, 0 filas, 0 auditorías TXT, 4 colas, 1 intento, 13 auditorías de cola y 1 documento.
+  REMIGIO y CANARIS conservaron una versión `142` y todos los conteos SRI TXT/cola en cero.
+  `QueueId=10004` permaneció `Authorized`, tipo `01`, con un intento, cinco auditorías, un documento
+  de 10.027 bytes, SHA-256 de 32 bytes, tamaño coherente y sin lease.
+- **Validated — aislamiento operativo:** API y workers permanecieron detenidos; no se ejecutó SQL,
+  no hubo escrituras, no se crearon fixtures y no se llamó al SRI ni a SAP.
+- **Validated — regresión final:** `git diff --check` correcto; build completo con 0 errores y
+  0 advertencias; 31/31 pruebas SRI TXT; 90/90 pruebas SRI; suite completa con 577 aprobadas,
+  5 diagnósticas omitidas y 0 fallidas.
+
+Con estos resultados, los gates pendientes del CRUD SRI TXT quedan cerrados y la rama queda apta
+para revisión final de integración. Este estado no autoriza push, PR ni integración a `master`.
+
 ## Evidencia runtime CRUD — 2026-07-27
 
 Validación autorizada sobre la rama `refactor/codex-skills-v9-sri-txt-import`, partiendo de
@@ -36,9 +69,9 @@ Validación autorizada sobre la rama `refactor/codex-skills-v9-sri-txt-import`, 
   `AutoScaleMode.Font`, controles corporativos, filtros, paginación, estados vacío/busy/error,
   botones condicionados por permisos y navegación por `QueueId`. A DPI 96, el layout normal
   (`982/1011` px) y maximizado (`982/2560` px) no recortó los KPI.
-- **Failed — tamaño mínimo WinForms:** al usar el mínimo efectivo, los KPI requieren 982 px dentro
+- **Historical failure — tamaño mínimo WinForms:** al usar el mínimo efectivo, los KPI requieren 982 px dentro
   de 889 px disponibles. El último KPI queda recortado. No se corrigió durante la validación.
-- **Blocked — reconfirmación SQL posterior:** la comparación final ya había aprobado dentro del
+- **Historical blocker — reconfirmación SQL posterior:** la comparación final ya había aprobado dentro del
   arnés runtime y la limpieza; una reconfirmación de solo lectura posterior no pudo abrir una nueva
   conexión por un fallo TLS local. No hubo escritura ni evidencia de cambio de datos.
 - **Validated — regresión:** `git diff --check`; build completo con 0 errores/advertencias;
@@ -46,8 +79,7 @@ Validación autorizada sobre la rama `refactor/codex-skills-v9-sri-txt-import`, 
   infraestructura explícita y 0 fallidas.
 - **Not applicable:** no se iniciaron workers ni se realizaron llamadas al SRI o SAP.
 
-La integración queda **no recomendada** hasta corregir y repetir el gate de tamaño mínimo y
-reconfirmar los conteos finales mediante una conexión SQL estable.
+Esta recomendación histórica queda reemplazada por el cierre documentado el 2026-07-28.
 
 ## Evidencia automática de implementación
 
