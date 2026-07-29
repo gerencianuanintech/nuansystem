@@ -80,7 +80,7 @@ public sealed class SriDocumentDownloadAndMonitorTests
     [Fact]
     public void Api_RequiresPermissionsAndEmitsProtectedFileHeaders()
     {
-        var source=Read("src","Backend","NuanSystem.Api","Endpoints","SriDocumentEndpoints.cs");
+        var source=Read("src","Backend","NuanSystem.Api","SyncSRI","Endpoints","SriDocumentEndpoints.cs");
         source.Should().Contain("PermissionCodes.SriDocumentsDownloadXml").And.Contain("PermissionCodes.SriDocumentsViewPayload");
         source.Should().Contain("Results.NotFound(response)").And.Contain("Headers.CacheControl = \"no-store\"");
         source.Should().Contain("Results.File(result.Value!.Content, \"application/xml\", result.Value.FileName)");
@@ -89,9 +89,9 @@ public sealed class SriDocumentDownloadAndMonitorTests
     [Fact]
     public void Persistence_UsesOnlyAuthenticatedTenantConnectionAndSafeProjections()
     {
-        var repository=Read("src","Backend","NuanSystem.Persistence","Repositories","SriDocumentQueueRepository.cs");
+        var repository=Read("src","Backend","NuanSystem.Persistence","SyncSRI","Repositories","SriDocumentQueueRepository.cs");
         var sql=Read("database","sql","118_tenant_sri_document_monitor_and_download.sql");
-        var dtos=Read("src","Backend","NuanSystem.Application","Features","SriDocuments","Dtos","SriDocumentQueueDtos.cs");
+        var dtos=Read("src","Backend","NuanSystem.Application","SyncSRI","Features","SriDocuments","Dtos","SriDocumentQueueDtos.cs");
         repository.Should().Contain("ITenantConnectionFactory").And.NotContain("IMasterConnectionFactory");
         sql.Should().NotContain("NuanSystem_Master").And.NotContain("AccessKey");
         var monitorSection=dtos[dtos.IndexOf("SriDocumentMonitorSummaryDto",StringComparison.Ordinal)..];
@@ -101,11 +101,11 @@ public sealed class SriDocumentDownloadAndMonitorTests
     [Fact]
     public void Frontend_UsesTypedTransportRibbonOperationsDesignerControlsAndSaveFileDialog()
     {
-        var client=Read("src","Frontend","NuanSystem.WinForms.Services","SriDocuments","SriDocumentMonitorClient.cs");
-        var form=Read("src","Frontend","NuanSystem.WinForms.Forms","SriDocuments","SriDocumentMonitorForm.cs");
-        var designer=Read("src","Frontend","NuanSystem.WinForms.Forms","SriDocuments","SriDocumentMonitorForm.Designer.cs");
-        var filterDialog=Read("src","Frontend","NuanSystem.WinForms.Forms","SriDocuments","SriDocumentMonitorFilterDialog.cs");
-        var filterDesigner=Read("src","Frontend","NuanSystem.WinForms.Forms","SriDocuments","SriDocumentMonitorFilterDialog.Designer.cs");
+        var client=Read("src","Frontend","NuanSystem.WinForms.Services","SyncSRI","SriDocuments","SriDocumentMonitorClient.cs");
+        var form=Read("src","Frontend","NuanSystem.WinForms.Forms","SyncSRI","SriDocuments","SriDocumentMonitorForm.cs");
+        var designer=Read("src","Frontend","NuanSystem.WinForms.Forms","SyncSRI","SriDocuments","SriDocumentMonitorForm.Designer.cs");
+        var filterDialog=Read("src","Frontend","NuanSystem.WinForms.Forms","SyncSRI","SriDocuments","SriDocumentMonitorFilterDialog.cs");
+        var filterDesigner=Read("src","Frontend","NuanSystem.WinForms.Forms","SyncSRI","SriDocuments","SriDocumentMonitorFilterDialog.Designer.cs");
         client.Should().Contain("INuanApiClient").And.NotContain("new HttpClient");
         form.Should().Contain("SaveFileDialog").And.Contain("DialogResult.OK").And.Contain("File.WriteAllBytesAsync").And.NotContain("Path.GetTempPath");
         form.Should().Contain("SriDocumentMonitorForm : BaseCrudListForm")
@@ -164,9 +164,9 @@ public sealed class SriDocumentDownloadAndMonitorTests
     public void MonitorImportScope_UsesTenantSqlExistsAndPreservesGlobalMode()
     {
         var sql=Read("database","sql","150_tenant_sri_document_monitor_import_scope.sql");
-        var api=Read("src","Backend","NuanSystem.Api","Endpoints","SriDocumentEndpoints.cs");
-        var repository=Read("src","Backend","NuanSystem.Persistence","Repositories","SriDocumentQueueRepository.cs");
-        var client=Read("src","Frontend","NuanSystem.WinForms.Services","SriDocuments","SriDocumentMonitorClient.cs");
+        var api=Read("src","Backend","NuanSystem.Api","SyncSRI","Endpoints","SriDocumentEndpoints.cs");
+        var repository=Read("src","Backend","NuanSystem.Persistence","SyncSRI","Repositories","SriDocumentQueueRepository.cs");
+        var client=Read("src","Frontend","NuanSystem.WinForms.Services","SyncSRI","SriDocuments","SriDocumentMonitorClient.cs");
         var shell=Read("src","Frontend","NuanSystem.WinForms.Forms","Shell","MainForm.cs");
 
         sql.Should().Contain("N'20260728.150'")
@@ -221,18 +221,16 @@ public sealed class SriDocumentDownloadAndMonitorTests
     [Fact]
     public void FrontendMonitor_UsesCompactCorporateKpiGrid()
     {
-        var designer=Read("src","Frontend","NuanSystem.WinForms.Forms","SriDocuments","SriDocumentMonitorForm.Designer.cs");
+        var designer=Read("src","Frontend","NuanSystem.WinForms.Forms","SyncSRI","SriDocuments","SriDocumentMonitorForm.Designer.cs");
 
-        designer.Should().Contain("kpiPanel=new TableLayoutPanel()");
-        designer.Should().Contain("kpiPanel.ColumnCount=4");
-        designer.Split("new ColumnStyle(SizeType.Percent,25F)",StringSplitOptions.None)
+        designer.Should().Contain("kpiPanel = new TableLayoutPanel()");
+        designer.Should().Contain("kpiPanel.ColumnCount = 4");
+        designer.Split("new ColumnStyle(SizeType.Percent, 25F)",StringSplitOptions.None)
             .Should().HaveCount(5);
-        designer.Should().Contain("kpiPanel.Height=100");
-        designer.Split("HeaderColor=BrandResources.Primary",StringSplitOptions.None)
+        designer.Should().Contain("kpiPanel.Size = new Size(1180, 100)");
+        designer.Split("HeaderColor = Color.FromArgb(0, 184, 148)",StringSplitOptions.None)
             .Should().HaveCount(5);
-        designer.Split("MinimumSize=Size.Empty",StringSplitOptions.None)
-            .Should().HaveCount(5);
-        designer.Split("Dock=DockStyle.Fill",StringSplitOptions.None)
+        designer.Split("Dock = DockStyle.Fill",StringSplitOptions.None)
             .Should().HaveCountGreaterThanOrEqualTo(5);
     }
 

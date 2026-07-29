@@ -50,7 +50,7 @@ La revalidacion autorizada completo el segundo y tercer pase corregidos de `120`
 
 **Evidence inspected:**
 
-- `src/Backend/NuanSystem.SriWorker/Program.cs` - Generic Host, `UseWindowsService`, Serilog, validacion de opciones, timeout de apagado y DI existentes.
+- `src/Backend/SyncSRI/NuanSystem.SriWorker/Program.cs` - Generic Host, `UseWindowsService`, Serilog, validacion de opciones, timeout de apagado y DI existentes.
 - `SriBackgroundWorker` y `SriWorkerProcessor` - bucle acotado, cancelacion, concurrencia, resolucion de tenants, recuperacion de leases y procesamiento fuera de transacciones SQL.
 - `SriAuthorizationProvider` - endpoints oficiales restringidos, HTTPS, timeout, respuesta acotada, validacion XML y redaccion de errores.
 - `SriWorkerRepository` y scripts `115`-`119` - tenant ownership, claims atomicos, intentos, retry/DeadLetter, XML inmutable, auditoria y monitor protegido.
@@ -142,7 +142,7 @@ Se aplicaron `nuansystem-framework-discovery`, `nuansystem-commercial-architectu
 |---|---|---|
 | Nombre tecnico SCM | `NuanSystem.SriWorker` | Propuesto. |
 | Nombre visible | `NuanSystem SRI Worker` | Ya configurado como nombre visible; validar instalacion. |
-| Proyecto/binario | `src/Backend/NuanSystem.SriWorker` / `NuanSystem.SriWorker.exe` | Evidencia existente. |
+| Proyecto/binario | `src/Backend/SyncSRI/NuanSystem.SriWorker` / `NuanSystem.SriWorker.exe` | Evidencia existente. |
 | Directorio | `%ProgramFiles%\NuanSystem\SriWorker\releases\<version>` | Propuesto; host y volumen pendientes. |
 | Datos operativos | `%ProgramData%\NuanSystem\SriWorker\logs` y `diagnostics` | Propuesto; sin XML ni secretos. |
 | Inicio | Automatico retrasado | Propuesto. |

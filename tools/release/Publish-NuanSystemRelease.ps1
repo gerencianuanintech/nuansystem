@@ -84,7 +84,7 @@ $projects = @(
     },
     [pscustomobject]@{
         Name = "NuanSystem.SriWorker"
-        Project = "src\Backend\NuanSystem.SriWorker\NuanSystem.SriWorker.csproj"
+        Project = "src\Backend\SyncSRI\NuanSystem.SriWorker\NuanSystem.SriWorker.csproj"
         EntryPoint = "NuanSystem.SriWorker.dll"
     },
     [pscustomobject]@{

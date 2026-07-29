@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
+using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Features.SriDocuments.Commands;
 using NuanSystem.Application.Features.SriDocuments.Dtos;
 using NuanSystem.Application.Features.SriDocuments.Queries;
@@ -14,7 +15,8 @@ public static class SriDocumentEndpoints
 {
     public static IEndpointRouteBuilder MapSriDocumentEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/sri/documents");
+        var group = app.MapGroup("/api/sri/documents")
+            .WithTags(SwaggerTags.Sri);
 
         group.MapGet("", async (string? environment, string? status, string? sourceType, string? accessKey, DateTime? createdFrom, DateTime? createdTo, int? page, int? pageSize, ISender sender, CancellationToken cancellationToken) =>
             (await sender.Send(new GetSriDocumentQueueQuery(new SriDocumentQueueFilter(environment, status, sourceType, accessKey, createdFrom, createdTo, page ?? 1, pageSize ?? 100)), cancellationToken)).ToHttpResult())

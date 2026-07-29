@@ -30,8 +30,8 @@ public sealed class SriWorkerSqlContractTests
     [Fact]
     public void WorkerConfiguration_IsDisabledAndUsesStrictOfficialEndpointsByDefault()
     {
-        var settings = ReadSourceFile("src", "Backend", "NuanSystem.SriWorker", "appsettings.json");
-        var program = ReadSourceFile("src", "Backend", "NuanSystem.SriWorker", "Program.cs");
+        var settings = ReadSourceFile("src", "Backend", "SyncSRI", "NuanSystem.SriWorker", "appsettings.json");
+        var program = ReadSourceFile("src", "Backend", "SyncSRI", "NuanSystem.SriWorker", "Program.cs");
 
         settings.Should().Contain("\"Enabled\": false");
         settings.Should().Contain("\"BatchSize\": 10");

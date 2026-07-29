@@ -39,13 +39,13 @@ runtime aprobados. La evidencia end-to-end histórica sigue en
 
 **Evidence inspected:**
 
-- `src/Backend/NuanSystem.SriWorker/NuanSystem.SriWorker.csproj` — el worker usa `net10.0`.
-- `src/Backend/NuanSystem.SriWorker/Program.cs` — Generic Host, Windows Service, configuración externa, Serilog, validación de opciones, TLS y shutdown existentes.
-- `src/Backend/NuanSystem.SriWorker/appsettings.json` y `appsettings.Production.json` — `Enabled=false`, TLS estricto y endpoints oficiales seguros por defecto.
+- `src/Backend/SyncSRI/NuanSystem.SriWorker/NuanSystem.SriWorker.csproj` — el worker usa `net10.0`.
+- `src/Backend/SyncSRI/NuanSystem.SriWorker/Program.cs` — Generic Host, Windows Service, configuración externa, Serilog, validación de opciones, TLS y shutdown existentes.
+- `src/Backend/SyncSRI/NuanSystem.SriWorker/appsettings.json` y `appsettings.Production.json` — `Enabled=false`, TLS estricto y endpoints oficiales seguros por defecto.
 - `SriBackgroundWorker`, `SriHeartbeatWorker`, `SriWorkerRuntimeState` y `WorkerOperationalEvents` — lifecycle, mutex local, heartbeat, drain y eventos implementados.
 - `Application/Features/Operations/WorkerHeartbeat*` y `Persistence/Repositories/Operations/WorkerHeartbeatRepository.cs` — health compartido y plano de control en Master.
 - `docs/operations/templates/sri-worker/*` — instalación, start/stop, update, rollback y uninstall parametrizados; son ejemplos, no instalador productivo.
-- `tests/NuanSystem.Application.Tests/Features/Operations` y `Features/SriDocuments` — contratos automatizados de worker, heartbeat, SQL, provider y monitor.
+- `tests/NuanSystem.Application.Tests/Features/Operations` y `Features/SyncSRI/SriDocuments` — contratos automatizados de worker, heartbeat, SQL, provider y monitor.
 - Documentos de Iteraciones 5 y 6 — límites, evidencia saneada, operaciones y rollback ya validados.
 - `docs/architecture/DOTNET-10-MIGRATION-EXECUTION.md` — migración, build, pruebas y runtime .NET 10 validados.
 - `docs/operations/DOTNET-10-RELEASE-ARTIFACTS.md` — modalidad framework-dependent, manifests, hashes y rollback validados.

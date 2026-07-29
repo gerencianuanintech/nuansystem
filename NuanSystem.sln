@@ -41,7 +41,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuanSystem.SyncWorker", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuanSystem.MasterBranchSyncWorker", "src\Backend\NuanSystem.MasterBranchSyncWorker\NuanSystem.MasterBranchSyncWorker.csproj", "{7F6A2F79-6A5D-495A-B19C-9A4ACBE1CAB2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuanSystem.SriWorker", "src\Backend\NuanSystem.SriWorker\NuanSystem.SriWorker.csproj", "{5C9A1428-74C1-4C42-88A5-EA45CF486115}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuanSystem.SriWorker", "src\Backend\SyncSRI\NuanSystem.SriWorker\NuanSystem.SriWorker.csproj", "{5C9A1428-74C1-4C42-88A5-EA45CF486115}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

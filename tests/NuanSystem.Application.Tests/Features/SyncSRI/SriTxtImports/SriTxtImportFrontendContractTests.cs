@@ -149,19 +149,19 @@ public sealed class SriTxtImportFrontendContractTests
     {
         var form = ReadSourceFile(
             "src", "Frontend", "NuanSystem.WinForms.Forms",
-            "SriTxtImports", "SriTxtImportForm.cs");
+            "SyncSRI", "SriTxtImports", "SriTxtImportForm.cs");
         var designer = ReadSourceFile(
             "src", "Frontend", "NuanSystem.WinForms.Forms",
-            "SriTxtImports", "SriTxtImportForm.Designer.cs");
+            "SyncSRI", "SriTxtImports", "SriTxtImportForm.Designer.cs");
         var shell = ReadSourceFile(
             "src", "Frontend", "NuanSystem.WinForms.Forms",
             "Shell", "MainForm.cs");
         var filterDialog = ReadSourceFile(
             "src", "Frontend", "NuanSystem.WinForms.Forms",
-            "SriTxtImports", "SriTxtImportFilterDialog.cs");
+            "SyncSRI", "SriTxtImports", "SriTxtImportFilterDialog.cs");
         var filterDesigner = ReadSourceFile(
             "src", "Frontend", "NuanSystem.WinForms.Forms",
-            "SriTxtImports", "SriTxtImportFilterDialog.Designer.cs");
+            "SyncSRI", "SriTxtImports", "SriTxtImportFilterDialog.Designer.cs");
         var formsProject = ReadSourceFile(
             "src", "Frontend", "NuanSystem.WinForms.Forms",
             "NuanSystem.WinForms.Forms.csproj");
@@ -203,9 +203,9 @@ public sealed class SriTxtImportFrontendContractTests
         filterDesigner.Should().Contain("FormBorderStyle.FixedDialog");
         filterDesigner.Should().Contain("AutoScaleMode = AutoScaleMode.Font");
         formsProject.Should().Contain(
-            "<Compile Update=\"SriTxtImports\\SriTxtImportForm.cs\">");
+            "<Compile Update=\"SyncSRI\\SriTxtImports\\SriTxtImportForm.cs\">");
         formsProject.Should().Contain(
-            "<Compile Update=\"SriTxtImports\\SriTxtImportFilterDialog.cs\">");
+            "<Compile Update=\"SyncSRI\\SriTxtImports\\SriTxtImportFilterDialog.cs\">");
         formsProject.Should().Contain("<SubType>Form</SubType>");
         shell.Should().Contain("\"sri-txt-imports\" => sriTxtImportFormFactory()");
     }
@@ -255,7 +255,7 @@ public sealed class SriTxtImportFrontendContractTests
     {
         var form = ReadSourceFile(
             "src", "Frontend", "NuanSystem.WinForms.Forms",
-            "SriTxtImports", "SriTxtImportForm.cs");
+            "SyncSRI", "SriTxtImports", "SriTxtImportForm.cs");
         var grid = ReadSourceFile(
             "src", "Frontend", "NuanSystem.WinForms.Controls",
             "Grids", "NuanDataGridControl.cs");
@@ -277,7 +277,7 @@ public sealed class SriTxtImportFrontendContractTests
     {
         var designer = ReadSourceFile(
             "src", "Frontend", "NuanSystem.WinForms.Forms",
-            "SriTxtImports", "SriTxtImportForm.Designer.cs");
+            "SyncSRI", "SriTxtImports", "SriTxtImportForm.Designer.cs");
         var kpiControl = ReadSourceFile(
             "src", "Frontend", "NuanSystem.WinForms.Controls",
             "Kpi", "NuanKpiCardControl.cs");

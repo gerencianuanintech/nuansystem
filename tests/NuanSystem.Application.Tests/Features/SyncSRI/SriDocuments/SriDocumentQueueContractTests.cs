@@ -25,7 +25,7 @@ public sealed class SriDocumentQueueContractTests
     [Fact]
     public void Api_UsesGranularPermissionsForQueueAndProtectedXml()
     {
-        var endpoints = ReadSourceFile("src", "Backend", "NuanSystem.Api", "Endpoints", "SriDocumentEndpoints.cs");
+        var endpoints = ReadSourceFile("src", "Backend", "NuanSystem.Api", "SyncSRI", "Endpoints", "SriDocumentEndpoints.cs");
 
         endpoints.Should().Contain("PermissionCodes.SriDocumentsView");
         endpoints.Should().Contain("PermissionCodes.SriDocumentsEnqueue");
@@ -34,6 +34,21 @@ public sealed class SriDocumentQueueContractTests
         endpoints.Should().Contain("PermissionCodes.SriDocumentsDownloadXml");
         endpoints.Should().Contain("PermissionCodes.SriDocumentsViewPayload");
         endpoints.Should().Contain("CacheControl = \"no-store\"");
+    }
+
+    [Fact]
+    public void Api_GroupsAllSriEndpointsInOneSwaggerSection()
+    {
+        var documentEndpoints = ReadSourceFile(
+            "src", "Backend", "NuanSystem.Api", "SyncSRI", "Endpoints", "SriDocumentEndpoints.cs");
+        var txtImportEndpoints = ReadSourceFile(
+            "src", "Backend", "NuanSystem.Api", "SyncSRI", "Endpoints", "SriTxtImportEndpoints.cs");
+        var tags = ReadSourceFile(
+            "src", "Backend", "NuanSystem.Api", "OpenApi", "SwaggerTags.cs");
+
+        tags.Should().Contain("public const string Sri = \"SRI\";");
+        documentEndpoints.Should().Contain(".WithTags(SwaggerTags.Sri)");
+        txtImportEndpoints.Should().Contain(".WithTags(SwaggerTags.Sri)");
     }
 
     [Fact]

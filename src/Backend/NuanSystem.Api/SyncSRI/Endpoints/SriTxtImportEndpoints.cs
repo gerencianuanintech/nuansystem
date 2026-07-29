@@ -2,6 +2,7 @@ using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using NuanSystem.Api.Extensions;
+using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Features.SriTxtImports;
 using NuanSystem.Application.Features.SriTxtImports.Commands;
 using NuanSystem.Application.Features.SriTxtImports.Dtos;
@@ -16,7 +17,8 @@ public static class SriTxtImportEndpoints
 
     public static IEndpointRouteBuilder MapSriTxtImportEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/sri/txt-imports");
+        var group = app.MapGroup("/api/sri/txt-imports")
+            .WithTags(SwaggerTags.Sri);
 
         group.MapGet(
                 "",

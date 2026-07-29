@@ -12,10 +12,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="SriTxtImports\SriTxtImportFilterDialog.cs">
+    <Compile Update="SyncSRI\SriTxtImports\SriTxtImportFilterDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="SriTxtImports\SriTxtImportForm.cs">
+    <Compile Update="SyncSRI\SriTxtImports\SriTxtImportForm.cs">
       <SubType>Form</SubType>
     </Compile>
   </ItemGroup>

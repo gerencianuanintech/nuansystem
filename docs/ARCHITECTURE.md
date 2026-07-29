@@ -10,6 +10,10 @@
 `SapIntegration` encapsula Service Layer y DI API para que SAP sea opcional.  
 `Shared` contiene contratos seguros para compartir entre API y frontend.
 
+Los componentes del vertical SRI se agrupan fisicamente bajo `SyncSRI` dentro de
+cada proyecto/capa. Esta organizacion no mezcla responsabilidades: API,
+Application, Persistence, Worker y WinForms conservan sus limites y proyectos.
+
 ## Flujo multiempresa
 
 1. El usuario inicia sesion contra la API.

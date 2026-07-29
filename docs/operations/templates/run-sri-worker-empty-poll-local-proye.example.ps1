@@ -25,7 +25,7 @@ if ($windowsIdentity -match "CodexSandboxOffline") {
     throw "Esta validacion debe ejecutarse desde una consola PowerShell normal del usuario Windows, no desde Codex."
 }
 
-$workerDirectory = Join-Path $RepositoryRoot "src\Backend\NuanSystem.SriWorker"
+$workerDirectory = Join-Path $RepositoryRoot "src\Backend\SyncSRI\NuanSystem.SriWorker"
 $workerDll = Join-Path $workerDirectory "bin\Debug\net9.0\NuanSystem.SriWorker.dll"
 $localSettingsPath = Join-Path $workerDirectory "appsettings.Local.json"
 

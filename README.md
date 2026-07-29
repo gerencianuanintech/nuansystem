@@ -11,11 +11,13 @@ Solucion empresarial modular para API REST .NET, frontend Windows Forms con DevE
 - `src/Backend/NuanSystem.Persistence`: DbContexts, conexiones dinamicas, repositorios, migraciones y scripts SQL.
 - `src/Backend/NuanSystem.SapIntegration`: clientes SAP Service Layer/DI API, envio de documentos y manejo de sincronizacion.
 - `src/Backend/NuanSystem.Shared`: contratos compartidos, respuestas estandarizadas, constantes y enums.
+- `src/Backend/SyncSRI`: componentes backend exclusivos de sincronizacion SRI, incluido `NuanSystem.SriWorker`.
 - `src/Frontend/NuanSystem.WinForms`: aplicacion ejecutable, composicion, sesion, tema y arranque.
 - `src/Frontend/NuanSystem.WinForms.Services`: servicios HTTP reutilizables para consumir la API.
 - `src/Frontend/NuanSystem.WinForms.ViewModels`: estado y logica de presentacion sin reglas de negocio.
 - `src/Frontend/NuanSystem.WinForms.Forms`: formularios XtraForm por modulo.
 - `src/Frontend/NuanSystem.WinForms.Controls`: controles reutilizables, grillas, editores y navegacion.
+- `src/Frontend/*/SyncSRI`: formularios, servicios y ViewModels exclusivos del modulo SRI, separados dentro de cada proyecto frontend.
 - `database/sql`: scripts SQL iniciales, master database y objetos por tenant.
 - `docs`: documentacion tecnica de arquitectura, despliegue y decisiones.
 

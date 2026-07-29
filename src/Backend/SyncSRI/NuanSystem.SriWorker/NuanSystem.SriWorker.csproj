@@ -15,10 +15,10 @@
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NuanSystem.Application\NuanSystem.Application.csproj" />
-    <ProjectReference Include="..\NuanSystem.Infrastructure\NuanSystem.Infrastructure.csproj" />
-    <ProjectReference Include="..\NuanSystem.Persistence\NuanSystem.Persistence.csproj" />
-    <ProjectReference Include="..\NuanSystem.Shared\NuanSystem.Shared.csproj" />
+    <ProjectReference Include="..\..\NuanSystem.Application\NuanSystem.Application.csproj" />
+    <ProjectReference Include="..\..\NuanSystem.Infrastructure\NuanSystem.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\NuanSystem.Persistence\NuanSystem.Persistence.csproj" />
+    <ProjectReference Include="..\..\NuanSystem.Shared\NuanSystem.Shared.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Update="appsettings.Local.json" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />

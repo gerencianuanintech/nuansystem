@@ -78,6 +78,7 @@ public sealed class SriTxtImportSqlContractTests
             "src",
             "Backend",
             "NuanSystem.Api",
+            "SyncSRI",
             "Endpoints",
             "SriTxtImportEndpoints.cs");
 
@@ -208,6 +209,7 @@ public sealed class SriTxtImportSqlContractTests
             "src",
             "Backend",
             "NuanSystem.Api",
+            "SyncSRI",
             "Endpoints",
             "SriTxtImportEndpoints.cs");
 
@@ -224,6 +226,7 @@ public sealed class SriTxtImportSqlContractTests
             "src",
             "Backend",
             "NuanSystem.Persistence",
+            "SyncSRI",
             "Repositories",
             "SriTxtImportRepository.cs");
 

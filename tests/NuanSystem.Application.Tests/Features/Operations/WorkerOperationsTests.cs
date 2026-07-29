@@ -161,16 +161,16 @@ public sealed class WorkerOperationsTests
     [Fact]
     public void ApiUiAndTemplates_KeepProtectedSafeBoundaries()
     {
-        var endpoint=Read("src","Backend","NuanSystem.Api","Endpoints","SriDocumentEndpoints.cs");
+        var endpoint=Read("src","Backend","NuanSystem.Api","SyncSRI","Endpoints","SriDocumentEndpoints.cs");
         endpoint.Should().Contain("/monitor/worker-health").And.Contain("PermissionCodes.SriWorkerHealthView");
         var models=Read("src","Backend","NuanSystem.Application","Features","Operations","WorkerHeartbeatModels.cs");
         models.Should().NotContain("ConnectionString").And.NotContain("AccessKey").And.NotContain("XmlContent");
-        var form=Read("src","Frontend","NuanSystem.WinForms.Forms","SriDocuments","SriDocumentMonitorForm.cs");
-        var designer=Read("src","Frontend","NuanSystem.WinForms.Forms","SriDocuments","SriDocumentMonitorForm.Designer.cs");
+        var form=Read("src","Frontend","NuanSystem.WinForms.Forms","SyncSRI","SriDocuments","SriDocumentMonitorForm.cs");
+        var designer=Read("src","Frontend","NuanSystem.WinForms.Forms","SyncSRI","SriDocuments","SriDocumentMonitorForm.Designer.cs");
         form.Should().Contain("RenderWorkerHealth").And.Contain("lblWorkerHealth")
             .And.Contain("viewModel.WorkerHealthText");
-        designer.Should().Contain("workerTab").And.Contain("DockStyle.Fill").And.Contain("AutoScaleMode=AutoScaleMode.Font")
-            .And.Contain("MinimumSize=new Size(980,650)");
+        designer.Should().Contain("workerTab").And.Contain("DockStyle.Fill").And.Contain("AutoScaleMode = AutoScaleMode.Font")
+            .And.Contain("MinimumSize = new Size(980, 650)");
         var templates=Directory.GetFiles(Path.Combine(Root(),"docs","operations","templates","sri-worker"),"*.ps1");
         templates.Should().HaveCount(6);
         templates.Select(File.ReadAllText).Should().OnlyContain(x=>!x.Contains("TrustServerCertificate=true",StringComparison.OrdinalIgnoreCase));
@@ -179,8 +179,8 @@ public sealed class WorkerOperationsTests
     [Fact]
     public void ShutdownContract_ClosesGateBeforeBaseStopAndKeepsLeaseRecoveryProcedure()
     {
-        var background=Read("src","Backend","NuanSystem.SriWorker","Workers","SriBackgroundWorker.cs");
-        var processor=Read("src","Backend","NuanSystem.SriWorker","Services","SriWorkerProcessor.cs");
+        var background=Read("src","Backend","SyncSRI","NuanSystem.SriWorker","Workers","SriBackgroundWorker.cs");
+        var processor=Read("src","Backend","SyncSRI","NuanSystem.SriWorker","Services","SriWorkerProcessor.cs");
         var tenantWorker=Read("database","sql","117_tenant_sri_worker_and_document_store.sql");
         background.IndexOf("runtime.StopClaims()",StringComparison.Ordinal).Should().BeLessThan(background.IndexOf("base.StopAsync",StringComparison.Ordinal));
         processor.Should().Contain("!executionGate.CanClaim").And.Contain("cancellationToken.IsCancellationRequested");
