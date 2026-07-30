@@ -9,5 +9,8 @@ public sealed record SapSyncLockDto(
     SapSyncDirection Direction,
     string WorkerInstance,
     string CorrelationId,
+    Guid? ExecutionUid,
+    string OwnerToken,
     DateTime LockedAtUtc,
-    DateTime ExpiresAtUtc);
+    DateTime? RenewedAtUtc,
+    DateTime LockExpiresAtUtc);

@@ -1,3 +1,4 @@
+using System.Data;
 using Dapper;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.SapSync;
@@ -8,24 +9,85 @@ namespace NuanSystem.Persistence.Repositories.SapSync;
 
 public sealed class SapSyncLockRepository(ITenantConnectionFactory connectionFactory) : ISapSyncLockRepository
 {
-    public async Task<SapSyncLockDto?> TryAcquireAsync(int companyId, string entityCode, SapSyncDirection direction, string workerInstance, string correlationId, DateTime expiresAtUtc, CancellationToken cancellationToken = default)
+    internal const string AcquireProcedure = "dbo.SP_NA_POST_SAPSYNCLOCKADQUIRIR";
+    internal const string RenewProcedure = "dbo.SP_NA_PATCH_SAPSYNCLOCKRENOVAR";
+    internal const string ReleaseProcedure = "dbo.SP_NA_DELETE_SAPSYNCLOCKLIBERAR";
+    internal const string ReleaseExpiredProcedure = "dbo.SP_NA_DELETE_SAPSYNCLOCKLIBERARVENCIDO";
+
+    public async Task<SapSyncLockDto?> TryAcquireAsync(
+        int companyId,
+        string entityCode,
+        SapSyncDirection direction,
+        string workerInstance,
+        string correlationId,
+        Guid? executionUid,
+        string ownerToken,
+        DateTime lockExpiresAtUtc,
+        CancellationToken cancellationToken = default)
     {
-        const string sql = """
-DELETE FROM dbo.SapSyncLock WHERE CompanyId=@CompanyId AND EntityCode=@EntityCode AND Direction=@Direction AND ExpiresAt <= SYSUTCDATETIME();
-IF NOT EXISTS (SELECT 1 FROM dbo.SapSyncLock WITH (UPDLOCK, HOLDLOCK) WHERE CompanyId=@CompanyId AND EntityCode=@EntityCode AND Direction=@Direction)
-BEGIN
-    INSERT INTO dbo.SapSyncLock (CompanyId, EntityCode, Direction, WorkerInstance, CorrelationId, ExpiresAt)
-    OUTPUT INSERTED.Id, INSERTED.CompanyId, INSERTED.EntityCode, INSERTED.Direction, INSERTED.WorkerInstance, INSERTED.CorrelationId, INSERTED.LockedAt AS LockedAtUtc, INSERTED.ExpiresAt AS ExpiresAtUtc
-    VALUES (@CompanyId, @EntityCode, @Direction, @WorkerInstance, @CorrelationId, @ExpiresAtUtc);
-END;
-""";
         using var connection = connectionFactory.CreateConnection();
-        return await connection.QuerySingleOrDefaultAsync<SapSyncLockDto>(new CommandDefinition(sql, new { CompanyId = companyId, EntityCode = entityCode, Direction = direction.ToString(), WorkerInstance = workerInstance, CorrelationId = correlationId, ExpiresAtUtc = expiresAtUtc }, cancellationToken: cancellationToken));
+        return await connection.QuerySingleOrDefaultAsync<SapSyncLockDto>(new CommandDefinition(
+            AcquireProcedure,
+            new
+            {
+                CompanyId = companyId,
+                EntityCode = entityCode.Trim(),
+                Direction = direction.ToString(),
+                WorkerInstance = workerInstance.Trim(),
+                CorrelationId = correlationId.Trim(),
+                ExecutionUid = executionUid,
+                OwnerToken = ownerToken.Trim(),
+                LockExpiresAtUtc = lockExpiresAtUtc
+            },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
     }
 
-    public async Task ReleaseAsync(long id, string workerInstance, string correlationId, CancellationToken cancellationToken = default)
+    public async Task<bool> RenewAsync(
+        long id,
+        string ownerToken,
+        DateTime lockExpiresAtUtc,
+        CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        await connection.ExecuteAsync(new CommandDefinition("DELETE FROM dbo.SapSyncLock WHERE Id=@Id AND WorkerInstance=@WorkerInstance AND CorrelationId=@CorrelationId;", new { Id = id, WorkerInstance = workerInstance, CorrelationId = correlationId }, cancellationToken: cancellationToken));
+        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            RenewProcedure,
+            new { Id = id, OwnerToken = ownerToken.Trim(), LockExpiresAtUtc = lockExpiresAtUtc },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken)) > 0;
+    }
+
+    public async Task ReleaseAsync(
+        long id,
+        string ownerToken,
+        CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            ReleaseProcedure,
+            new { Id = id, OwnerToken = ownerToken.Trim() },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+    }
+
+    public async Task<bool> ReleaseExpiredAsync(
+        long id,
+        string reason,
+        int? auditUserId,
+        string? auditUserName,
+        CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            ReleaseExpiredProcedure,
+            new
+            {
+                Id = id,
+                Reason = reason.Trim(),
+                AuditUserId = auditUserId,
+                AuditUserName = string.IsNullOrWhiteSpace(auditUserName) ? null : auditUserName.Trim()
+            },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken)) > 0;
     }
 }

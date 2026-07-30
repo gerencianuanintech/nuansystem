@@ -54,6 +54,14 @@ public static class SapSyncSafeErrorClasses
     public const string Approval = "Approval";
 }
 
+public static class SapSyncApprovedSnapshotTypes
+{
+    public const string SupplierV1 = "SupplierV1";
+    public const string ItemV1 = "ItemV1";
+    public const string PaymentTermV1 = "PaymentTermV1";
+    public const string WarehouseV1 = "WarehouseV1";
+}
+
 public sealed record SapSyncExecutionFilter(
     long? SapSyncProfileId,
     string? EntityCode,
@@ -191,6 +199,7 @@ public sealed record SapSyncExecutionDetailData(
     string? ErrorClass,
     string? ResultCode,
     string? SafeMessage,
+    string? ApprovedSnapshotType,
     string? ApprovedSnapshotJson,
     byte[]? SnapshotHash,
     DateTime? StartedAtUtc,
@@ -211,6 +220,7 @@ public sealed record SapSyncExecutionDetailClaim(
     string Status,
     int AttemptCount,
     int MaxAttempts,
+    string? ApprovedSnapshotType,
     string? ApprovedSnapshotJson,
     byte[]? SnapshotHash,
     string OwnerToken,
