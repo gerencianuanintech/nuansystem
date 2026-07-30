@@ -13,6 +13,7 @@ public sealed class SapSyncProfileRepository(IMasterConnectionFactory connection
     internal const string SearchProcedure = "dbo.SP_NA_GET_SAPSYNCPROFILEPAGINAR";
     internal const string GetByIdProcedure = "dbo.SP_NA_GET_SAPSYNCPROFILEBUSCARPORID";
     internal const string CapabilitiesProcedure = "dbo.SP_NA_GET_SAPSYNCHANDLERCAPABILITYLISTAR";
+    internal const string CompanyAccessProcedure = "dbo.SP_NA_GET_SAPSYNCPROFILEEMPRESASACCESIBLES";
     internal const string CreateProcedure = "dbo.SP_NA_POST_SAPSYNCPROFILECREAR";
     internal const string UpdateProcedure = "dbo.SP_NA_PUT_SAPSYNCPROFILEACTUALIZAR";
     internal const string SetActiveProcedure = "dbo.SP_NA_PATCH_SAPSYNCPROFILEACTIVAR";
@@ -90,33 +91,12 @@ public sealed class SapSyncProfileRepository(IMasterConnectionFactory connection
         int? companyId = null,
         CancellationToken cancellationToken = default)
     {
-        const string sql = """
-SELECT
-    company.Id AS CompanyId,
-    company.Code AS CompanyCode,
-    company.CommercialName AS CompanyName,
-    company.IsActive AS IsCompanyActive,
-    company.SapIntegrationMode,
-    CONVERT(bit, CASE WHEN settings.Id IS NULL THEN 0 ELSE 1 END) AS HasSapSettings,
-    CONVERT(bit, COALESCE(settings.IsEnabled, 0)) AS IsSapEnabled,
-    COALESCE(settings.IntegrationMode, 0) AS SapSettingsIntegrationMode,
-    CONVERT(bit, CASE WHEN userCompany.UserId IS NULL THEN 0 ELSE 1 END) AS IsUserAuthorized
-FROM dbo.Companies company
-LEFT JOIN dbo.SapCompanySettings settings ON settings.CompanyId = company.Id
-LEFT JOIN dbo.UserCompanies userCompany
-    ON userCompany.CompanyId = company.Id
-   AND userCompany.UserId = @UserId
-   AND userCompany.IsActive = 1
-WHERE (@CompanyId IS NULL OR company.Id = @CompanyId)
-ORDER BY company.CommercialName, company.Code;
-""";
-
         using var connection = connectionFactory.CreateConnection();
-        var rows = await connection.QueryAsync<SapSyncProfileCompanyAccessDto>(
-            new CommandDefinition(
-                sql,
-                new { UserId = userId, CompanyId = companyId },
-                cancellationToken: cancellationToken));
+        var rows = await connection.QueryAsync<SapSyncProfileCompanyAccessDto>(new CommandDefinition(
+            CompanyAccessProcedure,
+            new { UserId = userId, CompanyId = companyId },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
         return rows.AsList();
     }
 
