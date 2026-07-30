@@ -16,6 +16,11 @@ public interface ISapSyncProfileRepository
         bool activeOnly,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyCollection<SapSyncProfileCompanyAccessDto>> GetCompanyAccessAsync(
+        int userId,
+        int? companyId = null,
+        CancellationToken cancellationToken = default);
+
     Task<SapSyncProfileWriteResult> CreateAsync(
         SapSyncProfileAggregate profile,
         CancellationToken cancellationToken = default);

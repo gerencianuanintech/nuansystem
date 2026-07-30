@@ -11,6 +11,7 @@ using NuanSystem.Application.Common;
 using NuanSystem.Application.Common.Behaviors;
 using NuanSystem.Application.Features.SapSync.Handlers;
 using NuanSystem.Application.Features.SapSync.Services;
+using NuanSystem.Application.Features.SapSync.Profiles.Services;
 using NuanSystem.Application.Features.Operations;
 using NuanSystem.Application.Features.SriDocuments.Services;
 using NuanSystem.Application.Features.SriTxtImports.Services;
@@ -56,6 +57,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<ISapSyncWatermarkService, SapSyncWatermarkService>();
         services.AddScoped<ISapSyncLogService, SapSyncLogService>();
         services.AddScoped<ISapSyncRetryPolicy, SapSyncRetryPolicy>();
+        services.AddScoped<ISapSyncProfileValidationService, SapSyncProfileValidationService>();
         services.AddScoped<IWorkerHeartbeatService, WorkerHeartbeatService>();
         services.AddScoped<ISapSyncEntityHandler, SapSupplierSyncHandler>();
         services.AddScoped<ISapSyncEntityHandler, SapItemSyncHandler>();

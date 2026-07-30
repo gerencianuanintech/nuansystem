@@ -32,6 +32,17 @@ public static class SapSyncProfilePersistenceCodes
     public const string InvalidSchedule = "InvalidSchedule";
 }
 
+public sealed record SapSyncProfileCompanyAccessDto(
+    int CompanyId,
+    string CompanyCode,
+    string CompanyName,
+    bool IsCompanyActive,
+    int SapIntegrationMode,
+    bool HasSapSettings,
+    bool IsSapEnabled,
+    int SapSettingsIntegrationMode,
+    bool IsUserAuthorized);
+
 public sealed record SapSyncProfileFilter(
     int? CompanyId,
     string? Search,

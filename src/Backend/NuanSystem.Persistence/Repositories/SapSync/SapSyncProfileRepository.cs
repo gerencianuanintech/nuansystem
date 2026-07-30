@@ -85,6 +85,41 @@ public sealed class SapSyncProfileRepository(IMasterConnectionFactory connection
         return rows.AsList();
     }
 
+    public async Task<IReadOnlyCollection<SapSyncProfileCompanyAccessDto>> GetCompanyAccessAsync(
+        int userId,
+        int? companyId = null,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+SELECT
+    company.Id AS CompanyId,
+    company.Code AS CompanyCode,
+    company.CommercialName AS CompanyName,
+    company.IsActive AS IsCompanyActive,
+    company.SapIntegrationMode,
+    CONVERT(bit, CASE WHEN settings.Id IS NULL THEN 0 ELSE 1 END) AS HasSapSettings,
+    CONVERT(bit, COALESCE(settings.IsEnabled, 0)) AS IsSapEnabled,
+    COALESCE(settings.IntegrationMode, 0) AS SapSettingsIntegrationMode,
+    CONVERT(bit, CASE WHEN userCompany.UserId IS NULL THEN 0 ELSE 1 END) AS IsUserAuthorized
+FROM dbo.Companies company
+LEFT JOIN dbo.SapCompanySettings settings ON settings.CompanyId = company.Id
+LEFT JOIN dbo.UserCompanies userCompany
+    ON userCompany.CompanyId = company.Id
+   AND userCompany.UserId = @UserId
+   AND userCompany.IsActive = 1
+WHERE (@CompanyId IS NULL OR company.Id = @CompanyId)
+ORDER BY company.CommercialName, company.Code;
+""";
+
+        using var connection = connectionFactory.CreateConnection();
+        var rows = await connection.QueryAsync<SapSyncProfileCompanyAccessDto>(
+            new CommandDefinition(
+                sql,
+                new { UserId = userId, CompanyId = companyId },
+                cancellationToken: cancellationToken));
+        return rows.AsList();
+    }
+
     public Task<SapSyncProfileWriteResult> CreateAsync(
         SapSyncProfileAggregate profile,
         CancellationToken cancellationToken = default)
