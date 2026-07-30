@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
+using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Features.Sync.Configuration.Commands;
 using NuanSystem.Application.Features.Sync.Configuration.Dtos;
 using NuanSystem.Application.Features.Sync.Configuration.Queries;
@@ -17,7 +18,10 @@ public static class SyncConfigurationEndpoints
 {
     public static IEndpointRouteBuilder MapSyncConfigurationEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/sync/configuration/profiles", async (
+        var group = app.MapGroup(string.Empty)
+            .WithTags(SwaggerTags.MatrixBranchSynchronization);
+
+        group.MapGet("/api/sync/configuration/profiles", async (
             string? search,
             int? companyId,
             bool? isActive,
@@ -41,7 +45,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationView);
 
-        app.MapGet("/api/sync/configuration/profiles/{id:int}", async (
+        group.MapGet("/api/sync/configuration/profiles/{id:int}", async (
             int id,
             ClaimsPrincipal user,
             ISender sender,
@@ -57,7 +61,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationView);
 
-        app.MapGet("/api/sync/configuration/catalog", async (
+        group.MapGet("/api/sync/configuration/catalog", async (
             ClaimsPrincipal user,
             ISender sender,
             CancellationToken cancellationToken) =>
@@ -72,7 +76,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationView);
 
-        app.MapPost("/api/sync/configuration/profiles", async (
+        group.MapPost("/api/sync/configuration/profiles", async (
             SaveSyncProfileRequest request,
             ClaimsPrincipal user,
             ISender sender,
@@ -86,7 +90,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationCreate);
 
-        app.MapPut("/api/sync/configuration/profiles/{id:int}", async (
+        group.MapPut("/api/sync/configuration/profiles/{id:int}", async (
             int id,
             SaveSyncProfileRequest request,
             ClaimsPrincipal user,
@@ -99,7 +103,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationEdit);
 
-        app.MapDelete("/api/sync/configuration/profiles/{id:int}", async (
+        group.MapDelete("/api/sync/configuration/profiles/{id:int}", async (
             int id,
             ClaimsPrincipal user,
             ISender sender,
@@ -111,7 +115,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationDelete);
 
-        app.MapPost("/api/sync/configuration/profiles/validate", async (
+        group.MapPost("/api/sync/configuration/profiles/validate", async (
             SaveSyncProfileRequest request,
             ClaimsPrincipal user,
             ISender sender,
@@ -127,7 +131,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationValidate);
 
-        app.MapPost("/api/sync/configuration/profiles/{id:int}/validate", async (
+        group.MapPost("/api/sync/configuration/profiles/{id:int}/validate", async (
             int id,
             SaveSyncProfileRequest? request,
             ClaimsPrincipal user,
@@ -147,7 +151,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationValidate);
 
-        app.MapPost("/api/sync/configuration/profiles/{id:int}/activate", async (
+        group.MapPost("/api/sync/configuration/profiles/{id:int}/activate", async (
             int id,
             ClaimsPrincipal user,
             ISender sender,
@@ -159,7 +163,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationActivate);
 
-        app.MapPost("/api/sync/configuration/profiles/{id:int}/deactivate", async (
+        group.MapPost("/api/sync/configuration/profiles/{id:int}/deactivate", async (
             int id,
             ClaimsPrincipal user,
             ISender sender,
@@ -171,7 +175,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationActivate);
 
-        app.MapPost("/api/sync/configuration/profiles/{id:int}/execute", async (
+        group.MapPost("/api/sync/configuration/profiles/{id:int}/execute", async (
             int id,
             ExecuteSyncProfileRequest request,
             ClaimsPrincipal user,
@@ -186,7 +190,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationExecute);
 
-        app.MapGet("/api/sync/configuration/executions", async (
+        group.MapGet("/api/sync/configuration/executions", async (
             int? profileId,
             string? status,
             string? executionType,
@@ -204,7 +208,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationViewExecutions);
 
-        app.MapGet("/api/sync/configuration/executions/{id:int}", async (
+        group.MapGet("/api/sync/configuration/executions/{id:int}", async (
             int id,
             ISender sender,
             CancellationToken cancellationToken) =>
@@ -214,7 +218,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationViewExecutions);
 
-        app.MapPost("/api/sync/configuration/executions/{id:int}/cancel", async (
+        group.MapPost("/api/sync/configuration/executions/{id:int}/cancel", async (
             int id,
             ClaimsPrincipal user,
             ISender sender,
@@ -226,7 +230,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationCancel);
 
-        app.MapPost("/api/sync/configuration/executions/{id:int}/retry", async (
+        group.MapPost("/api/sync/configuration/executions/{id:int}/retry", async (
             int id,
             ClaimsPrincipal user,
             ISender sender,
@@ -238,7 +242,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationRetry);
 
-        app.MapGet("/api/sync/configuration/distribution-policies/{matrixId:int}", async (
+        group.MapGet("/api/sync/configuration/distribution-policies/{matrixId:int}", async (
             int matrixId,
             ClaimsPrincipal user,
             ISender sender,
@@ -254,7 +258,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationView);
 
-        app.MapGet("/api/sync/configuration/distribution-policies/catalog/{entityCode}", async (
+        group.MapGet("/api/sync/configuration/distribution-policies/catalog/{entityCode}", async (
             string entityCode,
             ISender sender,
             CancellationToken cancellationToken) =>
@@ -264,7 +268,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationView);
 
-        app.MapGet("/api/sync/configuration/distribution-policies/{matrixId:int}/candidates", async (
+        group.MapGet("/api/sync/configuration/distribution-policies/{matrixId:int}/candidates", async (
             int matrixId,
             string? search,
             int? take,
@@ -284,7 +288,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationView);
 
-        app.MapPut("/api/sync/configuration/distribution-policies/{matrixId:int}", async (
+        group.MapPut("/api/sync/configuration/distribution-policies/{matrixId:int}", async (
             int matrixId,
             SaveSyncDistributionPolicyRequest request,
             ClaimsPrincipal user,
@@ -298,7 +302,7 @@ public static class SyncConfigurationEndpoints
         })
         .RequirePermission(PermissionCodes.SyncConfigurationEdit);
 
-        app.MapPost("/api/sync/configuration/distribution-policies/{matrixId:int}/preview", async (
+        group.MapPost("/api/sync/configuration/distribution-policies/{matrixId:int}/preview", async (
             int matrixId,
             PreviewSyncDistributionPolicyRequest request,
             ClaimsPrincipal user,
