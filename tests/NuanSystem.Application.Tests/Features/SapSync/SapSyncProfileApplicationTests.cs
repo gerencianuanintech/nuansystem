@@ -205,7 +205,63 @@ public sealed class SapSyncProfileApplicationTests
 
         result.IsSuccess.Should().BeTrue();
         captured!.IsActive.Should().BeTrue("la actualizacion general no cambia el estado del perfil");
+        captured.CompanyId.Should().Be(1);
         captured.RowVersion.Should().Equal(Version(1));
+        await repository.Received(1)
+            .UpdateAsync(Arg.Any<SapSyncProfileAggregate>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Update_RejectsCompanyChangeBeforeBuildingOrWritingAggregate()
+    {
+        var (repository, service) = ValidService();
+        repository.GetByIdAsync(9, Arg.Any<CancellationToken>()).Returns(Detail());
+        var handler = new UpdateSapSyncProfileCommandHandler(repository, service);
+        var request = Profile(Entity()) with { CompanyId = 2 };
+
+        var result = await handler.Handle(
+            new UpdateSapSyncProfileCommand(
+                9,
+                new UpdateSapSyncProfileRequest(request, Version(1)),
+                UserId,
+                UserId,
+                "tester"),
+            CancellationToken.None);
+
+        result.Errors.Should().ContainSingle(error =>
+            error.Code == SapSyncProfileErrorCodes.CompanyImmutable
+            && error.Field == "CompanyId");
+        await repository.DidNotReceive()
+            .GetHandlerCapabilitiesAsync(Arg.Any<bool>(), Arg.Any<CancellationToken>());
+        await repository.DidNotReceive()
+            .UpdateAsync(Arg.Any<SapSyncProfileAggregate>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Update_MapsPersistenceCompanyImmutableToStableFunctionalError()
+    {
+        var (repository, service) = ValidService();
+        repository.GetByIdAsync(9, Arg.Any<CancellationToken>()).Returns(Detail());
+        repository.UpdateAsync(
+                Arg.Any<SapSyncProfileAggregate>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new SapSyncProfileWriteResult(
+                9,
+                SapSyncProfilePersistenceCodes.CompanyImmutable,
+                null));
+        var handler = new UpdateSapSyncProfileCommandHandler(repository, service);
+
+        var result = await handler.Handle(
+            new UpdateSapSyncProfileCommand(
+                9,
+                new UpdateSapSyncProfileRequest(Profile(Entity()), Version(1)),
+                UserId,
+                UserId,
+                "tester"),
+            CancellationToken.None);
+
+        result.Errors.Should().ContainSingle(error =>
+            error.Code == SapSyncProfileErrorCodes.CompanyImmutable);
     }
 
     [Fact]

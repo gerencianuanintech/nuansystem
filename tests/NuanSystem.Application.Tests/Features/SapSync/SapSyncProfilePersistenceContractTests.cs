@@ -9,12 +9,14 @@ namespace NuanSystem.Application.Tests.Features.SapSync;
 public sealed class SapSyncProfilePersistenceContractTests
 {
     private const string MasterMigration = "152_master_sap_sync_profiles.sql";
+    private const string HardeningMigration = "154_master_sap_sync_profile_api_hardening.sql";
     private const string TenantMigration = "153_tenant_sap_sync_execution_history.sql";
 
     [Fact]
     public void Migrations_AreVersionedOrderedAndStructurallyIdempotent()
     {
         var master = MasterSql();
+        var hardening = HardeningSql();
         var tenant = TenantSql();
         var masterInitializer = Read(
             "src", "Backend", "NuanSystem.Persistence", "Services", "SqlServerMasterDatabaseInitializer.cs");
@@ -35,16 +37,85 @@ public sealed class SapSyncProfilePersistenceContractTests
             .And.NotContain("DELETE FROM dbo.SchemaHistory")
             .And.NotContain("UPDATE dbo.SchemaHistory")
             .And.NotContain("DROP TABLE dbo.SapSync");
+        hardening.Should().Contain("Version = N'20260730.154'")
+            .And.Contain("CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_SAPSYNCPROFILEEMPRESASACCESIBLES")
+            .And.Contain("CREATE OR ALTER PROCEDURE dbo.SP_NA_PUT_SAPSYNCPROFILEACTUALIZAR")
+            .And.NotContain("DELETE FROM dbo.MasterSchemaHistory")
+            .And.NotContain("UPDATE dbo.MasterSchemaHistory")
+            .And.NotContain("ALTER TABLE dbo.SapSyncEntitySettings")
+            .And.NotContain("UPDATE dbo.SapSyncEntitySettings")
+            .And.NotContain("INSERT dbo.Permissions")
+            .And.NotContain("INSERT dbo.SecurityOperations")
+            .And.NotContain("INSERT dbo.SecurityForms")
+            .And.NotContain("INSERT dbo.SecurityMenus");
 
         Regex.Matches(master, "CREATE OR ALTER PROCEDURE dbo\\.SP_NA_").Count.Should().Be(7);
+        Regex.Matches(hardening, "CREATE OR ALTER PROCEDURE dbo\\.SP_NA_").Count.Should().Be(2);
         Regex.Matches(tenant, "CREATE OR ALTER PROCEDURE dbo\\.SP_NA_").Count.Should().Be(14);
         Regex.Matches(master, "20260730\\.152").Count.Should().Be(2);
+        Regex.Matches(hardening, "20260730\\.154").Count.Should().Be(2);
         Regex.Matches(tenant, "20260730\\.153").Count.Should().Be(2);
 
         masterInitializer.IndexOf(MasterMigration, StringComparison.Ordinal)
             .Should().BeGreaterThan(masterInitializer.IndexOf("151_master_user_profile_avatar.sql", StringComparison.Ordinal));
+        masterInitializer.IndexOf(HardeningMigration, StringComparison.Ordinal)
+            .Should().BeGreaterThan(masterInitializer.IndexOf(MasterMigration, StringComparison.Ordinal));
         tenantInitializer.IndexOf(TenantMigration, StringComparison.Ordinal)
             .Should().BeGreaterThan(tenantInitializer.IndexOf("150_tenant_sri_document_monitor_import_scope.sql", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void CompanyAccessProcedure_AlignsWithDapperAndPreservesAuthorizationSemantics()
+    {
+        var sql = HardeningSql();
+        var repository = Read(
+            "src", "Backend", "NuanSystem.Persistence", "Repositories", "SapSync", "SapSyncProfileRepository.cs");
+
+        sql.Should().Contain("CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_SAPSYNCPROFILEEMPRESASACCESIBLES")
+            .And.Contain("@UserId int")
+            .And.Contain("@CompanyId int = NULL")
+            .And.Contain("company.Id AS CompanyId")
+            .And.Contain("company.Code AS CompanyCode")
+            .And.Contain("company.CommercialName AS CompanyName")
+            .And.Contain("company.IsActive AS IsCompanyActive")
+            .And.Contain("company.SapIntegrationMode")
+            .And.Contain("AS HasSapSettings")
+            .And.Contain("AS IsSapEnabled")
+            .And.Contain("AS SapSettingsIntegrationMode")
+            .And.Contain("AS IsUserAuthorized")
+            .And.Contain("(@CompanyId IS NULL AND userCompany.UserId IS NOT NULL)")
+            .And.Contain("(@CompanyId IS NOT NULL AND company.Id = @CompanyId)")
+            .And.Contain("CASE WHEN userCompany.UserId IS NULL THEN 0 ELSE 1 END")
+            .And.NotContain("settings.ServiceLayerUrl")
+            .And.NotContain("settings.Password")
+            .And.NotContain("settings.SapUser");
+
+        repository.Should().Contain(
+                "CompanyAccessProcedure = \"dbo.SP_NA_GET_SAPSYNCPROFILEEMPRESASACCESIBLES\"")
+            .And.Contain("new { UserId = userId, CompanyId = companyId }")
+            .And.Contain("commandType: CommandType.StoredProcedure")
+            .And.Contain("cancellationToken: cancellationToken")
+            .And.NotMatchRegex(@"(?im)^\s*(SELECT|FROM|JOIN|WHERE)\b");
+    }
+
+    [Fact]
+    public void UpdateProcedure_RejectsCompanyChangeBeforeMutationOrAudit()
+    {
+        var sql = HardeningSql();
+        var procedure = Regex.Match(
+            sql,
+            @"(?s)CREATE OR ALTER PROCEDURE dbo\.SP_NA_PUT_SAPSYNCPROFILEACTUALIZAR.*?\r?\nGO")
+            .Value;
+        var rejection = procedure.IndexOf("N'CompanyImmutable' AS ResultCode", StringComparison.Ordinal);
+        var transaction = procedure.IndexOf("BEGIN TRANSACTION", StringComparison.Ordinal);
+        var audit = procedure.IndexOf("INSERT dbo.AuditSapSyncProfileChanges", StringComparison.Ordinal);
+
+        rejection.Should().BeGreaterThan(-1);
+        transaction.Should().BeGreaterThan(rejection);
+        audit.Should().BeGreaterThan(transaction);
+        procedure.Should().Contain("AND CompanyId <> @CompanyId")
+            .And.Contain("AND CompanyId = @CompanyId")
+            .And.NotContain("SET CompanyId = @CompanyId");
     }
 
     [Fact]
@@ -199,7 +270,7 @@ public sealed class SapSyncProfilePersistenceContractTests
     [Fact]
     public void PersistenceRepositories_UseStoredProceduresWithAlignedSqlTypes()
     {
-        var masterSql = MasterSql();
+        var masterSql = MasterSql() + Environment.NewLine + HardeningSql();
         var tenantSql = TenantSql();
         var profileRepository = Read(
             "src", "Backend", "NuanSystem.Persistence", "Repositories", "SapSync", "SapSyncProfileRepository.cs");
@@ -208,7 +279,7 @@ public sealed class SapSyncProfilePersistenceContractTests
         var lockRepository = Read(
             "src", "Backend", "NuanSystem.Persistence", "Repositories", "SapSync", "SapSyncLockRepository.cs");
 
-        AssertRepositoryProceduresExist(profileRepository, masterSql, 7);
+        AssertRepositoryProceduresExist(profileRepository, masterSql, 8);
         AssertRepositoryProceduresExist(executionRepository, tenantSql, 10);
         AssertRepositoryProceduresExist(lockRepository, tenantSql, 4);
 
@@ -313,6 +384,7 @@ public sealed class SapSyncProfilePersistenceContractTests
     }
 
     private static string MasterSql() => Read("database", "sql", MasterMigration);
+    private static string HardeningSql() => Read("database", "sql", HardeningMigration);
     private static string TenantSql() => Read("database", "sql", TenantMigration);
 
     private static string Read(params string[] parts) =>

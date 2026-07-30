@@ -177,6 +177,7 @@ public sealed class SapSyncProfileApiContractTests
     [InlineData(SapSyncProfileErrorCodes.NotFound, StatusCodes.Status404NotFound)]
     [InlineData(SapSyncProfileErrorCodes.DuplicateCode, StatusCodes.Status409Conflict)]
     [InlineData(SapSyncProfileErrorCodes.ConcurrencyConflict, StatusCodes.Status409Conflict)]
+    [InlineData(SapSyncProfileErrorCodes.CompanyImmutable, StatusCodes.Status409Conflict)]
     [InlineData(SapSyncProfileErrorCodes.UnsupportedCapability, StatusCodes.Status400BadRequest)]
     public void HttpMapping_ReturnsStableStatusCodes(string errorCode, int expectedStatus)
     {
