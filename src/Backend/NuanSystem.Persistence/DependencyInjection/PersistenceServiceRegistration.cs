@@ -99,6 +99,8 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ISapCatalogMappingRepository, SapCatalogMappingRepository>();
         services.AddScoped<ISapSyncLogRepository, SapSyncLogRepository>();
         services.AddScoped<ISapSyncCompanyRepository, SapSyncCompanyRepository>();
+        services.AddScoped<ISapSyncProfileRepository, SapSyncProfileRepository>();
+        services.AddScoped<ISapSyncExecutionRepository, SapSyncExecutionRepository>();
         services.AddScoped<ISapSyncSettingsRepository, SapSyncSettingsRepository>();
         services.AddScoped<ISapSyncOutboxRepository, SapSyncOutboxRepository>();
         services.AddScoped<ISapSyncInboxRepository, SapSyncInboxRepository>();

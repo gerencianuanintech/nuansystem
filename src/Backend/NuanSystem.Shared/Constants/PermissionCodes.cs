@@ -140,6 +140,18 @@ public static class PermissionCodes
     public const string AccountingManage = "ACCOUNTING.CHARTOFACCOUNTS.MANAGE";
     public const string SapRead = "SAP.SYNC.READ";
     public const string SapManage = "SAP.SYNC.MANAGE";
+    public const string SapSyncProfilesView = "SAP.SYNC.PROFILES.VIEW";
+    public const string SapSyncProfilesCreate = "SAP.SYNC.PROFILES.CREATE";
+    public const string SapSyncProfilesEdit = "SAP.SYNC.PROFILES.EDIT";
+    public const string SapSyncProfilesActivate = "SAP.SYNC.PROFILES.ACTIVATE";
+    public const string SapSyncProfilesDelete = "SAP.SYNC.PROFILES.DELETE";
+    public const string SapSyncProfilesValidate = "SAP.SYNC.PROFILES.VALIDATE";
+    public const string SapSyncProfilesExecute = "SAP.SYNC.PROFILES.EXECUTE";
+    public const string SapSyncExecutionsView = "SAP.SYNC.EXECUTIONS.VIEW";
+    public const string SapSyncExecutionsViewDetail = "SAP.SYNC.EXECUTIONS.VIEW_DETAIL";
+    public const string SapSyncExecutionsRetry = "SAP.SYNC.EXECUTIONS.RETRY";
+    public const string SapSyncExecutionsCancel = "SAP.SYNC.EXECUTIONS.CANCEL";
+    public const string SapSyncExecutionsReleaseExpiredLock = "SAP.SYNC.EXECUTIONS.RELEASE_EXPIRED_LOCK";
     public const string SyncOutboxView = "SYNC.OUTBOX.VIEW";
     public const string SyncAuditView = "SYNC.AUDIT.VIEW";
     public const string SyncOutboxRetry = "SYNC.OUTBOX.RETRY";
@@ -313,6 +325,18 @@ public static class PermissionCodes
         AccountingManage,
         SapRead,
         SapManage,
+        SapSyncProfilesView,
+        SapSyncProfilesCreate,
+        SapSyncProfilesEdit,
+        SapSyncProfilesActivate,
+        SapSyncProfilesDelete,
+        SapSyncProfilesValidate,
+        SapSyncProfilesExecute,
+        SapSyncExecutionsView,
+        SapSyncExecutionsViewDetail,
+        SapSyncExecutionsRetry,
+        SapSyncExecutionsCancel,
+        SapSyncExecutionsReleaseExpiredLock,
         SyncOutboxView,
         SyncAuditView,
         SyncOutboxRetry,
