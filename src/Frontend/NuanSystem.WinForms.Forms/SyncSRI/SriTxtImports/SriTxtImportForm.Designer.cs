@@ -82,6 +82,7 @@ partial class SriTxtImportForm
         cardTotal.Margin = new Padding(4);
         cardTotal.MinimumSize = Size.Empty;
         cardTotal.Name = "cardTotal";
+        cardTotal.Size = new Size(130, 92);
         cardTotal.Title = "FILAS";
 
         cardValid.Description = "Filas válidas";
@@ -91,6 +92,7 @@ partial class SriTxtImportForm
         cardValid.Margin = new Padding(4);
         cardValid.MinimumSize = Size.Empty;
         cardValid.Name = "cardValid";
+        cardValid.Size = new Size(130, 92);
         cardValid.Title = "VÁLIDAS";
 
         cardInvalid.Description = "Incluye duplicadas";
@@ -100,6 +102,7 @@ partial class SriTxtImportForm
         cardInvalid.Margin = new Padding(4);
         cardInvalid.MinimumSize = Size.Empty;
         cardInvalid.Name = "cardInvalid";
+        cardInvalid.Size = new Size(130, 92);
         cardInvalid.Title = "INVÁLIDAS";
 
         cardLinked.Description = "Colas preexistentes";
@@ -109,6 +112,7 @@ partial class SriTxtImportForm
         cardLinked.Margin = new Padding(4);
         cardLinked.MinimumSize = Size.Empty;
         cardLinked.Name = "cardLinked";
+        cardLinked.Size = new Size(130, 92);
         cardLinked.Title = "VINCULADAS";
 
         cardStaged.Description = "Staged";
@@ -118,6 +122,7 @@ partial class SriTxtImportForm
         cardStaged.Margin = new Padding(4);
         cardStaged.MinimumSize = Size.Empty;
         cardStaged.Name = "cardStaged";
+        cardStaged.Size = new Size(130, 92);
         cardStaged.Title = "PREPARADAS";
 
         cardPending.Description = "Pending";
@@ -127,6 +132,7 @@ partial class SriTxtImportForm
         cardPending.Margin = new Padding(4);
         cardPending.MinimumSize = Size.Empty;
         cardPending.Name = "cardPending";
+        cardPending.Size = new Size(130, 92);
         cardPending.Title = "PENDIENTES";
 
         split.Dock = DockStyle.Fill;
@@ -152,7 +158,7 @@ partial class SriTxtImportForm
         ClientSize = new Size(1180, 780);
         Controls.Add(split);
         Controls.Add(kpiPanel);
-        MinimumSize = new Size(1151, 700);
+        MinimumSize = new Size(860, 700);
         Name = "SriTxtImportForm";
         Text = "Importaciones TXT SRI";
 

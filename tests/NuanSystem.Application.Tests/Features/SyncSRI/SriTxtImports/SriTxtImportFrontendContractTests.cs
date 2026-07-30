@@ -241,7 +241,7 @@ public sealed class SriTxtImportFrontendContractTests
             "src", "Frontend", "NuanSystem.WinForms.Forms",
             "Shell", "MainForm.cs");
 
-        shell.Should().Contain(
+        shell.ReplaceLineEndings("\n").Should().Contain(
             ".Where(operation => operation.IsAllowed)\n" +
             "            .Where(operation => !IsBuiltInOperation(operation))");
         shell.Should().NotContain(
@@ -273,7 +273,7 @@ public sealed class SriTxtImportFrontendContractTests
     }
 
     [Fact]
-    public void Form_MinimumWidthPreservesTheSixKpiCardsInOneRow()
+    public void Form_UsesCompactKpiCardsThatFitTheCorporateTabWidth()
     {
         var designer = ReadSourceFile(
             "src", "Frontend", "NuanSystem.WinForms.Forms",
@@ -282,9 +282,11 @@ public sealed class SriTxtImportFrontendContractTests
             "src", "Frontend", "NuanSystem.WinForms.Controls",
             "Kpi", "NuanKpiCardControl.cs");
 
-        designer.Should().Contain("MinimumSize = new Size(1151, 700)");
+        designer.Should().Contain("MinimumSize = new Size(860, 700)");
         designer.Should().Contain("kpiPanel = new TableLayoutPanel()");
         designer.Should().Contain("kpiPanel.ColumnCount = 6");
+        designer.Split("Size = new Size(130, 92)", StringSplitOptions.None)
+            .Should().HaveCount(7);
         designer.Should().Contain("cardPending.Dock = DockStyle.Fill");
         designer.Should().Contain("cardPending.HeaderColor = BrandResources.Primary");
         designer.Should().Contain("cardPending.MinimumSize = Size.Empty");
