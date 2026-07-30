@@ -613,6 +613,8 @@ public sealed class SyncConfigurationContractTests
         endpoints.Should().Contain("PermissionCodes.SyncConfigurationViewExecutions");
         hostedService.Should().Contain("ISyncProfileExecutionService");
         hostedService.Should().Contain("ISyncScheduleCalculator");
+        hostedService.Should().Contain("await Task.Delay(delay, stoppingToken);");
+        hostedService.Should().Contain("catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)");
         hostedService.Should().NotContain("SyncInbox");
         hostedService.Should().NotContain("CreateTargetAsync");
     }
