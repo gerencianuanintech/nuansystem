@@ -4,7 +4,7 @@
 
 - Fecha de discovery: 2026-07-30.
 - Rama de trabajo: `refactor/codex-skills-v10-sap-profiles`.
-- Estado: arquitectura propuesta; no implementada.
+- Estado: arquitectura aprobada; la Fase 10.2 autoriza exclusivamente contratos y persistencia, sin runtime.
 - Fuente SAP del piloto: SAP Business One mediante Service Layer.
 - Único tenant destino del piloto: empresa `DEMO`, base `NuanSystem_DEMO`.
 - Fuera de alcance: `NuanSystem.MasterBranchSyncWorker`, Remigio, Cañaris, SRI, ejecución de SQL, llamadas SAP, inicio de API/WinForms/workers y cambios de código funcional.
@@ -29,6 +29,21 @@ El plan de comprobación correspondiente está en [SAP-WAREHOUSE-SYNC-VALIDATION
 - La agenda de negocio se define por entidad, con disparo `Manual`, `Interval` o `Daily`.
 - `WorkerHeartbeat` continúa siendo la superficie compartida de salud. El perfil y el historial SAP no crean una tabla de heartbeat paralela.
 - La primera automatización de Bodegas es una lectura **Full** SAP → `NuanSystem_DEMO`. No distribuye a sucursales y no llama a SAP desde WinForms.
+
+## Registro de decisiones aprobadas
+
+Decisiones aprobadas por el propietario el 2026-07-30:
+
+1. Una bodega SAP nueva inactiva no se crea en DEMO: queda `Skipped` con código seguro `SAP_WAREHOUSE_INACTIVE`.
+2. La importación conserva la generación normal de `LocalOutbox`; el relay y `NuanSystem.MasterBranchSyncWorker` permanecen apagados en esta fase.
+3. El retry por registro reutiliza `ApprovedSnapshotJson` estrictamente tipado/allowlist y su `SnapshotHash`. Si la lectura Full falla antes de obtener el snapshot, se repite la consulta SAP completa.
+4. `Both` no se muestra en la UI inicial y el backend lo rechaza mientras ambos sentidos no estén explícitamente implementados en el catálogo de capacidades.
+5. El perfil SAP nuevo tiene prioridad. `SapSyncEntitySettings` es fallback de solo lectura únicamente cuando la empresa no tiene perfiles nuevos, mediante feature flag, durante una versión y sin dual-write. Su retiro exige dos ciclos exitosos por cada entidad activa.
+6. Durante desarrollo, los permisos nuevos se conceden únicamente al rol `ADMIN`.
+7. La retención de `SapSyncExecutions` y detalles es indefinida durante desarrollo; no existe purga automática.
+8. Se persisten columnas seguras, `ApprovedSnapshotJson` tipado/allowlist y `SnapshotHash`; nunca respuestas SAP completas, Login, cookies, headers, tokens, usuarios técnicos, contraseñas ni conexiones.
+9. La cancelación cooperativa termina el registro actual, no inicia el siguiente y cierra la ejecución como `Cancelled`.
+10. Una hora Daily inexistente se omite y una hora duplicada se ejecuta una sola vez. Se persiste UTC y `America/Guayaquil` es la zona predeterminada.
 
 ## Discovery Record
 
@@ -66,7 +81,7 @@ El plan de comprobación correspondiente está en [SAP-WAREHOUSE-SYNC-VALIDATION
 
 **Gaps/new code futuros:** vertical SAP Profiles independiente, persistencia Master/tenant, agenda por entidad, ejecuciones por entidad/dirección, detalle por registro, handler programado de Bodegas y UI/seguridad propias.
 
-**Confidence:** alta para el estado actual y el límite de separación; media para las decisiones de migración que requieren aprobación del propietario.
+**Confidence:** alta para el estado actual, el límite de separación y las decisiones de migración aprobadas.
 
 ## Estado actual verificable
 
@@ -178,7 +193,7 @@ El vertical existente es completo y separado:
 | Concurrencia | Lock por empresa/entidad/dirección. | Mismo límite reforzado con ejecución persistida, owner, lease renovable y recuperación. |
 | Batch/retry del setting | Cargado pero no llega a handlers. | Snapshot efectivo por ejecución y detalle; límites aplicados y auditables. |
 | Bodegas programadas | Reader/import manual existe; no handler registrado. | Entidad `Warehouses` registrada en el worker existente. |
-| Direcciones | `Both` puede aparentar bidireccionalidad. | Validación por handler; `Both` solo se habilita si ambos sentidos son operativos. |
+| Direcciones | `Both` puede aparentar bidireccionalidad. | Backend rechaza `Both` y la UI inicial no lo muestra hasta que ambos sentidos sean operativos. |
 | Estados parciales | Resumen de conteos y mensajes. | Cabecera derivada de resultados Created/Updated/Unchanged/ApprovalRequired/Retry/Failed por registro. |
 | Seguridad | `SAP.SYNC.READ` y `SAP.SYNC.MANAGE`. | Contratos SAP Profiles y SAP Executions separados; permisos legado preservados. |
 | UI | Logs SAP; perfiles/ejecuciones solo Matriz–Sucursal. | Dos formularios SAP nuevos, visualmente consistentes y funcionalmente independientes. |
@@ -245,7 +260,7 @@ Invariantes:
 |---|---|
 | `Manual` | No genera ejecuciones automáticas. La API puede crear una ejecución si el usuario tiene permiso. |
 | `Interval` | Requiere `IntervalMinutes`; calcula la próxima ejecución desde la última ejecución programada aceptada, no desde cada poll. |
-| `Daily` | Requiere `ExecutionTime` y `TimeZoneId`; resuelve DST según la zona configurada y guarda UTC. |
+| `Daily` | Requiere `ExecutionTime` y `TimeZoneId`; omite una hora inexistente, ejecuta una sola vez una hora duplicada y guarda UTC. |
 
 `Worker:LoopDelaySeconds` solo determina cada cuánto el host pregunta qué agendas están vencidas. Reducirlo no aumenta la frecuencia de negocio ni modifica `NextExecutionAtUtc`.
 
@@ -313,7 +328,7 @@ Restricciones propuestas: código no vacío, índice único filtrado `(CompanyId
 |---|---|
 | `Id`, `SapSyncProfileId` | Identidad y propietario. |
 | `EntityCode` | Código registrado; Bodegas usará el código aprobado en implementación. |
-| `Direction` | `SapToErp`, `ErpToSap` o `Both`. |
+| `Direction` | `SapToErp` o `ErpToSap`; `Both` se conserva como valor contractual futuro, pero el backend lo rechaza sin capacidad bidireccional explícita. |
 | `SyncMode` | Para Bodegas de esta fase: `Full`. |
 | `BatchSize` | Límite por lote efectivo. |
 | `MaxAttempts` | Intentos máximos, incluido el inicial. |
@@ -386,7 +401,7 @@ La adquisición de una agenda vencida debe actualizar `NextExecutionAtUtc` con c
 | `AttemptCount`, `MaxAttempts`, `NextAttemptAtUtc` | Retry durable y limitado. |
 | `LockedBy`, `LockedAtUtc`, `LockExpiresAtUtc` | Claim por registro si el retry se desacopla del ciclo inicial. |
 | `ResultCode`, `SafeMessage` | Resultado visible saneado. |
-| `ApprovedSnapshotJson`, `SnapshotHash` | Solo campos allowlist de la entidad; opcional y limitado. |
+| `ApprovedSnapshotJson`, `SnapshotHash` | Snapshot tipado/allowlist y hash SHA-256 binario de 32 bytes; ambos opcionales y limitados. |
 | `StartedAtUtc`, `FinishedAtUtc`, `CreatedAt`, `UpdatedAt`, `RowVersion` | Trazabilidad. |
 
 Índice único: `(SapSyncExecutionId, SourceRecordKey)`. Índice de claim: `(Status, NextAttemptAtUtc, LockExpiresAtUtc)`. `ApprovedSnapshotJson` no admite un payload SAP genérico: cada handler construye un DTO allowlist.
@@ -627,8 +642,8 @@ Registro SAP válido (Code + Name)?
                  Sí -> Conflict; nunca adoptar automáticamente
                  No -> SAP activa?
                         Sí -> crear activa con nuevo GlobalId
-                        No -> decisión pendiente del propietario:
-                              importar inactiva o ignorar
+                        No -> Skipped / SAP_WAREHOUSE_INACTIVE
+                              no crear en DEMO
 ```
 
 ## Estrategia de concurrencia
@@ -649,8 +664,8 @@ Registro SAP válido (Code + Name)?
 - Terminal: configuración inválida, datos obligatorios ausentes, conflicto de identidad, validación de dominio.
 - `MaxAttempts` incluye el primer intento.
 - Backoff exponencial acotado con jitter y `NextAttemptAtUtc`.
-- Un retry de transporte antes de obtener el Full reintenta la ejecución.
-- Un retry por registro usa el snapshot allowlist persistido o vuelve a consultar de manera controlada; la estrategia exacta se decide antes de Fase 10.5.
+- Un retry de transporte antes de obtener el Full repite la consulta SAP completa.
+- Un retry por registro reutiliza el `ApprovedSnapshotJson` tipado/allowlist persistido y verifica su `SnapshotHash`.
 - Agotamiento → `DeadLetter`; el reintento manual crea una nueva ejecución hija, conserva el historial y exige motivo.
 - `ApprovalRequired` y `Conflict` no se reintentan automáticamente.
 - Nunca se reintenta un export ERP → SAP no implementado.
@@ -668,7 +683,7 @@ Registro SAP válido (Code + Name)?
 - Campos SAP actualizados: nombre, dirección, ciudad, provincia y país.
 - Campos locales preservados en update: código, descripción, teléfono, email, responsable, flags operativos, default y estado activo.
 - Una SAP inactiva frente a DEMO activa no desactiva automáticamente; hoy el resultado visible es `Unchanged` o `Updated` con mensaje de aprobación manual, no un estado persistido `ApprovalRequired`.
-- Una bodega nueva inactiva se crea actualmente inactiva. El contrato objetivo deja esta política pendiente de aprobación.
+- Una bodega nueva inactiva se crea actualmente inactiva; el contrato objetivo cambia esa política a `Skipped` con código `SAP_WAREHOUSE_INACTIVE`, sin crearla en DEMO.
 - Las pruebas actuales cubren Full paginado, no exposición de credenciales en rutas, conflicto por Code, preservación de estado, identidad SAP, segundo ciclo idempotente y actualización de campos.
 - No existe `ISapSyncEntityHandler` de Bodegas ni `SapSyncEntityCode` para Bodegas; por tanto no está integrada al ciclo programado.
 
@@ -680,7 +695,7 @@ Registro SAP válido (Code + Name)?
 - Preservar `GlobalId`, `Code` local confirmado, descripción, contacto, responsable, flags operativos, default, asignaciones y demás campos locales.
 - No adoptar automáticamente por `Code`.
 - SAP inactiva + DEMO activa → `ApprovalRequired`, sin mutar `IsActive`.
-- Bodega nueva inactiva → decisión pendiente: crear inactiva o ignorar.
+- Bodega nueva inactiva → `Skipped` con `SAP_WAREHOUSE_INACTIVE`; no crear en DEMO.
 - Procesamiento/transacción independiente por registro.
 - Segundo Full sin cambios → `Unchanged`, cero creates/updates y sin duplicar identidad.
 - `DEMO` es el único tenant destino.
@@ -706,7 +721,7 @@ La ausencia de una bodega en el snapshot Full no desactiva ni elimina la bodega 
 4. Si un handler no existe o no soporta la dirección, conservar la fila desactivada y registrar warning de migración.
 5. `PurchaseOrders/Both` debe quedar desactivado porque ambos métodos del handler actual son `NotImplemented`.
 6. Copiar `PaymentTerms` si existe aunque no esté en el seed original; validar import únicamente.
-7. Bodegas no se infiere desde endpoints manuales: se agrega solo en una fase explícita y con decisión de bodega nueva inactiva resuelta.
+7. Bodegas no se infiere desde endpoints manuales: se agrega solo de forma explícita en Fase 10.6.
 8. Guardar versión y auditoría de migración sin credenciales.
 
 ### Compatibilidad hacia atrás
@@ -715,10 +730,10 @@ Orden recomendado:
 
 1. Desplegar tablas/contratos nuevos sin cambiar el reader legado.
 2. Migrar y comparar settings; perfiles nuevos permanecen inactivos/manuales.
-3. Agregar lectura preferente de perfil con fallback a `SapSyncEntitySettings`, controlada por configuración y telemetría.
+3. Agregar lectura preferente de perfil con fallback de solo lectura a `SapSyncEntitySettings` únicamente cuando la empresa no tenga perfiles nuevos, controlado por feature flag y telemetría.
 4. Validar DEMO con worker deshabilitado y ejecución manual de prueba autorizada.
 5. Activar el nuevo scheduler solo después de quality gates.
-6. Deshabilitar fallback cuando no existan consumidores legado.
+6. Deshabilitar el fallback después de una versión y de dos ciclos exitosos por cada entidad activa.
 7. Retirar `SapSyncEntitySettings` únicamente en una fase posterior, con aprobación y script forward-only.
 
 No se propone dual write indefinido. Durante transición, el antiguo settings es solo fallback de lectura; toda edición nueva pertenece al perfil SAP.
@@ -878,24 +893,15 @@ Los archivos nuevos se marcan **propuestos**. Los existentes se citan con su nom
 | Logs admiten JSON arbitrario. | Exposición de secretos/datos sensibles. | DTO allowlist, saneamiento central y pruebas negativas. |
 | Lock sin renovación. | Doble procesamiento si un Full dura más que el lease. | Renewal + progress heartbeat + owner token. |
 | Retry worker actual no reprocesa payload. | Bucle de estados sin recuperación real. | Implementar runner genérico o retirar placeholder antes de activar. |
-| Import Bodega usa comandos que pueden crear `LocalOutbox`. | Eventos downstream no deseados si otro worker se activa. | Validar workers apagados; no promover/crear targets; decidir política de publicación antes de runtime. |
-| Una bodega nueva inactiva tiene política sin aprobar. | Creación/omisión inconsistente. | Bloquear activación de Bodegas hasta decisión. |
+| Import Bodega usa comandos que pueden crear `LocalOutbox`. | Eventos downstream no deseados si otro worker se activa. | Conservar el contrato local; mantener relay y `NuanSystem.MasterBranchSyncWorker` apagados. |
+| El comportamiento actual crea una bodega SAP nueva inactiva. | Divergencia respecto del contrato aprobado. | Fase 10.6 debe convertirla en `Skipped/SAP_WAREHOUSE_INACTIVE` antes de habilitar Bodegas. |
 | Historial Master vs tenant mal delimitado. | Transacciones cruzadas o pérdida de trazabilidad. | Config Master; ejecución snapshot tenant; sin FK cruzada. |
 | UI similar induce al usuario a elegir pipeline incorrecto. | Configuración operacional errónea. | Nombres, FormKeys, menús y captions explícitos SAP/Matriz–Sucursal. |
 | Activación automática al migrar. | Llamadas SAP no autorizadas. | Perfiles/agenda migrados inactivos y Manual. |
 
-## Decisiones pendientes del propietario
+## Autorizaciones posteriores fuera de Fase 10.2
 
-1. **Bodega SAP nueva inactiva:** crearla inactiva en DEMO o ignorarla y registrar `Skipped`.
-2. **Publicación local:** cuando una importación SAP muta Warehouse en DEMO y el comando genera `LocalOutbox`, ¿se conserva esa intención para una futura etapa Matriz–Sucursal o se requiere un modo explícito que no publique? No se resolverá activando el worker en esta fase.
-3. **Retry por registro:** reusar el snapshot allowlist persistido o volver a leer SAP para cada retry.
-4. **Política de `Both`:** mantenerlo como valor visible bloqueado hasta tener ambos sentidos, o eliminarlo de la UI SAP inicial.
-5. **Cutover:** duración del fallback de lectura de `SapSyncEntitySettings` y criterio medible para retirarlo.
-6. **Grants iniciales:** qué roles reciben los nuevos permisos; no asumir ADMIN ni copiar grants Matriz–Sucursal.
-7. **Retención:** plazo para `SapSyncExecutions`/Details y política de archivado; no diseñar purge sin aprobación.
-8. **Datos permitidos:** confirmar allowlist de Bodega y si `ApprovedSnapshotJson` debe persistirse o basta hash + columnas de resultado.
-9. **Cancelación:** si una cancelación manual termina como `Cancelled` después del registro actual o debe esperar el lote actual completo.
-10. **Agenda Daily/DST:** política ante hora inexistente o duplicada; propuesta: saltar la inexistente y ejecutar una sola vez la duplicada.
+No quedan decisiones abiertas de Fase 10.1 para iniciar los contratos y persistencia de Fase 10.2. Cualquier activación, ejecución SQL, runtime, SAP real, incorporación de Bodegas al worker o retiro definitivo del fallback requiere una autorización posterior e independiente.
 
 ## Plan de commits pequeños para Fases 10.2–10.9
 
@@ -924,4 +930,4 @@ La Fase 10.1 crea un único commit documental. Las fases siguientes deben usar c
 | 10.9 | `refactor(sap): retire legacy entity settings fallback` |
 | 10.9 | `docs(sap): finalize SAP profile operations and rollback` |
 
-Cada commit de activación/runtime requiere autorización independiente. Ningún commit de 10.2–10.9 está autorizado por este blueprint.
+La Fase 10.2 está autorizada únicamente para contratos, persistencia, scripts no ejecutados y pruebas. Cada commit de Fases 10.3–10.9, activación o runtime requiere autorización independiente.

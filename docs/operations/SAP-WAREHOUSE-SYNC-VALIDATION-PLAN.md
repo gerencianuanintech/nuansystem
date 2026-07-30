@@ -3,7 +3,7 @@
 ## Estado
 
 - Fecha: 2026-07-30.
-- Estado: plan propuesto; no ejecutado.
+- Estado: plan aprobado con decisiones del propietario registradas; no ejecutado.
 - Documento arquitectónico: [SAP-SYNC-PROFILES-BLUEPRINT.md](../architecture/SAP-SYNC-PROFILES-BLUEPRINT.md).
 - Fuente: SAP Business One Service Layer.
 - Destino único: empresa `DEMO`, base `NuanSystem_DEMO`.
@@ -39,7 +39,7 @@ Demostrar, con evidencia separada por capa, que un perfil SAP independiente pued
 - Propagación efectiva de `BatchSize`/`MaxAttempts` desde perfil.
 - Lease renovable y vínculo lock/ejecución.
 - Formularios/permisos SAP Profiles/Executions.
-- Decisión final para bodega SAP nueva inactiva.
+- Implementación del resultado `Skipped/SAP_WAREHOUSE_INACTIVE` para bodega SAP nueva inactiva.
 
 ## Precondiciones obligatorias para una futura ejecución
 
@@ -52,7 +52,7 @@ No se ejecutará ninguna prueba SQL/runtime hasta que todas estén satisfechas:
    - ventana;
    - worker/API que se iniciará;
    - fixtures si fueran imprescindibles;
-   - decisión sobre bodega nueva inactiva.
+   - habilitación exacta de Bodegas en la fase autorizada;
 3. Backups verificados de `NuanSystem_Master` y `NuanSystem_DEMO`.
 4. `NuanSystem.MasterBranchSyncWorker` apagado.
 5. `LocalSyncOutboxRelay`/relay Matriz–Sucursal apagado.
@@ -90,7 +90,7 @@ Casos mínimos:
 | W3 | vinculada, idéntica | existe | `Unchanged`, cero write. |
 | W4 | mismo Code sin vínculo SAP | existe solo por Code | `Conflict`, no adopción, cero write. |
 | W5 | SAP inactiva | DEMO vinculada activa | `ApprovalRequired`, DEMO sigue activa. |
-| W6 | nueva inactiva | no existe | Resultado según decisión aprobada: `Created` inactiva o `Skipped`. |
+| W6 | nueva inactiva | no existe | `Skipped`, código seguro `SAP_WAREHOUSE_INACTIVE`, cero create. |
 | W7 | código/nombre inválido | no aplicable | `Skipped`/terminal seguro. |
 | W8 | un registro provoca fallo SQL transitorio simulado | otros válidos | éxitos conservados; registro `RetryScheduled`. |
 | W9 | segundo Full | estado posterior a W1–W8 | sin duplicados; W1/W2 `Unchanged` si no cambió SAP. |
@@ -106,7 +106,7 @@ No se crea deliberadamente un conflicto real con una bodega productiva sin aprob
 - Daily convierte `ExecutionTime`/IANA a UTC.
 - `NextExecutionAtUtc` avanza una sola vez por disparo.
 - agenda inactiva o perfil inactivo no crea ejecución.
-- `Both` falla validación si algún sentido no está implementado.
+- `Both` es rechazado por backend y no se muestra en la UI inicial mientras ambos sentidos no estén implementados.
 - orden respeta `ExecutionOrder`.
 - `BatchSize`, `MaxAttempts` y timeout llegan al contexto/ejecución.
 - más entidades/empresas que el límite no sufren starvation.
@@ -135,7 +135,7 @@ No se crea deliberadamente un conflicto real con una bodega productiva sin aprob
 - agotamiento → DeadLetter.
 - retry manual crea ejecución hija y conserva original.
 - cabecera calcula Completed/Warnings/Errors/Failed desde detalles.
-- cancelación detiene nuevos registros en checkpoint.
+- cancelación termina el registro actual, no inicia el siguiente y cierra la ejecución como `Cancelled`.
 
 ### Locks/heartbeat
 
@@ -156,7 +156,7 @@ No se crea deliberadamente un conflicto real con una bodega productiva sin aprob
 5. Simular edición concurrente con `RowVersion`; una debe fallar.
 6. Validar unicidad de código por empresa.
 7. Validar que no existan sucursales/distribution matrices en el contrato.
-8. Activación bloqueada hasta resolver la decisión W6 y validar handler/config.
+8. Activación bloqueada hasta validar handler/config y comprobar `Skipped/SAP_WAREHOUSE_INACTIVE`.
 
 ### Tenant DEMO
 
@@ -169,6 +169,8 @@ No se crea deliberadamente un conflicto real con una bodega productiva sin aprob
 7. Lock vence/renueva/recupera con owner.
 8. Watermark Full avanza solo al cierre durable permitido.
 9. Índices soportan listado paginado y claim.
+10. `ApprovedSnapshotJson` es nulo o JSON allowlist válido y `SnapshotHash` es nulo o SHA-256 de 32 bytes.
+11. No existen procedimientos de purga; la retención de desarrollo es indefinida.
 
 ### Separación
 
@@ -177,6 +179,7 @@ No se crea deliberadamente un conflicto real con una bodega productiva sin aprob
 - Ningún perfil SAP contiene `BranchCompanyId`, Remigio o Cañaris.
 - Ninguna prueba inicia `NuanSystem.MasterBranchSyncWorker`.
 - La posible fila `LocalOutbox` creada por el comando Warehouse no se promueve ni genera `SyncOutboxTargets`.
+- La generación normal de `LocalOutbox` se conserva; relay y `NuanSystem.MasterBranchSyncWorker` permanecen apagados.
 
 ## Validación SQL futura
 
@@ -389,7 +392,7 @@ Los nombres de campos en documentación pueden aparecer para declarar prohibicio
 - GlobalId/local fields preservados;
 - no adopción Code;
 - ApprovalRequired;
-- W6 resuelto;
+- W6 produce `Skipped/SAP_WAREHOUSE_INACTIVE` sin crear la bodega;
 - segundo ciclo idempotente.
 
 ### 10.7
@@ -425,7 +428,7 @@ Los nombres de campos en documentación pueden aparecer para declarar prohibicio
 | Sesión compartida | cookies cruzadas entre compañías | abortar; revisar named client/session factory. |
 | Lease expira durante Full | segunda ejecución entra | abortar; corregir renovación antes de repetir. |
 | Datos locales sobrescritos | cambian descripción/flags/contacto/GlobalId | abortar y restaurar desde backup/plan. |
-| Inactiva nueva sin política | W6 aparece | no mutar hasta decisión. |
+| Regresión de bodega nueva inactiva | W6 se crea en DEMO | abortar; exigir `Skipped/SAP_WAREHOUSE_INACTIVE` antes de activar. |
 | Retry infinito | attempts exceden máximo | apagar worker y corregir estado/policy. |
 | Evidencia con secretos | patrón sensible con valor | restringir acceso, sanear y activar respuesta a incidente. |
 | Resultado parcial incoherente | cabecera no cuadra con detalles | no aceptar gate; reconciliar algoritmo. |
@@ -461,4 +464,4 @@ No incluir credenciales, tokens, cookies, conexiones, XML SRI, payload Login ni 
 | Remigio/Cañaris | Not touched | Fuera de alcance. |
 | SRI | Not touched | Fuera de alcance. |
 
-La Fase 10.1 termina con este plan; no habilita la Fase 10.2 ni autoriza ninguna ejecución.
+La Fase 10.1 termina con este plan. La autorización posterior permite únicamente los contratos, repositorios, scripts no ejecutados y pruebas estáticas de Fase 10.2; no autoriza SQL real, SAP, API, WinForms ni workers.
