@@ -86,6 +86,13 @@ internal static class SapSyncProfileResults
             "Id",
             "No se encontro el perfil SAP.");
 
+    public static Result<T> CompanyImmutable<T>(long id) =>
+        Failure<T>(
+            SapSyncProfileErrorCodes.CompanyImmutable,
+            $"La empresa propietaria del perfil SAP {id} no puede cambiarse.",
+            "CompanyId",
+            "La empresa propietaria del perfil SAP es inmutable.");
+
     public static Result<T> MapWrite<T>(
         SapSyncProfileWriteResult writeResult,
         Func<SapSyncProfileWriteResult, T> successFactory,
@@ -113,6 +120,8 @@ internal static class SapSyncProfileResults
                     "El perfil fue modificado por otro proceso. Recargue e intente nuevamente.",
                     "RowVersion",
                     "Se detecto un conflicto de concurrencia."),
+            SapSyncProfilePersistenceCodes.CompanyImmutable
+                => CompanyImmutable<T>(writeResult.Id ?? 0),
             "UnsupportedCapability" or "NoActiveSupportedEntities"
                 => Failure<T>(
                     writeResult.ResultCode == "NoActiveSupportedEntities"

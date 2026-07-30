@@ -66,6 +66,11 @@ public sealed class UpdateSapSyncProfileCommandHandler(
                 currentAccess);
         }
 
+        if (existing.CompanyId != request.Request.Profile.CompanyId)
+        {
+            return SapSyncProfileResults.CompanyImmutable<SapSyncProfileWriteDto>(request.Id);
+        }
+
         var aggregate = await validationService.BuildAggregateAsync(
             request.Id,
             request.Request.Profile,

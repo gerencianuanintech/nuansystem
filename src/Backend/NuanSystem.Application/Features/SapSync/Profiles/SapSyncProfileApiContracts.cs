@@ -9,6 +9,7 @@ public static class SapSyncProfileErrorCodes
     public const string CompanyInactive = "SAP_SYNC_PROFILE_COMPANY_INACTIVE";
     public const string CompanySapDisabled = "SAP_SYNC_PROFILE_COMPANY_SAP_DISABLED";
     public const string CompanyAccessDenied = "SAP_SYNC_PROFILE_COMPANY_ACCESS_DENIED";
+    public const string CompanyImmutable = "SAP_SYNC_PROFILE_COMPANY_IMMUTABLE";
     public const string EntityRequired = "SAP_SYNC_PROFILE_ENTITY_REQUIRED";
     public const string EntityUnknown = "SAP_SYNC_PROFILE_ENTITY_UNKNOWN";
     public const string EntityNotImplemented = "SAP_SYNC_PROFILE_ENTITY_NOT_IMPLEMENTED";

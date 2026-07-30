@@ -28,6 +28,7 @@ public static class SapSyncProfilePersistenceCodes
     public const string NotFound = "NotFound";
     public const string DuplicateCode = "DuplicateCode";
     public const string ConcurrencyConflict = "ConcurrencyConflict";
+    public const string CompanyImmutable = "CompanyImmutable";
     public const string UnsupportedDirection = "UnsupportedDirection";
     public const string InvalidSchedule = "InvalidSchedule";
 }

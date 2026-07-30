@@ -262,7 +262,8 @@ public static class SapSyncProfileEndpoints
         if (HasError(
                 result,
                 SapSyncProfileErrorCodes.DuplicateCode,
-                SapSyncProfileErrorCodes.ConcurrencyConflict))
+                SapSyncProfileErrorCodes.ConcurrencyConflict,
+                SapSyncProfileErrorCodes.CompanyImmutable))
         {
             return Results.Conflict(response);
         }
