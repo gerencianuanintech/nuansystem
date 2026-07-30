@@ -53,9 +53,9 @@
 - The authorized CRUD extension adds server-paged list/detail/row projections, safe `QueueId`
   navigation and an independent corporate WinForms monitor. It must never project the complete
   access key, raw TXT/header line, XML, JWT, connection or secret.
-- Scripts `142`/`143` and the CRUD runtime are validated. Forward script `147` registers the
-  corporate Ribbon upload/filter operations and remains pending independent SQL deployment.
-  It does not grant API permissions. Scripts `140`/`141` are owned exclusively by PriceList 8.6.
+- Scripts `142`/`143` and the CRUD runtime are validated. Forward scripts `147`/`148` register the
+  corporate Ribbon operations and maintenance navigation without granting API permissions.
+  Their runtime behavior is validated. Scripts `140`/`141` are owned exclusively by PriceList 8.6.
   Query, upload and enqueue permissions remain independent.
 - `SriTxtImportForm` derives from `BaseCrudListForm` so `MainForm` owns all business actions in the
   corporate Ribbon. `Cargar TXT` uses typed multipart transport and never enqueues automatically;
@@ -64,6 +64,13 @@
   errors/warnings; 30 focused TXT tests, 89 SRI tests and 569 full-suite tests pass, with 5
   infrastructure tests explicitly skipped.
 - SAP remains outside this implementation.
+- The 2026-07-30 smoke test validated API health, the exclusive Swagger `SRI` section, Ribbon
+  operations, modal filters, server paging, masked row projections, global monitor navigation and
+  `ImportId` scope. The scoped monitor showed only the 1,322 rows of import 17; no XML download,
+  SQL write, worker call, SRI call or SAP call was executed.
+- The final compact six-KPI layout is local to `SriTxtImportForm`; do not widen the shared
+  `NuanKpiCardControl` contract to solve this screen. Shutdown cancellation in
+  `SyncProfileExecutionHostedService` is handled as a normal host stop and regression-tested.
 
 ## Approved pilot direction
 

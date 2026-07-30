@@ -528,9 +528,26 @@ multipart TXT upload [implemented and runtime-validated]
 remains transient during upload and persists only in `SriDocumentQueue`; public queue/import
 projections expose a mask and display status. Master script `139` registers independent TXT
 view/upload/enqueue permissions without role grants. The CRUD extension uses `142`/`143` for
-server-side paging and navigation metadata. Forward migration `147` registers the missing upload
-Ribbon operation and reuses the shared filter operation; it does not grant API permissions. SAP is
-not a consumer of this extension.
+server-side paging and navigation metadata. Forward migrations `147`/`148` register the corporate
+Ribbon operations and maintenance navigation without granting API permissions.
+
+The monitor continuation is:
+
+```text
+global monitor
+  -> server pages of 50 rows
+  -> all tenant SRI queue documents allowed by the active company context
+
+monitor opened from SriTxtImportForm
+  -> ImportId scope
+  -> only queue rows linked to that import
+  -> the same monitor form, permissions, Ribbon and protected projections
+```
+
+Scripts `149`/`150`/`151` own the monitor Ribbon registration, optional `ImportId` filter and
+`bigint` summary repair. The final smoke test validated both paths, masked data and compact KPI
+layouts. It did not download XML or call the worker, SRI or SAP. SAP is not a consumer of this
+extension.
 
 Iteration 6 adds implemented and runtime-validated operational contracts:
 

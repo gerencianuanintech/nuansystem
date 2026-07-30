@@ -332,7 +332,19 @@ The tenant queue, attempts, audit, Application contracts, endpoints, permissions
 
 The first pilot direction is approved: query and download by access key for previously authorized documents. `docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md` owns its functional boundary. Phase 5.5 adds tenant script `118`, Master script `119`, safe monitor projections, protected byte download, per-access audit, typed frontend transport and `SriDocumentMonitorForm`. These contracts are implemented, deployed and validated with real permissions, tenant isolation, API download, integrity/audit checks and Visual Studio Designer review. Detailed sanitized evidence lives in `docs/operations/SRI-DOCUMENT-MONITOR.md`.
 
-The SRI TXT Import vertical extends the same queue without adding another worker or XML store. `Application/Features/SriTxtImports`, `SriTxtImportRepository`, tenant script `138`, Master script `139`, and `/api/sri/txt-imports` implement bounded upload/validation, normalized tenant detail, queue preparation as `Staged`, and explicit audited `Staged -> Pending`. The worker claim remains limited to `Pending` and `RetryScheduled`. The access key is not serialized and is not duplicated in import detail. This vertical is implemented with automated/static evidence but is not deployed or runtime-validated; WinForms and SAP are deferred.
+The SRI TXT Import vertical extends the same queue without adding another worker or XML store.
+`NuanSystem.Application/SyncSRI/Features/SriTxtImports`, `SriTxtImportRepository`, tenant scripts
+`138`/`142`, Master scripts `139`/`143`/`147`/`148`, and `/api/sri/txt-imports` implement bounded
+upload/validation, normalized tenant detail, server paging, queue preparation as `Staged`, explicit
+audited `Staged -> Pending`, maintenance navigation and corporate Ribbon actions. The worker claim
+remains limited to `Pending` and `RetryScheduled`. The access key is not serialized and is not
+duplicated in import detail. SQL, API, permission separation, WinForms, tenant isolation and the
+final smoke path are runtime-validated; SAP and purchase reconciliation are deferred.
+
+Monitor forward scripts `149`/`150`/`151` register corporate Ribbon operations, add optional
+`ImportId` scope and preserve the five summary aggregates as SQL `bigint` values compatible with
+Dapper. The global and scoped monitors, paging, masked projections and compact KPI layouts passed
+the 2026-07-30 smoke test without downloading XML or invoking the worker/provider.
 
 ### Iteration 6 operational contracts
 

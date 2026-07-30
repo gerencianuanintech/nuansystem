@@ -2,7 +2,10 @@
 
 ## Estado
 
-**Fase 5.5 implementada, desplegada, validada en runtime y visualmente, y aprobada para integracion.** La evidencia detallada de este documento corresponde a la ejecucion controlada del 2026-07-21. No autoriza repetir descargas, llamadas al SRI ni modificaciones sobre la fila protegida.
+**Fase 5.5 y sus ampliaciones de paginacion, Ribbon y alcance por importacion implementadas,
+desplegadas y validadas.** La evidencia de descarga protegida corresponde a la ejecucion controlada
+del 2026-07-21; el smoke final del 2026-07-30 fue exclusivamente de lectura y no autoriza repetir
+descargas, llamadas al SRI ni modificaciones sobre filas protegidas.
 
 ## Discovery record
 
@@ -30,6 +33,28 @@
 Seleccione un documento `Authorized` con XML disponible, pulse **Descargar XML** y elija una ubicacion en `SaveFileDialog`. El cliente conserva los bytes y no abre el archivo. Cada exito agrega una auditoria `DownloadXml`; repetirlo no duplica el documento ni cambia el estado.
 
 ## Evidencia de despliegue y runtime
+
+### Cierre del monitor — 2026-07-30
+
+- `149_master_sri_document_monitor_ribbon_operations.sql` registra Actualizar, Consultar, Filtro y
+  Descargar XML en el Ribbon corporativo, conservando la autorizacion API como gate independiente.
+- `150_tenant_sri_document_monitor_import_scope.sql` agrega el filtro opcional `ImportId` a los
+  procedimientos del monitor; el modo global no cambia.
+- `151_tenant_sri_document_monitor_summary_bigint_repair.sql` conserva `Total`, `Pending`,
+  `Querying`, `Authorized` y `Errors` como valores SQL `bigint` materializables por Dapper.
+- El modo global mostro 4.048 documentos, 2.721 pendientes, 2 autorizados y 0 errores, con
+  50 registros por pagina. El filtro Authorized mostro las colas autorizadas existentes sin
+  descargar sus XML.
+- Abierto desde Importaciones TXT SRI, el mismo formulario mostro el titulo
+  `Monitor SRI - Carga 17` y exclusivamente 1.322 filas `Staged` vinculadas, en 27 paginas.
+- Las acciones Ribbon conservaron el contexto y los permisos del monitor. Descargar XML solo fue
+  visible para una seleccion autorizada y no fue ejecutada.
+- Los cuatro KPI del monitor y los seis KPI de Importaciones TXT SRI se mostraron completos. El
+  ajuste del importador es local y no modifica el contrato compartido de `NuanKpiCardControl`.
+- API health y Swagger respondieron HTTP 200; las rutas SRI quedaron agrupadas exclusivamente bajo
+  `SRI`. No hubo escrituras SQL, workers, llamadas al SRI, llamadas a SAP ni nuevos archivos XML.
+- Build Release: 0 errores y 0 advertencias. Suite: 594 aprobadas, 5 diagnosticas omitidas y
+  0 fallidas. La revision visual fue aprobada por el propietario.
 
 - El 2026-07-25 se aplico dos veces en `NuanSystem_DEMO`,
   `NuanSystem_DEMO_REMIGIO` y `NuanSystem_DEMO_CANARIS` el forward repair

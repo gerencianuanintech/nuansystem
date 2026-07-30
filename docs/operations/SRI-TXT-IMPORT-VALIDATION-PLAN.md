@@ -2,11 +2,50 @@
 
 ## Estado
 
-El núcleo `TXT -> Staged -> Pending` y el CRUD paginado fueron validados en runtime bajo
-autorizaciones separadas. No se deben repetir los scripts `138`/`139`/`142`/`143` ni sus pruebas SQL
-acreditadas. La migración forward-only `147`, el nuevo Ribbon, la carga desde WinForms y el filtro
-modal requieren su propio gate runtime. SAP, worker y llamadas SRI siguen excluidos. Los scripts
-`140`/`141` pertenecen exclusivamente a PriceList 8.6.
+El núcleo `TXT -> Staged -> Pending`, el CRUD paginado, el Ribbon, la carga desde WinForms, los
+filtros modales y la navegación al Monitor SRI están desplegados y validados. No se deben repetir
+los scripts `138`/`139`/`142`/`143`/`147`/`148`/`149`/`150`/`151` ni sus pruebas SQL acreditadas
+sin una autorización independiente. SAP y la conciliación con compras permanecen excluidos. Los
+scripts `140`/`141` pertenecen exclusivamente a PriceList 8.6.
+
+## Cierre funcional y smoke test — 2026-07-30
+
+El smoke test final se ejecutó sobre el árbol posteriormente integrado a `master` y cerró el alcance
+aprobado de Importaciones TXT SRI y Monitor SRI sin efectuar descargas, escrituras SQL, llamadas al
+SRI o llamadas a SAP.
+
+- **Validated — host/API:** `/health` y Swagger respondieron HTTP 200. Las 16 rutas SRI publicadas
+  quedaron agrupadas exclusivamente bajo la sección `SRI`.
+- **Validated — Importaciones TXT SRI:** el Ribbon presentó Consultar, Copiar, Cargar TXT,
+  Encolar TXT SRI, Abrir cola SRI, Actualizar, Columnas y Filtro según permisos. El diálogo modal
+  conservó los criterios de fecha, estado, ambiente, archivo y validez de filas.
+- **Validated — paginación y saneamiento:** se visualizaron dos importaciones y 4.044 filas
+  validadas; las claves permanecieron enmascaradas y no se expusieron TXT, XML, JWT, conexiones o
+  secretos.
+- **Validated — Monitor SRI global:** se materializaron 4.048 documentos, 2.721 pendientes,
+  2 autorizados y 0 errores, con paginación de 50 registros. La acción Descargar XML apareció solo
+  al seleccionar un documento autorizado y no fue ejecutada.
+- **Validated — alcance por carga:** al abrir el monitor desde la carga 17, el título indicó el
+  contexto y se mostraron exclusivamente sus 1.322 filas `Staged`, en 27 páginas, sin mezclar
+  documentos de otras cargas.
+- **Validated — layout:** los seis KPI de Importaciones TXT SRI permanecieron completos al reducir
+  el área útil de la pestaña. La solución es local al formulario: tarjetas compactas de
+  `130 x 92`, distribución porcentual en una fila y ancho mínimo de formulario de 860 px; el
+  control compartido `NuanKpiCardControl` no fue modificado.
+- **Validated — apagado limpio:** `SyncProfileExecutionHostedService` trata la cancelación del
+  `Task.Delay` como cierre normal del host y cuenta con una prueba de regresión real.
+- **Validated — regresión:** build Release con 0 errores y 0 advertencias; 594 pruebas aprobadas,
+  5 diagnósticas omitidas y 0 fallidas. La validación visual final fue aprobada por el propietario.
+
+Commits de cierre:
+
+- `807e862d` — aislamiento físico del módulo `SyncSRI`;
+- `5dd9691f` — apagado limpio del hosted service;
+- `1c314306` — KPI compactos sin recorte.
+
+Este cierre prueba captura, consulta, paginación, navegación y presentación. No autoriza habilitar
+permanentemente el worker, repetir una consulta remota, descargar XML nuevamente, conciliar compras
+ni incorporar SAP.
 
 ## Implementación Ribbon y carga — 2026-07-28
 
@@ -19,7 +58,7 @@ modal requieren su propio gate runtime. SAP, worker y llamadas SRI siguen exclui
   envía el campo `file`; el formulario valida `.txt`, archivo no vacío y 10 MiB.
 - Una carga exitosa refresca y selecciona la importación, pero no encola automáticamente.
 - `147_master_sri_txt_import_ribbon_operations.sql` registra upload/reutiliza filter sin conceder
-  permisos API. No fue ejecutado en esta implementación.
+  permisos API. Su despliegue y las acciones resultantes fueron validados posteriormente.
 
 ## Cierre de gates pendientes — 2026-07-28
 
@@ -105,7 +144,8 @@ Validación final del CRUD, sin ejecutar SQL ni runtime:
 - suite completa: 569 aprobadas, 5 omitidas por requerir infraestructura explícita, 0 fallidas.
 - los contratos cubren permisos VIEW/UPLOAD/ENQUEUE separados, paginación de servidor, filtros,
   deserialización, saneamiento de DTO, conexión tenant y estructura corporativa/Designer del formulario.
-- los scripts `142`/`143` fueron revisados estáticamente y no se ejecutaron.
+- en esa etapa previa, los scripts `142`/`143` fueron revisados estáticamente y no se ejecutaron;
+  su despliegue y runtime se validaron después y están registrados en las secciones superiores.
 - la secuencia `138`–`143` tiene un único propietario y una única versión por migración:
   SRI núcleo `138`/`139`, PriceList `140`/`141` y SRI CRUD `142`/`143`.
 

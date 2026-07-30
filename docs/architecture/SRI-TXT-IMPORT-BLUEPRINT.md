@@ -2,7 +2,9 @@
 
 ## Estado y alcance
 
-**Estado:** núcleo TXT y CRUD desplegados/validados. El frontend incorpora monitor, carga multipart, acciones en el Ribbon corporativo y filtros modales; la migración Ribbon `147` queda pendiente de autorización de despliegue. SAP permanece fuera de alcance.
+**Estado:** núcleo TXT, CRUD, Ribbon, carga multipart, filtros modales y navegación al Monitor SRI
+desplegados y validados. El smoke test final del 2026-07-30 cerró el alcance aprobado sin llamadas
+externas. SAP y la conciliación con compras permanecen fuera de alcance.
 
 Este documento define un módulo tenant para registrar cargas TXT, validar sus filas y vincular las filas válidas con la cola durable SRI existente. También presenta alternativas para una integración posterior con SAP Business One sobre HANA.
 
@@ -25,9 +27,9 @@ Esa evidencia no se repite en la fase CRUD.
 
 Autorizado el 2026-07-27: cerrar la consulta paginada de importaciones y filas, el detalle saneado,
 la navegación hacia `SriDocumentQueue` y un formulario WinForms independiente. Las nuevas migraciones
-propuestas son `142_tenant_sri_txt_import_crud.sql` y
-`143_master_sri_txt_import_crud_security.sql`; se generan, pero no se ejecutan sin una autorización
-posterior. SAP, llamadas SRI y ejecución del worker continúan excluidos.
+resultantes son `142_tenant_sri_txt_import_crud.sql` y
+`143_master_sri_txt_import_crud_security.sql`; ambas fueron desplegadas y validadas posteriormente
+bajo autorización separada. SAP, llamadas SRI y ejecución permanente del worker continúan excluidos.
 
 ## 1. Discovery Record
 
@@ -692,7 +694,7 @@ Decisiones aprobadas el 2026-07-27:
 20. El formulario WinForms es un monitor operacional independiente, usa controles corporativos y
     Designer, y no implementa SAP ni acceso directo a SQL/SRI.
 
-### Alcance autorizado de implementación
+### Alcance autorizado original de implementación
 
 - contratos, casos de uso y validadores Application;
 - parser streaming UTF-8 estricto/Windows-1252;
@@ -705,9 +707,11 @@ Decisiones aprobadas el 2026-07-27:
 - consultas CRUD paginadas y saneadas, formulario WinForms y navegación autorizada a la cola.
 - carga TXT desde el cliente tipado, Ribbon corporativo y diálogo modal de filtros.
 
-Quedan excluidos SAP, ejecución SQL, runtime API/WinForms, workers y cualquier llamada externa.
-La migración `147` y su validación runtime requieren autorización independiente. Los números
-`140`/`141` pertenecen exclusivamente a PriceList 8.6 y no deben reutilizarse.
+En la implementación original quedaron excluidos SAP, ejecución SQL, runtime API/WinForms, workers
+y cualquier llamada externa. Los gates SQL y runtime autorizados posteriormente están cerrados.
+Las migraciones `147` y `148` y su validación runtime están cerradas. Los números `140`/`141`
+pertenecen exclusivamente a PriceList 8.6 y no deben reutilizarse. La evidencia final se conserva
+en `docs/operations/SRI-TXT-IMPORT-VALIDATION-PLAN.md`.
 
 ## 17. Plan de implementación en commits pequeños
 
