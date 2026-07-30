@@ -4,7 +4,7 @@
 
 - Fecha de discovery: 2026-07-30.
 - Rama de trabajo: `refactor/codex-skills-v10-sap-profiles`.
-- Estado: arquitectura aprobada; la Fase 10.2 autoriza exclusivamente contratos y persistencia, sin runtime.
+- Estado: arquitectura aprobada; persistencia y contratos de Fase 10.2 desplegados y validados en el alcance autorizado. La Fase 10.3 se limita a Application, API y seguridad backend de perfiles.
 - Fuente SAP del piloto: SAP Business One mediante Service Layer.
 - Único tenant destino del piloto: empresa `DEMO`, base `NuanSystem_DEMO`.
 - Fuera de alcance: `NuanSystem.MasterBranchSyncWorker`, Remigio, Cañaris, SRI, ejecución de SQL, llamadas SAP, inicio de API/WinForms/workers y cambios de código funcional.
@@ -17,6 +17,23 @@ Este documento separa dos dominios que hoy tienen infraestructura y propósitos 
 La decisión aprobada es mantener dos modelos funcionales, dos formularios, dos contratos de seguridad y dos historiales de ejecución independientes. Una experiencia visual consistente no implica compartir tablas, endpoints, DTOs, ViewModels ni permisos. Un centro general de monitoreo podrá componerse después, por lectura, sobre ambos historiales.
 
 El plan de comprobación correspondiente está en [SAP-WAREHOUSE-SYNC-VALIDATION-PLAN.md](../operations/SAP-WAREHOUSE-SYNC-VALIDATION-PLAN.md).
+
+## Cierre aprobado de Fase 10.2
+
+La validación SQL real fue aprobada por el propietario el 2026-07-30 con el siguiente alcance saneado:
+
+- los respaldos `COPY_ONLY WITH CHECKSUM` de `NuanSystem_Master` y `NuanSystem_DEMO` fueron creados y verificados;
+- `152_master_sap_sync_profiles.sql` se ejecutó dos veces únicamente en Master y `153_tenant_sap_sync_execution_history.sql` dos veces únicamente en DEMO;
+- las versiones `20260730.152` y `20260730.153` quedaron registradas una sola vez;
+- tablas, procedimientos, índices, claves, checks, defaults, auditoría y contratos Dapper fueron materializados y comprobados;
+- los perfiles heredados, sus entidades y agendas Manual quedaron inactivos, sin dual-write, con fallback de solo lectura y dos ciclos exitosos requeridos antes de retirarlo;
+- los doce permisos SAP independientes existen una sola vez y permanecen concedidos únicamente a `ADMIN`;
+- `SapSyncEntitySettings` no fue modificada, los objetos tenant no tienen claves foráneas hacia Master y los locks preexistentes conservaron su identidad;
+- las pruebas de idempotencia y concurrencia de `ExecutionUid`, locks renovables, snapshots allowlist y transiciones terminaron conformes, sin fixtures residuales;
+- build y suites automatizadas terminaron conformes;
+- no se llamó SAP, Service Layer ni SRI; no se iniciaron API, WinForms o workers; no se tocó Remigio ni Cañaris.
+
+Este registro omite deliberadamente rutas de respaldos, hashes completos, conexiones y cualquier otro dato sensible. La validación no activó perfiles ni agendas y no autoriza scheduler, ejecuciones runtime, Bodegas o formularios.
 
 ## Decisiones rectoras
 

@@ -3,14 +3,30 @@
 ## Estado
 
 - Fecha: 2026-07-30.
-- Estado: plan aprobado con decisiones del propietario registradas; no ejecutado.
+- Estado: Fase 10.2 SQL real aprobada y cerrada; las validaciones SAP → DEMO posteriores continúan pendientes y requieren autorización independiente.
 - Documento arquitectónico: [SAP-SYNC-PROFILES-BLUEPRINT.md](../architecture/SAP-SYNC-PROFILES-BLUEPRINT.md).
 - Fuente: SAP Business One Service Layer.
 - Destino único: empresa `DEMO`, base `NuanSystem_DEMO`.
 - Worker autorizado por diseño: `NuanSystem.SyncWorker`.
 - Fuera de alcance: `NuanSystem.MasterBranchSyncWorker`, Remigio, Cañaris, SRI, SQL/runtime real durante Fase 10.1.
 
-Este documento define qué debe probarse en Fases 10.2–10.9. No declara que SAP, SQL, API, WinForms o workers hayan sido ejecutados.
+Este documento define qué debe probarse en Fases 10.3–10.9 y conserva el cierre saneado de Fase 10.2. No declara que SAP, Service Layer, SRI, API, WinForms o workers hayan sido ejecutados.
+
+## Evidencia saneada del cierre 10.2
+
+| Requisito autorizado | Estado aprobado | Evidencia conservada |
+|---|---|---|
+| Respaldo Master y DEMO | Validated | Respaldos `COPY_ONLY WITH CHECKSUM` creados y `RESTORE VERIFYONLY WITH CHECKSUM` conformes. |
+| Script Master `152` dos veces | Validated | Solo `NuanSystem_Master`; una versión `20260730.152`. |
+| Script tenant `153` dos veces | Validated | Solo `NuanSystem_DEMO`; una versión `20260730.153`; Remigio y Cañaris no fueron tocados. |
+| Objetos y contratos Dapper | Validated | Tablas, procedimientos, índices, claves, checks, defaults, auditoría, materialización y locks renovables conformes. |
+| Migración legado | Validated | Perfil, entidades y agenda Manual inactivos; sin dual-write; fallback habilitado y dos ciclos exitosos requeridos. |
+| Seguridad | Validated | Doce permisos únicos, concedidos únicamente a `ADMIN`; sin formularios ni menús. |
+| Idempotencia y concurrencia | Validated | `ExecutionUid`, `RowVersion`, locks vencidos, snapshots tipados y transiciones conformes. |
+| Limpieza y regresión | Validated | Snapshots finales conformes, cero fixtures residuales, build y pruebas conformes. |
+| Servicios externos/runtime | Not executed | Sin SAP, Service Layer, SRI, API, WinForms ni workers. |
+
+No se conservan aquí rutas de respaldo, hashes completos, cadenas de conexión, credenciales, sesiones ni payloads. Todos los perfiles y agendas nuevos permanecieron inactivos al cierre.
 
 ## Objetivo de validación
 
