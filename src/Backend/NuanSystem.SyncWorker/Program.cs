@@ -5,6 +5,7 @@ using NuanSystem.Infrastructure.DependencyInjection;
 using NuanSystem.Persistence.DependencyInjection;
 using NuanSystem.SapIntegration.DependencyInjection;
 using NuanSystem.SyncWorker.Options;
+using NuanSystem.SyncWorker.Services;
 using NuanSystem.SyncWorker.Workers;
 using Serilog;
 
@@ -40,8 +41,23 @@ try
         {
             ValidateConfiguration(context);
 
-            services.Configure<WorkerOptions>(context.Configuration.GetSection(WorkerOptions.SectionName));
-            services.Configure<SapSyncOptions>(context.Configuration.GetSection(SapSyncOptions.SectionName));
+            services.AddOptions<WorkerOptions>()
+                .Bind(context.Configuration.GetSection(WorkerOptions.SectionName))
+                .Validate(
+                    options => options.LoopDelaySeconds >= 1
+                               && options.ShutdownTimeoutSeconds >= 1,
+                    "Worker:LoopDelaySeconds o ShutdownTimeoutSeconds fuera de rango.")
+                .ValidateOnStart();
+            services.AddOptions<SapSyncOptions>()
+                .Bind(context.Configuration.GetSection(SapSyncOptions.SectionName))
+                .Validate(
+                    options => options.SchedulerPageSize is >= 1 and <= 500
+                               && options.LockTimeoutMinutes is >= 1 and <= 1440
+                               && options.LockRenewalSeconds >= 1
+                               && options.LockRenewalSeconds
+                                  < options.LockTimeoutMinutes * 60,
+                    "SchedulerPageSize o contrato de lease SAP fuera de rango.")
+                .ValidateOnStart();
             services.Configure<RetryOptions>(context.Configuration.GetSection(RetryOptions.SectionName));
             services.Configure<ServiceLayerWorkerOptions>(context.Configuration.GetSection(ServiceLayerWorkerOptions.SectionName));
             services.Configure<HostOptions>(options =>
@@ -61,6 +77,7 @@ try
             services.AddHostedService<SapSyncWorker>();
             services.AddHostedService<SapRetryWorker>();
             services.AddHostedService<SapOutboxWorker>();
+            services.AddSingleton<SapSyncWorkerRuntimeState>();
         })
         .Build();
 

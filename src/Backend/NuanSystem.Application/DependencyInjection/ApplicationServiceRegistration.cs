@@ -52,6 +52,10 @@ public static class ApplicationServiceRegistration
         services.AddScoped<ISapPurchaseOrderImportService, SapPurchaseOrderImportService>();
         services.AddScoped<ISapPaymentTermImportService, SapPaymentTermImportService>();
         services.AddScoped<ISapSyncOrchestrator, SapSyncOrchestrator>();
+        services.AddScoped<ISapSyncScheduler, SapSyncScheduler>();
+        services.AddScoped<ISapSyncExecutionLeaseCoordinator, SapSyncExecutionLeaseCoordinator>();
+        services.AddScoped<ISapSyncScheduledExecutionPreparer, SapSyncScheduledExecutionPreparer>();
+        services.AddSingleton<SapSyncScheduleCalculator>();
         services.AddScoped<ISapSyncJobRunner, SapSyncJobRunner>();
         services.AddScoped<ISapSyncLockService, SapSyncLockService>();
         services.AddScoped<ISapSyncWatermarkService, SapSyncWatermarkService>();
