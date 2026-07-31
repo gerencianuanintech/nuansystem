@@ -235,7 +235,7 @@ flowchart TD
     N --> O{"Decisión por registro"}
     O -- Nueva activa --> P["CreateWarehouseCommand"]
     O -- Vinculada y cambió campo aprobado --> Q["UpdateWarehouseCommand"]
-    O -- Code local sin identidad SAP --> R["Conflict / sin adopción"]
+    O -- Code local sin identidad SAP --> R["ApprovalRequired / sin adopción"]
     O -- SAP inactiva y DEMO activa --> S["ApprovalRequired / sin desactivar"]
     O -- Sin cambios --> T["Unchanged"]
     O -- Error transitorio --> U["RetryScheduled limitado"]
@@ -656,7 +656,7 @@ Registro SAP válido (Code + Name)?
                            Sí -> actualizar preservando GlobalId/campos locales
                            No -> Unchanged
           No -> existe Warehouse local con mismo Code?
-                 Sí -> Conflict; nunca adoptar automáticamente
+                 Sí -> ApprovalRequired; nunca adoptar automáticamente
                  No -> SAP activa?
                         Sí -> crear activa con nuevo GlobalId
                         No -> Skipped / SAP_WAREHOUSE_INACTIVE
@@ -694,7 +694,7 @@ Registro SAP válido (Code + Name)?
 - `SapServiceLayerWarehouseReader` hace Login, pagina `Warehouses?$orderby=WarehouseCode`, sigue `odata.nextLink`, mapea `Inactive`/`Locked` y hace Logout en `finally`.
 - `SapWarehouseImportService` lee todo SAP y todo local, indexa por `SapCode` y `Code`, y procesa registro por registro.
 - La identidad externa usada es `ExternalSystem = "SAP_B1"`, `ExternalCode = WarehouseCode`, `SapCode = WarehouseCode`.
-- Si encuentra solo el mismo `Code` local sin relación SAP, devuelve `Conflict`; no adopta.
+- Antes de la Fase 10.6, si encuentra solo el mismo `Code` local sin relación SAP, devuelve `Conflict`; el contrato aprobado lo cambia a `ApprovalRequired`, siempre sin adopción ni escritura.
 - En creación envía `GlobalId: null`; `CreateWarehouseCommandHandler` genera un GUID nuevo.
 - En actualización `UpdateWarehouseCommandHandler` recarga y preserva el `GlobalId` existente.
 - Campos SAP actualizados: nombre, dirección, ciudad, provincia y país.

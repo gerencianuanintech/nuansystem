@@ -41,7 +41,7 @@ Demostrar, con evidencia separada por capa, que un perfil SAP independiente pued
 - `CreateWarehouseCommandHandler` genera `GlobalId` si no se provee.
 - `UpdateWarehouseCommandHandler` preserva el `GlobalId` recargado desde base.
 - La identidad externa de Bodega es `SAP_B1` + `WarehouseCode`.
-- Un `Code` local sin vínculo SAP es `Conflict`; no se adopta.
+- Un `Code` local sin vínculo SAP es `ApprovalRequired`; no se adopta ni se modifica.
 - SAP inactiva frente a local activa no cambia `IsActive`.
 - Las pruebas existentes incluyen Full paginado, conflicto, preservación de estado, campos aprobados y segundo ciclo idempotente.
 
@@ -104,7 +104,7 @@ Casos mínimos:
 | W1 | nueva activa | no existe por identidad ni Code | `Created`, GlobalId nuevo, activa. |
 | W2 | vinculada, cambió nombre/dirección | existe por `SapCode` | `Updated`, mismo GlobalId, campos locales preservados. |
 | W3 | vinculada, idéntica | existe | `Unchanged`, cero write. |
-| W4 | mismo Code sin vínculo SAP | existe solo por Code | `Conflict`, no adopción, cero write. |
+| W4 | mismo Code sin vínculo SAP | existe solo por Code | `ApprovalRequired`, no adopción, cero write. |
 | W5 | SAP inactiva | DEMO vinculada activa | `ApprovalRequired`, DEMO sigue activa. |
 | W6 | nueva inactiva | no existe | `Skipped`, código seguro `SAP_WAREHOUSE_INACTIVE`, cero create. |
 | W7 | código/nombre inválido | no aplicable | `Skipped`/terminal seguro. |
@@ -136,7 +136,7 @@ No se crea deliberadamente un conflicto real con una bodega productiva sin aprob
 - no se comparte cookie/sesión entre empresas.
 - nueva activa → Create con `SAP_B1`, `ExternalCode`, `SapCode`.
 - update preserva GlobalId, Code y campos locales.
-- mismo Code sin identidad SAP → Conflict.
+- mismo Code sin identidad SAP → ApprovalRequired, sin adopción ni escritura.
 - SAP inactiva + DEMO activa → ApprovalRequired y no update de estado.
 - ausencia del Full no desactiva.
 - segundo ciclo no crea/actualiza.
