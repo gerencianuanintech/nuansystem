@@ -6,7 +6,20 @@ namespace NuanSystem.Application.Features.SapSync.Services;
 
 public sealed class SapSyncScheduledExecutionPreparer : ISapSyncScheduledExecutionPreparer
 {
-    public Task PrepareAsync(
+    private readonly IReadOnlyDictionary<string, ISapSyncScheduledExecutionProcessor> processors;
+
+    public SapSyncScheduledExecutionPreparer(
+        IEnumerable<ISapSyncScheduledExecutionProcessor> processors)
+    {
+        this.processors = processors
+            .GroupBy(processor => processor.EntityCode, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Single(),
+                StringComparer.OrdinalIgnoreCase);
+    }
+
+    public async Task PrepareAsync(
         SapSyncScheduledExecutionContext context,
         CancellationToken cancellationToken = default)
     {
@@ -25,9 +38,13 @@ public sealed class SapSyncScheduledExecutionPreparer : ISapSyncScheduledExecuti
                 "El contexto programado SAP no cumple el contrato de preparacion.");
         }
 
-        // Limite intencional de la Fase 10.4: valida y materializa el contexto,
-        // pero no despacha ningun handler ni transporte SAP.
-        return Task.CompletedTask;
+        if (!processors.TryGetValue(context.EntityCode, out var processor))
+        {
+            throw new InvalidOperationException(
+                "SAP_SYNC_SCHEDULED_PROCESSOR_NOT_IMPLEMENTED");
+        }
+
+        await processor.ProcessAsync(context, cancellationToken);
     }
 }
 

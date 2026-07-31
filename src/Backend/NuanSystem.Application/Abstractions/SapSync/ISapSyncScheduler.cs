@@ -18,6 +18,15 @@ public interface ISapSyncScheduledExecutionPreparer
         CancellationToken cancellationToken = default);
 }
 
+public interface ISapSyncScheduledExecutionProcessor
+{
+    string EntityCode { get; }
+
+    Task ProcessAsync(
+        SapSyncScheduledExecutionContext context,
+        CancellationToken cancellationToken = default);
+}
+
 public interface ISapSyncExecutionLeaseCoordinator
 {
     Task<SapSyncLeaseExecutionResult> PrepareAsync(
