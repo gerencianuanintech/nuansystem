@@ -3,7 +3,7 @@
 ## Estado
 
 - Fecha de última actualización: 2026-07-31.
-- Estado: implementación automática de la Fase 10.6 completada; migración 159, SQL real y piloto SAP → DEMO continúan pendientes de autorizaciones independientes.
+- Estado: implementación automática y despliegue SQL de la Fase 10.6 completados; el piloto SAP → DEMO continúa pendiente de autorización independiente.
 - Documento arquitectónico: [SAP-SYNC-PROFILES-BLUEPRINT.md](../architecture/SAP-SYNC-PROFILES-BLUEPRINT.md).
 - Fuente: SAP Business One Service Layer.
 - Destino único: empresa `DEMO`, base `NuanSystem_DEMO`.
@@ -13,6 +13,21 @@
 Este documento define qué debe probarse en Fases 10.3–10.9 y conserva el cierre saneado de Fase 10.2. No declara que SAP, Service Layer, SRI, API, WinForms o workers hayan sido ejecutados.
 
 La implementación 10.6 conecta `Warehouses` al scheduler existente mediante un procesador programado, conserva el lock renovable, registra cabecera y detalle `WarehouseV1`, aplica timeout, `BatchSize`, `ContinueOnError`, cancelación segura y retry desde snapshot. El fallback legado de `Warehouses` queda rechazado: la capacidad solo puede ejecutarse mediante un perfil SAP explícito. La colisión únicamente por código queda en `ApprovalRequired`, sin adopción automática ni escritura.
+
+## Evidencia saneada del despliegue 10.6
+
+| Requisito autorizado | Estado aprobado | Evidencia conservada |
+|---|---|---|
+| Respaldo de Master | Validated | `COPY_ONLY WITH CHECKSUM` y `RESTORE VERIFYONLY WITH CHECKSUM` conformes. |
+| Script Master `159` dos veces | Validated | Dos ejecuciones correctas; una versión `20260731.159` y una capacidad `Warehouses`. |
+| Contrato de capacidad | Validated | Solo `SapToErp`, modo `Full`, implementada y activa; `ErpToSap` e `Incremental` permanecen deshabilitados. |
+| Dapper real | Validated | El repositorio productivo materializó la capacidad en listado completo y filtro activo. |
+| Idempotencia | Validated | El segundo pase no cambió historia, capacidad ni `UpdatedAt`. |
+| Preservación | Validated | Perfiles, entidades, agendas y capacidades no relacionadas conservaron sus huellas; cero activaciones y cero violaciones de constraints. |
+| Regresión | Validated | Build con cero errores/advertencias; 720 pruebas superadas, 5 diagnósticas omitidas y cero fallos. |
+| Servicios externos/runtime | Not executed | Sin SAP, Service Layer, SRI, API, WinForms ni workers. |
+
+El respaldo verificado se conserva en la ruta predeterminada del servidor SQL con nombre `NuanSystem_Master_Phase106_159_20260731_223815.bak`. No se registran rutas internas, credenciales, cadenas de conexión ni valores sensibles.
 
 ## Evidencia saneada del cierre 10.2
 
@@ -47,12 +62,12 @@ Demostrar, con evidencia separada por capa, que un perfil SAP independiente pued
 - SAP inactiva frente a local activa no cambia `IsActive`.
 - Las pruebas existentes incluyen Full paginado, conflicto, preservación de estado, campos aprobados y segundo ciclo idempotente.
 
-### No implementado actualmente
+### Pendiente de validación runtime
 
-- Perfil SAP y agenda por entidad.
-- Handler `ISapSyncEntityHandler` registrado para Bodegas.
-- Historial `SapSyncExecutions`/`SapSyncExecutionDetails`.
-- Estado persistido `ApprovalRequired`.
+- Crear y activar temporalmente un perfil y agenda exclusivos del piloto DEMO.
+- Ejecutar el handler registrado de Bodegas contra Service Layer real.
+- Validar el historial `SapSyncExecutions`/`SapSyncExecutionDetails` y el estado persistido `ApprovalRequired`.
+- Confirmar idempotencia, locks, cancelación, retry y preservación de campos locales con fixtures controlados.
 - Retry real por registro de Bodega.
 - Propagación efectiva de `BatchSize`/`MaxAttempts` desde perfil.
 - Lease renovable y vínculo lock/ejecución.
