@@ -109,6 +109,54 @@ public sealed class SapWarehouseRecordProcessorTests
     }
 
     [Fact]
+    public async Task ExternalReferenceMatch_IsPreferredAndNormalizesLegacySapCode()
+    {
+        var repository = Substitute.For<IWarehouseRepository>();
+        var sender = Substitute.For<ISender>();
+        var local = Local(12, Guid.NewGuid(), "LOCAL-12", "WH-EXT", "Nombre anterior");
+        local.SapCode = null;
+        repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns([local]);
+        sender.Send(Arg.Any<UpdateWarehouseCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<WarehouseDto>.Success(local));
+        var processor = new SapWarehouseRecordProcessor(repository, sender);
+
+        var result = await processor.ProcessAsync(
+            Snapshot("WH-EXT", "Nombre SAP"), null, "worker");
+
+        result.Status.Should().Be(SapSyncExecutionDetailStatuses.Updated);
+        await sender.Received(1).Send(
+            Arg.Is<UpdateWarehouseCommand>(command =>
+                command.Id == local.Id
+                && command.ExternalSystem == "SAP_B1"
+                && command.ExternalCode == "WH-EXT"
+                && command.SapCode == "WH-EXT"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExternalReferenceAndSapCodePointingToDifferentRows_IsTerminalConflict()
+    {
+        var repository = Substitute.For<IWarehouseRepository>();
+        var sender = Substitute.For<ISender>();
+        var external = Local(13, Guid.NewGuid(), "LOCAL-EXT", "WH-SPLIT", "Externa");
+        external.SapCode = null;
+        var sapCode = Local(14, Guid.NewGuid(), "LOCAL-SAP", "WH-SPLIT", "SapCode");
+        sapCode.ExternalSystem = null;
+        sapCode.ExternalCode = null;
+        repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns([external, sapCode]);
+        var processor = new SapWarehouseRecordProcessor(repository, sender);
+
+        var result = await processor.ProcessAsync(
+            Snapshot("WH-SPLIT", "Bodega SAP"), null, "worker");
+
+        result.Action.Should().Be(SapSyncExecutionDetailActions.Conflict);
+        result.Status.Should().Be(SapSyncExecutionDetailStatuses.Conflict);
+        result.ResultCode.Should().Be(SapWarehouseResultCodes.IdentityConflict);
+        await sender.DidNotReceive().Send(Arg.Any<CreateWarehouseCommand>(), Arg.Any<CancellationToken>());
+        await sender.DidNotReceive().Send(Arg.Any<UpdateWarehouseCommand>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task W4_CodeOnlyCollision_RequiresApprovalWithoutAdoptionOrWrite()
     {
         var repository = Substitute.For<IWarehouseRepository>();

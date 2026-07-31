@@ -27,6 +27,17 @@ public sealed class SapWarehouseRecordProcessor(IWarehouseRepository warehouseRe
         }
 
         var localWarehouses = await warehouseRepository.GetAllAsync(cancellationToken);
+        var externalMatches = localWarehouses
+            .Where(item => EqualsCode(item.ExternalSystem, SapExternalSystem)
+                           && EqualsCode(item.ExternalCode, code))
+            .ToArray();
+        if (externalMatches.Length > 1)
+        {
+            return Result(SapSyncExecutionDetailActions.Conflict, SapSyncExecutionDetailStatuses.Conflict,
+                null, SapWarehouseResultCodes.IdentityConflict,
+                "Existe mas de una bodega local con la misma referencia externa SAP.");
+        }
+
         var sapMatches = localWarehouses.Where(item => EqualsCode(item.SapCode, code)).ToArray();
         if (sapMatches.Length > 1)
         {
@@ -35,7 +46,16 @@ public sealed class SapWarehouseRecordProcessor(IWarehouseRepository warehouseRe
                 "Existe mas de una bodega local con el mismo codigo SAP.");
         }
 
-        var local = sapMatches.SingleOrDefault();
+        var externalMatch = externalMatches.SingleOrDefault();
+        var sapMatch = sapMatches.SingleOrDefault();
+        if (externalMatch is not null && sapMatch is not null && externalMatch.Id != sapMatch.Id)
+        {
+            return Result(SapSyncExecutionDetailActions.Conflict, SapSyncExecutionDetailStatuses.Conflict,
+                null, SapWarehouseResultCodes.IdentityConflict,
+                "La referencia externa y el codigo SAP apuntan a bodegas diferentes.");
+        }
+
+        var local = externalMatch ?? sapMatch;
         if (local is null)
         {
             var codeMatches = localWarehouses.Where(item => EqualsCode(item.Code, code)).ToArray();
