@@ -68,6 +68,7 @@ public sealed class SqlServerTenantDatabaseInitializer(
                       ,"150_tenant_sri_document_monitor_import_scope.sql"
                       ,"151_tenant_sri_document_monitor_summary_bigint_repair.sql"
                       ,"153_tenant_sap_sync_execution_history.sql"
+                      ,"158_tenant_sap_sync_execution_operations.sql"
                    })
         {
             var scriptPath = FindDatabaseScriptPath(fileName);

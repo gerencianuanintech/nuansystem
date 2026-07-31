@@ -17,7 +17,7 @@ public interface ISapSyncExecutionRepository
         Guid executionUid,
         CancellationToken cancellationToken = default);
 
-    Task<SapSyncPagedResult<SapSyncExecutionDetailData>> SearchDetailsAsync(
+    Task<SapSyncPagedResult<SapSyncExecutionDetailListItemDto>> SearchDetailsAsync(
         SapSyncExecutionDetailFilter filter,
         CancellationToken cancellationToken = default);
 
@@ -40,6 +40,27 @@ public interface ISapSyncExecutionRepository
         string workerInstance,
         string ownerToken,
         DateTime lockExpiresAtUtc,
+        IReadOnlyCollection<string> approvedSnapshotTypes,
+        CancellationToken cancellationToken = default);
+
+    Task<SapSyncExecutionRetryResult> CreateManualRetryAsync(
+        SapSyncExecutionRetryRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<SapSyncExecutionWriteResult> CompleteClaimedDetailAsync(
+        SapSyncExecutionDetailCompletion completion,
+        CancellationToken cancellationToken = default);
+
+    Task<int> RecoverExpiredDetailLocksAsync(
+        DateTime utcNow,
+        CancellationToken cancellationToken = default);
+
+    Task<SapSyncExecutionWriteResult> ReleaseExpiredDetailLockAsync(
+        long detailId,
+        string reason,
+        int? requestedByUserId,
+        string? requestedByUserName,
+        byte[] expectedRowVersion,
         CancellationToken cancellationToken = default);
 
     Task<bool> RenewDetailLockAsync(

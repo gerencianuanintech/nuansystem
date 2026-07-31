@@ -12,6 +12,7 @@ using NuanSystem.Application.Common.Behaviors;
 using NuanSystem.Application.Features.SapSync.Handlers;
 using NuanSystem.Application.Features.SapSync.Services;
 using NuanSystem.Application.Features.SapSync.Profiles.Services;
+using NuanSystem.Application.Features.SapSync.Executions;
 using NuanSystem.Application.Features.Operations;
 using NuanSystem.Application.Features.SriDocuments.Services;
 using NuanSystem.Application.Features.SriTxtImports.Services;
@@ -54,6 +55,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<ISapSyncOrchestrator, SapSyncOrchestrator>();
         services.AddScoped<ISapSyncScheduler, SapSyncScheduler>();
         services.AddScoped<ISapSyncExecutionLeaseCoordinator, SapSyncExecutionLeaseCoordinator>();
+        services.AddScoped<ISapSyncExecutionRetryService, SapSyncExecutionRetryService>();
         services.AddScoped<ISapSyncScheduledExecutionPreparer, SapSyncScheduledExecutionPreparer>();
         services.AddSingleton<SapSyncScheduleCalculator>();
         services.AddScoped<ISapSyncJobRunner, SapSyncJobRunner>();

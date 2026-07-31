@@ -19,6 +19,10 @@ public sealed class SapSyncExecutionRepository(ITenantConnectionFactory connecti
     internal const string ClaimDetailProcedure = "dbo.SP_NA_POST_SAPSYNCEXECUTIONDETALLECLAIM";
     internal const string RenewDetailProcedure = "dbo.SP_NA_PATCH_SAPSYNCEXECUTIONDETALLERENOVAR";
     internal const string ReleaseDetailProcedure = "dbo.SP_NA_PATCH_SAPSYNCEXECUTIONDETALLELIBERAR";
+    internal const string ManualRetryProcedure = "dbo.SP_NA_POST_SAPSYNCEXECUTIONREINTENTOMANUAL";
+    internal const string CompleteDetailProcedure = "dbo.SP_NA_PATCH_SAPSYNCEXECUTIONDETALLECOMPLETAR";
+    internal const string RecoverExpiredProcedure = "dbo.SP_NA_POST_SAPSYNCEXECUTIONDETALLERECUPERARVENCIDOS";
+    internal const string ReleaseExpiredProcedure = "dbo.SP_NA_PATCH_SAPSYNCEXECUTIONDETALLELIBERARVENCIDO";
 
     public Task<SapSyncExecutionWriteResult> CreateAsync(
         SapSyncExecutionCreateData data,
@@ -56,7 +60,7 @@ public sealed class SapSyncExecutionRepository(ITenantConnectionFactory connecti
             cancellationToken: cancellationToken));
     }
 
-    public async Task<SapSyncPagedResult<SapSyncExecutionDetailData>> SearchDetailsAsync(
+    public async Task<SapSyncPagedResult<SapSyncExecutionDetailListItemDto>> SearchDetailsAsync(
         SapSyncExecutionDetailFilter filter,
         CancellationToken cancellationToken = default)
     {
@@ -66,9 +70,9 @@ public sealed class SapSyncExecutionRepository(ITenantConnectionFactory connecti
             filter,
             commandType: CommandType.StoredProcedure,
             cancellationToken: cancellationToken));
-        var items = (await grid.ReadAsync<SapSyncExecutionDetailData>()).AsList();
+        var items = (await grid.ReadAsync<SapSyncExecutionDetailListItemDto>()).AsList();
         var total = await grid.ReadSingleAsync<int>();
-        return new SapSyncPagedResult<SapSyncExecutionDetailData>(
+        return new SapSyncPagedResult<SapSyncExecutionDetailListItemDto>(
             items,
             total,
             Math.Max(filter.PageNumber, 1),
@@ -106,6 +110,7 @@ public sealed class SapSyncExecutionRepository(ITenantConnectionFactory connecti
         string workerInstance,
         string ownerToken,
         DateTime lockExpiresAtUtc,
+        IReadOnlyCollection<string> approvedSnapshotTypes,
         CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
@@ -115,11 +120,65 @@ public sealed class SapSyncExecutionRepository(ITenantConnectionFactory connecti
             {
                 WorkerInstance = Clean(workerInstance),
                 OwnerToken = Clean(ownerToken),
-                LockExpiresAtUtc = lockExpiresAtUtc
+                LockExpiresAtUtc = lockExpiresAtUtc,
+                ApprovedSnapshotTypesCsv = string.Join(',', approvedSnapshotTypes)
             },
             commandType: CommandType.StoredProcedure,
             cancellationToken: cancellationToken));
     }
+
+    public async Task<SapSyncExecutionRetryResult> CreateManualRetryAsync(
+        SapSyncExecutionRetryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        return await connection.QuerySingleAsync<SapSyncExecutionRetryResult>(new CommandDefinition(
+            ManualRetryProcedure,
+            new
+            {
+                request.ParentExecutionUid,
+                request.ClientRequestId,
+                Reason = Clean(request.Reason),
+                request.RequestedByUserId,
+                RequestedByUserName = Clean(request.RequestedByUserName),
+                request.ExpectedRowVersion
+            },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+    }
+
+    public Task<SapSyncExecutionWriteResult> CompleteClaimedDetailAsync(
+        SapSyncExecutionDetailCompletion completion,
+        CancellationToken cancellationToken = default) =>
+        ExecuteWriteAsync(CompleteDetailProcedure, completion, cancellationToken);
+
+    public async Task<int> RecoverExpiredDetailLocksAsync(
+        DateTime utcNow,
+        CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            RecoverExpiredProcedure,
+            new { UtcNow = utcNow },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+    }
+
+    public Task<SapSyncExecutionWriteResult> ReleaseExpiredDetailLockAsync(
+        long detailId,
+        string reason,
+        int? requestedByUserId,
+        string? requestedByUserName,
+        byte[] expectedRowVersion,
+        CancellationToken cancellationToken = default) =>
+        ExecuteWriteAsync(ReleaseExpiredProcedure, new
+        {
+            DetailId = detailId,
+            Reason = Clean(reason),
+            RequestedByUserId = requestedByUserId,
+            RequestedByUserName = Clean(requestedByUserName),
+            ExpectedRowVersion = expectedRowVersion
+        }, cancellationToken);
 
     public Task<bool> RenewDetailLockAsync(
         long detailId,

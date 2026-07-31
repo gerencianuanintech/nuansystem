@@ -93,6 +93,68 @@ public sealed record SapSyncExecutionListItemDto(
     int WarningRecords,
     int FailedRecords);
 
+public sealed record SapSyncExecutionViewDto(
+    long Id,
+    Guid ExecutionUid,
+    Guid RunGroupId,
+    Guid CorrelationId,
+    long? SapSyncProfileId,
+    long? SapSyncProfileEntityId,
+    string ProfileCode,
+    string ProfileName,
+    string CompanyCode,
+    string EntityCode,
+    string Direction,
+    string TriggerType,
+    long? ParentExecutionId,
+    string Status,
+    int BatchSize,
+    int MaxAttempts,
+    int ExecutionOrder,
+    int TimeoutMinutes,
+    string? ScheduleType,
+    string? TimeZoneId,
+    int? RequestedByUserId,
+    string? RequestedByUserName,
+    DateTime RequestedAtUtc,
+    string? WorkerInstance,
+    DateTime? StartedAtUtc,
+    DateTime? LastProgressAtUtc,
+    DateTime? FinishedAtUtc,
+    DateTime? CancellationRequestedAtUtc,
+    int TotalRecords,
+    int CreatedRecords,
+    int UpdatedRecords,
+    int UnchangedRecords,
+    int ApprovalRequiredRecords,
+    int ConflictRecords,
+    int SkippedRecords,
+    int RetryScheduledRecords,
+    int FailedRecords,
+    int DeadLetterRecords,
+    string? LastSafeErrorCode,
+    string? LastSafeErrorMessage,
+    byte[] RowVersion);
+
+public sealed record SapSyncExecutionDetailListItemDto(
+    long Id,
+    Guid ExecutionUid,
+    string SourceRecordKey,
+    string? SourceVersion,
+    long? LocalEntityId,
+    Guid? LocalGlobalId,
+    string Action,
+    string Status,
+    int AttemptCount,
+    int MaxAttempts,
+    DateTime? NextAttemptAtUtc,
+    string? ErrorClass,
+    string? ResultCode,
+    string? SafeMessage,
+    DateTime? StartedAtUtc,
+    DateTime? FinishedAtUtc,
+    byte[] RowVersion);
+
 public sealed record SapSyncExecutionCreateData(
     Guid ExecutionUid,
     Guid RunGroupId,
@@ -231,3 +293,47 @@ public sealed record SapSyncExecutionWriteResult(
     long? Id,
     string ResultCode,
     byte[]? RowVersion);
+
+public sealed record SapSyncExecutionRetryRequest(
+    Guid ParentExecutionUid,
+    Guid ClientRequestId,
+    string Reason,
+    int? RequestedByUserId,
+    string? RequestedByUserName,
+    byte[] ExpectedRowVersion);
+
+public sealed record SapSyncExecutionRetryResult(
+    long? Id,
+    Guid? ExecutionUid,
+    string ResultCode,
+    byte[]? RowVersion);
+
+public sealed record SapSyncExecutionDetailCompletion(
+    long DetailId,
+    string OwnerToken,
+    string Action,
+    string Status,
+    long? LocalEntityId,
+    Guid? LocalGlobalId,
+    string? ErrorClass,
+    string? ResultCode,
+    string? SafeMessage,
+    DateTime? NextAttemptAtUtc);
+
+public sealed record SapSyncExecutionRetryProcessResult(
+    string Action,
+    string Status,
+    long? LocalEntityId,
+    Guid? LocalGlobalId,
+    string? ResultCode,
+    string? SafeMessage);
+
+public static class SapSyncExecutionErrorCodes
+{
+    public const string NotFound = "SAP_SYNC_EXECUTION_NOT_FOUND";
+    public const string ConcurrencyConflict = "SAP_SYNC_EXECUTION_CONCURRENCY_CONFLICT";
+    public const string RetryNotAllowed = "SAP_SYNC_EXECUTION_RETRY_NOT_ALLOWED";
+    public const string NoRetryableDetails = "SAP_SYNC_EXECUTION_NO_RETRYABLE_DETAILS";
+    public const string InvalidReason = "SAP_SYNC_EXECUTION_REASON_REQUIRED";
+    public const string LockNotExpired = "SAP_SYNC_EXECUTION_LOCK_NOT_EXPIRED";
+}
