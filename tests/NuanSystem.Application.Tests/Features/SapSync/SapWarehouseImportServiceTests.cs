@@ -49,8 +49,12 @@ public sealed class SapWarehouseImportServiceTests
 
         var result = await service.ImportAsync(1, [], 1, "tester");
 
-        result.Unchanged.Should().Be(1);
-        result.Items.Should().ContainSingle().Which.Message.Should().Contain("aprobacion manual");
+        result.Skipped.Should().Be(1);
+        result.Items.Should().ContainSingle().Which.Status.Should().Be("ApprovalRequired");
+        result.Items.Should().ContainSingle().Which.Should().Match<SapWarehouseImportItemResultDto>(item =>
+            item.Status == "ApprovalRequired"
+            && item.ResultCode == "SAP_WAREHOUSE_APPROVAL_REQUIRED"
+            && item.Message.Contains("aprobacion", StringComparison.OrdinalIgnoreCase));
         await sender.DidNotReceive().Send(Arg.Any<UpdateWarehouseCommand>(), Arg.Any<CancellationToken>());
     }
 
@@ -123,7 +127,7 @@ public sealed class SapWarehouseImportServiceTests
         local.Name = "Nombre anterior";
         local.City = "Loja";
         reader.GetWarehousesAsync(1, Arg.Any<CancellationToken>())
-            .Returns([new SapWarehouseRecord("B01", "Nombre SAP", "Calle SAP", "Cuenca", "Azuay", "EC", false)]);
+            .Returns([new SapWarehouseRecord("B01", "Nombre SAP", "Calle SAP", "Cuenca", "Azuay", "EC", true)]);
         repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns([local]);
         sender.Send(Arg.Any<UpdateWarehouseCommand>(), Arg.Any<CancellationToken>())
             .Returns(call => Result<WarehouseDto>.Success(local));
@@ -132,7 +136,6 @@ public sealed class SapWarehouseImportServiceTests
         var result = await service.ImportAsync(1, [], 1, "tester");
 
         result.Updated.Should().Be(1);
-        result.Items.Should().ContainSingle().Which.Message.Should().Contain("aprobacion manual");
         await sender.Received(1).Send(
             Arg.Is<UpdateWarehouseCommand>(command =>
                 command.Id == local.Id

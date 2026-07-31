@@ -125,7 +125,11 @@ public sealed class SapSyncExecutionLockTests
     [Fact]
     public async Task ScheduledExecutionPreparer_ValidatesContextAtThePhaseBoundary()
     {
-        var preparer = new SapSyncScheduledExecutionPreparer();
+        var processor = Substitute.For<ISapSyncScheduledExecutionProcessor>();
+        processor.EntityCode.Returns(Context().EntityCode);
+        processor.ProcessAsync(Arg.Any<SapSyncScheduledExecutionContext>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        var preparer = new SapSyncScheduledExecutionPreparer([processor]);
 
         await preparer.Invoking(service =>
                 service.PrepareAsync(Context() with { ExecutionUid = Guid.Empty }))
