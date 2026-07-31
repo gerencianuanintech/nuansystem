@@ -35,9 +35,24 @@ SET DisplayName = N'Bodegas',
     IsActive = 1,
     UpdatedByUserName = N'Sistema',
     UpdatedAt = SYSUTCDATETIME()
-WHERE EntityCode = N'Warehouses';
+WHERE EntityCode = N'Warehouses'
+  AND
+  (
+      DisplayName <> N'Bodegas'
+      OR SupportsSapToErp <> 1
+      OR SupportsErpToSap <> 0
+      OR SupportsFull <> 1
+      OR SupportsIncremental <> 0
+      OR IsImplemented <> 1
+      OR IsActive <> 1
+  );
 
-IF @@ROWCOUNT = 0
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM dbo.SapSyncHandlerCapabilities
+    WHERE EntityCode = N'Warehouses'
+)
 BEGIN
     INSERT dbo.SapSyncHandlerCapabilities
     (
