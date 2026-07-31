@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 
@@ -6,6 +8,10 @@ namespace NuanSystem.Application.Tests.Features.SapSync;
 public sealed class SapSyncSchedulerPersistenceContractTests
 {
     private const string Migration = "155_master_sap_sync_scheduler.sql";
+    private const string ContractRepairMigration =
+        "156_master_sap_sync_scheduler_dapper_contract.sql";
+    private const string Migration155NormalizedSha256 =
+        "90F26B0691B3F7362823AD9E77BFA367C304C4CDF7DC218B1672DF3356BC5F41";
 
     [Fact]
     public void Migration_IsForwardOnlyIdempotentAndOrderedAfter154()
@@ -115,8 +121,79 @@ public sealed class SapSyncSchedulerPersistenceContractTests
         }
 
         schedulerRepository.Should().Contain("SP_NA_GET_SAPSYNCSCHEDULECANDIDATOSPAGINAR")
-            .And.Contain("SP_NA_PATCH_SAPSYNCSCHEDULERESERVAR");
+            .And.Contain("SP_NA_PATCH_SAPSYNCSCHEDULERESERVAR")
+            .And.Contain("ReadAsync<SapSyncScheduleCandidateRow>")
+            .And.NotContain("ReadAsync<SapSyncScheduleCandidate>");
         legacyRepository.Should().Contain("SP_NA_GET_SAPSYNCENTITYSETTINGSHABILITADOS");
+    }
+
+    [Fact]
+    public void ContractRepair_IsForwardOnlyIdempotentAndOrderedAfter155()
+    {
+        var sql = Read("database", "sql", ContractRepairMigration);
+        var initializer = Read(
+            "src", "Backend", "NuanSystem.Persistence", "Services",
+            "SqlServerMasterDatabaseInitializer.cs");
+
+        sql.Should().Contain("Version = N'20260731.156'")
+            .And.Contain("CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_SAPSYNCSCHEDULECANDIDATOSPAGINAR")
+            .And.NotContain("CREATE OR ALTER PROCEDURE dbo.SP_NA_PATCH_SAPSYNCSCHEDULERESERVAR")
+            .And.NotContain("ALTER TABLE")
+            .And.NotContain("UPDATE dbo.SapSync")
+            .And.NotContain("INSERT dbo.SapSync")
+            .And.NotContain("DELETE FROM dbo.SapSync");
+        Regex.Matches(sql, "20260731\\.156").Count.Should().Be(2);
+        Regex.Matches(
+                sql,
+                "CREATE OR ALTER PROCEDURE dbo\\.SP_NA_GET_SAPSYNCSCHEDULECANDIDATOSPAGINAR")
+            .Count.Should().Be(1);
+        initializer.IndexOf(ContractRepairMigration, StringComparison.Ordinal)
+            .Should().BeGreaterThan(initializer.IndexOf(Migration, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ContractRepair_UsesHomogeneousUnionTypesForDapperRow()
+    {
+        var sql = Read("database", "sql", ContractRepairMigration);
+        var branches = Regex.Split(sql, @"\r?\n\s*UNION ALL\s*\r?\n");
+
+        branches.Should().HaveCount(2);
+        foreach (var branch in branches)
+        {
+            branch.Should().Contain("AS varchar(30)) AS CandidateSource")
+                .And.Contain("AS nvarchar(50)) AS CompanyCode")
+                .And.Contain("AS nvarchar(80)) AS ProfileCode")
+                .And.Contain("AS nvarchar(160)) AS ProfileName")
+                .And.Contain("AS nvarchar(80)) AS EntityCode")
+                .And.Contain("AS varchar(20)) AS Direction")
+                .And.Contain("AS varchar(20)) AS SyncMode")
+                .And.Contain("AS varchar(20)) AS ScheduleType")
+                .And.Contain("AS nvarchar(100)) AS TimeZoneId")
+                .And.Contain("AS bigint) AS SortProfileId")
+                .And.Contain("AS bigint) AS SortEntityId");
+        }
+
+        Regex.Matches(sql, @"COALESCE\(CAST\(capability\..*? AS bit\), CAST\(0 AS bit\)\)")
+            .Count.Should().Be(6);
+        sql.Should().Contain("CAST(NULL AS bigint) AS ProfileId")
+            .And.Contain("CAST(NULL AS bigint) AS ProfileEntityId")
+            .And.Contain("CAST(NULL AS bigint) AS ScheduleId")
+            .And.Contain("CAST(NULL AS int) AS IntervalMinutes")
+            .And.Contain("CAST(NULL AS time(0)) AS ExecutionTime")
+            .And.Contain("CAST(NULL AS datetime2(0)) AS NextExecutionAtUtc")
+            .And.Contain("CAST(NULL AS datetime2(0)) AS LastScheduledAtUtc")
+            .And.Contain("CAST(NULL AS datetime2(0)) AS LastExecutionAtUtc")
+            .And.Contain("CAST(NULL AS varbinary(8)) AS ScheduleRowVersion");
+    }
+
+    [Fact]
+    public void Migration155_RemainsByteSemanticallyUnchanged()
+    {
+        var normalized = Sql().Replace("\r\n", "\n", StringComparison.Ordinal);
+        var hash = Convert.ToHexString(
+            SHA256.HashData(Encoding.UTF8.GetBytes(normalized)));
+
+        hash.Should().Be(Migration155NormalizedSha256);
     }
 
     [Fact]
