@@ -108,6 +108,7 @@ try
     app.MapTenancyEndpoints();
     app.MapSapEndpoints();
     app.MapSapSyncProfileEndpoints();
+    app.MapSapSyncExecutionEndpoints();
     app.MapSettingsEndpoints();
     app.MapUserEndpoints();
     app.MapRoleEndpoints();

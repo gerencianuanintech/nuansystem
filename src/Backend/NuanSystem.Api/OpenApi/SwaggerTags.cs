@@ -13,6 +13,7 @@ internal static class SwaggerTags
     public const string SecurityDocumentSeries = "Security - Document Series";
     public const string SyncEntityDefinitions = "Synchronization - Entity Definitions";
     public const string SapBusinessOneSyncProfiles = "SAP Business One - Sync Profiles";
+    public const string SapBusinessOneSyncExecutions = "SAP Business One - Sync Executions";
     public const string MatrixBranchSynchronization = "Synchronization - Matrix-Branch";
     public const string Sri = "SRI";
 }
