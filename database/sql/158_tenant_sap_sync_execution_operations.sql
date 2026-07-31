@@ -4,7 +4,7 @@ SET QUOTED_IDENTIFIER ON;
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 GO
-IF NOT EXISTS (SELECT 1 FROM dbo.SchemaHistory WHERE Version=N'20260731.153')
+IF NOT EXISTS (SELECT 1 FROM dbo.SchemaHistory WHERE Version=N'20260730.153')
     THROW 51158, 'Migration 153 is required.', 1;
 GO
 IF EXISTS(SELECT 1 FROM sys.check_constraints WHERE name=N'CK_AuditSapSyncExecutionChanges_Action')

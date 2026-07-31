@@ -27,6 +27,8 @@ public sealed class SapSyncExecutionApiContractTests
     {
         var sql=Read("database","sql","158_tenant_sap_sync_execution_operations.sql");
         sql.Should().Contain("20260731.158")
+            .And.Contain("Version=N'20260730.153'")
+            .And.NotContain("Version=N'20260731.153'")
             .And.Contain("SP_NA_POST_SAPSYNCEXECUTIONREINTENTOMANUAL")
             .And.Contain("SP_NA_POST_SAPSYNCEXECUTIONDETALLERECUPERARVENCIDOS")
             .And.Contain("@ApprovedSnapshotTypesCsv")
