@@ -10,6 +10,7 @@ namespace NuanSystem.Application.Features.SapSync.Warehouses.Services;
 public sealed class SapWarehouseRecordProcessor(IWarehouseRepository warehouseRepository, ISender sender)
 {
     private const string SapExternalSystem = "SAP_B1";
+    private List<WarehouseDto>? localWarehouseCache;
 
     public async Task<SapWarehouseRecordProcessResult> ProcessAsync(
         SapWarehouseSnapshot snapshot,
@@ -26,7 +27,7 @@ public sealed class SapWarehouseRecordProcessor(IWarehouseRepository warehouseRe
                 null, SapWarehouseResultCodes.Invalid, "La bodega SAP no tiene codigo o nombre.");
         }
 
-        var localWarehouses = await warehouseRepository.GetAllAsync(cancellationToken);
+        var localWarehouses = await GetLocalWarehousesAsync(cancellationToken);
         var externalMatches = localWarehouses
             .Where(item => EqualsCode(item.ExternalSystem, SapExternalSystem)
                            && EqualsCode(item.ExternalCode, code))
@@ -85,11 +86,15 @@ public sealed class SapWarehouseRecordProcessor(IWarehouseRepository warehouseRe
                 ExternalSystem: SapExternalSystem, ExternalCode: code, SapCode: code,
                 IsActive: true, AuditUserId: auditUserId, AuditUserName: auditUserName), cancellationToken);
 
-            return created.IsSuccess && created.Value is not null
-                ? Result(SapSyncExecutionDetailActions.Create, SapSyncExecutionDetailStatuses.Created,
-                    created.Value, SapWarehouseResultCodes.Created, "Bodega creada desde SAP.")
-                : Result(SapSyncExecutionDetailActions.Create, SapSyncExecutionDetailStatuses.Failed,
+            if (!created.IsSuccess || created.Value is null)
+            {
+                return Result(SapSyncExecutionDetailActions.Create, SapSyncExecutionDetailStatuses.Failed,
                     null, SapWarehouseResultCodes.SaveFailed, SafeMessage(created.Message));
+            }
+
+            UpdateCache(created.Value);
+            return Result(SapSyncExecutionDetailActions.Create, SapSyncExecutionDetailStatuses.Created,
+                created.Value, SapWarehouseResultCodes.Created, "Bodega creada desde SAP.");
         }
 
         if (!snapshot.IsActive && local.IsActive)
@@ -115,11 +120,29 @@ public sealed class SapWarehouseRecordProcessor(IWarehouseRepository warehouseRe
             local.IsDefault, SapExternalSystem, code, code, local.IsActive,
             auditUserId, auditUserName), cancellationToken);
 
-        return updated.IsSuccess && updated.Value is not null
-            ? Result(SapSyncExecutionDetailActions.Update, SapSyncExecutionDetailStatuses.Updated,
-                updated.Value, SapWarehouseResultCodes.Updated, "Bodega actualizada desde SAP.")
-            : Result(SapSyncExecutionDetailActions.Update, SapSyncExecutionDetailStatuses.Failed,
+        if (!updated.IsSuccess || updated.Value is null)
+        {
+            return Result(SapSyncExecutionDetailActions.Update, SapSyncExecutionDetailStatuses.Failed,
                 local, SapWarehouseResultCodes.SaveFailed, SafeMessage(updated.Message));
+        }
+
+        UpdateCache(updated.Value);
+        return Result(SapSyncExecutionDetailActions.Update, SapSyncExecutionDetailStatuses.Updated,
+            updated.Value, SapWarehouseResultCodes.Updated, "Bodega actualizada desde SAP.");
+    }
+
+    private async Task<IReadOnlyCollection<WarehouseDto>> GetLocalWarehousesAsync(
+        CancellationToken cancellationToken)
+    {
+        localWarehouseCache ??= (await warehouseRepository.GetAllAsync(cancellationToken)).ToList();
+        return localWarehouseCache;
+    }
+
+    private void UpdateCache(WarehouseDto warehouse)
+    {
+        localWarehouseCache ??= [];
+        localWarehouseCache.RemoveAll(item => item.Id == warehouse.Id);
+        localWarehouseCache.Add(warehouse);
     }
 
     private static bool HasRelevantChanges(SapWarehouseSnapshot snapshot, WarehouseDto local) =>

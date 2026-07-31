@@ -243,6 +243,7 @@ public sealed class SapWarehouseRecordProcessorTests
         first.Status.Should().Be(SapSyncExecutionDetailStatuses.Created);
         second.Status.Should().Be(SapSyncExecutionDetailStatuses.Unchanged);
         second.LocalGlobalId.Should().Be(created.GlobalId);
+        await repository.Received(1).GetAllAsync(Arg.Any<CancellationToken>());
         await sender.Received(1).Send(Arg.Any<CreateWarehouseCommand>(), Arg.Any<CancellationToken>());
         await sender.DidNotReceive().Send(Arg.Any<UpdateWarehouseCommand>(), Arg.Any<CancellationToken>());
     }
