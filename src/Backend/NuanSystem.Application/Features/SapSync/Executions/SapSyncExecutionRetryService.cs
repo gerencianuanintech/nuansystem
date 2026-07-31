@@ -9,6 +9,8 @@ public sealed class SapSyncExecutionRetryService(
     IEnumerable<ISapSyncExecutionRetryProcessor> processors,
     ISapSyncRetryPolicy retryPolicy) : ISapSyncExecutionRetryService
 {
+    private static readonly HashSet<string> AllowedActions = ["Create", "Update", "NoChange", "Approval", "Conflict", "Skip"];
+    private static readonly HashSet<string> AllowedTerminalStatuses = ["Created", "Updated", "Unchanged", "ApprovalRequired", "Conflict", "Skipped"];
     private readonly IReadOnlyDictionary<string, ISapSyncExecutionRetryProcessor> _processors = processors
         .GroupBy(x => x.ApprovedSnapshotType, StringComparer.Ordinal)
         .ToDictionary(x => x.Key, x => x.Single(), StringComparer.Ordinal);
@@ -48,6 +50,11 @@ public sealed class SapSyncExecutionRetryService(
             try
             {
                 var result = await processor.ProcessAsync(claim, cancellationToken);
+                if (!AllowedActions.Contains(result.Action) || !AllowedTerminalStatuses.Contains(result.Status))
+                {
+                    await CompleteAsync(claim, "DeadLetter", "SAP_RETRY_RESULT_INVALID", "Resultado del procesador no aprobado.", null, cancellationToken);
+                    return new(SapSyncRetryCycleResult.DeadLetter, claim.Id);
+                }
                 await repository.CompleteClaimedDetailAsync(new(
                     claim.Id, claim.OwnerToken, result.Action, result.Status,
                     result.LocalEntityId, result.LocalGlobalId, null,

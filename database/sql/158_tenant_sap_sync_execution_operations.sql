@@ -124,6 +124,7 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_PATCH_SAPSYNCEXECUTIONDETALLELIBERARVENCIDO
 AS
 BEGIN
  SET NOCOUNT ON; DECLARE @ExecutionId bigint,@Changed int=0;
+ IF NULLIF(LTRIM(RTRIM(@Reason)),N'') IS NULL THROW 51158,'Release reason is required.',1;
  SELECT @ExecutionId=SapSyncExecutionId FROM dbo.SapSyncExecutionDetails WHERE Id=@DetailId;
  UPDATE dbo.SapSyncExecutionDetails SET Status=CASE WHEN AttemptCount>=MaxAttempts THEN 'DeadLetter' ELSE 'RetryScheduled' END,
   ResultCode='SAP_SYNC_LEASE_RELEASED',SafeMessage=@Reason,NextAttemptAtUtc=SYSUTCDATETIME(),WorkerInstance=NULL,
@@ -144,6 +145,7 @@ AS
 BEGIN
  SET NOCOUNT ON; SET XACT_ABORT ON;
  DECLARE @ParentId bigint,@NewId bigint;
+ IF NULLIF(LTRIM(RTRIM(@Reason)),N'') IS NULL THROW 51158,'Retry reason is required.',1;
  IF EXISTS(SELECT 1 FROM dbo.SapSyncExecutions WHERE ExecutionUid=@ClientRequestId)
  BEGIN SELECT Id,ExecutionUid,'Existing' ResultCode,RowVersion FROM dbo.SapSyncExecutions WHERE ExecutionUid=@ClientRequestId; RETURN; END;
  BEGIN TRAN;
