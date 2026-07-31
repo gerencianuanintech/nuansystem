@@ -783,7 +783,7 @@ Los archivos nuevos se marcan **propuestos**. Los existentes se citan con su nom
 
 ### Fase 10.5 — Historial, detalle y reintentos
 
-**Estado de implementación:** completada en código; migración tenant `158_tenant_sap_sync_execution_operations.sql` pendiente de despliegue y validación SQL/runtime independiente.
+**Estado de implementación:** cerrada y validada en runtime local. Las migraciones tenant 153 y 158 quedaron desplegadas idempotentemente en los tenants piloto; los gates Dapper, concurrencia, leases, auditoría, `DeadLetter` y API 401/403/200 aprobaron. La evidencia detallada se conserva en [`SAP-SYNC-EXECUTIONS-PHASE-10.5-RUNTIME-EVIDENCE.md`](../operations/SAP-SYNC-EXECUTIONS-PHASE-10.5-RUNTIME-EVIDENCE.md).
 
 - Features SAP Executions, queries paginadas y comandos retry/cancel/release.
 - Repositorios `SapSyncExecutions`/`SapSyncExecutionDetails`.

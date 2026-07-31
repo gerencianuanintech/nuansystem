@@ -394,7 +394,7 @@ Los nombres de campos en documentación pueden aparecer para declarar prohibicio
 
 ### 10.5
 
-Estado: implementación estática completada; falta desplegar dos veces la migración tenant 158 y ejecutar los gates Dapper/API/worker controlados. No declarar apta para producción antes de esa evidencia.
+Estado: cerrada y validada en runtime local. Las migraciones 153/158, materialización Dapper, paginación, retry manual, cancelación, concurrencia, recuperación y liberación de leases, auditoría, `DeadLetter` y API 401/403/200 aprobaron. No se llamó SAP/SRI ni se habilitaron workers. Evidencia: [`SAP-SYNC-EXECUTIONS-PHASE-10.5-RUNTIME-EVIDENCE.md`](SAP-SYNC-EXECUTIONS-PHASE-10.5-RUNTIME-EVIDENCE.md).
 
 - ejecución/detalle por registro;
 - estados parciales;
