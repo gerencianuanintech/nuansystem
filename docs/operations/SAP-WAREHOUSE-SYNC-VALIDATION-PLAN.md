@@ -2,8 +2,8 @@
 
 ## Estado
 
-- Fecha: 2026-07-30.
-- Estado: Fase 10.2 SQL real aprobada y cerrada; las validaciones SAP → DEMO posteriores continúan pendientes y requieren autorización independiente.
+- Fecha de última actualización: 2026-07-31.
+- Estado: implementación automática de la Fase 10.6 completada; migración 159, SQL real y piloto SAP → DEMO continúan pendientes de autorizaciones independientes.
 - Documento arquitectónico: [SAP-SYNC-PROFILES-BLUEPRINT.md](../architecture/SAP-SYNC-PROFILES-BLUEPRINT.md).
 - Fuente: SAP Business One Service Layer.
 - Destino único: empresa `DEMO`, base `NuanSystem_DEMO`.
@@ -11,6 +11,8 @@
 - Fuera de alcance: `NuanSystem.MasterBranchSyncWorker`, Remigio, Cañaris, SRI, SQL/runtime real durante Fase 10.1.
 
 Este documento define qué debe probarse en Fases 10.3–10.9 y conserva el cierre saneado de Fase 10.2. No declara que SAP, Service Layer, SRI, API, WinForms o workers hayan sido ejecutados.
+
+La implementación 10.6 conecta `Warehouses` al scheduler existente mediante un procesador programado, conserva el lock renovable, registra cabecera y detalle `WarehouseV1`, aplica timeout, `BatchSize`, `ContinueOnError`, cancelación segura y retry desde snapshot. El fallback legado de `Warehouses` queda rechazado: la capacidad solo puede ejecutarse mediante un perfil SAP explícito. La colisión únicamente por código queda en `ApprovalRequired`, sin adopción automática ni escritura.
 
 ## Evidencia saneada del cierre 10.2
 
