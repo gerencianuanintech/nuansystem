@@ -5,6 +5,7 @@ using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.Application.Features.GeneralInventory.Warehouses.Commands;
 using NuanSystem.Application.Features.GeneralInventory.Warehouses.Dtos;
 using NuanSystem.Application.Features.SapSync.Dtos;
+using NuanSystem.Application.Features.SapSync.Warehouses.Contracts;
 
 namespace NuanSystem.Application.Features.SapSync.Services;
 
@@ -91,7 +92,7 @@ public sealed class SapWarehouseImportService(
             results.Count(item => item.Status == "Created"),
             results.Count(item => item.Status == "Updated"),
             results.Count(item => item.Status == "Unchanged"),
-            results.Count(item => item.Status is "Skipped" or "Conflict"),
+            results.Count(item => item.Status is "Skipped" or "Conflict" or "ApprovalRequired"),
             results.Count(item => item.Status == "Failed"),
             results);
 
@@ -118,7 +119,34 @@ public sealed class SapWarehouseImportService(
         var match = FindMatch(code, index);
         if (match.IsConflict)
         {
-            return ToResult(sap, "Conflict", match.Message, match.Warehouse?.Id);
+            return ToResult(
+                sap,
+                match.IsCodeCollision ? "ApprovalRequired" : "Conflict",
+                match.Message,
+                match.Warehouse?.Id,
+                match.IsCodeCollision
+                    ? SapWarehouseResultCodes.CodeCollisionApprovalRequired
+                    : SapWarehouseResultCodes.IdentityConflict);
+        }
+
+        if (match.Warehouse is null && !sap.IsActive)
+        {
+            return ToResult(
+                sap,
+                "Skipped",
+                "La bodega SAP nueva esta inactiva y no se crea automaticamente.",
+                null,
+                SapWarehouseResultCodes.Inactive);
+        }
+
+        if (match.Warehouse is { IsActive: true } && !sap.IsActive)
+        {
+            return ToResult(
+                sap,
+                "ApprovalRequired",
+                "SAP reporta la bodega inactiva; la bodega local permanece activa hasta aprobacion.",
+                match.Warehouse.Id,
+                SapWarehouseResultCodes.ApprovalRequired);
         }
 
         try
@@ -203,7 +231,7 @@ public sealed class SapWarehouseImportService(
                 ? ToResult(sap, "Updated", statusMessage, updateResult.Value.Id)
                 : ToResult(sap, "Failed", updateResult.Message, local.Id);
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
             return ToResult(sap, "Failed", $"No fue posible importar la bodega: {exception.GetType().Name}.", match.Warehouse?.Id);
         }
@@ -259,21 +287,21 @@ public sealed class SapWarehouseImportService(
         index.BySapCode.TryGetValue(NormalizeKey(code), out var sapMatches);
         if (sapMatches is { Count: > 1 })
         {
-            return new LocalMatch(null, true, "Existe mas de una bodega local con el mismo codigo SAP.");
+            return new LocalMatch(null, true, false, "Existe mas de una bodega local con el mismo codigo SAP.");
         }
 
         if (sapMatches is { Count: 1 })
         {
-            return new LocalMatch(sapMatches[0], false, "Bodega relacionada por codigo SAP.");
+            return new LocalMatch(sapMatches[0], false, false, "Bodega relacionada por codigo SAP.");
         }
 
         index.ByCode.TryGetValue(NormalizeKey(code), out var codeMatches);
         if (codeMatches is { Count: > 0 })
         {
-            return new LocalMatch(codeMatches[0], true, "Existe una bodega con el mismo codigo, pero sin relacion SAP confirmada.");
+            return new LocalMatch(codeMatches[0], true, true, "Existe una bodega con el mismo codigo, pero sin relacion SAP confirmada.");
         }
 
-        return new LocalMatch(null, false, "Bodega nueva.");
+        return new LocalMatch(null, false, false, "Bodega nueva.");
     }
 
     private static LocalWarehouseIndex BuildIndex(IReadOnlyCollection<WarehouseDto> warehouses)
@@ -377,8 +405,9 @@ public sealed class SapWarehouseImportService(
         SapWarehouseRecord sap,
         string status,
         string message,
-        int? localWarehouseId)
-        => new(Normalize(sap.WarehouseCode), Normalize(sap.WarehouseName), status, message, localWarehouseId);
+        int? localWarehouseId,
+        string? resultCode = null)
+        => new(Normalize(sap.WarehouseCode), Normalize(sap.WarehouseName), status, message, localWarehouseId, resultCode);
 
     private static string Normalize(string? value) => value?.Trim() ?? string.Empty;
     private static string NormalizeKey(string? value) => Normalize(value).ToUpperInvariant();
@@ -388,5 +417,5 @@ public sealed class SapWarehouseImportService(
         Dictionary<string, List<WarehouseDto>> BySapCode,
         Dictionary<string, List<WarehouseDto>> ByCode);
 
-    private sealed record LocalMatch(WarehouseDto? Warehouse, bool IsConflict, string Message);
+    private sealed record LocalMatch(WarehouseDto? Warehouse, bool IsConflict, bool IsCodeCollision, string Message);
 }

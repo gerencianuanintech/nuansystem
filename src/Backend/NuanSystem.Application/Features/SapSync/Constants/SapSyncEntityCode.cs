@@ -6,4 +6,5 @@ public static class SapSyncEntityCode
     public const string Items = "Items";
     public const string PurchaseOrders = "PurchaseOrders";
     public const string PaymentTerms = "PaymentTerms";
+    public const string Warehouses = "Warehouses";
 }

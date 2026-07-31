@@ -42,4 +42,5 @@ public sealed record SapWarehouseImportItemResultDto(
     string SapWarehouseName,
     string Status,
     string Message,
-    int? LocalWarehouseId);
+    int? LocalWarehouseId,
+    string? ResultCode = null);
