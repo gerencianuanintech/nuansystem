@@ -394,6 +394,8 @@ Los nombres de campos en documentación pueden aparecer para declarar prohibicio
 
 ### 10.5
 
+Estado: implementación estática completada; falta desplegar dos veces la migración tenant 158 y ejecutar los gates Dapper/API/worker controlados. No declarar apta para producción antes de esa evidencia.
+
 - ejecución/detalle por registro;
 - estados parciales;
 - retry real y limitado;

@@ -783,11 +783,15 @@ Los archivos nuevos se marcan **propuestos**. Los existentes se citan con su nom
 
 ### Fase 10.5 — Historial, detalle y reintentos
 
+**Estado de implementación:** completada en código; migración tenant `158_tenant_sap_sync_execution_operations.sql` pendiente de despliegue y validación SQL/runtime independiente.
+
 - Features SAP Executions, queries paginadas y comandos retry/cancel/release.
 - Repositorios `SapSyncExecutions`/`SapSyncExecutionDetails`.
 - API de ejecuciones.
 - Endurecimiento de `SapSyncLogService`/`SapSyncLogRepository`.
 - Evolución de `SapRetryWorker` para trabajo genérico realmente ejecutable o retiro de su comportamiento placeholder, según decisión aprobada.
+- El worker solo reclama snapshots cuyo `ISapSyncExecutionRetryProcessor` esté registrado. La Fase 10.5 no registra Bodegas ni realiza llamadas SAP; ese procesador pertenece a 10.6.
+- Las respuestas públicas excluyen `ProfileSnapshotJson`, `EffectiveParametersJson`, `ApprovedSnapshotJson` y `SnapshotHash`.
 
 ### Fase 10.6 — Bodegas programadas
 
