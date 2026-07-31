@@ -11,6 +11,7 @@ public sealed class SapSyncProfilePersistenceContractTests
     private const string MasterMigration = "152_master_sap_sync_profiles.sql";
     private const string HardeningMigration = "154_master_sap_sync_profile_api_hardening.sql";
     private const string TenantMigration = "153_tenant_sap_sync_execution_history.sql";
+    private const string TenantOperationsMigration = "158_tenant_sap_sync_execution_operations.sql";
 
     [Fact]
     public void Migrations_AreVersionedOrderedAndStructurallyIdempotent()
@@ -51,10 +52,11 @@ public sealed class SapSyncProfilePersistenceContractTests
 
         Regex.Matches(master, "CREATE OR ALTER PROCEDURE dbo\\.SP_NA_").Count.Should().Be(7);
         Regex.Matches(hardening, "CREATE OR ALTER PROCEDURE dbo\\.SP_NA_").Count.Should().Be(2);
-        Regex.Matches(tenant, "CREATE OR ALTER PROCEDURE dbo\\.SP_NA_").Count.Should().Be(14);
+        Regex.Matches(tenant, "CREATE OR ALTER PROCEDURE dbo\\.SP_NA_").Count.Should().Be(21);
         Regex.Matches(master, "20260730\\.152").Count.Should().Be(2);
         Regex.Matches(hardening, "20260730\\.154").Count.Should().Be(2);
         Regex.Matches(tenant, "20260730\\.153").Count.Should().Be(2);
+        Regex.Matches(tenant, "20260731\\.158").Count.Should().Be(2);
 
         masterInitializer.IndexOf(MasterMigration, StringComparison.Ordinal)
             .Should().BeGreaterThan(masterInitializer.IndexOf("151_master_user_profile_avatar.sql", StringComparison.Ordinal));
@@ -62,6 +64,8 @@ public sealed class SapSyncProfilePersistenceContractTests
             .Should().BeGreaterThan(masterInitializer.IndexOf(MasterMigration, StringComparison.Ordinal));
         tenantInitializer.IndexOf(TenantMigration, StringComparison.Ordinal)
             .Should().BeGreaterThan(tenantInitializer.IndexOf("150_tenant_sri_document_monitor_import_scope.sql", StringComparison.Ordinal));
+        tenantInitializer.IndexOf(TenantOperationsMigration, StringComparison.Ordinal)
+            .Should().BeGreaterThan(tenantInitializer.IndexOf(TenantMigration, StringComparison.Ordinal));
     }
 
     [Fact]
@@ -280,7 +284,7 @@ public sealed class SapSyncProfilePersistenceContractTests
             "src", "Backend", "NuanSystem.Persistence", "Repositories", "SapSync", "SapSyncLockRepository.cs");
 
         AssertRepositoryProceduresExist(profileRepository, masterSql, 8);
-        AssertRepositoryProceduresExist(executionRepository, tenantSql, 10);
+        AssertRepositoryProceduresExist(executionRepository, tenantSql, 14);
         AssertRepositoryProceduresExist(lockRepository, tenantSql, 4);
 
         profileRepository.Should().Contain("commandType: CommandType.StoredProcedure")
@@ -385,7 +389,8 @@ public sealed class SapSyncProfilePersistenceContractTests
 
     private static string MasterSql() => Read("database", "sql", MasterMigration);
     private static string HardeningSql() => Read("database", "sql", HardeningMigration);
-    private static string TenantSql() => Read("database", "sql", TenantMigration);
+    private static string TenantSql() => Read("database", "sql", TenantMigration)
+        + Environment.NewLine + Read("database", "sql", TenantOperationsMigration);
 
     private static string Read(params string[] parts) =>
         File.ReadAllText(Path.Combine([Root(), .. parts]));

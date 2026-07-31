@@ -5,10 +5,8 @@ using Microsoft.Extensions.Options;
 using NuanSystem.Application.Abstractions.SapSync;
 using NuanSystem.Application.Abstractions.Operations;
 using NuanSystem.Application.Abstractions.Tenancy;
-using NuanSystem.Application.Features.SapSync.Constants;
 using NuanSystem.Application.Features.SapSync.Dtos;
 using NuanSystem.Application.Features.Operations;
-using NuanSystem.Application.Features.SapSync.Enums;
 using NuanSystem.SyncWorker.Options;
 
 namespace NuanSystem.SyncWorker.Workers;
@@ -44,7 +42,7 @@ public sealed class SapRetryWorker(
             }
             catch (Exception exception)
             {
-                logger.LogError(exception, "Error general del ciclo SAP retry.");
+                logger.LogError("Error general del ciclo SAP retry. Tipo={ExceptionType}", exception.GetType().Name);
             }
 
             await Task.Delay(TimeSpan.FromSeconds(Math.Max(1, _retryOptions.IntervalSeconds)), stoppingToken);
@@ -68,8 +66,8 @@ public sealed class SapRetryWorker(
         using var scope = scopeFactory.CreateScope();
         var companyResolver = scope.ServiceProvider.GetRequiredService<ICompanyResolver>();
         var companyContext = scope.ServiceProvider.GetRequiredService<ICompanyContext>();
-        var inboxRepository = scope.ServiceProvider.GetRequiredService<ISapSyncInboxRepository>();
-        var retryPolicy = scope.ServiceProvider.GetRequiredService<ISapSyncRetryPolicy>();
+        var executionRepository = scope.ServiceProvider.GetRequiredService<ISapSyncExecutionRepository>();
+        var retryService = scope.ServiceProvider.GetRequiredService<ISapSyncExecutionRetryService>();
         var heartbeat = scope.ServiceProvider.GetRequiredService<IWorkerHeartbeatService>();
 
         var connectionInfo = await companyResolver.ResolveByCodeAsync(company.CompanyCode, cancellationToken);
@@ -84,38 +82,22 @@ public sealed class SapRetryWorker(
             company.CompanyId,
             company.CompanyCode,
             "Running",
-            "RetryInbox",
+            "RetryExecutions",
             typeof(SapRetryWorker).Assembly.GetName().Version?.ToString(),
             DateTime.UtcNow), cancellationToken);
 
-        await inboxRepository.ReleaseExpiredLocksAsync(company.CompanyId, DateTime.UtcNow, cancellationToken);
-
-        var retryItems = await inboxRepository.ClaimRetryScheduledAsync(
-            company.CompanyId,
-            SapSyncEntityCode.Suppliers,
-            Math.Max(1, _sapSyncOptions.DefaultBatchSize),
-            _workerOptions.InstanceName,
-            TimeSpan.FromMinutes(Math.Max(1, _sapSyncOptions.LockTimeoutMinutes)),
-            cancellationToken);
-
-        foreach (var item in retryItems)
+        await executionRepository.RecoverExpiredDetailLocksAsync(DateTime.UtcNow, cancellationToken);
+        for (var index = 0; index < Math.Max(1, _sapSyncOptions.DefaultBatchSize); index++)
         {
-            var decision = retryPolicy.Evaluate(
-                null,
-                item.Status.ToString(),
-                null,
-                item.AttemptCount,
-                Math.Max(_retryOptions.MaxRetryCount, _sapSyncOptions.DefaultMaxRetryCount),
+            var result = await retryService.ProcessNextAsync(
+                _workerOptions.InstanceName,
+                TimeSpan.FromMinutes(Math.Max(1, _sapSyncOptions.LockTimeoutMinutes)),
                 Math.Max(1, _retryOptions.BackoffSeconds),
-                DateTime.UtcNow);
-
-            if (!decision.IsRetryable || decision.MoveToDeadLetter)
+                cancellationToken);
+            if (result.Status == SapSyncRetryCycleResult.Idle)
             {
-                await inboxRepository.MarkDeadLetterAsync(item.Id, "SAP_RETRY_EXHAUSTED", decision.Reason, cancellationToken);
-                continue;
+                break;
             }
-
-            await inboxRepository.MarkFailedAsync(item.Id, "SAP_RETRY_PENDING", decision.Reason, decision.NextAttemptAtUtc, cancellationToken);
         }
     }
 }

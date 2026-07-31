@@ -9,7 +9,18 @@ public sealed class SapSyncLogService(ISapSyncTechnicalLogRepository repository)
     private static readonly string[] SensitiveNames = ["password", "token", "cookie", "session", "secret", "connectionstring"];
 
     public Task WriteAsync(SapSyncLogWriteDto log, CancellationToken cancellationToken = default)
-        => repository.WriteAsync(log with { RequestJson = SanitizeJson(log.RequestJson), ResponseJson = SanitizeJson(log.ResponseJson) }, cancellationToken);
+        => repository.WriteAsync(log with
+        {
+            RequestJson = SanitizeJson(log.RequestJson),
+            ResponseJson = SanitizeJson(log.ResponseJson),
+            ErrorMessage = SanitizeMessage(log.ErrorMessage)
+        }, cancellationToken);
+
+    private static string? SanitizeMessage(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        return ContainsSensitiveName(value) ? "[REDACTED]" : value.Trim()[..Math.Min(value.Trim().Length, 1000)];
+    }
 
     private static string? SanitizeJson(string? json)
     {

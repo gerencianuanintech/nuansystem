@@ -1,4 +1,5 @@
 using Dapper;
+using System.Data;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.SapSync;
 using NuanSystem.Application.Features.SapSync.Dtos;
@@ -9,13 +10,9 @@ public sealed class SapSyncTechnicalLogRepository(ITenantConnectionFactory conne
 {
     public async Task<long> WriteAsync(SapSyncLogWriteDto log, CancellationToken cancellationToken = default)
     {
-        const string sql = """
-INSERT INTO dbo.SapSyncTechnicalLog (CompanyId, CompanyCode, EntityCode, Direction, Operation, Status, CorrelationId, WorkerInstance, AttemptCount, QueueItemId, LocalEntityId, SapEntityId, SapDocEntry, SapDocNum, RequestJson, ResponseJson, ErrorCode, ErrorMessage, DurationMs, StartedAtUtc, FinishedAtUtc)
-OUTPUT INSERTED.Id
-VALUES (@CompanyId, @CompanyCode, @EntityCode, @Direction, @Operation, @Status, @CorrelationId, @WorkerInstance, @AttemptCount, @QueueItemId, @LocalEntityId, @SapEntityId, @SapDocEntry, @SapDocNum, @RequestJson, @ResponseJson, @ErrorCode, @ErrorMessage, @DurationMs, @StartedAtUtc, @FinishedAtUtc);
-""";
+        const string procedure = "dbo.SP_NA_POST_SAPSYNCTECHNICALLOGCREAR";
         using var connection = connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<long>(new CommandDefinition(sql, new
+        return await connection.ExecuteScalarAsync<long>(new CommandDefinition(procedure, new
         {
             log.CompanyId,
             log.CompanyCode,
@@ -38,6 +35,6 @@ VALUES (@CompanyId, @CompanyCode, @EntityCode, @Direction, @Operation, @Status, 
             log.DurationMs,
             log.StartedAtUtc,
             log.FinishedAtUtc
-        }, cancellationToken: cancellationToken));
+        }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken));
     }
 }
