@@ -20,6 +20,8 @@ public sealed class SapSyncExecutionApiContractTests
             .And.NotContain("ApprovedSnapshotJson")
             .And.NotContain("SnapshotHash");
         program.Should().Contain("app.MapSapSyncExecutionEndpoints()");
+        var useCases=Read("src","Backend","NuanSystem.Application","Features","SapSync","Executions","SapSyncExecutionUseCases.cs");
+        useCases.Should().Contain("result.ResultCode == \"CancellationRequested\"");
     }
 
     [Fact]

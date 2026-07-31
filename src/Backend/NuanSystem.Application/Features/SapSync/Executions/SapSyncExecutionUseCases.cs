@@ -63,7 +63,7 @@ public sealed class CancelSapSyncExecutionCommandHandler(ISapSyncExecutionReposi
     public async Task<Result<bool>> Handle(CancelSapSyncExecutionCommand request, CancellationToken token)
     {
         var result = await repository.RequestCancellationAsync(request.ExecutionUid, request.UserId, request.UserName, request.RowVersion, token);
-        return result.ResultCode == "Updated" ? Result<bool>.Success(true)
+        return result.ResultCode == "CancellationRequested" ? Result<bool>.Success(true)
             : Failure<bool>(Map(result.ResultCode), "No fue posible solicitar la cancelacion.");
     }
 }
