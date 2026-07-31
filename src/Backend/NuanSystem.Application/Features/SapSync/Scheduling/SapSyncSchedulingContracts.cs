@@ -14,6 +14,7 @@ public static class SapSyncScheduleRejectionCodes
     public const string Manual = "SAP_SCHEDULE_MANUAL";
     public const string BothUnsupported = "SAP_SYNC_BOTH_UNSUPPORTED";
     public const string PurchaseOrdersUnsupported = "SAP_SYNC_PURCHASE_ORDERS_UNSUPPORTED";
+    public const string LegacyFallbackUnsupported = "SAP_SYNC_LEGACY_FALLBACK_UNSUPPORTED";
     public const string HandlerNotImplemented = "SAP_SYNC_HANDLER_NOT_IMPLEMENTED";
     public const string DirectionUnsupported = "SAP_SYNC_DIRECTION_UNSUPPORTED";
     public const string ModeUnsupported = "SAP_SYNC_MODE_UNSUPPORTED";

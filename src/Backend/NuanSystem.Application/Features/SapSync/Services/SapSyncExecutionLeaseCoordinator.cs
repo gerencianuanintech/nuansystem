@@ -44,7 +44,9 @@ public sealed class SapSyncScheduledExecutionPreparer : ISapSyncScheduledExecuti
                 "SAP_SYNC_SCHEDULED_PROCESSOR_NOT_IMPLEMENTED");
         }
 
-        await processor.ProcessAsync(context, cancellationToken);
+        using var executionTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        executionTimeout.CancelAfter(TimeSpan.FromMinutes(context.ExecutionTimeoutMinutes));
+        await processor.ProcessAsync(context, executionTimeout.Token);
     }
 }
 

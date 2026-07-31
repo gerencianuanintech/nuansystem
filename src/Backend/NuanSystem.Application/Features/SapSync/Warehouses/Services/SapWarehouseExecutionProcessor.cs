@@ -37,15 +37,20 @@ public sealed class SapWarehouseExecutionProcessor(
             }
 
             var rows = await reader.GetWarehousesAsync(context.CompanyId, cancellationToken);
-            foreach (var row in rows.OrderBy(item => item.WarehouseCode, StringComparer.OrdinalIgnoreCase))
+            var stopProcessing = false;
+            foreach (var batch in rows
+                         .OrderBy(item => item.WarehouseCode, StringComparer.OrdinalIgnoreCase)
+                         .Chunk(Math.Max(1, context.BatchSize)))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                current = await executionRepository.GetByExecutionUidAsync(context.ExecutionUid, cancellationToken)
-                    ?? throw new InvalidOperationException("SAP_SYNC_EXECUTION_NOT_FOUND");
-                if (await TryCompleteCancellationAsync(current, results, cancellationToken))
+                foreach (var row in batch)
                 {
-                    return;
-                }
+                    cancellationToken.ThrowIfCancellationRequested();
+                    current = await executionRepository.GetByExecutionUidAsync(context.ExecutionUid, cancellationToken)
+                        ?? throw new InvalidOperationException("SAP_SYNC_EXECUTION_NOT_FOUND");
+                    if (await TryCompleteCancellationAsync(current, results, cancellationToken))
+                    {
+                        return;
+                    }
 
                 var snapshot = SapWarehouseSnapshot.FromRecord(row);
                 var snapshotJson = JsonSerializer.Serialize(snapshot, JsonOptions);
@@ -123,7 +128,21 @@ public sealed class SapWarehouseExecutionProcessor(
                     throw new InvalidOperationException($"SAP_SYNC_DETAIL_{write.ResultCode}");
                 }
 
-                results.Add(new PersistedResult(result.Status, result.ResultCode, nextAttemptAtUtc));
+                    results.Add(new PersistedResult(result.Status, result.ResultCode, nextAttemptAtUtc));
+                    if (!context.ContinueOnError
+                        && result.Status is SapSyncExecutionDetailStatuses.Failed
+                            or SapSyncExecutionDetailStatuses.RetryScheduled
+                            or SapSyncExecutionDetailStatuses.DeadLetter)
+                    {
+                        stopProcessing = true;
+                        break;
+                    }
+                }
+
+                if (stopProcessing)
+                {
+                    break;
+                }
             }
 
             current = await executionRepository.GetByExecutionUidAsync(context.ExecutionUid, cancellationToken)
@@ -144,6 +163,7 @@ public sealed class SapWarehouseExecutionProcessor(
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            await TryCloseInterruptedExecutionAsync(context.ExecutionUid, results);
             throw;
         }
         catch (Exception exception)
@@ -174,6 +194,33 @@ public sealed class SapWarehouseExecutionProcessor(
             }
 
             throw;
+        }
+    }
+
+    private async Task TryCloseInterruptedExecutionAsync(
+        Guid executionUid,
+        IReadOnlyCollection<PersistedResult> results)
+    {
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            var current = await executionRepository.GetByExecutionUidAsync(executionUid, timeout.Token);
+            if (current?.Status is SapSyncExecutionStatuses.Running or SapSyncExecutionStatuses.Cancelling)
+            {
+                await TransitionAsync(
+                    current,
+                    SapSyncExecutionStatuses.Cancelled,
+                    results,
+                    "SAP_WAREHOUSE_EXECUTION_INTERRUPTED",
+                    "La ejecucion de bodegas fue interrumpida de forma controlada.",
+                    null,
+                    timeout.Token);
+            }
+        }
+        catch
+        {
+            // La cancelacion original conserva prioridad; una futura recuperacion
+            // operativa podra cerrar cualquier cabecera que no haya respondido.
         }
     }
 

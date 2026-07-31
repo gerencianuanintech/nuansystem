@@ -133,6 +133,14 @@ public sealed class SapSyncScheduler(
             return SapSyncScheduleRejectionCodes.BothUnsupported;
         }
 
+        if (candidate.IsLegacyFallback
+            && candidate.EntityCode.Equals(
+                SapSyncEntityCode.Warehouses,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return SapSyncScheduleRejectionCodes.LegacyFallbackUnsupported;
+        }
+
         if (candidate.EntityCode.Equals(
                 SapSyncEntityCode.PurchaseOrders,
                 StringComparison.OrdinalIgnoreCase))

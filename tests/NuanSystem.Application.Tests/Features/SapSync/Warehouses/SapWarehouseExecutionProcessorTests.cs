@@ -125,6 +125,47 @@ public sealed class SapWarehouseExecutionProcessorTests
             Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public async Task ContinueOnErrorFalse_StopsAfterFirstFailedRecord()
+    {
+        var reader = Substitute.For<ISapWarehouseReader>();
+        var warehouseRepository = Substitute.For<IWarehouseRepository>();
+        var executionRepository = Substitute.For<ISapSyncExecutionRepository>();
+        var retryPolicy = Substitute.For<ISapSyncRetryPolicy>();
+        var context = Context() with { ContinueOnError = false, BatchSize = 1 };
+        var running = Execution(context, SapSyncExecutionStatuses.Running);
+        reader.GetWarehousesAsync(context.CompanyId, Arg.Any<CancellationToken>()).Returns([
+            Record("WH-FAIL"),
+            Record("WH-NOT-STARTED")
+        ]);
+        executionRepository.GetByExecutionUidAsync(context.ExecutionUid, Arg.Any<CancellationToken>())
+            .Returns(running);
+        warehouseRepository.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns<IReadOnlyCollection<WarehouseDto>>(_ => throw new TimeoutException());
+        executionRepository.UpsertDetailAsync(Arg.Any<SapSyncExecutionDetailData>(), Arg.Any<CancellationToken>())
+            .Returns(new SapSyncExecutionWriteResult(1, "OK", [1]));
+        executionRepository.TransitionAsync(Arg.Any<SapSyncExecutionStateData>(), Arg.Any<CancellationToken>())
+            .Returns(new SapSyncExecutionWriteResult(1, "OK", [2]));
+        retryPolicy.Evaluate(
+                Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<Exception?>(),
+                Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<DateTime>())
+            .Returns(new SapSyncRetryDecision(true, false, DateTime.UtcNow.AddMinutes(1), "transient"));
+        var processor = new SapWarehouseExecutionProcessor(
+            reader,
+            new SapWarehouseRecordProcessor(warehouseRepository, Substitute.For<ISender>()),
+            executionRepository,
+            retryPolicy);
+
+        await processor.ProcessAsync(context);
+
+        await executionRepository.Received(1).UpsertDetailAsync(
+            Arg.Is<SapSyncExecutionDetailData>(detail => detail.SourceRecordKey == "WH-FAIL"),
+            Arg.Any<CancellationToken>());
+        await executionRepository.DidNotReceive().UpsertDetailAsync(
+            Arg.Is<SapSyncExecutionDetailData>(detail => detail.SourceRecordKey == "WH-NOT-STARTED"),
+            Arg.Any<CancellationToken>());
+    }
+
     private static SapSyncScheduledExecutionContext Context() => new(
         ExecutionUid: Guid.NewGuid(),
         CorrelationId: Guid.NewGuid().ToString(),

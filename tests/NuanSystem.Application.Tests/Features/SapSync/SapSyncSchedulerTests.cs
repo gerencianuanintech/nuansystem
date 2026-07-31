@@ -143,6 +143,34 @@ public sealed class SapSyncSchedulerTests
     }
 
     [Fact]
+    public async Task PollAsync_WarehouseLegacyFallback_IsRejectedUntilProfileCutover()
+    {
+        var legacy = Candidate() with
+        {
+            CandidateSource = SapSyncScheduleCandidateSources.LegacyFallback,
+            ProfileId = null,
+            ProfileEntityId = null,
+            EntityCode = SapSyncEntityCode.Warehouses,
+            ScheduleId = null,
+            ScheduleType = SapSyncScheduleCandidateSources.LegacyFallback,
+            ScheduleRowVersion = null,
+            LegacyFallbackEnabled = true,
+            SortProfileId = 0
+        };
+        var repository = new FakeScheduleRepository([legacy]);
+        var handler = new RejectingHandler(SapSyncEntityCode.Warehouses);
+
+        var result = await CreateScheduler(repository, handler).PollAsync(
+            SapSyncScheduleCursor.Start, 10, "worker-a");
+
+        result.Executions.Should().BeEmpty();
+        result.Rejections.Should().ContainSingle(item =>
+            item.Code == SapSyncScheduleRejectionCodes.LegacyFallbackUnsupported);
+        repository.ReserveCalls.Should().Be(0);
+        handler.CallCount.Should().Be(0);
+    }
+
+    [Fact]
     public async Task PollAsync_ConcurrentReservationDoesNotPrepareDuplicateContext()
     {
         var repository = new FakeScheduleRepository([Candidate()])
