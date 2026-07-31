@@ -10,8 +10,12 @@ public sealed class SapSyncSchedulerPersistenceContractTests
     private const string Migration = "155_master_sap_sync_scheduler.sql";
     private const string ContractRepairMigration =
         "156_master_sap_sync_scheduler_dapper_contract.sql";
+    private const string SessionOptionsRepairMigration =
+        "157_master_sap_sync_scheduler_session_options.sql";
     private const string Migration155NormalizedSha256 =
         "90F26B0691B3F7362823AD9E77BFA367C304C4CDF7DC218B1672DF3356BC5F41";
+    private const string Migration156NormalizedSha256 =
+        "C1D28396E034E1260DAE6718CC5D2C4566CE15A65D43561353A236FDDC74643A";
 
     [Fact]
     public void Migration_IsForwardOnlyIdempotentAndOrderedAfter154()
@@ -187,6 +191,94 @@ public sealed class SapSyncSchedulerPersistenceContractTests
     }
 
     [Fact]
+    public void SessionOptionsRepair_IsForwardOnlyIdempotentAndOrderedAfter156()
+    {
+        var sql = Read("database", "sql", SessionOptionsRepairMigration);
+        var initializer = Read(
+            "src", "Backend", "NuanSystem.Persistence", "Services",
+            "SqlServerMasterDatabaseInitializer.cs");
+
+        sql.Should().Contain("Version = N'20260731.157'")
+            .And.Contain("WHERE Version = N'20260731.156'")
+            .And.Contain("CREATE OR ALTER PROCEDURE dbo.SP_NA_PATCH_SAPSYNCSCHEDULERESERVAR")
+            .And.NotContain("ALTER TABLE")
+            .And.NotContain("DROP TABLE")
+            .And.NotContain("DELETE FROM dbo.SapSync")
+            .And.NotContain("INSERT dbo.SapSync")
+            .And.NotContain("UPDATE dbo.SapSync");
+        Regex.Matches(sql, "20260731\\.157").Count.Should().Be(2);
+        Regex.Matches(
+                sql,
+                "CREATE OR ALTER PROCEDURE dbo\\.SP_NA_PATCH_SAPSYNCSCHEDULERESERVAR")
+            .Count.Should().Be(1);
+        initializer.IndexOf(SessionOptionsRepairMigration, StringComparison.Ordinal)
+            .Should().BeGreaterThan(
+                initializer.IndexOf(ContractRepairMigration, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void SessionOptionsRepair_ConfiguresFilteredIndexRequirementsBeforeReservation()
+    {
+        var sql = Read("database", "sql", SessionOptionsRepairMigration);
+        var procedure = Regex.Match(
+            sql,
+            @"(?s)CREATE OR ALTER PROCEDURE dbo\.SP_NA_PATCH_SAPSYNCSCHEDULERESERVAR.*?\r?\nGO")
+            .Value;
+        var updateIndex = procedure.IndexOf("UPDATE schedule", StringComparison.Ordinal);
+
+        procedure.Should().Contain("SET ANSI_PADDING ON;")
+            .And.Contain("SET ANSI_WARNINGS ON;")
+            .And.Contain("SET ARITHABORT ON;")
+            .And.Contain("SET CONCAT_NULL_YIELDS_NULL ON;")
+            .And.Contain("SET NUMERIC_ROUNDABORT OFF;")
+            .And.Contain("SET XACT_ABORT ON;");
+        sql.IndexOf("SET ANSI_NULLS ON;", StringComparison.Ordinal)
+            .Should().BeLessThan(
+                sql.IndexOf("CREATE OR ALTER PROCEDURE", StringComparison.Ordinal));
+        sql.IndexOf("SET QUOTED_IDENTIFIER ON;", StringComparison.Ordinal)
+            .Should().BeLessThan(
+                sql.IndexOf("CREATE OR ALTER PROCEDURE", StringComparison.Ordinal));
+        updateIndex.Should().BePositive();
+        foreach (var option in new[]
+                 {
+                     "SET ANSI_PADDING ON;",
+                     "SET ANSI_WARNINGS ON;",
+                     "SET ARITHABORT ON;",
+                     "SET CONCAT_NULL_YIELDS_NULL ON;",
+                     "SET NUMERIC_ROUNDABORT OFF;"
+                 })
+        {
+            procedure.IndexOf(option, StringComparison.Ordinal)
+                .Should().BeLessThan(updateIndex);
+        }
+    }
+
+    [Fact]
+    public void SessionOptionsRepair_PreservesReservationSignatureAndGuards()
+    {
+        var sql = Read("database", "sql", SessionOptionsRepairMigration);
+        var procedure = Regex.Match(
+            sql,
+            @"(?s)CREATE OR ALTER PROCEDURE dbo\.SP_NA_PATCH_SAPSYNCSCHEDULERESERVAR.*?\r?\nGO")
+            .Value;
+
+        procedure.Should().Contain("@ScheduleId bigint")
+            .And.Contain("@ExpectedRowVersion varbinary(8)")
+            .And.Contain("@UtcNow datetime2(0)")
+            .And.Contain("@ObservedNextExecutionAtUtc datetime2(0) = NULL")
+            .And.Contain("@ScheduledAtUtc datetime2(0) = NULL")
+            .And.Contain("@NextExecutionAtUtc datetime2(0)")
+            .And.Contain("schedule.RowVersion = @ExpectedRowVersion")
+            .And.Contain("schedule.IsActive = 1")
+            .And.Contain("entity.IsActive = 1")
+            .And.Contain("profile.IsActive = 1")
+            .And.Contain("schedule.NextExecutionAtUtc = @ObservedNextExecutionAtUtc")
+            .And.Contain("schedule.NextExecutionAtUtc <= @UtcNow")
+            .And.Contain("LastScheduledAtUtc = COALESCE(@ScheduledAtUtc")
+            .And.Contain("SELECT @@ROWCOUNT");
+    }
+
+    [Fact]
     public void Migration155_RemainsByteSemanticallyUnchanged()
     {
         var normalized = Sql().Replace("\r\n", "\n", StringComparison.Ordinal);
@@ -194,6 +286,17 @@ public sealed class SapSyncSchedulerPersistenceContractTests
             SHA256.HashData(Encoding.UTF8.GetBytes(normalized)));
 
         hash.Should().Be(Migration155NormalizedSha256);
+    }
+
+    [Fact]
+    public void Migration156_RemainsByteSemanticallyUnchanged()
+    {
+        var normalized = Read("database", "sql", ContractRepairMigration)
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var hash = Convert.ToHexString(
+            SHA256.HashData(Encoding.UTF8.GetBytes(normalized)));
+
+        hash.Should().Be(Migration156NormalizedSha256);
     }
 
     [Fact]
