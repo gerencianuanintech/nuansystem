@@ -55,7 +55,7 @@ public sealed class SapSyncProfilePersistenceContractTests
         Regex.Matches(tenant, "CREATE OR ALTER PROCEDURE dbo\\.SP_NA_").Count.Should().Be(21);
         Regex.Matches(master, "20260730\\.152").Count.Should().Be(2);
         Regex.Matches(hardening, "20260730\\.154").Count.Should().Be(2);
-        Regex.Matches(tenant, "20260730\\.153").Count.Should().Be(2);
+        Regex.Matches(tenant, "20260730\\.153").Count.Should().Be(3);
         Regex.Matches(tenant, "20260731\\.158").Count.Should().Be(2);
 
         masterInitializer.IndexOf(MasterMigration, StringComparison.Ordinal)
