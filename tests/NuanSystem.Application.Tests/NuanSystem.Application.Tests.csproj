@@ -21,6 +21,7 @@
     <ProjectReference Include="..\..\src\Backend\NuanSystem.Application\NuanSystem.Application.csproj" />
     <ProjectReference Include="..\..\src\Backend\NuanSystem.MasterBranchSyncWorker\NuanSystem.MasterBranchSyncWorker.csproj" />
     <ProjectReference Include="..\..\src\Backend\NuanSystem.SapIntegration\NuanSystem.SapIntegration.csproj" />
+    <ProjectReference Include="..\..\src\Backend\NuanSystem.SyncWorker\NuanSystem.SyncWorker.csproj" />
     <ProjectReference Include="..\..\src\Backend\SyncSRI\NuanSystem.SriWorker\NuanSystem.SriWorker.csproj" />
     <ProjectReference Include="..\..\src\Frontend\NuanSystem.WinForms.ViewModels\NuanSystem.WinForms.ViewModels.csproj" />
   </ItemGroup>
