@@ -35,7 +35,9 @@ public sealed class SapSyncScheduleRepository(
             commandType: CommandType.StoredProcedure,
             cancellationToken: cancellationToken));
 
-        var items = (await grid.ReadAsync<SapSyncScheduleCandidate>()).AsList();
+        var items = (await grid.ReadAsync<SapSyncScheduleCandidateRow>())
+            .Select(SapSyncScheduleCandidateRowMapper.Map)
+            .AsList();
         var enabledCompanyCount = await grid.ReadSingleAsync<int>();
         return new SapSyncScheduleCandidatePage(items, enabledCompanyCount);
     }
