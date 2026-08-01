@@ -98,8 +98,11 @@ public sealed class SapSyncWinFormsContractTests
         files.Should().OnlyContain(file => !file.Contains("foreach", StringComparison.Ordinal)
             && !file.Contains("BuildLayout", StringComparison.Ordinal)
             && !file.Contains("ConfigureColumn", StringComparison.Ordinal)
-            && !file.Contains("ConfigureButton", StringComparison.Ordinal));
+            && !file.Contains("ConfigureButton", StringComparison.Ordinal)
+            && !file.Contains("AddRange(new[]", StringComparison.Ordinal));
         files[0].Should().Contain("Entidades y programacion");
+        files[0].Should().Contain("btnCancelar.Location = new Point(936, 632)")
+            .And.Contain("btnGuardar.Location = new Point(1042, 632)");
         files[1].Should().Contain("Detalle de ejecucion SAP");
         files[2].Should().Contain("Filtrar ejecuciones SAP");
     }
