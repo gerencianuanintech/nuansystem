@@ -65,6 +65,7 @@ public sealed class SapSyncExecutionDetailViewModel(ISapSyncManagementClient cli
     public SapSyncExecutionDetail? Execution { get; private set; }
     public IReadOnlyCollection<SapSyncExecutionDetailItem> Details { get; private set; } = [];
     public SapSyncExecutionDetailFilter? Filter { get; private set; }
+    public int DetailTotalCount { get; private set; }
 
     public async Task LoadAsync(Guid executionUid, CancellationToken cancellationToken = default)
     {
@@ -72,6 +73,15 @@ public sealed class SapSyncExecutionDetailViewModel(ISapSyncManagementClient cli
         Filter ??= new SapSyncExecutionDetailFilter { ExecutionUid = executionUid };
         var details = await client.SearchExecutionDetailsAsync(Filter, cancellationToken);
         Details = details.Items;
+        DetailTotalCount = details.TotalCount;
+    }
+
+    public async Task GoToDetailPageAsync(Guid executionUid, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        Filter ??= new SapSyncExecutionDetailFilter { ExecutionUid = executionUid };
+        Filter.PageNumber = Math.Max(1, page);
+        Filter.PageSize = Math.Max(1, pageSize);
+        await LoadAsync(executionUid, cancellationToken);
     }
 
     public async Task RetryAsync(string reason, CancellationToken cancellationToken = default)

@@ -987,7 +987,8 @@ internal sealed class FrontendComposition : IDisposable
         return new SapSyncExecutionListForm(
             new SapSyncExecutionsViewModel(sapSyncManagementClient),
             sapSyncManagementClient,
-            session);
+            session,
+            gridColumnSettingsClient);
     }
 
     public SyncMonitorForm CreateSyncMonitorForm()

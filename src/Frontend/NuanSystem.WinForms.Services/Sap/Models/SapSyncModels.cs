@@ -9,7 +9,7 @@ public sealed record SapSyncProfileListFilter
     public bool? IsActive { get; set; }
     public string? EntityCode { get; set; }
     public int PageNumber { get; set; } = 1;
-    public int PageSize { get; set; } = 200;
+    public int PageSize { get; set; } = 50;
 }
 
 public sealed record SapSyncProfileListItem
@@ -128,7 +128,7 @@ public sealed record SapSyncExecutionFilter
     public DateTime? DateFromUtc { get; set; }
     public DateTime? DateToUtc { get; set; }
     public int PageNumber { get; set; } = 1;
-    public int PageSize { get; set; } = 200;
+    public int PageSize { get; set; } = 50;
 }
 
 public sealed record SapSyncExecutionListItem
@@ -187,7 +187,7 @@ public sealed record SapSyncExecutionDetailFilter
     public string? Status { get; set; }
     public string? SourceRecordKey { get; set; }
     public int PageNumber { get; set; } = 1;
-    public int PageSize { get; set; } = 200;
+    public int PageSize { get; set; } = 100;
 }
 
 public sealed record SapSyncExecutionDetailItem

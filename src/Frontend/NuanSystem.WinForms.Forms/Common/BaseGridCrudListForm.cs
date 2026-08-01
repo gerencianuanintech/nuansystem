@@ -62,6 +62,8 @@ public partial class BaseGridCrudListForm : BaseCrudListForm
 
     protected GridView GridView => gridView;
 
+    protected NuanDataGridControl NuanGrid => nuanGrid;
+
     public void ExportVisibleColumnsToExcel(string userName, string companyName, byte[]? companyLogoImage)
     {
         var columns = GetVisibleGridColumns();
@@ -232,6 +234,31 @@ public partial class BaseGridCrudListForm : BaseCrudListForm
         pageDataSourceFactory = pageItems => pageItems.Cast<TItem>().ToList();
         currentPage = 1;
         ApplyPage();
+    }
+
+    protected void EnableServerPaging(int initialPageSize = 50)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(initialPageSize, 1);
+        paginationPanel.Visible = false;
+        nuanGrid.ShowPagination = true;
+        nuanGrid.PageSize = initialPageSize;
+    }
+
+    protected void SetPagedGridData<TItem>(
+        IEnumerable<TItem> source,
+        int page,
+        int requestedPageSize,
+        int totalCount)
+        where TItem : class
+    {
+        var pageItems = source.ToList();
+        items.Clear();
+        items.AddRange(pageItems);
+        pageDataSourceFactory = values => values.Cast<TItem>().ToList();
+        nuanGrid.SetPagedData(pageItems, page, requestedPageSize, totalCount);
+        ConfigureGridColumns();
+        ConfigureSelectionColumn();
+        UpdateAuditInfo();
     }
 
     protected TItem? SelectedGridItem<TItem>()

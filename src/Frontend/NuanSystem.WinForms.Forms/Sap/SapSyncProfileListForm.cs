@@ -7,6 +7,8 @@ using NuanSystem.WinForms.Services.Sap;
 using NuanSystem.WinForms.Services.Sap.Models;
 using NuanSystem.WinForms.Services.Session;
 using NuanSystem.WinForms.ViewModels.Sap;
+using NuanSystem.WinForms.Controls.Grids;
+using DevExpress.Utils;
 
 namespace NuanSystem.WinForms.Forms.Sap;
 
@@ -16,6 +18,7 @@ public sealed partial class SapSyncProfileListForm : BaseGridCrudListForm
     private SapSyncProfilesViewModel? viewModel;
     private ISapSyncManagementClient? client;
     private ApiSession? session;
+    private IGridColumnSettingsClient? columnSettingsClient;
 
     public SapSyncProfileListForm()
     {
@@ -28,8 +31,12 @@ public sealed partial class SapSyncProfileListForm : BaseGridCrudListForm
         this.viewModel = viewModel;
         this.client = client;
         this.session = session;
+        this.columnSettingsClient = columnSettingsClient;
         ConfigureCrudPermissions(session, new(PermissionCodes.SapSyncProfilesView, PermissionCodes.SapSyncProfilesCreate, PermissionCodes.SapSyncProfilesEdit, PermissionCodes.SapSyncProfilesDelete));
         ConfigureColumnPersonalization(columnSettingsClient, FormKey);
+        EnableServerPaging(50);
+        NuanGrid.FormKey = FormKey;
+        NuanGrid.PageRequested += async (_, args) => await GoToPageAsync(args);
         GridView.DoubleClick += async (_, _) => await ExecuteConsultAsync();
     }
 
@@ -40,7 +47,12 @@ public sealed partial class SapSyncProfileListForm : BaseGridCrudListForm
     protected override async Task LoadDataAsync()
     {
         if (IsInDesignMode() || viewModel is null) return;
-        await RunWithBusyStateAsync(async () => { await ViewModel.LoadAsync(); SetGridData(ViewModel.Profiles); await ApplyColumnSettingsAsync(); });
+        await RunWithBusyStateAsync(async () =>
+        {
+            await ViewModel.LoadAsync();
+            SetPagedGridData(ViewModel.Profiles, ViewModel.Filter.PageNumber, ViewModel.Filter.PageSize, ViewModel.TotalCount);
+            await ApplyColumnSettingsAsync();
+        });
     }
 
     protected override Task CreateAsync() => OpenEditorAsync(null, false);
@@ -110,7 +122,7 @@ public sealed partial class SapSyncProfileListForm : BaseGridCrudListForm
     private Task OpenExecutionsAsync()
     {
         if (Selected() is not { } item) { ShowWarning("Seleccione un perfil SAP."); return Task.CompletedTask; }
-        using var form = new SapSyncExecutionListForm(new SapSyncExecutionsViewModel(Client), Client, Session, item.Id);
+        using var form = new SapSyncExecutionListForm(new SapSyncExecutionsViewModel(Client), Client, Session, columnSettingsClient, item.Id);
         form.ShowDialog(this);
         return Task.CompletedTask;
     }
@@ -122,6 +134,14 @@ public sealed partial class SapSyncProfileListForm : BaseGridCrudListForm
         ViewModel.Filter.Search = dialog.Search;
         ViewModel.Filter.IsActive = dialog.SelectedIsActive;
         ViewModel.Filter.EntityCode = dialog.EntityCode;
+        ViewModel.Filter.PageNumber = 1;
+        await LoadDataAsync();
+    }
+
+    private async Task GoToPageAsync(NuanGridPageRequestEventArgs args)
+    {
+        ViewModel.Filter.PageNumber = args.Page;
+        ViewModel.Filter.PageSize = args.PageSize;
         await LoadDataAsync();
     }
 
@@ -133,11 +153,27 @@ public sealed partial class SapSyncProfileListForm : BaseGridCrudListForm
         Column(nameof(SapSyncProfileListItem.Code), "Codigo", 0, 110);
         Column(nameof(SapSyncProfileListItem.Name), "Perfil SAP", 1, 230);
         Column(nameof(SapSyncProfileListItem.CompanyName), "Empresa", 2, 220);
-        Column(nameof(SapSyncProfileListItem.ActiveEntityCount), "Entidades", 3, 90);
+        Column(nameof(SapSyncProfileListItem.ActiveEntityCount), "Entidades", 3, 90, alignment: HorzAlignment.Far);
         Column(nameof(SapSyncProfileListItem.StatusText), "Estado", 4, 90);
-        Column(nameof(SapSyncProfileListItem.UpdatedAtUtc), "Ultima modificacion", 5, 155);
+        Column(nameof(SapSyncProfileListItem.UpdatedAtUtc), "Ultima modificacion", 5, 155, "yyyy-MM-dd HH:mm");
     }
-    private void Column(string field, string caption, int index, int width) { if (GridView.Columns[field] is not { } column) return; column.Caption = caption; column.Visible = true; column.VisibleIndex = index; column.Width = width; }
+    private void Column(string field, string caption, int index, int width, string? format = null, HorzAlignment? alignment = null)
+    {
+        if (GridView.Columns[field] is not { } column) return;
+        column.Caption = caption;
+        column.Visible = true;
+        column.VisibleIndex = index;
+        column.Width = width;
+        if (!string.IsNullOrWhiteSpace(format))
+        {
+            column.DisplayFormat.FormatType = DevExpress.Utils.FormatType.DateTime;
+            column.DisplayFormat.FormatString = format;
+        }
+        if (alignment.HasValue)
+        {
+            column.AppearanceCell.TextOptions.HAlignment = alignment.Value;
+        }
+    }
     private static string Normalize(string value) => value.Replace("ACTION.", "", StringComparison.OrdinalIgnoreCase).Replace("SAP_SYNC_PROFILES.", "", StringComparison.OrdinalIgnoreCase).Replace("-", "").Replace("_", "").ToLowerInvariant();
     private bool IsInDesignMode() => LicenseManager.UsageMode == LicenseUsageMode.Designtime || DesignMode || Site?.DesignMode == true;
 }

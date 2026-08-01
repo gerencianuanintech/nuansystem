@@ -6,6 +6,8 @@ namespace NuanSystem.WinForms.Forms.Sap;
 
 public sealed partial class SapSyncProfileEditForm : BaseEditForm
 {
+    // The entity/schedule matrix intentionally uses GridControl because it is an
+    // inline editable master-detail editor; NuanDataGridControl is read/paging oriented.
     private readonly SapSyncProfileEditViewModel? viewModel;
     public SapSyncProfileEditForm() { InitializeComponent(); FormStyler.ApplyBase(this); }
     public SapSyncProfileEditForm(SapSyncProfileEditViewModel viewModel) : this() { this.viewModel = viewModel; Bind(); }
