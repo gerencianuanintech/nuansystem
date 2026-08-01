@@ -3,14 +3,14 @@
 ## Estado
 
 - Fecha de última actualización: 2026-07-31.
-- Estado: Fase 10.6 implementada, desplegada y validada en runtime para el piloto SAP → DEMO; configuración final deshabilitada.
+- Estado: Fases 10.6 y 10.7 implementadas, desplegadas y validadas; configuración SAP final deshabilitada.
 - Documento arquitectónico: [SAP-SYNC-PROFILES-BLUEPRINT.md](../architecture/SAP-SYNC-PROFILES-BLUEPRINT.md).
 - Fuente: SAP Business One Service Layer.
 - Destino único: empresa `DEMO`, base `NuanSystem_DEMO`.
 - Worker autorizado por diseño: `NuanSystem.SyncWorker`.
 - Fuera de alcance: `NuanSystem.MasterBranchSyncWorker`, Remigio, Cañaris, SRI, SQL/runtime real durante Fase 10.1.
 
-Este documento conserva el plan definido en Fase 10.1 y registra el cierre posterior de Fase 10.6. La ejecución real de SAP, Service Layer y `NuanSystem.SyncWorker` se limita al piloto documentado; SRI, WinForms, Remigio y Cañaris no fueron ejecutados.
+Este documento conserva el plan definido en Fase 10.1 y registra los cierres posteriores de Fases 10.6 y 10.7. La ejecución real de SAP, Service Layer y `NuanSystem.SyncWorker` se limita al piloto documentado; la validación WinForms 10.7 no inició workers ni llamó SAP o SRI.
 
 La implementación 10.6 conecta `Warehouses` al scheduler existente mediante un procesador programado, conserva el lock renovable, registra cabecera y detalle `WarehouseV1`, aplica timeout, `BatchSize`, `ContinueOnError`, cancelación segura y retry desde snapshot. El fallback legado de `Warehouses` queda rechazado: la capacidad solo puede ejecutarse mediante un perfil SAP explícito. La colisión únicamente por código queda en `ApprovalRequired`, sin adopción automática ni escritura. La evidencia completa del piloto está en [SAP-WAREHOUSE-SYNC-PHASE-10.6-RUNTIME-EVIDENCE.md](SAP-WAREHOUSE-SYNC-PHASE-10.6-RUNTIME-EVIDENCE.md).
 
@@ -72,7 +72,7 @@ Demostrar, con evidencia separada por capa, que un perfil SAP independiente pued
 - Propagación efectiva de `BatchSize=5` y límites de intentos: validada.
 - Lease renovable y vínculo lock/ejecución: validados.
 - Bodega SAP nueva inactiva: `Skipped`, sin creación local.
-- Formularios/permisos SAP Profiles/Executions: pendientes de Fase 10.7.
+- Formularios, permisos y Ribbon de Perfiles/Ejecuciones SAP: validados en Fase 10.7.
 
 ## Precondiciones obligatorias para una futura ejecución
 
@@ -432,7 +432,7 @@ Estado: cerrada y validada en runtime local. Las migraciones 153/158, materializ
 
 ### 10.7
 
-Estado: implementación estática completada; despliegue SQL y validación visual pendientes.
+Estado: implementación, despliegue SQL, seguridad, API y validación visual completados. Evidencia: [SAP-SYNC-WINFORMS-PHASE-10.7-RUNTIME-EVIDENCE.md](SAP-SYNC-WINFORMS-PHASE-10.7-RUNTIME-EVIDENCE.md).
 
 - formularios SAP independientes;
 - Designer y controles corporativos;
@@ -446,18 +446,18 @@ Entregables implementados:
 - `SapSyncExecutionListForm` y `SapSyncExecutionDetailForm`;
 - filtros independientes de perfiles y ejecuciones;
 - navegación desde `MainForm` con FormKeys SAP propios;
-- migración `160_master_sap_sync_winforms_navigation.sql`, no ejecutada;
+- migración `160_master_sap_sync_winforms_navigation.sql`, ejecutada dos veces e idempotente en Master;
 - pruebas de contratos JSON, rutas HTTP, seguridad, navegación, migración y Designer.
 
-Gates aún requeridos antes de cerrar runtime:
+Gates de cierre runtime aprobados:
 
 1. respaldo verificado de Master;
 2. ejecución doble e idempotente de la migración 160;
 3. JWT renovado para ADMIN y comprobación del Ribbon;
-4. apertura de los cuatro formularios en Visual Studio Designer;
-5. prueba visual de DPI, tamaño mínimo, resize, filtros, estados vacío/error/busy y detalle largo;
-6. API temporal para validar 401/403/200 y acciones según estado;
-7. limpieza final y confirmación de cero procesos y perfiles/agendas activos.
+4. apertura de los formularios de edición y detalle en Visual Studio Designer;
+5. prueba visual de tamaño mínimo, resize, filtros y presentación de listados/detalles;
+6. API temporal con validación 401/403/200 y acciones exactas;
+7. limpieza final y confirmación de cero procesos y workers iniciados.
 
 ### 10.8
 
