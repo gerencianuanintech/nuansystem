@@ -40,6 +40,7 @@ public sealed class MasterBranchSyncWorkerProcessor(
             currentOptions.NormalizedWorkerInstance,
             currentOptions.NormalizedBatchSize,
             currentOptions.LockDuration,
+            currentOptions.EnabledEntityAppliers,
             cancellationToken);
 
         foreach (var syncEvent in events)

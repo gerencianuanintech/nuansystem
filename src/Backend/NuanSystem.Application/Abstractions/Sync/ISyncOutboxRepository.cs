@@ -7,7 +7,12 @@ public interface ISyncOutboxRepository
 {
     Task<long> CreateAsync(CreateSyncOutboxEventData data, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<SyncOutboxDto>> GetPendingAsync(int companyId, int take, CancellationToken cancellationToken = default);
-    Task<IReadOnlyCollection<SyncOutboxDto>> ClaimPendingAsync(string lockedBy, int take, TimeSpan lockDuration, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<SyncOutboxDto>> ClaimPendingAsync(
+        string lockedBy,
+        int take,
+        TimeSpan lockDuration,
+        IReadOnlyCollection<string> enabledEntityNames,
+        CancellationToken cancellationToken = default);
     Task<int> ReleaseExpiredLocksAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<SyncOutboxDto>> GetRecentAsync(int companyId, int take, CancellationToken cancellationToken = default);
     Task<SyncDashboardDto> GetDashboardAsync(int companyId, int take, CancellationToken cancellationToken = default);

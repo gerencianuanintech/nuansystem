@@ -24,7 +24,7 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
 
         processed.Should().Be(0);
         await outboxRepository.DidNotReceiveWithAnyArgs().ReleaseExpiredLocksAsync(default);
-        await outboxRepository.DidNotReceiveWithAnyArgs().ClaimPendingAsync(default!, default, default, default);
+        await outboxRepository.DidNotReceiveWithAnyArgs().ClaimPendingAsync(default!, default, default, default!, default);
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
 
         processed.Should().Be(0);
         await outboxRepository.DidNotReceiveWithAnyArgs().ReleaseExpiredLocksAsync(default);
-        await outboxRepository.DidNotReceiveWithAnyArgs().ClaimPendingAsync(default!, default, default, default);
+        await outboxRepository.DidNotReceiveWithAnyArgs().ClaimPendingAsync(default!, default, default, default!, default);
         await outboxRepository.DidNotReceiveWithAnyArgs().UpdateStatusAsync(default, default, default, default);
         await outboxRepository.DidNotReceiveWithAnyArgs().MarkIgnoredAsync(default, default, default);
         await auditRepository.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
@@ -73,6 +73,7 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
                 Arg.Any<string>(),
                 Arg.Any<int>(),
                 Arg.Any<TimeSpan>(),
+                Arg.Any<IReadOnlyCollection<string>>(),
                 Arg.Any<CancellationToken>())
             .Returns(Array.Empty<SyncOutboxDto>());
         var processor = CreateProcessor(
@@ -82,7 +83,8 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
                 WorkerInstance = "worker-a",
                 BatchSize = 25,
                 LockMinutes = 7,
-                SkeletonMode = false
+                SkeletonMode = false,
+                EnabledEntityAppliers = ["Carrier"]
             },
             outboxRepository);
 
@@ -94,6 +96,8 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
             "worker-a",
             25,
             TimeSpan.FromMinutes(7),
+            Arg.Is<IReadOnlyCollection<string>>(names =>
+                names.Count == 1 && names.Single() == "Carrier"),
             Arg.Any<CancellationToken>());
     }
 
@@ -152,6 +156,9 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
         repository.Should().Contain("AttemptCount < MaxAttempts");
         repository.Should().Contain("NextRetryAt IS NULL OR NextRetryAt <= SYSUTCDATETIME()");
         repository.Should().Contain("Status IN (N'Pending', N'Error')");
+        repository.Should().Contain("EntityName IN @EntityNames");
+        repository.Should().Contain("NormalizeEntityNames(enabledEntityNames)");
+        repository.Should().Contain("normalizedEntityNames.Length == 0");
         repository.Should().NotContain("Status IN (N'Pending', N'Error', N'DeadLetter')");
     }
 
@@ -187,6 +194,7 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
                 Arg.Any<string>(),
                 Arg.Any<int>(),
                 Arg.Any<TimeSpan>(),
+                Arg.Any<IReadOnlyCollection<string>>(),
                 Arg.Any<CancellationToken>())
             .Returns(new[] { syncEvent });
         outboxRepository.GetTargetsAsync(syncEvent.CompanyId, syncEvent.Id, Arg.Any<CancellationToken>())
@@ -235,7 +243,8 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
         var target = CreateTarget(syncEvent.Id);
 
         outboxRepository.ClaimPendingAsync(
-                Arg.Any<string>(), Arg.Any<int>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+                Arg.Any<string>(), Arg.Any<int>(), Arg.Any<TimeSpan>(),
+                Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
             .Returns(new[] { syncEvent });
         outboxRepository.GetTargetsAsync(syncEvent.CompanyId, syncEvent.Id, Arg.Any<CancellationToken>())
             .Returns(new[] { target });
@@ -279,7 +288,8 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
         var target = CreateTarget(syncEvent.Id);
 
         outboxRepository.ClaimPendingAsync(
-                Arg.Any<string>(), Arg.Any<int>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+                Arg.Any<string>(), Arg.Any<int>(), Arg.Any<TimeSpan>(),
+                Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
             .Returns(new[] { syncEvent });
         outboxRepository.GetTargetsAsync(syncEvent.CompanyId, syncEvent.Id, Arg.Any<CancellationToken>())
             .Returns(new[] { target });
@@ -328,6 +338,7 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
                 Arg.Any<string>(),
                 Arg.Any<int>(),
                 Arg.Any<TimeSpan>(),
+                Arg.Any<IReadOnlyCollection<string>>(),
                 Arg.Any<CancellationToken>())
             .Returns(new[] { syncEvent });
         outboxRepository.GetTargetsAsync(syncEvent.CompanyId, syncEvent.Id, Arg.Any<CancellationToken>())
@@ -376,6 +387,7 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
                 Arg.Any<string>(),
                 Arg.Any<int>(),
                 Arg.Any<TimeSpan>(),
+                Arg.Any<IReadOnlyCollection<string>>(),
                 Arg.Any<CancellationToken>())
             .Returns(new[] { syncEvent });
         outboxRepository.GetTargetsAsync(syncEvent.CompanyId, syncEvent.Id, Arg.Any<CancellationToken>())
@@ -401,6 +413,7 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
             "worker-a",
             Arg.Any<int>(),
             Arg.Any<TimeSpan>(),
+            Arg.Is<IReadOnlyCollection<string>>(names => names.Count == 0),
             Arg.Any<CancellationToken>());
         await outboxRepository.Received(1).UpdateStatusAsync(
             syncEvent.Id,
@@ -430,6 +443,7 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
                 Arg.Any<string>(),
                 Arg.Any<int>(),
                 Arg.Any<TimeSpan>(),
+                Arg.Any<IReadOnlyCollection<string>>(),
                 Arg.Any<CancellationToken>())
             .Returns(new[] { syncEvent });
         outboxRepository.GetTargetsAsync(syncEvent.CompanyId, syncEvent.Id, Arg.Any<CancellationToken>())
@@ -472,6 +486,7 @@ public sealed class MasterBranchSyncWorkerSkeletonTests
                 Arg.Any<string>(),
                 Arg.Any<int>(),
                 Arg.Any<TimeSpan>(),
+                Arg.Any<IReadOnlyCollection<string>>(),
                 Arg.Any<CancellationToken>())
             .Returns(new[] { syncEvent });
         outboxRepository.GetTargetsAsync(syncEvent.CompanyId, syncEvent.Id, Arg.Any<CancellationToken>())

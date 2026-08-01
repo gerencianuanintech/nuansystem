@@ -16,6 +16,7 @@ public sealed class SyncOutboxRepository(IMasterConnectionFactory connectionFact
     SELECT TOP (@Take) *
     FROM dbo.SyncOutbox WITH (ROWLOCK, READPAST, UPDLOCK)
     WHERE Status IN (N'Pending', N'Error')
+      AND (@AllEntities = 1 OR EntityName IN @EntityNames)
       AND AttemptCount < MaxAttempts
       AND (NextRetryAt IS NULL OR NextRetryAt <= SYSUTCDATETIME())
       AND (LockedBy IS NULL OR LockExpiresAt IS NULL OR LockExpiresAt <= SYSUTCDATETIME())
@@ -188,10 +189,25 @@ ORDER BY CreatedAt, Id;
         string lockedBy,
         int take,
         TimeSpan lockDuration,
+        IReadOnlyCollection<string> enabledEntityNames,
         CancellationToken cancellationToken = default)
     {
+        var normalizedEntityNames = NormalizeEntityNames(enabledEntityNames);
+        if (normalizedEntityNames.Length == 0)
+        {
+            return Array.Empty<SyncOutboxDto>();
+        }
+
         using var connection = connectionFactory.CreateConnection();
-        return await ClaimPendingAsync(connection, transaction: null, lockedBy, take, lockDuration, cancellationToken);
+        return await ClaimPendingCoreAsync(
+            connection,
+            transaction: null,
+            lockedBy,
+            take,
+            lockDuration,
+            normalizedEntityNames,
+            allEntities: false,
+            cancellationToken);
     }
 
     public async Task<int> ReleaseExpiredLocksAsync(CancellationToken cancellationToken = default)
@@ -208,13 +224,36 @@ ORDER BY CreatedAt, Id;
         TimeSpan lockDuration,
         CancellationToken cancellationToken = default)
     {
+        return await ClaimPendingCoreAsync(
+            connection,
+            transaction,
+            lockedBy,
+            take,
+            lockDuration,
+            ["__diagnostic_all_entities__"],
+            allEntities: true,
+            cancellationToken);
+    }
+
+    private static async Task<IReadOnlyCollection<SyncOutboxDto>> ClaimPendingCoreAsync(
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        string lockedBy,
+        int take,
+        TimeSpan lockDuration,
+        string[] entityNames,
+        bool allEntities,
+        CancellationToken cancellationToken)
+    {
         var rows = await connection.QueryAsync<SyncOutboxDto>(new CommandDefinition(
             ClaimPendingSql,
             new
             {
                 LockedBy = NormalizeLockedBy(lockedBy),
                 Take = NormalizeTake(take),
-                LockMinutes = NormalizeLockMinutes(lockDuration)
+                LockMinutes = NormalizeLockMinutes(lockDuration),
+                AllEntities = allEntities,
+                EntityNames = entityNames
             },
             transaction,
             cancellationToken: cancellationToken));
@@ -1003,6 +1042,16 @@ WHERE Id = @TargetId;
     }
 
     private static int NormalizeTake(int take) => Math.Clamp(take, 1, 500);
+
+    private static string[] NormalizeEntityNames(IReadOnlyCollection<string> entityNames)
+    {
+        ArgumentNullException.ThrowIfNull(entityNames);
+        return entityNames
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
 
     private static async Task<SyncOutboxDetailDto?> GetActionRowAsync(
         System.Data.IDbConnection connection,
