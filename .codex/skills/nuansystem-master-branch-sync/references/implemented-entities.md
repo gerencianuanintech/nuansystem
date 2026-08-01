@@ -14,9 +14,11 @@ trigger automatic adoption. Tenant script `162` and Master script `163` are
 forward-only, registered in their initializers and disabled by default. Script
 `162` is deployed idempotently in DEMO and Remigio, and script `163` in Master;
 real Dapper, atomic rollback, Full source, branch apply, idempotency, tombstone
-reservation and terminal collision gates are approved. Cañaris remains
-unchanged, and the relay-based end-to-end pilot is still pending. The vertical
-has no dependency on BusinessPartner or SAP; read
+reservation and terminal collision gates are approved. The DEMO-to-Remigio
+relay pilot is also validated, including full CRUD propagation, temporary
+Master unavailability and recovery, idempotent replay, protection of unrelated
+events and exact configuration restoration. Cañaris remains unchanged. The
+vertical has no dependency on BusinessPartner or SAP; read
 `docs/architecture/MASTER-BRANCH-ITERATION-8-8-CARRIER-BLUEPRINT.md`.
 
 `ItemFamilies` has a transactional `LocalOutbox` producer, Full source and

@@ -6,8 +6,8 @@
 - **Fuente autorizada:** tenant de la empresa Matriz; piloto previsto en `NuanSystem_DEMO`.
 - **Destino inicial recomendado:** Remigio; Cañaris requiere incorporación posterior aprobada.
 - **Autoridad:** Constitución > Kernel > catálogos > skill `nuansystem-master-branch-sync` > implementación.
-- **Estado:** implementación estática y contratos SQL/Dapper validados; relay y
-  piloto end-to-end permanecen deshabilitados y pendientes.
+- **Estado:** implementación, contratos SQL/Dapper y piloto runtime DEMO →
+  Remigio validados; la configuración permanente continúa deshabilitada.
 
 Transportistas continúa siendo un vertical propio. No es un `BusinessPartner`,
 proveedor, subtipo SAP ni una vista filtrada de terceros.
@@ -156,10 +156,12 @@ Completados el 1 de agosto de 2026:
 La evidencia saneada está en
 `docs/operations/CARRIER-PHASE-8-8-SQL-VALIDATION.md`.
 
-Permanecen para un piloto runtime independiente: promoción real mediante relay,
-comportamiento con Master temporalmente no disponible, propagación completa de
-create/update/disable/delete y restauración de configuración temporal. Cañaris
-no formó parte de este despliegue y continúa sin la migración `162`.
+El piloto runtime independiente quedó aprobado el 1 de agosto de 2026:
+promoción real mediante relay, recuperación después de Master inaccesible,
+create/update/disable/delete, tombstone, colisión terminal, idempotencia y
+restauración exacta de la configuración. La evidencia está en
+`docs/operations/CARRIER-PHASE-8-8-RUNTIME-VALIDATION.md`. Cañaris no formó
+parte del despliegue ni del routing y continúa sin la migración `162`.
 
 ## Exclusiones
 
