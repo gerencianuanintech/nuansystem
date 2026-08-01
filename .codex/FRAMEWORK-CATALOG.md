@@ -31,7 +31,7 @@ Status values:
 - **Location:** `src/Frontend/NuanSystem.WinForms.Forms/Common/BaseGridCrudListForm.cs`
 - **Status:** Active/preferred for standard grid-based CRUD lists.
 - **Responsibility:** Supplies the corporate CRUD list lifecycle through a designer-owned `NuanDataGridControl`.
-- **Contract observed:** `BaseGridCrudListForm.Designer.cs` creates `NuanDataGridControl`; the base form exposes its inner `GridControl` and `GridView`, supports typed data binding and selection, implements edit, copy, delete, consult, and history hooks, and provides column configuration/personalization plus Excel/PDF/JSON/XML export.
+- **Contract observed:** `BaseGridCrudListForm.Designer.cs` creates `NuanDataGridControl`; the base form exposes its inner `GridControl` and `GridView`, supports typed data binding and selection, implements edit, copy, delete, consult, and history hooks, and provides column configuration/personalization plus Excel/PDF/JSON/XML export. Remote CRUD sources opt into the contained grid's server paging through `EnableServerPaging`, handle `NuanGrid.PageRequested`, and bind each response with `SetPagedGridData`; the legacy local paging path remains the default for existing consumers.
 - **Use when:** a maintenance list has standard CRUD commands, selection, permissions, export, and configurable columns.
 - **Do not use when:** the screen is an operational transaction, document editor, dashboard, or workflow whose lifecycle is not CRUD.
 - **Extension rule:** derive a feature form and override documented hooks such as grid configuration and CRUD operations. Do not fork the base lifecycle.

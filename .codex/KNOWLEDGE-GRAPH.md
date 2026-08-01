@@ -139,7 +139,7 @@ NuanDataGridControl
     -> BaseGridCrudListForm
 ```
 
-Decision edge: use the base CRUD form for a complete CRUD-list lifecycle; use `NuanDataGridControl` for a reusable feature grid when its independent control contract is needed. Do not layer both automatically.
+Decision edge: use the base CRUD form for a complete CRUD-list lifecycle; remote CRUD lists use its opt-in server-paging bridge to the contained `NuanDataGridControl`. Use `NuanDataGridControl` directly for an operational/reusable feature grid when its independent control contract is needed. Do not layer a second grid over the base form.
 
 ### 4.6 KPI and monitor surface
 
