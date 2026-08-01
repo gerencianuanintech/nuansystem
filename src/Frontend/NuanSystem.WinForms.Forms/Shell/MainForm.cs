@@ -130,6 +130,8 @@ public sealed class MainForm : RibbonForm
     private readonly Func<ItemsForm> itemsFormFactory;
     private readonly Func<PurchaseOrdersForm> purchaseOrdersFormFactory;
     private readonly Func<SapSyncLogForm> sapSyncLogFormFactory;
+    private readonly Func<SapSyncProfileListForm> sapSyncProfileListFormFactory;
+    private readonly Func<SapSyncExecutionListForm> sapSyncExecutionListFormFactory;
     private readonly Func<SyncMonitorForm> syncMonitorFormFactory;
     private readonly Func<long?, SriDocumentMonitorForm> sriDocumentMonitorFormFactory;
     private readonly Func<SriTxtImportForm> sriTxtImportFormFactory;
@@ -224,6 +226,8 @@ public sealed class MainForm : RibbonForm
         itemsFormFactory = null!;
         purchaseOrdersFormFactory = null!;
         sapSyncLogFormFactory = null!;
+        sapSyncProfileListFormFactory = null!;
+        sapSyncExecutionListFormFactory = null!;
         syncMonitorFormFactory = null!;
         sriDocumentMonitorFormFactory = null!;
         sriTxtImportFormFactory = null!;
@@ -290,6 +294,8 @@ public sealed class MainForm : RibbonForm
         Func<ItemsForm> itemsFormFactory,
         Func<PurchaseOrdersForm> purchaseOrdersFormFactory,
         Func<SapSyncLogForm> sapSyncLogFormFactory,
+        Func<SapSyncProfileListForm> sapSyncProfileListFormFactory,
+        Func<SapSyncExecutionListForm> sapSyncExecutionListFormFactory,
         Func<SyncMonitorForm> syncMonitorFormFactory,
         Func<long?, SriDocumentMonitorForm> sriDocumentMonitorFormFactory,
         Func<SriTxtImportForm> sriTxtImportFormFactory,
@@ -353,6 +359,8 @@ public sealed class MainForm : RibbonForm
         this.itemsFormFactory = itemsFormFactory;
         this.purchaseOrdersFormFactory = purchaseOrdersFormFactory;
         this.sapSyncLogFormFactory = sapSyncLogFormFactory;
+        this.sapSyncProfileListFormFactory = sapSyncProfileListFormFactory;
+        this.sapSyncExecutionListFormFactory = sapSyncExecutionListFormFactory;
         this.syncMonitorFormFactory = syncMonitorFormFactory;
         this.sriDocumentMonitorFormFactory = sriDocumentMonitorFormFactory;
         this.sriTxtImportFormFactory = sriTxtImportFormFactory;
@@ -1889,6 +1897,8 @@ public sealed class MainForm : RibbonForm
             "items" => itemsFormFactory(),
             "purchase-orders" => purchaseOrdersFormFactory(),
             "sap" => sapSyncLogFormFactory(),
+            "sap-sync-profiles" => sapSyncProfileListFormFactory(),
+            "sap-sync-executions" => sapSyncExecutionListFormFactory(),
             "sync-monitor" => syncMonitorFormFactory(),
             "sri-document-monitor" => sriDocumentMonitorFormFactory(null),
             "sri-txt-imports" => sriTxtImportFormFactory(),

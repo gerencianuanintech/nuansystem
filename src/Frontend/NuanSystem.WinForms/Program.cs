@@ -264,6 +264,7 @@ internal sealed class FrontendComposition : IDisposable
     private readonly ItemClient itemClient;
     private readonly PurchaseOrderClient purchaseOrderClient;
     private readonly SapClient sapClient;
+    private readonly SapSyncManagementClient sapSyncManagementClient;
     private readonly SyncMonitorClient syncMonitorClient;
     private readonly SriDocumentMonitorClient sriDocumentMonitorClient;
     private readonly SriTxtImportClient sriTxtImportClient;
@@ -316,6 +317,7 @@ internal sealed class FrontendComposition : IDisposable
         itemClient = new ItemClient(apiClient);
         purchaseOrderClient = new PurchaseOrderClient(apiClient);
         sapClient = new SapClient(apiClient);
+        sapSyncManagementClient = new SapSyncManagementClient(apiClient);
         syncMonitorClient = new SyncMonitorClient(apiClient);
         sriDocumentMonitorClient = new SriDocumentMonitorClient(apiClient);
         sriTxtImportClient = new SriTxtImportClient(apiClient);
@@ -412,6 +414,8 @@ internal sealed class FrontendComposition : IDisposable
             CreateItemsForm,
             CreatePurchaseOrdersForm,
             CreateSapSyncLogForm,
+            CreateSapSyncProfileListForm,
+            CreateSapSyncExecutionListForm,
             CreateSyncMonitorForm,
             CreateSriDocumentMonitorForm,
             CreateSriTxtImportForm,
@@ -967,6 +971,23 @@ internal sealed class FrontendComposition : IDisposable
     public SapSyncLogForm CreateSapSyncLogForm()
     {
         return new SapSyncLogForm(new SapSyncLogViewModel(sapClient));
+    }
+
+    public SapSyncProfileListForm CreateSapSyncProfileListForm()
+    {
+        return new SapSyncProfileListForm(
+            new SapSyncProfilesViewModel(sapSyncManagementClient),
+            sapSyncManagementClient,
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public SapSyncExecutionListForm CreateSapSyncExecutionListForm()
+    {
+        return new SapSyncExecutionListForm(
+            new SapSyncExecutionsViewModel(sapSyncManagementClient),
+            sapSyncManagementClient,
+            session);
     }
 
     public SyncMonitorForm CreateSyncMonitorForm()
