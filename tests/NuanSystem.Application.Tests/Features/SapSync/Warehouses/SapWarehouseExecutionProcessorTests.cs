@@ -126,6 +126,65 @@ public sealed class SapWarehouseExecutionProcessorTests
     }
 
     [Fact]
+    public async Task CancellationDuringExecutionInitialization_ClosesRunningExecutionAsCancelled()
+    {
+        var reader = Substitute.For<ISapWarehouseReader>();
+        var warehouseRepository = Substitute.For<IWarehouseRepository>();
+        var executionRepository = Substitute.For<ISapSyncExecutionRepository>();
+        var context = Context();
+        var running = Execution(context, SapSyncExecutionStatuses.Running) with { RowVersion = [2] };
+        using var cancellation = new CancellationTokenSource();
+        var reads = 0;
+        executionRepository.GetByExecutionUidAsync(context.ExecutionUid, Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                reads++;
+                if (reads == 1)
+                {
+                    return null;
+                }
+
+                if (reads == 2)
+                {
+                    throw new OperationCanceledException(cancellation.Token);
+                }
+
+                return running;
+            });
+        executionRepository.CreateAsync(Arg.Any<SapSyncExecutionCreateData>(), Arg.Any<CancellationToken>())
+            .Returns(new SapSyncExecutionWriteResult(1, "Created", [1]));
+        executionRepository.TransitionAsync(Arg.Any<SapSyncExecutionStateData>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var state = call.Arg<SapSyncExecutionStateData>();
+                if (state.ExpectedStatus == SapSyncExecutionStatuses.Pending
+                    && state.NewStatus == SapSyncExecutionStatuses.Running)
+                {
+                    cancellation.Cancel();
+                }
+
+                return new SapSyncExecutionWriteResult(1, "Updated", [2]);
+            });
+        var processor = new SapWarehouseExecutionProcessor(
+            reader,
+            new SapWarehouseRecordProcessor(warehouseRepository, Substitute.For<ISender>()),
+            executionRepository,
+            Substitute.For<ISapSyncRetryPolicy>());
+
+        var action = () => processor.ProcessAsync(context, cancellation.Token);
+
+        await action.Should().ThrowAsync<OperationCanceledException>();
+        await executionRepository.Received(1).TransitionAsync(
+            Arg.Is<SapSyncExecutionStateData>(state =>
+                state.ExpectedStatus == SapSyncExecutionStatuses.Running
+                && state.NewStatus == SapSyncExecutionStatuses.Cancelled
+                && state.LastSafeErrorCode == "SAP_WAREHOUSE_EXECUTION_INTERRUPTED"),
+            Arg.Is<CancellationToken>(token => !token.IsCancellationRequested));
+        await reader.DidNotReceive().GetWarehousesAsync(
+            Arg.Any<int>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task ContinueOnErrorFalse_StopsAfterFirstFailedRecord()
     {
         var reader = Substitute.For<ISapWarehouseReader>();

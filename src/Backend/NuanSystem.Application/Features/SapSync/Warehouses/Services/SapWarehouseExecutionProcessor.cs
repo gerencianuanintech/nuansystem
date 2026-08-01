@@ -26,11 +26,11 @@ public sealed class SapWarehouseExecutionProcessor(
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var current = await EnsureRunningExecutionAsync(context, cancellationToken);
         var results = new List<PersistedResult>();
 
         try
         {
+            var current = await EnsureRunningExecutionAsync(context, cancellationToken);
             if (await TryCompleteCancellationAsync(current, results, cancellationToken))
             {
                 return;
@@ -174,7 +174,7 @@ public sealed class SapWarehouseExecutionProcessor(
             {
                 throw;
             }
-            current = recovered;
+            var current = recovered;
             if (current.Status == SapSyncExecutionStatuses.Cancelling)
             {
                 await TransitionAsync(
