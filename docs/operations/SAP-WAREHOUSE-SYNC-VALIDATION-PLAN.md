@@ -432,11 +432,32 @@ Estado: cerrada y validada en runtime local. Las migraciones 153/158, materializ
 
 ### 10.7
 
+Estado: implementación estática completada; despliegue SQL y validación visual pendientes.
+
 - formularios SAP independientes;
 - Designer y controles corporativos;
 - FormKeys/permisos/Ribbon separados;
 - cliente tipado `INuanApiClient`;
 - estados UX completos.
+
+Entregables implementados:
+
+- `SapSyncProfileListForm` y `SapSyncProfileEditForm`;
+- `SapSyncExecutionListForm` y `SapSyncExecutionDetailForm`;
+- filtros independientes de perfiles y ejecuciones;
+- navegación desde `MainForm` con FormKeys SAP propios;
+- migración `160_master_sap_sync_winforms_navigation.sql`, no ejecutada;
+- pruebas de contratos JSON, rutas HTTP, seguridad, navegación, migración y Designer.
+
+Gates aún requeridos antes de cerrar runtime:
+
+1. respaldo verificado de Master;
+2. ejecución doble e idempotente de la migración 160;
+3. JWT renovado para ADMIN y comprobación del Ribbon;
+4. apertura de los cuatro formularios en Visual Studio Designer;
+5. prueba visual de DPI, tamaño mínimo, resize, filtros, estados vacío/error/busy y detalle largo;
+6. API temporal para validar 401/403/200 y acciones según estado;
+7. limpieza final y confirmación de cero procesos y perfiles/agendas activos.
 
 ### 10.8
 

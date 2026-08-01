@@ -952,3 +952,18 @@ La Fase 10.1 crea un único commit documental. Las fases siguientes deben usar c
 | 10.9 | `docs(sap): finalize SAP profile operations and rollback` |
 
 La Fase 10.2 está autorizada únicamente para contratos, persistencia, scripts no ejecutados y pruebas. Cada commit de Fases 10.3–10.9, activación o runtime requiere autorización independiente.
+
+## Estado de implementación de la Fase 10.7
+
+La interfaz WinForms independiente para SAP quedó implementada sobre los contratos de las Fases 10.3 y 10.5:
+
+- mantenimiento `sap-sync-profiles` para crear, editar, eliminar, validar, activar y desactivar perfiles;
+- monitor `sap-sync-executions` para consultar ejecuciones y abrir su detalle operativo;
+- filtros en diálogos separados invocados desde el Ribbon;
+- detalle con actualización, reintento, cancelación y liberación de locks vencidos según permisos;
+- cliente tipado construido exclusivamente sobre `INuanApiClient`;
+- navegación, menús y operaciones SAP separados de Matriz–Sucursal mediante la migración Master 160;
+- empresa inmutable en edición y acciones condicionadas por permisos y estado;
+- grilla de entidades con lote, intentos, orden, timeout, continuidad ante error, agenda y prevención de concurrencia.
+
+La interfaz no expone la acción Ejecutar porque el backend todavía no publica un endpoint manual de ejecución. La migración 160 permanece sin ejecutar y los cuatro formularios requieren una validación visual posterior en Visual Studio Designer y runtime autorizado. No se inició ningún worker ni se llamó SAP o SRI durante esta fase.
