@@ -202,9 +202,9 @@ partial class SriTxtImportFilterDialog
         //
         btnApply.ButtonKind = NuanActionButtonKind.Save;
         btnApply.ButtonText = "Aplicar";
-        btnApply.Location = new Point(318, 194);
+        btnApply.Location = new Point(306, 194);
         btnApply.Name = "btnApply";
-        btnApply.Size = new Size(88, 34);
+        btnApply.Size = new Size(100, 36);
         btnApply.TabIndex = 12;
         btnApply.Text = "Aplicar";
         btnApply.Click += ApplyButton_Click;
@@ -213,9 +213,9 @@ partial class SriTxtImportFilterDialog
         //
         btnClear.ButtonKind = NuanActionButtonKind.Cancel;
         btnClear.ButtonText = "Limpiar";
-        btnClear.Location = new Point(224, 194);
+        btnClear.Location = new Point(200, 194);
         btnClear.Name = "btnClear";
-        btnClear.Size = new Size(88, 34);
+        btnClear.Size = new Size(100, 36);
         btnClear.TabIndex = 13;
         btnClear.Text = "Limpiar";
         btnClear.Click += ClearButton_Click;
@@ -225,9 +225,9 @@ partial class SriTxtImportFilterDialog
         btnCancel.ButtonKind = NuanActionButtonKind.Cancel;
         btnCancel.ButtonText = "Cancelar";
         btnCancel.DialogResult = DialogResult.Cancel;
-        btnCancel.Location = new Point(130, 194);
+        btnCancel.Location = new Point(94, 194);
         btnCancel.Name = "btnCancel";
-        btnCancel.Size = new Size(88, 34);
+        btnCancel.Size = new Size(100, 36);
         btnCancel.TabIndex = 14;
         btnCancel.Text = "Cancelar";
         //
