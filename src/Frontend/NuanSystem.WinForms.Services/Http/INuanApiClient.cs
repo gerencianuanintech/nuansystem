@@ -6,6 +6,8 @@ public interface INuanApiClient
     Task<TResponse> PostAsync<TRequest, TResponse>(string path, TRequest request, CancellationToken cancellationToken = default);
     Task<TResponse> PutAsync<TRequest, TResponse>(string path, TRequest request, CancellationToken cancellationToken = default);
     Task<TResponse> DeleteAsync<TResponse>(string path, CancellationToken cancellationToken = default);
+    Task<TResponse> DeleteAsync<TRequest, TResponse>(string path, TRequest request, CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException("El cliente configurado no admite DELETE con cuerpo.");
     Task<TResponse> PostFileAsync<TResponse>(
         string path,
         Stream content,

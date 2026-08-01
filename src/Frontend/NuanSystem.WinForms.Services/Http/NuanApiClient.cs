@@ -44,6 +44,16 @@ public sealed class NuanApiClient : INuanApiClient
         return await SendAsync<TResponse>(request, cancellationToken);
     }
 
+    public async Task<TResponse> DeleteAsync<TRequest, TResponse>(
+        string path,
+        TRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        using var message = CreateRequest(HttpMethod.Delete, path);
+        message.Content = JsonContent.Create(request, options: JsonOptions);
+        return await SendAsync<TResponse>(message, cancellationToken);
+    }
+
     public async Task<TResponse> PostFileAsync<TResponse>(
         string path,
         Stream content,
