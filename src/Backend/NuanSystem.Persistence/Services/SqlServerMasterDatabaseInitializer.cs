@@ -979,6 +979,12 @@ END;
         {
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
         }
+
+        scriptPath = FindDatabaseScriptPath("163_master_carrier_transactional_registration.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
     }
 
     private static async Task ExecuteScriptFileAsync(
