@@ -3,16 +3,16 @@
 ## Estado
 
 - Fecha de última actualización: 2026-07-31.
-- Estado: implementación automática y despliegue SQL de la Fase 10.6 completados; el piloto SAP → DEMO continúa pendiente de autorización independiente.
+- Estado: Fase 10.6 implementada, desplegada y validada en runtime para el piloto SAP → DEMO; configuración final deshabilitada.
 - Documento arquitectónico: [SAP-SYNC-PROFILES-BLUEPRINT.md](../architecture/SAP-SYNC-PROFILES-BLUEPRINT.md).
 - Fuente: SAP Business One Service Layer.
 - Destino único: empresa `DEMO`, base `NuanSystem_DEMO`.
 - Worker autorizado por diseño: `NuanSystem.SyncWorker`.
 - Fuera de alcance: `NuanSystem.MasterBranchSyncWorker`, Remigio, Cañaris, SRI, SQL/runtime real durante Fase 10.1.
 
-Este documento define qué debe probarse en Fases 10.3–10.9 y conserva el cierre saneado de Fase 10.2. No declara que SAP, Service Layer, SRI, API, WinForms o workers hayan sido ejecutados.
+Este documento conserva el plan definido en Fase 10.1 y registra el cierre posterior de Fase 10.6. La ejecución real de SAP, Service Layer y `NuanSystem.SyncWorker` se limita al piloto documentado; SRI, WinForms, Remigio y Cañaris no fueron ejecutados.
 
-La implementación 10.6 conecta `Warehouses` al scheduler existente mediante un procesador programado, conserva el lock renovable, registra cabecera y detalle `WarehouseV1`, aplica timeout, `BatchSize`, `ContinueOnError`, cancelación segura y retry desde snapshot. El fallback legado de `Warehouses` queda rechazado: la capacidad solo puede ejecutarse mediante un perfil SAP explícito. La colisión únicamente por código queda en `ApprovalRequired`, sin adopción automática ni escritura.
+La implementación 10.6 conecta `Warehouses` al scheduler existente mediante un procesador programado, conserva el lock renovable, registra cabecera y detalle `WarehouseV1`, aplica timeout, `BatchSize`, `ContinueOnError`, cancelación segura y retry desde snapshot. El fallback legado de `Warehouses` queda rechazado: la capacidad solo puede ejecutarse mediante un perfil SAP explícito. La colisión únicamente por código queda en `ApprovalRequired`, sin adopción automática ni escritura. La evidencia completa del piloto está en [SAP-WAREHOUSE-SYNC-PHASE-10.6-RUNTIME-EVIDENCE.md](SAP-WAREHOUSE-SYNC-PHASE-10.6-RUNTIME-EVIDENCE.md).
 
 ## Evidencia saneada del despliegue 10.6
 
@@ -62,17 +62,17 @@ Demostrar, con evidencia separada por capa, que un perfil SAP independiente pued
 - SAP inactiva frente a local activa no cambia `IsActive`.
 - Las pruebas existentes incluyen Full paginado, conflicto, preservación de estado, campos aprobados y segundo ciclo idempotente.
 
-### Pendiente de validación runtime
+### Resultado de validación runtime 10.6
 
-- Crear y activar temporalmente un perfil y agenda exclusivos del piloto DEMO.
-- Ejecutar el handler registrado de Bodegas contra Service Layer real.
-- Validar el historial `SapSyncExecutions`/`SapSyncExecutionDetails` y el estado persistido `ApprovalRequired`.
-- Confirmar idempotencia, locks, cancelación, retry y preservación de campos locales con fixtures controlados.
-- Retry real por registro de Bodega.
-- Propagación efectiva de `BatchSize`/`MaxAttempts` desde perfil.
-- Lease renovable y vínculo lock/ejecución.
-- Formularios/permisos SAP Profiles/Executions.
-- Implementación del resultado `Skipped/SAP_WAREHOUSE_INACTIVE` para bodega SAP nueva inactiva.
+- Perfil y agenda exclusivos del piloto DEMO: validados y retirados.
+- Handler de Bodegas contra Service Layer real: validado con 24 registros y dos ciclos Full.
+- Historial `SapSyncExecutions`/`SapSyncExecutionDetails`: validado.
+- Idempotencia, locks, cancelación y preservación de campos locales: validados.
+- Retry por registro: validado contra persistencia Dapper real con fallo transitorio controlado, sin repetir una llamada SAP.
+- Propagación efectiva de `BatchSize=5` y límites de intentos: validada.
+- Lease renovable y vínculo lock/ejecución: validados.
+- Bodega SAP nueva inactiva: `Skipped`, sin creación local.
+- Formularios/permisos SAP Profiles/Executions: pendientes de Fase 10.7.
 
 ## Precondiciones obligatorias para una futura ejecución
 
@@ -216,7 +216,7 @@ No se crea deliberadamente un conflicto real con una bodega productiva sin aprob
 
 ## Validación SQL futura
 
-Estado en Fase 10.1: **Not executed**.
+Estado histórico al definir Fase 10.1: **Not executed**. El despliegue y el piloto posteriores constan en la evidencia enlazada al inicio.
 
 Cuando se autorice:
 
@@ -265,7 +265,7 @@ Consultas de evidencia deben proyectar metadata y conteos, no credenciales ni pa
 
 ## Validación runtime controlada
 
-Estado en Fase 10.1: **Not executed**.
+Estado histórico al definir Fase 10.1: **Not executed**. La ejecución controlada posterior consta en la evidencia enlazada al inicio.
 
 ### Secuencia
 
