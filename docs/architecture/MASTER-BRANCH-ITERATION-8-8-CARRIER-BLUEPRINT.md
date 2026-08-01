@@ -6,7 +6,8 @@
 - **Fuente autorizada:** tenant de la empresa Matriz; piloto previsto en `NuanSystem_DEMO`.
 - **Destino inicial recomendado:** Remigio; Cañaris requiere incorporación posterior aprobada.
 - **Autoridad:** Constitución > Kernel > catálogos > skill `nuansystem-master-branch-sync` > implementación.
-- **Estado:** implementación estática completada; sin despliegue ni activación.
+- **Estado:** implementación estática y contratos SQL/Dapper validados; relay y
+  piloto end-to-end permanecen deshabilitados y pendientes.
 
 Transportistas continúa siendo un vertical propio. No es un `BusinessPartner`,
 proveedor, subtipo SAP ni una vista filtrada de terceros.
@@ -139,16 +140,26 @@ No se crea un segundo mantenimiento. El usuario continúa trabajando con:
 
 ## Gates posteriores con autorización independiente
 
-1. respaldos verificados de las bases nombradas;
+Completados el 1 de agosto de 2026:
+
+1. respaldos verificados de Master, DEMO y Remigio;
 2. scripts tenant/Master ejecutados dos veces;
-3. metadata, Dapper y constraints reales;
-4. inventario de códigos y `GlobalId` preexistentes;
+3. metadata, Dapper, índices y constraints reales;
+4. inventario previo sin códigos duplicados ni tipos SRI inválidos;
 5. rollback atómico Carrier/LocalOutbox;
-6. promoción repetida e indisponibilidad de Master;
-7. aplicación DEMO → Remigio;
-8. disable, tombstone y reserva de código;
+6. fuente Full y materialización Dapper;
+7. aplicación transaccional controlada en Remigio;
+8. idempotencia por `EventId`, tombstone y reserva de código;
 9. colisión terminal sin adopción;
-10. limpieza de fixtures, restauración de configuración y cero procesos.
+10. limpieza de fixtures, preservación de datos y cero procesos.
+
+La evidencia saneada está en
+`docs/operations/CARRIER-PHASE-8-8-SQL-VALIDATION.md`.
+
+Permanecen para un piloto runtime independiente: promoción real mediante relay,
+comportamiento con Master temporalmente no disponible, propagación completa de
+create/update/disable/delete y restauración de configuración temporal. Cañaris
+no formó parte de este despliegue y continúa sin la migración `162`.
 
 ## Exclusiones
 

@@ -7,13 +7,16 @@ The runtime catalog is `Application/Features/Sync/Configuration/SyncMasterBranch
 Countries -> Provinces -> Cities; Currencies; Taxes; UnitOfMeasures; PriceLists; BusinessPartnerPaymentTerms; limited BusinessPartner; ItemGroups -> ItemFamilies -> Item; Warehouse; Carrier; and PurchaseOrder with reference dependencies/branch routing.
 
 `Carrier` is the canonical Matriz-Sucursal code for the independent
-`Transportistas` master. Its static Phase 8.8 implementation uses a
+`Transportistas` master. Its Phase 8.8 implementation uses a
 transactional `LocalOutbox` producer, Full source and branch applier by
 `GlobalId`. Code collisions, including tombstones, are terminal and never
 trigger automatic adoption. Tenant script `162` and Master script `163` are
-forward-only, registered in their initializers and disabled by default. They
-are not deployed or runtime-approved yet. The vertical has no dependency on
-BusinessPartner or SAP; read
+forward-only, registered in their initializers and disabled by default. Script
+`162` is deployed idempotently in DEMO and Remigio, and script `163` in Master;
+real Dapper, atomic rollback, Full source, branch apply, idempotency, tombstone
+reservation and terminal collision gates are approved. Cañaris remains
+unchanged, and the relay-based end-to-end pilot is still pending. The vertical
+has no dependency on BusinessPartner or SAP; read
 `docs/architecture/MASTER-BRANCH-ITERATION-8-8-CARRIER-BLUEPRINT.md`.
 
 `ItemFamilies` has a transactional `LocalOutbox` producer, Full source and
