@@ -303,6 +303,7 @@ public sealed class SyncConfigurationContractTests
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.ItemGroups).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.ItemFamilies).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.BusinessPartnerPaymentTerms).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Carrier).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative("CustomCatalog").Should().BeFalse();
         SyncMasterBranchEntityCodes.InitialCatalog.Select(item => item.EntityCode).Should().BeEquivalentTo(
             "Countries",
@@ -323,6 +324,7 @@ public sealed class SyncConfigurationContractTests
             "Item",
             "Warehouse",
             "PriceList",
+            "Carrier",
             "PurchaseOrder");
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.PriceLists).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.PurchaseOrder).Should().BeTrue();

@@ -78,6 +78,7 @@ try
             services.AddScoped<ISyncEntityEventApplier, ItemFamilySyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, ItemSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, WarehouseSyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, CarrierSyncEventApplier>();
             services.AddScoped<ISyncEventApplier, SyncEventApplierDispatcher>();
             services.AddScoped<ILocalSyncOutboxRelay, LocalSyncOutboxRelay>();
             services.AddScoped<IMasterBranchSyncWorkerProcessor, MasterBranchSyncWorkerProcessor>();

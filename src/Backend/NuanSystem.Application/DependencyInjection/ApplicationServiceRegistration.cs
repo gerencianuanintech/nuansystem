@@ -19,6 +19,7 @@ using NuanSystem.Application.Features.Operations;
 using NuanSystem.Application.Features.SriDocuments.Services;
 using NuanSystem.Application.Features.SriTxtImports.Services;
 using NuanSystem.Application.Features.BusinessPartners.Commands;
+using NuanSystem.Application.Features.Carriers.Commands;
 using NuanSystem.Application.Features.FinancialCatalogs.Catalogs.Commands;
 using NuanSystem.Application.Features.FinancialCatalogs.PriceLists.Commands;
 using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Commands;
@@ -86,6 +87,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<ISyncRoutingService, SyncRoutingService>();
         services.AddScoped<ILocalSyncOutboxPromotionService, LocalSyncOutboxPromotionService>();
         services.AddScoped<IBusinessPartnerLocalOutboxWriter, BusinessPartnerLocalOutboxWriter>();
+        services.AddScoped<ICarrierLocalOutboxWriter, CarrierLocalOutboxWriter>();
         services.AddScoped<ICurrencyLocalOutboxWriter, CurrencyLocalOutboxWriter>();
         services.AddScoped<IPriceListLocalOutboxWriter, PriceListLocalOutboxWriter>();
         services.AddScoped<ITaxLocalOutboxWriter, TaxLocalOutboxWriter>();

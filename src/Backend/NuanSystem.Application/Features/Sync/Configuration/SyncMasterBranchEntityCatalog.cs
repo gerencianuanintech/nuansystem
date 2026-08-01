@@ -43,6 +43,7 @@ public static class SyncMasterBranchEntityCodes
     public const string ItemFamilies = "ItemFamilies";
     public const string Item = "Item";
     public const string Warehouse = "Warehouse";
+    public const string Carrier = "Carrier";
 
     public static readonly IReadOnlyCollection<SyncMasterBranchEntityCatalogItem> InitialCatalog =
     [
@@ -64,6 +65,7 @@ public static class SyncMasterBranchEntityCodes
         new(Item, Item, "Articulos", true, true, true, true, true, true, "LocalOutbox transaccional y payload v2 con dependencias resueltas exclusivamente por GlobalId; sin stock, costos ni precios.", 210, Dependencies: [ItemGroups, ItemFamilies, UnitOfMeasures]),
         new(Warehouse, Warehouse, "Almacenes", true, true, true, true, true, true, "Contrato corporativo minimo con LocalOutbox transaccional, preservacion de campos locales y conflicto terminal sin adopcion.", 220),
         new(PriceLists, PriceLists, "Listas de precios", true, true, true, true, true, true, "Catalogo comercial con fuente Full y aplicador idempotente por GlobalId.", 230, Dependencies: [Currencies]),
+        new(Carrier, Carrier, "Transportistas", true, true, true, true, true, true, "Maestro independiente con LocalOutbox transaccional, fuente Full, tombstone y conflicto terminal sin adopcion por codigo.", 240, DefaultKeyField: "Id"),
         new(PurchaseOrder, PurchaseOrder, "Ordenes de compra", true, true, true, true, true, true, "Documento operativo con enrutamiento por bodega, Outbox/Inbox y aplicacion transaccional.", 300, Dependencies: [Currencies, Taxes, UnitOfMeasures, BusinessPartner, Item, Warehouse, PriceLists])
     ];
 

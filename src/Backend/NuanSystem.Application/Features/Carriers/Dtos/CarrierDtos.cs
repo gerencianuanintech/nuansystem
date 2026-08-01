@@ -3,6 +3,7 @@ namespace NuanSystem.Application.Features.Carriers.Dtos;
 public sealed class CarrierListItemDto
 {
     public int Id { get; set; }
+    public Guid? GlobalId { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string IdentificationTypeCode { get; set; } = string.Empty;
@@ -20,6 +21,7 @@ public sealed class CarrierListItemDto
 public sealed class CarrierDetailDto
 {
     public int Id { get; set; }
+    public Guid? GlobalId { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string IdentificationTypeCode { get; set; } = string.Empty;
@@ -37,6 +39,7 @@ public sealed class CarrierDetailDto
 public sealed class CarrierLookupDto
 {
     public int Id { get; set; }
+    public Guid? GlobalId { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public bool IsActive { get; set; }
@@ -54,7 +57,7 @@ public sealed class CarrierAuditChangeDto
     public DateTime CreatedAt { get; set; }
 }
 
-public sealed record CreateCarrierData(string Code, string Name, string IdentificationTypeCode, string IdentificationNumber, string? Description, bool IsActive, int? AuditUserId, string? AuditUserName);
+public sealed record CreateCarrierData(Guid GlobalId, string Code, string Name, string IdentificationTypeCode, string IdentificationNumber, string? Description, bool IsActive, int? AuditUserId, string? AuditUserName);
 public sealed record CreateCarrierResult(int? Id, bool DuplicateCode);
 public sealed record UpdateCarrierResult(bool Updated, bool DuplicateCode);
 public sealed record UpdateCarrierData(int Id, string Code, string Name, string IdentificationTypeCode, string IdentificationNumber, string? Description, bool IsActive, int? AuditUserId, string? AuditUserName);
