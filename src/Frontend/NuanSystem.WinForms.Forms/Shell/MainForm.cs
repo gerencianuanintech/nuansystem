@@ -1692,11 +1692,13 @@ public sealed class MainForm : RibbonForm
 
     private static FormOperationAccessItem? ResolveOperation(IReadOnlyCollection<FormOperationAccessItem> operations, params string[] keys)
     {
-        return operations.FirstOrDefault(operation =>
-            keys.Any(key =>
-                MatchesOperationKey(operation.ActionKey, key) ||
-                MatchesOperationKey(operation.Code, key) ||
-                MatchesOperationKey(operation.Name, key)));
+        return operations
+            .Where(operation => operation.IsAllowed)
+            .FirstOrDefault(operation =>
+                keys.Any(key =>
+                    MatchesOperationKey(operation.ActionKey, key) ||
+                    MatchesOperationKey(operation.Code, key) ||
+                    MatchesOperationKey(operation.Name, key)));
     }
 
     private void MoveRibbonButton(BarButtonItem button, string? pageName, string? groupName)
