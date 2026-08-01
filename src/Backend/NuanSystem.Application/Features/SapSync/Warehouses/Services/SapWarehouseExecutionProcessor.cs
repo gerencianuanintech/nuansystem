@@ -205,7 +205,20 @@ public sealed class SapWarehouseExecutionProcessor(
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             var current = await executionRepository.GetByExecutionUidAsync(executionUid, timeout.Token);
-            if (current?.Status is SapSyncExecutionStatuses.Running or SapSyncExecutionStatuses.Cancelling)
+            if (current?.Status == SapSyncExecutionStatuses.Running)
+            {
+                await TransitionAsync(
+                    current,
+                    SapSyncExecutionStatuses.Cancelling,
+                    results,
+                    "SAP_WAREHOUSE_EXECUTION_INTERRUPTED",
+                    "La ejecucion de bodegas fue interrumpida de forma controlada.",
+                    null,
+                    timeout.Token);
+                current = await executionRepository.GetByExecutionUidAsync(executionUid, timeout.Token);
+            }
+
+            if (current?.Status == SapSyncExecutionStatuses.Cancelling)
             {
                 await TransitionAsync(
                     current,

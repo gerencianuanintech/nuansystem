@@ -133,6 +133,7 @@ public sealed class SapWarehouseExecutionProcessorTests
         var executionRepository = Substitute.For<ISapSyncExecutionRepository>();
         var context = Context();
         var running = Execution(context, SapSyncExecutionStatuses.Running) with { RowVersion = [2] };
+        var cancelling = Execution(context, SapSyncExecutionStatuses.Cancelling) with { RowVersion = [3] };
         using var cancellation = new CancellationTokenSource();
         var reads = 0;
         executionRepository.GetByExecutionUidAsync(context.ExecutionUid, Arg.Any<CancellationToken>())
@@ -149,7 +150,7 @@ public sealed class SapWarehouseExecutionProcessorTests
                     throw new OperationCanceledException(cancellation.Token);
                 }
 
-                return running;
+                return reads == 3 ? running : cancelling;
             });
         executionRepository.CreateAsync(Arg.Any<SapSyncExecutionCreateData>(), Arg.Any<CancellationToken>())
             .Returns(new SapSyncExecutionWriteResult(1, "Created", [1]));
@@ -177,6 +178,12 @@ public sealed class SapWarehouseExecutionProcessorTests
         await executionRepository.Received(1).TransitionAsync(
             Arg.Is<SapSyncExecutionStateData>(state =>
                 state.ExpectedStatus == SapSyncExecutionStatuses.Running
+                && state.NewStatus == SapSyncExecutionStatuses.Cancelling
+                && state.LastSafeErrorCode == "SAP_WAREHOUSE_EXECUTION_INTERRUPTED"),
+            Arg.Is<CancellationToken>(token => !token.IsCancellationRequested));
+        await executionRepository.Received(1).TransitionAsync(
+            Arg.Is<SapSyncExecutionStateData>(state =>
+                state.ExpectedStatus == SapSyncExecutionStatuses.Cancelling
                 && state.NewStatus == SapSyncExecutionStatuses.Cancelled
                 && state.LastSafeErrorCode == "SAP_WAREHOUSE_EXECUTION_INTERRUPTED"),
             Arg.Is<CancellationToken>(token => !token.IsCancellationRequested));
