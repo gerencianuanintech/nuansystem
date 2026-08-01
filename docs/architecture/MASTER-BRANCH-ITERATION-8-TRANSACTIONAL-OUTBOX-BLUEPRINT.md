@@ -383,3 +383,15 @@ La propuesta separa:
 
 La existencia del blueprint no autoriza implementación, despliegue ni
 activación. `Warehouse` permanece fuera del alcance.
+
+## Fase 8.8 — Transportistas
+
+Transportistas se incorpora como maestro independiente bajo el código técnico
+`Carrier`. La implementación estática incluye productor `LocalOutbox`, fuente
+Full, aplicador por `GlobalId`, tombstones y conflicto terminal por código sin
+adopción automática. No reutiliza BusinessPartners ni agrega contratos SAP.
+
+Las migraciones forward-only reservadas son `162` tenant y `163` Master. Ambas
+están registradas en los inicializadores y dejan la capacidad deshabilitada por
+defecto. No han sido ejecutadas. El alcance completo está en
+[MASTER-BRANCH-ITERATION-8-8-CARRIER-BLUEPRINT.md](MASTER-BRANCH-ITERATION-8-8-CARRIER-BLUEPRINT.md).

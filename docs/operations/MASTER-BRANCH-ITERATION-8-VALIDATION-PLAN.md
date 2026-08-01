@@ -558,3 +558,23 @@ Estado:
   auditoría coincidieron exactamente con la línea base en los cuatro ámbitos.
 - Build completo: 0 errores / 0 advertencias. Suite: 546 aprobadas, 5
   diagnósticas omitidas y 0 fallidas.
+
+## Gates pendientes de Fase 8.8 — Transportistas
+
+La implementación estática usa `Carrier` como código canónico y conserva el
+mantenimiento independiente existente. Antes de cualquier piloto deben
+aprobarse separadamente:
+
+1. respaldos verificados de Master y de los tenants nombrados;
+2. dos ejecuciones de `162` tenant y `163` Master;
+3. inventario previo de códigos repetidos, incluidos tombstones;
+4. metadata, constraints y materialización Dapper reales;
+5. rollback atómico de Carrier junto con LocalOutbox;
+6. promoción repetida por el mismo EventId;
+7. aplicación DEMO a Remigio por GlobalId;
+8. disable, delete lógico y reserva permanente de Code;
+9. colisión terminal sin adopción automática;
+10. auditoría técnica/funcional, limpieza y restauración exacta de configuración.
+
+Hasta aprobar esos gates, perfiles, rutas, relay y workers deben permanecer
+deshabilitados. SAP, SRI y BusinessPartners quedan fuera del alcance.

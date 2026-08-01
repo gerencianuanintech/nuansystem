@@ -357,7 +357,15 @@ Transportistas -X-> SupplierClassId or TRA as identity/discriminator
 
 Allowed reuse is framework-level only: CRUD lifecycle, corporate base forms and controls, Designer/layout rules, `INuanApiClient`, session/company propagation, permission infrastructure, and visual resources. Any future relationship between a transportista and a business partner must be a separately approved requirement; it must not be inferred during discovery.
 
-The implemented vertical is rooted at `Application/Features/Carriers`, `Persistence/Repositories/CarrierRepository.cs`, `Api/Endpoints/CarrierEndpoints.cs`, tenant audit foundation `106`, tenant feature script `107`, forward tenant hardening `110`, Master security scripts `108`/`109`, forward Master operation hardening `111`, and the frontend `Carriers` folders. It deliberately has no Domain entity, SAP mapping, synchronization event, outbox publisher, or BusinessPartners dependency.
+The implemented vertical is rooted at `Application/Features/Carriers`, `Persistence/Repositories/CarrierRepository.cs`, `Api/Endpoints/CarrierEndpoints.cs`, tenant audit foundation `106`, tenant feature script `107`, forward tenant hardening `110`, Master security scripts `108`/`109`, forward Master operation hardening `111`, and the frontend `Carriers` folders. It deliberately has no Domain entity, SAP mapping or BusinessPartners dependency.
+
+Phase 8.8 adds an independent Matriz-Sucursal edge under canonical code
+`Carrier`: CRUD and `LocalOutbox` share one tenant transaction, Full includes
+active rows and tombstones, branches apply only by `GlobalId`, and a Code held
+by another identity becomes terminal without adoption. Scripts `162` tenant
+and `163` Master are registered but remain undeployed and disabled by default.
+The authoritative static contract is
+`docs/architecture/MASTER-BRANCH-ITERATION-8-8-CARRIER-BLUEPRINT.md`.
 
 `110` and `111` are required forward repairs for environments where `106`-`109` were already executed. `110` adds nonblank database checks, locks write decisions inside their transactions, verifies affected rows, and maps concurrent unique-code collisions to the repository result contract. `111` limits automatic ADMIN grants to the operations actually supported by the corporate CRUD grid while preserving intentionally modified grants.
 

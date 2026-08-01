@@ -4,7 +4,17 @@ The runtime catalog is `Application/Features/Sync/Configuration/SyncMasterBranch
 
 ## Operative examples
 
-Countries -> Provinces -> Cities; Currencies; Taxes; UnitOfMeasures; PriceLists; BusinessPartnerPaymentTerms; limited BusinessPartner; ItemGroups -> ItemFamilies -> Item; Warehouse; and PurchaseOrder with reference dependencies/branch routing.
+Countries -> Provinces -> Cities; Currencies; Taxes; UnitOfMeasures; PriceLists; BusinessPartnerPaymentTerms; limited BusinessPartner; ItemGroups -> ItemFamilies -> Item; Warehouse; Carrier; and PurchaseOrder with reference dependencies/branch routing.
+
+`Carrier` is the canonical Matriz-Sucursal code for the independent
+`Transportistas` master. Its static Phase 8.8 implementation uses a
+transactional `LocalOutbox` producer, Full source and branch applier by
+`GlobalId`. Code collisions, including tombstones, are terminal and never
+trigger automatic adoption. Tenant script `162` and Master script `163` are
+forward-only, registered in their initializers and disabled by default. They
+are not deployed or runtime-approved yet. The vertical has no dependency on
+BusinessPartner or SAP; read
+`docs/architecture/MASTER-BRANCH-ITERATION-8-8-CARRIER-BLUEPRINT.md`.
 
 `ItemFamilies` has a transactional `LocalOutbox` producer, Full source and
 branch applier in code. Its identity is `GlobalId`; its parent is resolved by
@@ -58,5 +68,6 @@ Supplier groups/classes, economic activities, zones, and supply methods have no 
 - monitor/manual actions: `Application/Features/Sync/Queries` and `Commands`
 - worker/appliers: `NuanSystem.MasterBranchSyncWorker`
 - API: `SyncEndpoints.cs`, `SyncConfigurationEndpoints.cs`, `SyncEntityDefinitionEndpoints.cs`
-- SQL: `064` through `105`, plus forward contracts `112` through `137`;
+- SQL: `064` through `105`, plus entity-specific forward contracts `112`
+  through `163`;
   inspect the exact entity blueprint before deployment.
