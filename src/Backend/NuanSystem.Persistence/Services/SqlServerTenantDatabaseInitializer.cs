@@ -70,6 +70,7 @@ public sealed class SqlServerTenantDatabaseInitializer(
                       ,"153_tenant_sap_sync_execution_history.sql"
                       ,"158_tenant_sap_sync_execution_operations.sql"
                       ,"162_tenant_carrier_transactional_outbox.sql"
+                      ,"164_tenant_local_outbox_entity_scope.sql"
                    })
         {
             var scriptPath = FindDatabaseScriptPath(fileName);
