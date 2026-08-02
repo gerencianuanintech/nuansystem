@@ -90,8 +90,9 @@ Modo real.
 | Item | `Item` | `GlobalId` | Create, update, disable/delete logico del maestro | No sincroniza stock, precios, costos, kardex, movimientos de inventario, lotes, series, vencimientos ni bodegas. `SapCode` es nullable, opcional y no es identidad. |
 | ItemGroup | `ItemGroups` | `GlobalId` | Create, update, disable/delete logico | Migraciones 129/130 y piloto DEMO a Remigio validados; colision por codigo terminal, sin adopcion. Configuracion permanente y worker continúan deshabilitados. |
 | ItemFamily | `ItemFamilies` | `GlobalId` | Create, update, disable/delete logico | Depende de ItemGroup; piloto DEMO a Remigio validado. |
-| UnitOfMeasure | `UnitOfMeasure` | `GlobalId` | Full | Contrato sin adopcion por codigo; script 132 y runtime pendientes. |
-| Warehouse | `Warehouse` | `GlobalId` | Create, update, disable/delete logico del maestro | Contrato minimo corporativo; codigo y migraciones 133/134 listos, SQL/runtime pendientes. No sincroniza stock, saldos, costos ni kardex. |
+| UnitOfMeasure | `UnitOfMeasure` | `GlobalId` | Create, update, disable/delete logico | Piloto DEMO a Remigio validado junto con Item payload v2; colision por codigo terminal, sin adopcion. |
+| Warehouse | `Warehouse` | `GlobalId` | Create, update, disable/delete logico del maestro | SQL y piloto DEMO a Remigio validados. No sincroniza stock, saldos, costos ni kardex. |
+| Carrier | `Carrier` | `GlobalId` | Create, update, disable/delete logico | Mantenimiento Transportistas independiente; SQL y piloto DEMO a Remigio validados, con colision terminal sin adopcion. |
 
 ## Flujo Operativo
 

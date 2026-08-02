@@ -559,22 +559,21 @@ Estado:
 - Build completo: 0 errores / 0 advertencias. Suite: 546 aprobadas, 5
   diagnósticas omitidas y 0 fallidas.
 
-## Gates pendientes de Fase 8.8 — Transportistas
+## Cierre de Fase 8.8 — Transportistas
 
-La implementación estática usa `Carrier` como código canónico y conserva el
-mantenimiento independiente existente. Antes de cualquier piloto deben
-aprobarse separadamente:
+`Carrier` conserva el mantenimiento independiente de Transportistas. Los
+scripts tenant `162` y Master `163` aprobaron despliegue idempotente y el piloto
+DEMO a Remigio validó rollback atómico, promoción repetida por `EventId`,
+aplicación por `GlobalId`, disable, eliminación lógica, tombstone, auditoría y
+colisión terminal sin adopción automática. La evidencia detallada está en
+[CARRIER-PHASE-8-8-RUNTIME-VALIDATION.md](CARRIER-PHASE-8-8-RUNTIME-VALIDATION.md).
 
-1. respaldos verificados de Master y de los tenants nombrados;
-2. dos ejecuciones de `162` tenant y `163` Master;
-3. inventario previo de códigos repetidos, incluidos tombstones;
-4. metadata, constraints y materialización Dapper reales;
-5. rollback atómico de Carrier junto con LocalOutbox;
-6. promoción repetida por el mismo EventId;
-7. aplicación DEMO a Remigio por GlobalId;
-8. disable, delete lógico y reserva permanente de Code;
-9. colisión terminal sin adopción automática;
-10. auditoría técnica/funcional, limpieza y restauración exacta de configuración.
+La configuración permanente y los workers permanecen deshabilitados. SAP, SRI
+y BusinessPartners estuvieron fuera del alcance.
 
-Hasta aprobar esos gates, perfiles, rutas, relay y workers deben permanecer
-deshabilitados. SAP, SRI y BusinessPartners quedan fuera del alcance.
+## Fase 8.9 — Aislamiento del relay por entidad
+
+La implementación y los gates estáticos se definen en
+[MASTER-BRANCH-ITERATION-8-9-RELAY-HARDENING.md](../architecture/MASTER-BRANCH-ITERATION-8-9-RELAY-HARDENING.md).
+La migración tenant `164` debe desplegarse y validarse separadamente antes de
+activar el relay. No se autoriza activación por la mera existencia del código.

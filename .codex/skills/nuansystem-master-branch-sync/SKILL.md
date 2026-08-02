@@ -68,6 +68,9 @@ Security/SQL migration:
 - Reuse exact permission constants and values: `SyncOutboxView` (`SYNC.OUTBOX.VIEW`), `SyncOutboxRetry` (`SYNC.OUTBOX.RETRY`), `SyncOutboxRetryDeadLetter` (`SYNC.OUTBOX.RETRY_DEADLETTER`), and `SyncOutboxReleaseLock` (`SYNC.OUTBOX.RELEASE_LOCK`).
 - `SkeletonMode.ObserveOnly` does not claim; other skeleton modes are dry-run/ignore, not real application.
 - An entity is operative only when producer and applier exist and are enabled/configured.
+- Use `EnabledEntityAppliers` as the single allowlist for both LocalOutbox
+  relay claim/expired-lease release and Master SyncOutbox claim. An empty
+  allowlist must be fail-closed and mutate neither queue.
 - Update catalog, dependency planner, producer, payload, dispatcher/applier, SQL, profiles/security, tests, and graph together.
 
 ## Iteration 8 transactional boundary
@@ -78,8 +81,10 @@ and
 `docs/operations/MASTER-BRANCH-ITERATION-8-VALIDATION-PLAN.md`
 before changing CRUD publication.
 
-The approved transactional producers are `BusinessPartner`, Item 8.4A and the
-ItemFamily 8.4B-1 code contract.
+The approved transactional producers include `BusinessPartner`, `Item`,
+`ItemFamily`, `ItemGroups`, `UnitOfMeasure`, `Warehouse`, `PriceList`, `Tax`,
+`Currency` and `Carrier`, according to their dedicated blueprints and runtime
+evidence.
 For Item, read
 `docs/architecture/MASTER-BRANCH-ITERATION-8-4-ITEM-OUTBOX-BLUEPRINT.md`.
 For ItemFamily, read
@@ -87,10 +92,11 @@ For ItemFamily, read
 Keep its payload limited to master identity/state; do not add prices, costs,
 stock, warehouses or `ItemMasterData`. ItemFamily must resolve ItemGroup by
 `GlobalId`; a code collision is terminal and must never adopt automatically.
-Item 8.4B real branch application,
-`Warehouse` and other entities remain independent decisions. The relay belongs
-to `NuanSystem.MasterBranchSyncWorker`, stays disabled by default and never
-reuses SAP or SRI infrastructure.
+The relay belongs to `NuanSystem.MasterBranchSyncWorker`, stays disabled by
+default, is scoped by `EnabledEntityAppliers`, and never reuses SAP or SRI
+infrastructure. Read
+`docs/architecture/MASTER-BRANCH-ITERATION-8-9-RELAY-HARDENING.md` before
+changing claim or lease behavior.
 
 ## Antipatterns
 

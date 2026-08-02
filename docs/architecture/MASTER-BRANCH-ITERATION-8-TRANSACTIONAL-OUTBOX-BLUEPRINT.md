@@ -5,12 +5,10 @@
 - **Fecha:** 2026-07-25.
 - **Alcance actual:** límite transaccional, relay e incorporación progresiva de
   maestros.
-- **Estado:** Fases 8.1–8.3, 8.4A y ItemFamily 8.4B-1 implementadas y
-  validadas. ItemGroup también tiene piloto runtime DEMO a Remigio validado.
-  Item payload v2/UnitOfMeasure y Warehouse están
-  implementados y desplegados en SQL de forma idempotente en Master, DEMO y
-  Remigio según corresponde; permanecen deshabilitados y pendientes de runtime
-  autorizado.
+- **Estado:** Fases 8.1–8.8 implementadas y validadas en sus pilotos
+  autorizados. La Fase 8.9 endurece el relay para que claim y liberación de
+  leases respeten la misma allowlist de entidades; su despliegue SQL y runtime
+  requieren autorización independiente.
 - **Autoridad:** Constitución > Kernel > catálogos > skill
   `nuansystem-master-branch-sync` > implementación.
 
@@ -41,8 +39,9 @@ una caída de Master o por un fallo ocurrido después del commit tenant.
   porque Master esté temporalmente inaccesible.
 - `GlobalId` conserva la identidad entre bases y `EventId` conserva la identidad
   del evento durante su promoción.
-- La implementación inicial se limita a `BusinessPartner`. `Item`, `Warehouse`
-  y cualquier otra entidad requieren promoción independiente después del piloto.
+- Cada entidad conserva su contrato, payload, dependencias y evidencia de
+  promoción independiente; compartir el relay no permite adoptar identidades
+  ni reglas de otro maestro.
 
 **Affected layers:** Application, Persistence, SQL tenant, SQL Master,
 `NuanSystem.MasterBranchSyncWorker`, pruebas y documentación.
