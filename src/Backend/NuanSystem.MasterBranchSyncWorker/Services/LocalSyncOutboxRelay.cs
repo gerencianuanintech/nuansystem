@@ -21,16 +21,33 @@ public sealed class LocalSyncOutboxRelay(
             return 0;
         }
 
+        var enabledEntityNames = current.EnabledEntityAppliers
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (enabledEntityNames.Length == 0)
+        {
+            logger.LogWarning(
+                "LocalOutbox relay habilitado sin entidades permitidas; no se reclamaran ni liberaran eventos.");
+            return 0;
+        }
+
         var processed = 0;
         var companies = await localOutbox.GetRelayCompaniesAsync(cancellationToken);
         foreach (var company in companies)
         {
-            await localOutbox.ReleaseExpiredLeasesAsync(company.CompanyId, current.NormalizedWorkerInstance, cancellationToken);
+            await localOutbox.ReleaseExpiredLeasesAsync(
+                company.CompanyId,
+                current.NormalizedWorkerInstance,
+                enabledEntityNames,
+                cancellationToken);
             var events = await localOutbox.ClaimAsync(
                 company.CompanyId,
                 current.NormalizedWorkerInstance,
                 relay.NormalizedBatchSize,
                 relay.LeaseDuration,
+                enabledEntityNames,
                 cancellationToken);
 
             foreach (var syncEvent in events)

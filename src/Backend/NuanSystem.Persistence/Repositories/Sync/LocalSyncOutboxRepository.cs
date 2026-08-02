@@ -1,4 +1,5 @@
 using System.Data;
+using System.Text.Json;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using NuanSystem.Application.Abstractions.Data;
@@ -66,12 +67,23 @@ ORDER BY Code;
     public async Task<int> ReleaseExpiredLeasesAsync(
         int companyId,
         string workerInstance,
+        IReadOnlyCollection<string> enabledEntityNames,
         CancellationToken cancellationToken = default)
     {
+        var normalizedEntityNames = NormalizeEntityNames(enabledEntityNames);
+        if (normalizedEntityNames.Length == 0)
+        {
+            return 0;
+        }
+
         await using var connection = await OpenTenantAsync(companyId, cancellationToken);
         return await connection.ExecuteScalarAsync<int>(Command(
             "dbo.SP_NA_POST_LOCALOUTBOX_LIBERARLEASESVENCIDOS",
-            new { WorkerInstance = workerInstance },
+            new
+            {
+                WorkerInstance = workerInstance,
+                EnabledEntityNamesJson = JsonSerializer.Serialize(normalizedEntityNames)
+            },
             cancellationToken));
     }
 
@@ -80,8 +92,15 @@ ORDER BY Code;
         string workerInstance,
         int batchSize,
         TimeSpan leaseDuration,
+        IReadOnlyCollection<string> enabledEntityNames,
         CancellationToken cancellationToken = default)
     {
+        var normalizedEntityNames = NormalizeEntityNames(enabledEntityNames);
+        if (normalizedEntityNames.Length == 0)
+        {
+            return [];
+        }
+
         await using var connection = await OpenTenantAsync(companyId, cancellationToken);
         var rows = await connection.QueryAsync<LocalSyncOutboxDto>(Command(
             "dbo.SP_NA_POST_LOCALOUTBOX_RECLAMAR",
@@ -89,7 +108,8 @@ ORDER BY Code;
             {
                 WorkerInstance = workerInstance,
                 BatchSize = Math.Clamp(batchSize, 1, 500),
-                LeaseSeconds = Math.Clamp((int)leaseDuration.TotalSeconds, 30, 14400)
+                LeaseSeconds = Math.Clamp((int)leaseDuration.TotalSeconds, 30, 14400),
+                EnabledEntityNamesJson = JsonSerializer.Serialize(normalizedEntityNames)
             },
             cancellationToken));
         return rows.AsList();
@@ -156,6 +176,14 @@ ORDER BY Code;
         await connection.OpenAsync(cancellationToken);
         return connection;
     }
+
+    internal static string[] NormalizeEntityNames(IReadOnlyCollection<string> enabledEntityNames) =>
+        enabledEntityNames
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
     private static CommandDefinition Command(
         string procedure,

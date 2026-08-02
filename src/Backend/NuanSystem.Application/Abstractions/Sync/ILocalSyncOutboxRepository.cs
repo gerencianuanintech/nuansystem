@@ -17,6 +17,7 @@ public interface ILocalSyncOutboxRepository
     Task<int> ReleaseExpiredLeasesAsync(
         int companyId,
         string workerInstance,
+        IReadOnlyCollection<string> enabledEntityNames,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyCollection<LocalSyncOutboxDto>> ClaimAsync(
@@ -24,6 +25,7 @@ public interface ILocalSyncOutboxRepository
         string workerInstance,
         int batchSize,
         TimeSpan leaseDuration,
+        IReadOnlyCollection<string> enabledEntityNames,
         CancellationToken cancellationToken = default);
 
     Task MarkPromotedAsync(
