@@ -577,3 +577,9 @@ La implementación y los gates estáticos se definen en
 [MASTER-BRANCH-ITERATION-8-9-RELAY-HARDENING.md](../architecture/MASTER-BRANCH-ITERATION-8-9-RELAY-HARDENING.md).
 La migración tenant `164` debe desplegarse y validarse separadamente antes de
 activar el relay. No se autoriza activación por la mera existencia del código.
+
+El despliegue y la validación Dapper real fueron aprobados posteriormente en
+DEMO, Remigio y Cañaris. Ver
+[MASTER-BRANCH-ITERATION-8-9-RUNTIME-VALIDATION.md](MASTER-BRANCH-ITERATION-8-9-RUNTIME-VALIDATION.md).
+La activación del relay continúa pendiente de una autorización operativa
+independiente.

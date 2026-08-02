@@ -46,8 +46,8 @@ Evento promovido a Master -> el claim central vuelve a aplicar la misma allowlis
 - Normalización determinista, sin duplicados y sin nombres vacíos.
 - Script tenant idempotente, forward-only y registrado después de `162`.
 - Build y pruebas completas sin fallos.
-- SQL real y runtime requieren autorización independiente; hasta entonces los
-  workers permanecen deshabilitados.
+- El despliegue SQL y la validación Dapper real requieren autorización
+  independiente. La activación del worker permanece como gate separado.
 
 ## Validación estática — 2026-08-01
 
@@ -56,4 +56,12 @@ Evento promovido a Master -> el claim central vuelve a aplicar la misma allowlis
 - Suite completa: 752 aprobadas, 5 diagnósticas omitidas y 0 fallidas.
 - `git diff --check`: aprobado.
 - Skill `nuansystem-master-branch-sync`: validación estructural aprobada.
-- SQL, API y workers: no ejecutados.
+- SQL, API y workers: no ejecutados durante este gate estático.
+
+## Validación SQL y Dapper real
+
+La migración `164` aprobó dos pases en DEMO, Remigio y Cañaris, con respaldos
+verificados y fixtures transaccionales revertidos. Lista vacía, entidad
+permitida y entidad bloqueada se comportaron según contrato. Consultar
+[MASTER-BRANCH-ITERATION-8-9-RUNTIME-VALIDATION.md](../operations/MASTER-BRANCH-ITERATION-8-9-RUNTIME-VALIDATION.md)
+para la evidencia completa. Los workers permanecieron deshabilitados.
