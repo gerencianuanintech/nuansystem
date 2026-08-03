@@ -2,15 +2,15 @@
 
 ## Estado
 
-- Fecha de última actualización: 2026-07-31.
-- Estado: Fases 10.6 y 10.7 implementadas, desplegadas y validadas; configuración SAP final deshabilitada.
+- Fecha de última actualización: 2026-08-03.
+- Estado: Fases 10.6, 10.7 y 10.8 implementadas y validadas; piloto real DEMO aprobado y configuración SAP final deshabilitada.
 - Documento arquitectónico: [SAP-SYNC-PROFILES-BLUEPRINT.md](../architecture/SAP-SYNC-PROFILES-BLUEPRINT.md).
 - Fuente: SAP Business One Service Layer.
 - Destino único: empresa `DEMO`, base `NuanSystem_DEMO`.
 - Worker autorizado por diseño: `NuanSystem.SyncWorker`.
 - Fuera de alcance: `NuanSystem.MasterBranchSyncWorker`, Remigio, Cañaris, SRI, SQL/runtime real durante Fase 10.1.
 
-Este documento conserva el plan definido en Fase 10.1 y registra los cierres posteriores de Fases 10.6 y 10.7. La ejecución real de SAP, Service Layer y `NuanSystem.SyncWorker` se limita al piloto documentado; la validación WinForms 10.7 no inició workers ni llamó SAP o SRI.
+Este documento conserva el plan definido en Fase 10.1 y registra los cierres posteriores de Fases 10.6, 10.7 y 10.8. La ejecución real de SAP, Service Layer y `NuanSystem.SyncWorker` se limita al piloto DEMO documentado. La evidencia integral más reciente se encuentra en [SAP-WAREHOUSE-SYNC-PHASE-10.8-RUNTIME-EVIDENCE.md](SAP-WAREHOUSE-SYNC-PHASE-10.8-RUNTIME-EVIDENCE.md).
 
 La implementación 10.6 conecta `Warehouses` al scheduler existente mediante un procesador programado, conserva el lock renovable, registra cabecera y detalle `WarehouseV1`, aplica timeout, `BatchSize`, `ContinueOnError`, cancelación segura y retry desde snapshot. El fallback legado de `Warehouses` queda rechazado: la capacidad solo puede ejecutarse mediante un perfil SAP explícito. La colisión únicamente por código queda en `ApprovalRequired`, sin adopción automática ni escritura. La evidencia completa del piloto está en [SAP-WAREHOUSE-SYNC-PHASE-10.6-RUNTIME-EVIDENCE.md](SAP-WAREHOUSE-SYNC-PHASE-10.6-RUNTIME-EVIDENCE.md).
 
