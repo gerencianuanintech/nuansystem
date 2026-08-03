@@ -6,6 +6,7 @@ using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.Application.Abstractions.Security;
 using NuanSystem.Application.Features.SapSync.Dtos;
 using NuanSystem.Domain.Tenancy;
+using NuanSystem.SapIntegration.ServiceLayer;
 using NuanSystem.SapIntegration.Warehouses;
 
 namespace NuanSystem.Application.Tests.Features.SapSync;
@@ -32,7 +33,11 @@ public sealed class SapServiceLayerWarehouseReaderTests
         var handler = new SapWarehouseHttpHandler();
         var clientFactory = Substitute.For<IHttpClientFactory>();
         clientFactory.CreateClient("SapServiceLayer").Returns(new HttpClient(handler));
-        var reader = new SapServiceLayerWarehouseReader(clientFactory, settingsRepository, protector);
+        var queryClient = new SapServiceLayerQueryClient(
+            clientFactory,
+            settingsRepository,
+            protector);
+        var reader = new SapServiceLayerWarehouseReader(queryClient);
 
         var rows = await reader.GetWarehousesAsync(1);
 
@@ -48,6 +53,13 @@ public sealed class SapServiceLayerWarehouseReaderTests
             "/b1s/v1/Logout");
         handler.LoginBody.Should().Contain("plain-password");
         handler.RequestPaths.Should().NotContain(path => path.Contains("plain-password", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void FullQuery_ShouldKeepTheValidatedWarehouseContract()
+    {
+        SapWarehouseQuery.Full.Should().Be("Warehouses?$orderby=WarehouseCode");
+        SapWarehouseQuery.ReadOptions.MaxPages.Should().Be(100);
     }
 
     private sealed class SapWarehouseHttpHandler : HttpMessageHandler
