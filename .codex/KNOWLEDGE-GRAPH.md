@@ -446,10 +446,22 @@ A graph update must:
 TenantIntegration / SAP company settings
   -> SapIntegrationMode -> SapIntegrationServiceRegistration
   -> typed Service Layer/HANA reader or ISapClientFactory
+       -> bounded read-only query when applicable
+            -> entity query definition
+            -> SapServiceLayerQueryClient
+                 -> company-scoped login/session
+                 -> same-root odata.nextLink pagination
+            -> entity mapper
   -> Application/Features/SapSync use case
   -> tenant mapping/persistence
   -> /api/sap + SapRead/SapManage
 ```
+
+`Warehouses/SapWarehouseQuery.cs`,
+`Warehouses/SapServiceLayerWarehouseReader.cs` and
+`Warehouses/SapWarehouseMapper.cs` are the reference split for a Full,
+read-only Service Layer catalog query. This edge does not move query or mapping
+responsibility into Application, the worker, API or WinForms.
 
 ### 10.2 SAP scheduled synchronization
 

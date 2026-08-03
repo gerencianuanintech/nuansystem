@@ -293,6 +293,15 @@ A framework change is incomplete until:
 
 `NuanSystem.SapIntegration` owns SAP adapters. `SapIntegrationMode`, `ISapClientFactory`, registered Service Layer clients, DI API, HANA adapters, typed readers, and `ISapDocumentSender` are implemented entry points. Application owns use cases; API owns HTTP/permissions; WinForms never calls SAP directly.
 
+`SapServiceLayerQueryClient` is the shared transport for bounded, read-only
+Service Layer queries that fit its contract. It owns company-scoped login,
+cookies, validated same-root `odata.nextLink` pagination, page-limit failure,
+safe SAP error extraction and best-effort logout. Entity readers own the
+relative OData query and mapping. `Warehouses` is the reference separation:
+`SapWarehouseQuery` defines the query and `SapWarehouseMapper` translates
+the JSON rows. Readers with specialized filters or headers may retain a focused
+transport path until the shared contract explicitly supports those needs.
+
 ### SAP synchronization runtime
 
 `Application/Features/SapSync` and `NuanSystem.SyncWorker` own scheduled SAP synchronization through company context, entity settings, handlers, lock, log, watermark, retry policy, heartbeat, and bounded loops. `SapOutboxWorker` and `SapSyncJobRunner.RunOutboxAsync` remain incomplete and are not approved export implementations.
