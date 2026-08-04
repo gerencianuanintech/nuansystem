@@ -90,6 +90,37 @@ public sealed class SapSyncProfileApplicationTests
     }
 
     [Fact]
+    public async Task Validate_AllowsInactiveFutureCapabilityWhileKeepingActiveUseBlocked()
+    {
+        var repository = Substitute.For<ISapSyncProfileRepository>();
+        repository.GetCompanyAccessAsync(UserId, 1, Arg.Any<CancellationToken>())
+            .Returns([Company()]);
+        repository.GetHandlerCapabilitiesAsync(false, Arg.Any<CancellationToken>())
+            .Returns([
+                Capability("Suppliers", implemented: true),
+                Capability("PurchaseOrders", implemented: false)
+            ]);
+        var service = new SapSyncProfileValidationService(repository);
+
+        var editable = await service.ValidateAsync(
+            Profile(
+                Entity(code: "Suppliers", isActive: true),
+                Entity(code: "PurchaseOrders", direction: "Both", isActive: false)),
+            UserId,
+            requireActiveEntity: true);
+        var executable = await service.ValidateAsync(
+            Profile(Entity(code: "PurchaseOrders", isActive: true)),
+            UserId,
+            requireActiveEntity: false);
+
+        editable.IsValid.Should().BeTrue();
+        editable.Errors.Should().BeEmpty();
+        executable.IsValid.Should().BeFalse();
+        executable.Errors.Select(error => error.Code).Should().Contain(
+            SapSyncProfileErrorCodes.PurchaseOrdersUnsupported);
+    }
+
+    [Fact]
     public async Task Validate_RejectsUnsupportedDirectionModesTimezoneConcurrencyAndLimits()
     {
         var (_, service) = ValidService();

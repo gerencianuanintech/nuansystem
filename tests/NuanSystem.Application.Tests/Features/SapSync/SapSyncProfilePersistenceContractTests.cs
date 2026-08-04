@@ -10,6 +10,7 @@ public sealed class SapSyncProfilePersistenceContractTests
 {
     private const string MasterMigration = "152_master_sap_sync_profiles.sql";
     private const string HardeningMigration = "154_master_sap_sync_profile_api_hardening.sql";
+    private const string InactiveCapabilitiesMigration = "165_master_sap_sync_profile_inactive_capabilities.sql";
     private const string TenantMigration = "153_tenant_sap_sync_execution_history.sql";
     private const string TenantOperationsMigration = "158_tenant_sap_sync_execution_operations.sql";
 
@@ -66,6 +67,24 @@ public sealed class SapSyncProfilePersistenceContractTests
             .Should().BeGreaterThan(tenantInitializer.IndexOf("150_tenant_sri_document_monitor_import_scope.sql", StringComparison.Ordinal));
         tenantInitializer.IndexOf(TenantOperationsMigration, StringComparison.Ordinal)
             .Should().BeGreaterThan(tenantInitializer.IndexOf(TenantMigration, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Inactive_capability_repair_preserves_future_entities_without_enabling_them()
+    {
+        var sql = Read("database", "sql", InactiveCapabilitiesMigration);
+        var initializer = Read(
+            "src", "Backend", "NuanSystem.Persistence", "Services",
+            "SqlServerMasterDatabaseInitializer.cs");
+
+        sql.Should().Contain("Version = N'20260803.165'")
+            .And.Contain("CREATE OR ALTER PROCEDURE dbo.SP_NA_PUT_SAPSYNCPROFILEACTUALIZAR")
+            .And.Contain("entity.IsActive = 1")
+            .And.Contain("capability.IsImplemented = 0")
+            .And.Contain("entity.Direction = 'Both'")
+            .And.NotContain("UPDATE dbo.SapSyncHandlerCapabilities")
+            .And.NotContain("DELETE FROM dbo.SapSyncHandlerCapabilities");
+        initializer.Should().Contain(InactiveCapabilitiesMigration);
     }
 
     [Fact]
