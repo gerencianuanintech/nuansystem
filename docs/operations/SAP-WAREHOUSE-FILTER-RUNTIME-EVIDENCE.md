@@ -96,3 +96,21 @@ deshabilitados. Remigio y Cañaris no fueron consultados ni modificados.
 - Build completo: 0 errores, 0 advertencias.
 - Suite completa: 765 aprobadas, 5 omitidas, 0 fallidas.
 - `git diff --check`: aprobado.
+
+## Corrección arquitectónica posterior
+
+El commit `24b9439` movió la aplicación del filtro desde el procesador de la
+ejecución hacia la consulta tipada `SapWarehouseQuery` de Service Layer.
+
+- El scheduler continúa transportando la configuración del perfil.
+- El procesador solo solicita la lectura con esos criterios y procesa la
+  respuesta recibida.
+- `SapWarehouseQuery` genera el `$filter` OData con comparación normalizada,
+  escape de literales y orden por `WarehouseCode`.
+
+La ejecución `30022` conserva su valor como evidencia del resultado funcional
+de nueve bodegas. No demuestra todavía que SAP aplicó el nuevo `$filter` en el
+servidor; esa comprobación requiere una futura consulta read-only autorizada.
+
+Validación automática posterior: build completo sin errores ni advertencias,
+40 pruebas de Bodegas SAP y suite completa con 768 aprobadas y 5 omitidas.
