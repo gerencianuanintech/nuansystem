@@ -213,7 +213,9 @@ public sealed class SapSyncScheduler(
             scheduledForAtUtc,
             workerInstance,
             candidate.CompatibilityVersion,
-            candidate.RequiredSuccessfulCycles);
+            candidate.RequiredSuccessfulCycles,
+            candidate.WarehouseNameContains,
+            candidate.WarehouseExactName);
     }
 
     private static SapSyncScheduleRejection ToRejection(

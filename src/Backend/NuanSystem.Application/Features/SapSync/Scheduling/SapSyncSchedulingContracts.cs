@@ -71,7 +71,9 @@ public sealed record SapSyncScheduleCandidate(
     string? CompatibilityVersion,
     int RequiredSuccessfulCycles,
     long SortProfileId,
-    long SortEntityId)
+    long SortEntityId,
+    string? WarehouseNameContains = null,
+    string? WarehouseExactName = null)
 {
     public SapSyncScheduleCursor Cursor =>
         new(CompanyId, SortProfileId, ExecutionOrder, SortEntityId);
@@ -123,7 +125,9 @@ public sealed record SapSyncScheduledExecutionContext(
     DateTime ScheduledForAtUtc,
     string WorkerInstance,
     string? CompatibilityVersion,
-    int RequiredSuccessfulCycles);
+    int RequiredSuccessfulCycles,
+    string? WarehouseNameContains = null,
+    string? WarehouseExactName = null);
 
 public sealed record SapSyncScheduleRejection(
     int CompanyId,

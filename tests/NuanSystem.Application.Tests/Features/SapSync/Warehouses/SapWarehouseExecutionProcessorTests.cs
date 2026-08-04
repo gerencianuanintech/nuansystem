@@ -192,6 +192,58 @@ public sealed class SapWarehouseExecutionProcessorTests
     }
 
     [Fact]
+    public async Task ProfileWarehouseFilter_ProcessesContainsOrExactNameOnly()
+    {
+        var reader = Substitute.For<ISapWarehouseReader>();
+        var warehouseRepository = Substitute.For<IWarehouseRepository>();
+        var executionRepository = Substitute.For<ISapSyncExecutionRepository>();
+        var context = Context() with
+        {
+            WarehouseNameContains = " mega ",
+            WarehouseExactName = " feria libre "
+        };
+        var running = Execution(context, SapSyncExecutionStatuses.Running);
+        reader.GetWarehousesAsync(context.CompanyId, Arg.Any<CancellationToken>()).Returns([
+            Record("02", "MEGA AMERICAS"),
+            Record("18", "FERIA LIBRE"),
+            Record("99", "BODEGA CENTRAL")
+        ]);
+        executionRepository.GetByExecutionUidAsync(context.ExecutionUid, Arg.Any<CancellationToken>())
+            .Returns(running);
+        warehouseRepository.GetAllAsync(Arg.Any<CancellationToken>()).Returns([
+            Local("02", "MEGA AMERICAS"),
+            Local("18", "FERIA LIBRE")
+        ]);
+        executionRepository.UpsertDetailAsync(Arg.Any<SapSyncExecutionDetailData>(), Arg.Any<CancellationToken>())
+            .Returns(new SapSyncExecutionWriteResult(1, "OK", [1]));
+        executionRepository.TransitionAsync(Arg.Any<SapSyncExecutionStateData>(), Arg.Any<CancellationToken>())
+            .Returns(new SapSyncExecutionWriteResult(1, "OK", [2]));
+        var processor = new SapWarehouseExecutionProcessor(
+            reader,
+            new SapWarehouseRecordProcessor(warehouseRepository, Substitute.For<ISender>()),
+            executionRepository,
+            Substitute.For<ISapSyncRetryPolicy>());
+
+        await processor.ProcessAsync(context);
+
+        await executionRepository.Received(1).UpsertDetailAsync(
+            Arg.Is<SapSyncExecutionDetailData>(detail => detail.SourceRecordKey == "02"),
+            Arg.Any<CancellationToken>());
+        await executionRepository.Received(1).UpsertDetailAsync(
+            Arg.Is<SapSyncExecutionDetailData>(detail => detail.SourceRecordKey == "18"),
+            Arg.Any<CancellationToken>());
+        await executionRepository.DidNotReceive().UpsertDetailAsync(
+            Arg.Is<SapSyncExecutionDetailData>(detail => detail.SourceRecordKey == "99"),
+            Arg.Any<CancellationToken>());
+        await executionRepository.Received(1).TransitionAsync(
+            Arg.Is<SapSyncExecutionStateData>(state =>
+                state.NewStatus == SapSyncExecutionStatuses.Completed
+                && state.TotalRecords == 2
+                && state.UnchangedRecords == 2),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task ContinueOnErrorFalse_StopsAfterFirstFailedRecord()
     {
         var reader = Substitute.For<ISapWarehouseReader>();
@@ -307,14 +359,19 @@ public sealed class SapWarehouseExecutionProcessorTests
         RowVersion: [1]);
 
     private static SapWarehouseRecord Record(string code) =>
-        new(code, $"Bodega {code}", "Direccion", "Cuenca", "Azuay", "EC", true);
+        Record(code, $"Bodega {code}");
 
-    private static WarehouseDto Local(string code) => new()
+    private static SapWarehouseRecord Record(string code, string name) =>
+        new(code, name, "Direccion", "Cuenca", "Azuay", "EC", true);
+
+    private static WarehouseDto Local(string code) => Local(code, $"Bodega {code}");
+
+    private static WarehouseDto Local(string code, string name) => new()
     {
         Id = 10,
         GlobalId = Guid.NewGuid(),
         Code = code,
-        Name = $"Bodega {code}",
+        Name = name,
         Address = "Direccion",
         City = "Cuenca",
         Province = "Azuay",

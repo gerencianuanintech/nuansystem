@@ -49,6 +49,8 @@ internal sealed class SapSyncScheduleCandidateRow
     public int RequiredSuccessfulCycles { get; set; }
     public long SortProfileId { get; set; }
     public long SortEntityId { get; set; }
+    public string? WarehouseNameContains { get; set; }
+    public string? WarehouseExactName { get; set; }
 }
 
 internal static class SapSyncScheduleCandidateRowMapper
@@ -108,8 +110,13 @@ internal static class SapSyncScheduleCandidateRowMapper
             row.CompatibilityVersion,
             row.RequiredSuccessfulCycles,
             row.SortProfileId,
-            row.SortEntityId);
+            row.SortEntityId,
+            NormalizeOptional(row.WarehouseNameContains),
+            NormalizeOptional(row.WarehouseExactName));
     }
+
+    private static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static string Require(string? value, string fieldName)
     {

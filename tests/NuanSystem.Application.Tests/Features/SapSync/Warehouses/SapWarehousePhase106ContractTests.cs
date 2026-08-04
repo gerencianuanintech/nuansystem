@@ -78,6 +78,37 @@ public sealed class SapWarehousePhase106ContractTests
         migration.Should().Contain("'warehouseCode', 'warehouseName', 'street', 'city', 'province', 'country', 'isActive'");
     }
 
+    [Fact]
+    public void Migration166_AddsTypedProfileWarehouseFilterWithoutHardcodedNames()
+    {
+        var migration = ReadSource(
+            "database", "sql", "166_master_sap_warehouse_profile_filter.sql");
+
+        migration.Should().Contain("CREATE TABLE dbo.SapSyncWarehouseProfileFilters")
+            .And.Contain("SP_NA_PUT_SAPWAREHOUSEPROFILEFILTERCONFIGURAR")
+            .And.Contain("NameContains")
+            .And.Contain("ExactName")
+            .And.Contain("LEFT JOIN dbo.SapSyncWarehouseProfileFilters filter")
+            .And.Contain("Version = N'20260804.166'")
+            .And.NotContain("MEGA")
+            .And.NotContain("FERIA LIBRE");
+    }
+
+    [Fact]
+    public void MasterInitializer_RegistersMigration166After165()
+    {
+        var initializer = ReadSource(
+            "src", "Backend", "NuanSystem.Persistence", "Services",
+            "SqlServerMasterDatabaseInitializer.cs");
+
+        initializer.IndexOf(
+                "166_master_sap_warehouse_profile_filter.sql",
+                StringComparison.Ordinal)
+            .Should().BeGreaterThan(initializer.IndexOf(
+                "165_master_sap_sync_profile_inactive_capabilities.sql",
+                StringComparison.Ordinal));
+    }
+
     private static string ReadSource(params string[] pathParts)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

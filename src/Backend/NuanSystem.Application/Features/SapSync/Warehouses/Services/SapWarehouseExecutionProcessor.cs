@@ -37,8 +37,12 @@ public sealed class SapWarehouseExecutionProcessor(
             }
 
             var rows = await reader.GetWarehousesAsync(context.CompanyId, cancellationToken);
+            var selectedRows = rows.Where(row => MatchesWarehouseFilter(
+                row.WarehouseName,
+                context.WarehouseNameContains,
+                context.WarehouseExactName));
             var stopProcessing = false;
-            foreach (var batch in rows
+            foreach (var batch in selectedRows
                          .OrderBy(item => item.WarehouseCode, StringComparer.OrdinalIgnoreCase)
                          .Chunk(Math.Max(1, context.BatchSize)))
             {
@@ -270,7 +274,9 @@ public sealed class SapWarehouseExecutionProcessor(
                     context.ProfileName,
                     context.EntityCode,
                     Direction = context.Direction.ToString(),
-                    context.SyncMode
+                    context.SyncMode,
+                    context.WarehouseNameContains,
+                    context.WarehouseExactName
                 }, JsonOptions),
                 JsonSerializer.Serialize(new
                 {
@@ -412,6 +418,28 @@ public sealed class SapWarehouseExecutionProcessor(
             .Select(item => item.NextAttemptAtUtc)
             .Where(value => value is not null)
             .Min();
+    private static bool MatchesWarehouseFilter(
+        string? warehouseName,
+        string? nameContains,
+        string? exactName)
+    {
+        var contains = NormalizeOptional(nameContains);
+        var exact = NormalizeOptional(exactName);
+        if (contains is null && exact is null)
+        {
+            return true;
+        }
+
+        var name = Normalize(warehouseName);
+        return contains is not null
+                   && name.Contains(contains, StringComparison.OrdinalIgnoreCase)
+               || exact is not null
+                   && name.Equals(exact, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     private static string Normalize(string? value) => value?.Trim() ?? string.Empty;
 
     private static Guid ToGuid(string value)

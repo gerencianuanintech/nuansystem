@@ -31,6 +31,8 @@ public sealed class SapSyncScheduleCandidateRowTests
         candidate.SupportsIncremental.Should().BeFalse();
         candidate.ScheduleRowVersion.Should().Equal(sourceRowVersion);
         candidate.ScheduleRowVersion.Should().NotBeSameAs(row.ScheduleRowVersion);
+        candidate.WarehouseNameContains.Should().Be("MEGA");
+        candidate.WarehouseExactName.Should().Be("FERIA LIBRE");
     }
 
     [Fact]
@@ -219,6 +221,8 @@ public sealed class SapSyncScheduleCandidateRowTests
         CompatibilityVersion = "v1",
         RequiredSuccessfulCycles = 2,
         SortProfileId = 11,
-        SortEntityId = 13
+        SortEntityId = 13,
+        WarehouseNameContains = " MEGA ",
+        WarehouseExactName = " FERIA LIBRE "
     };
 }
