@@ -146,7 +146,10 @@ public sealed class NuanApiClient : INuanApiClient
 
         if (!response.IsSuccessStatusCode || !apiResponse.Success)
         {
-            throw new ApiClientException(AppendRequestPath(apiResponse.Message, response), (int)response.StatusCode);
+            throw new ApiClientException(
+                AppendRequestPath(apiResponse.Message, response),
+                (int)response.StatusCode,
+                apiResponse.Errors);
         }
 
         return apiResponse.Data!;

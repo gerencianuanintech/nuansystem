@@ -30,9 +30,9 @@ public static class UiExceptionHandler
 
     public static string GetUserMessage(Exception exception)
     {
-        if (exception is ApiClientException apiException && !string.IsNullOrWhiteSpace(apiException.Message))
+        if (exception is ApiClientException apiException)
         {
-            return apiException.Message;
+            return ApiClientErrorMessageFormatter.Format(apiException);
         }
 
         return "Ocurrio un error inesperado. Intente nuevamente o contacte soporte.";
