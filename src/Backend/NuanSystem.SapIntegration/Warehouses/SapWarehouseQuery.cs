@@ -34,7 +34,7 @@ internal static class SapWarehouseQuery
         var normalized = Normalize(value);
         if (normalized is not null)
         {
-            expressions.Add($"contains(toupper(WarehouseName),'{EscapeLiteral(normalized)}')");
+            expressions.Add($"contains(WarehouseName,'{EscapeLiteral(normalized)}')");
         }
     }
 
@@ -43,7 +43,7 @@ internal static class SapWarehouseQuery
         var normalized = Normalize(value);
         if (normalized is not null)
         {
-            expressions.Add($"toupper(WarehouseName) eq '{EscapeLiteral(normalized)}'");
+            expressions.Add($"WarehouseName eq '{EscapeLiteral(normalized)}'");
         }
     }
 

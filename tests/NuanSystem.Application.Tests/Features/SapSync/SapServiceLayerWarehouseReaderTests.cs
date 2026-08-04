@@ -70,8 +70,8 @@ public sealed class SapServiceLayerWarehouseReaderTests
             " feria libre "));
 
         Uri.UnescapeDataString(query).Should().Be(
-            "Warehouses?$filter=contains(toupper(WarehouseName),'MEGA') or " +
-            "toupper(WarehouseName) eq 'FERIA LIBRE'&$orderby=WarehouseCode");
+            "Warehouses?$filter=contains(WarehouseName,'MEGA') or " +
+            "WarehouseName eq 'FERIA LIBRE'&$orderby=WarehouseCode");
     }
 
     [Fact]
