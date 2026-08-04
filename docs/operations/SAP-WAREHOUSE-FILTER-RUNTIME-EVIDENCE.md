@@ -109,8 +109,18 @@ ejecución hacia la consulta tipada `SapWarehouseQuery` de Service Layer.
   escape de literales y orden por `WarehouseCode`.
 
 La ejecución `30022` conserva su valor como evidencia del resultado funcional
-de nueve bodegas. No demuestra todavía que SAP aplicó el nuevo `$filter` en el
-servidor; esa comprobación requiere una futura consulta read-only autorizada.
+de nueve bodegas. Una validación posterior ejecutó directamente el lector real
+contra SAP Service Layer, sin iniciar workers ni realizar escrituras.
+
+El primer dialecto propuesto con `toupper(WarehouseName)` fue rechazado por SAP
+con HTTP 400 y código 201 por parámetro de función inválido. La consulta se
+corrigió a las expresiones compatibles `contains(WarehouseName, ...)` y
+`WarehouseName eq ...`, manteniendo valores normalizados y literales escapados.
+
+La consulta compatible inició sesión, leyó con paginación segura y cerró sesión.
+SAP devolvió exactamente nueve códigos: `02`, `03`, `04`, `08`, `09`, `11`,
+`18`, `19` y `20`. Todos sus nombres contienen `MEGA` o son exactamente
+`FERIA LIBRE`; no se recibió ninguna bodega adicional.
 
 Validación automática posterior: build completo sin errores ni advertencias,
 40 pruebas de Bodegas SAP y suite completa con 768 aprobadas y 5 omitidas.
