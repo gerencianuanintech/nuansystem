@@ -985,6 +985,12 @@ END;
         {
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
         }
+
+        scriptPath = FindDatabaseScriptPath("165_master_sap_sync_profile_inactive_capabilities.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
     }
 
     private static async Task ExecuteScriptFileAsync(

@@ -146,14 +146,16 @@ public sealed class SapSyncProfileValidationService(ISapSyncProfileRepository re
                 continue;
             }
 
-            if (entityCode.Equals("PurchaseOrders", StringComparison.OrdinalIgnoreCase))
+            if (entity.IsActive
+                && entityCode.Equals("PurchaseOrders", StringComparison.OrdinalIgnoreCase))
             {
                 errors.Add(Error(
                     SapSyncProfileErrorCodes.PurchaseOrdersUnsupported,
                     "PurchaseOrders no esta implementado para perfiles SAP.",
                     $"{prefix}.{nameof(entity.EntityCode)}"));
             }
-            else if (!capability.IsActive || !capability.IsImplemented)
+            else if (entity.IsActive
+                     && (!capability.IsActive || !capability.IsImplemented))
             {
                 errors.Add(Error(
                     SapSyncProfileErrorCodes.EntityNotImplemented,
@@ -168,14 +170,14 @@ public sealed class SapSyncProfileValidationService(ISapSyncProfileRepository re
                     $"La direccion '{entity.Direction}' no es valida.",
                     $"{prefix}.{nameof(entity.Direction)}"));
             }
-            else if (direction == SapSyncDirection.Both)
+            else if (entity.IsActive && direction == SapSyncDirection.Both)
             {
                 errors.Add(Error(
                     SapSyncProfileErrorCodes.DirectionBothUnsupported,
                     "La direccion Both no esta habilitada mientras ambos sentidos no esten implementados.",
                     $"{prefix}.{nameof(entity.Direction)}"));
             }
-            else if (!capability.Supports(direction))
+            else if (entity.IsActive && !capability.Supports(direction))
             {
                 errors.Add(Error(
                     SapSyncProfileErrorCodes.DirectionUnsupported,
@@ -192,8 +194,9 @@ public sealed class SapSyncProfileValidationService(ISapSyncProfileRepository re
                     $"El modo '{entity.SyncMode}' no es valido.",
                     $"{prefix}.{nameof(entity.SyncMode)}"));
             }
-            else if ((syncMode.Equals(SapSyncModes.Full, StringComparison.OrdinalIgnoreCase) && !capability.SupportsFull)
-                || (syncMode.Equals(SapSyncModes.Incremental, StringComparison.OrdinalIgnoreCase) && !capability.SupportsIncremental))
+            else if (entity.IsActive
+                     && ((syncMode.Equals(SapSyncModes.Full, StringComparison.OrdinalIgnoreCase) && !capability.SupportsFull)
+                         || (syncMode.Equals(SapSyncModes.Incremental, StringComparison.OrdinalIgnoreCase) && !capability.SupportsIncremental)))
             {
                 errors.Add(Error(
                     SapSyncProfileErrorCodes.SyncModeUnsupported,
