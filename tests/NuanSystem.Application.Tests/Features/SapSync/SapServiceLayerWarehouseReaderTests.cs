@@ -62,6 +62,36 @@ public sealed class SapServiceLayerWarehouseReaderTests
         SapWarehouseQuery.ReadOptions.MaxPages.Should().Be(100);
     }
 
+    [Fact]
+    public void FilteredQuery_ShouldApplyContainsOrExactNameAtSapSource()
+    {
+        var query = SapWarehouseQuery.Build(new SapWarehouseFilter(
+            " mega ",
+            " feria libre "));
+
+        Uri.UnescapeDataString(query).Should().Be(
+            "Warehouses?$filter=contains(toupper(WarehouseName),'MEGA') or " +
+            "toupper(WarehouseName) eq 'FERIA LIBRE'&$orderby=WarehouseCode");
+    }
+
+    [Fact]
+    public void FilteredQuery_ShouldEscapeODataLiteralsAndAvoidQueryInjection()
+    {
+        var query = SapWarehouseQuery.Build(new SapWarehouseFilter(
+            "MEGA' or WarehouseCode ne '",
+            null));
+
+        query.Should().NotContain(" or WarehouseCode");
+        Uri.UnescapeDataString(query).Should().Contain("MEGA'' OR WAREHOUSECODE NE ''");
+    }
+
+    [Fact]
+    public void EmptyFilter_ShouldKeepFullQuery()
+    {
+        SapWarehouseQuery.Build(new SapWarehouseFilter(" ", null))
+            .Should().Be(SapWarehouseQuery.Full);
+    }
+
     private sealed class SapWarehouseHttpHandler : HttpMessageHandler
     {
         public List<string> RequestPaths { get; } = [];

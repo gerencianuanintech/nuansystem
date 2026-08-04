@@ -25,7 +25,7 @@ public sealed class SapWarehouseExecutionProcessorTests
         var retryPolicy = Substitute.For<ISapSyncRetryPolicy>();
         var context = Context();
         var running = Execution(context, SapSyncExecutionStatuses.Running);
-        reader.GetWarehousesAsync(context.CompanyId, Arg.Any<CancellationToken>()).Returns([
+        reader.GetWarehousesAsync(context.CompanyId, Arg.Any<SapWarehouseFilter>(), Arg.Any<CancellationToken>()).Returns([
             Record("WH-FAIL"),
             Record("WH-OK")
         ]);
@@ -92,7 +92,7 @@ public sealed class SapWarehouseExecutionProcessorTests
         var context = Context();
         var running = Execution(context, SapSyncExecutionStatuses.Running);
         var cancelling = Execution(context, SapSyncExecutionStatuses.Cancelling);
-        reader.GetWarehousesAsync(context.CompanyId, Arg.Any<CancellationToken>()).Returns([
+        reader.GetWarehousesAsync(context.CompanyId, Arg.Any<SapWarehouseFilter>(), Arg.Any<CancellationToken>()).Returns([
             Record("WH-01"),
             Record("WH-02")
         ]);
@@ -188,7 +188,7 @@ public sealed class SapWarehouseExecutionProcessorTests
                 && state.LastSafeErrorCode == "SAP_WAREHOUSE_EXECUTION_INTERRUPTED"),
             Arg.Is<CancellationToken>(token => !token.IsCancellationRequested));
         await reader.DidNotReceive().GetWarehousesAsync(
-            Arg.Any<int>(), Arg.Any<CancellationToken>());
+            Arg.Any<int>(), Arg.Any<SapWarehouseFilter>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -203,10 +203,9 @@ public sealed class SapWarehouseExecutionProcessorTests
             WarehouseExactName = " feria libre "
         };
         var running = Execution(context, SapSyncExecutionStatuses.Running);
-        reader.GetWarehousesAsync(context.CompanyId, Arg.Any<CancellationToken>()).Returns([
+        reader.GetWarehousesAsync(context.CompanyId, Arg.Any<SapWarehouseFilter>(), Arg.Any<CancellationToken>()).Returns([
             Record("02", "MEGA AMERICAS"),
-            Record("18", "FERIA LIBRE"),
-            Record("99", "BODEGA CENTRAL")
+            Record("18", "FERIA LIBRE")
         ]);
         executionRepository.GetByExecutionUidAsync(context.ExecutionUid, Arg.Any<CancellationToken>())
             .Returns(running);
@@ -226,14 +225,18 @@ public sealed class SapWarehouseExecutionProcessorTests
 
         await processor.ProcessAsync(context);
 
+        await reader.Received(1).GetWarehousesAsync(
+            context.CompanyId,
+            Arg.Is<SapWarehouseFilter>(filter =>
+                filter.NameContains == " mega "
+                && filter.ExactName == " feria libre "),
+            Arg.Any<CancellationToken>());
+
         await executionRepository.Received(1).UpsertDetailAsync(
             Arg.Is<SapSyncExecutionDetailData>(detail => detail.SourceRecordKey == "02"),
             Arg.Any<CancellationToken>());
         await executionRepository.Received(1).UpsertDetailAsync(
             Arg.Is<SapSyncExecutionDetailData>(detail => detail.SourceRecordKey == "18"),
-            Arg.Any<CancellationToken>());
-        await executionRepository.DidNotReceive().UpsertDetailAsync(
-            Arg.Is<SapSyncExecutionDetailData>(detail => detail.SourceRecordKey == "99"),
             Arg.Any<CancellationToken>());
         await executionRepository.Received(1).TransitionAsync(
             Arg.Is<SapSyncExecutionStateData>(state =>
@@ -252,7 +255,7 @@ public sealed class SapWarehouseExecutionProcessorTests
         var retryPolicy = Substitute.For<ISapSyncRetryPolicy>();
         var context = Context() with { ContinueOnError = false, BatchSize = 1 };
         var running = Execution(context, SapSyncExecutionStatuses.Running);
-        reader.GetWarehousesAsync(context.CompanyId, Arg.Any<CancellationToken>()).Returns([
+        reader.GetWarehousesAsync(context.CompanyId, Arg.Any<SapWarehouseFilter>(), Arg.Any<CancellationToken>()).Returns([
             Record("WH-FAIL"),
             Record("WH-NOT-STARTED")
         ]);
