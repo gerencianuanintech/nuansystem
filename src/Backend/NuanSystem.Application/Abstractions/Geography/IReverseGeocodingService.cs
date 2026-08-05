@@ -1,4 +1,4 @@
-using NuanSystem.Application.Features.Geography.Dtos;
+using NuanSystem.Application.Features.Geography.Common.Dtos;
 
 namespace NuanSystem.Application.Abstractions.Geography;
 

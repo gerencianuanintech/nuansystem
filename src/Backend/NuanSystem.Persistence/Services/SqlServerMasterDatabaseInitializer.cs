@@ -818,6 +818,12 @@ END;
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
         }
 
+        scriptPath = FindDatabaseScriptPath("035_master_geography_security.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
         scriptPath = FindDatabaseScriptPath("011_master_configuration_companies.sql");
         if (scriptPath is not null)
         {
@@ -999,6 +1005,30 @@ END;
         }
 
         scriptPath = FindDatabaseScriptPath("167_master_sap_sync_profile_ribbon_icons.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("170_master_sap_country_sync_capability.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("171_master_definitions_general_geography_navigation.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("174_master_sap_province_sync_capability.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("176_master_sap_city_select_query.sql");
         if (scriptPath is not null)
         {
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);

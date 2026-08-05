@@ -2,7 +2,7 @@ using System.Text.Json;
 using FluentAssertions;
 using NSubstitute;
 using NuanSystem.Application.Abstractions.Sync;
-using NuanSystem.Application.Features.Geography.Dtos;
+using NuanSystem.Application.Features.Definitions.General.Provinces.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.MasterBranchSyncWorker.Services;
 using NuanSystem.Shared.Sync;
@@ -18,7 +18,7 @@ public sealed class ProvinceSyncEventApplierTests
         var payload = CreatePayload();
         var context = CreateContext(payload, SyncOperation.Created);
         repository.UpsertFromSyncAsync(2, context, payload, SyncOperation.Created, Arg.Any<CancellationToken>())
-            .Returns(new ProvinceSyncApplyResult(true, false, 1, "Creada."));
+            .Returns(new ProvinceSyncApplyResult(true, false, false, 1, "Creada."));
         var applier = new ProvinceSyncEventApplier(repository);
 
         var result = await applier.ApplyAsync(context, CancellationToken.None);
@@ -51,18 +51,15 @@ public sealed class ProvinceSyncEventApplierTests
     }
 
     [Fact]
-    public void Persistence_ResolvesParentAndProtectsInboxIdempotency()
+    public void Persistence_UsesTerminalProcedureWithoutAdoption()
     {
         var repository = ReadSourceFile(
             "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync", "ProvinceSyncApplyRepository.cs");
 
-        repository.Should().Contain("WHERE GlobalId = @CountryGlobalId");
-        repository.Should().Contain("WHERE Code = @CountryCode");
-        repository.Should().Contain("WHERE GlobalId = @GlobalId");
-        repository.Should().Contain("WHERE EventId = @EventId");
-        repository.Should().Contain("Status = N'Applied'");
-        repository.Should().Contain("THROW 51085");
-        repository.Should().NotContain("dbo.Cities");
+        repository.Should().Contain("SP_NA_POST_PROVINCE_SYNC_APPLY_EVENT");
+        repository.Should().Contain("SYNC_PROVINCE_CODE_CONFLICT");
+        repository.Should().Contain("SYNC_PROVINCE_PARENT_CONFLICT");
+        repository.Should().NotContain("WHERE Code = @CountryCode");
     }
 
     private static ProvinceSyncPayload CreatePayload()
@@ -74,6 +71,9 @@ public sealed class ProvinceSyncEventApplierTests
             "AZU",
             "Azuay",
             true,
+            false,
+            "SAP_B1",
+            "EC|AZU",
             new DateTime(2026, 7, 16, 10, 0, 0, DateTimeKind.Utc),
             null);
     }

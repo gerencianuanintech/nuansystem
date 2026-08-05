@@ -1,4 +1,4 @@
-using NuanSystem.Application.Features.Geography.Dtos;
+using NuanSystem.Application.Features.Definitions.General.Countries.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Shared.Sync;
 
@@ -6,11 +6,6 @@ namespace NuanSystem.Application.Abstractions.Sync;
 
 public interface ICountrySyncApplyRepository
 {
-    Task<bool> ExistsByGlobalIdAsync(
-        int branchCompanyId,
-        Guid globalId,
-        CancellationToken cancellationToken = default);
-
     Task<CountrySyncApplyResult> UpsertFromSyncAsync(
         int branchCompanyId,
         SyncEventApplyContext context,
@@ -29,5 +24,7 @@ public interface ICountrySyncApplyRepository
 public sealed record CountrySyncApplyResult(
     bool Applied,
     bool AlreadyApplied,
+    bool TerminalConflict,
     int? CountryId,
-    string Message);
+    string Message,
+    string? ErrorCode = null);

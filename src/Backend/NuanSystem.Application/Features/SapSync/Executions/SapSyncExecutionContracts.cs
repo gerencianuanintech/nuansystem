@@ -60,6 +60,9 @@ public static class SapSyncApprovedSnapshotTypes
     public const string ItemV1 = "ItemV1";
     public const string PaymentTermV1 = "PaymentTermV1";
     public const string WarehouseV1 = "WarehouseV1";
+    public const string CountryV1 = "CountryV1";
+    public const string ProvinceV1 = "ProvinceV1";
+    public const string CityV1 = "CityV1";
 }
 
 public sealed record SapSyncExecutionFilter(

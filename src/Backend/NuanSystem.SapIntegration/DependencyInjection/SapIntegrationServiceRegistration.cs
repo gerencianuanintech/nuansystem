@@ -12,6 +12,9 @@ using NuanSystem.SapIntegration.Items;
 using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.SapIntegration.ServiceLayer;
 using NuanSystem.SapIntegration.PaymentTerms;
+using NuanSystem.SapIntegration.Countries;
+using NuanSystem.SapIntegration.Provinces;
+using NuanSystem.SapIntegration.Cities;
 
 namespace NuanSystem.SapIntegration.DependencyInjection;
 
@@ -49,6 +52,9 @@ public static class SapIntegrationServiceRegistration
         services.AddScoped<ISapHanaQueryClient, SapHanaQueryClient>();
         services.AddScoped<ISapSupplierReader, SapSupplierReader>();
         services.AddScoped<ISapWarehouseReader, SapServiceLayerWarehouseReader>();
+        services.AddScoped<ISapCountryReader, SapServiceLayerCountryReader>();
+        services.AddScoped<ISapProvinceReader, SapServiceLayerProvinceReader>();
+        services.AddScoped<ISapCityReader, SapHanaCityReader>();
         services.AddScoped<ISapItemReader, SapServiceLayerItemReader>();
         services.AddScoped<SapServiceLayerQueryClient>();
         services.AddScoped<ISapPurchaseOrderReader, SapServiceLayerPurchaseOrderReader>();

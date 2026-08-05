@@ -3,6 +3,13 @@ using MediatR;
 using NuanSystem.Api.Extensions;
 using NuanSystem.Application.Features.SapSync.Commands;
 using NuanSystem.Application.Features.SapSync.Queries;
+using NuanSystem.Application.Features.SapSync.Countries.Commands;
+using NuanSystem.Application.Features.SapSync.Countries.Queries;
+using NuanSystem.Application.Features.SapSync.Provinces.Commands;
+using NuanSystem.Application.Features.SapSync.Provinces.Queries;
+using NuanSystem.Application.Features.SapSync.Cities.Commands;
+using NuanSystem.Application.Features.SapSync.Cities.Configuration;
+using NuanSystem.Application.Features.SapSync.Cities.Queries;
 using NuanSystem.Application.Features.Sync.Commands;
 using NuanSystem.Shared.Constants;
 
@@ -133,6 +140,101 @@ public static class SapEndpoints
                 AuditUserName = auditUser.UserName
             }, cancellationToken);
 
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.SapManage);
+
+        app.MapGet("/api/sap/countries/preview", async (
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await sender.Send(new PreviewCountriesFromSapQuery(), cancellationToken);
+
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.SapRead);
+
+        app.MapPost("/api/sap/countries/import", async (
+            ISender sender,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken) =>
+        {
+            var auditUser = EndpointContextHelper.GetAuditUser(user);
+            var result = await sender.Send(
+                new ImportCountriesFromSapCommand(auditUser.UserId, auditUser.UserName),
+                cancellationToken);
+
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.SapManage);
+
+        app.MapGet("/api/sap/provinces/preview", async (
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await sender.Send(new PreviewProvincesFromSapQuery(), cancellationToken);
+
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.SapRead);
+
+        app.MapPost("/api/sap/provinces/import", async (
+            ISender sender,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken) =>
+        {
+            var auditUser = EndpointContextHelper.GetAuditUser(user);
+            var result = await sender.Send(
+                new ImportProvincesFromSapCommand(auditUser.UserId, auditUser.UserName),
+                cancellationToken);
+
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.SapManage);
+
+        app.MapGet("/api/sap/settings/cities-query", async (
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await sender.Send(new GetSapCityQuerySettingsQuery(), cancellationToken);
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.SapManage);
+
+        app.MapPut("/api/sap/settings/cities-query", async (
+            UpdateSapCityQuerySettingsCommand command,
+            ClaimsPrincipal user,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var auditUser = EndpointContextHelper.GetAuditUser(user);
+            var result = await sender.Send(command with
+            {
+                AuditUserId = auditUser.UserId,
+                AuditUserName = auditUser.UserName
+            }, cancellationToken);
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.SapManage);
+
+        app.MapGet("/api/sap/cities/preview", async (
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await sender.Send(new PreviewCitiesFromSapQuery(), cancellationToken);
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.SapRead);
+
+        app.MapPost("/api/sap/cities/import", async (
+            ISender sender,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken) =>
+        {
+            var auditUser = EndpointContextHelper.GetAuditUser(user);
+            var result = await sender.Send(
+                new ImportCitiesFromSapCommand(auditUser.UserId, auditUser.UserName),
+                cancellationToken);
             return result.ToHttpResult();
         })
         .RequirePermission(PermissionCodes.SapManage);

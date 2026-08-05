@@ -15,7 +15,7 @@ using NuanSystem.Persistence.Repositories.Documents;
 using NuanSystem.Persistence.Repositories.FinancialCatalogs;
 using NuanSystem.Persistence.Repositories.GeneralInventory;
 using NuanSystem.Persistence.Repositories.GeneralSupplier;
-using NuanSystem.Persistence.Repositories.Geography;
+using NuanSystem.Persistence.Repositories.Definitions.General;
 using NuanSystem.Persistence.Repositories.OperationalCatalogs;
 using NuanSystem.Persistence.Repositories.Purchasing;
 using NuanSystem.Persistence.Repositories.SapSync;

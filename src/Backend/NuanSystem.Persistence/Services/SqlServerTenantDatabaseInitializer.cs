@@ -46,6 +46,7 @@ public sealed class SqlServerTenantDatabaseInitializer(
                       "053_tenant_operational_catalog.sql",
                       "063_tenant_global_ids_and_external_refs.sql",
                       "065_tenant_sync_inbox_local_outbox.sql",
+                      "083_tenant_country_master_branch_sync.sql",
                       "067_tenant_warehouses_master.sql",
                       "095_tenant_item_sap_import.sql",
                       "097_tenant_item_group_master_branch_sync.sql"
@@ -71,6 +72,12 @@ public sealed class SqlServerTenantDatabaseInitializer(
                       ,"158_tenant_sap_sync_execution_operations.sql"
                       ,"162_tenant_carrier_transactional_outbox.sql"
                       ,"164_tenant_local_outbox_entity_scope.sql"
+                      ,"168_tenant_country_transactional_outbox.sql"
+                      ,"169_tenant_sap_country_execution_snapshot.sql"
+                      ,"172_tenant_province_transactional_outbox.sql"
+                      ,"173_tenant_sap_province_execution_snapshot.sql"
+                      ,"175_tenant_city_transactional_outbox.sql"
+                      ,"177_tenant_sap_city_execution_snapshot.sql"
                    })
         {
             var scriptPath = FindDatabaseScriptPath(fileName);

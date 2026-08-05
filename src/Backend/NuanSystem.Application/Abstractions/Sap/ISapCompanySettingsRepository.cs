@@ -15,4 +15,8 @@ public interface ISapCompanySettingsRepository
     Task<int> UpsertServiceLayerAsync(
         UpdateSapServiceLayerSettingsData settings,
         CancellationToken cancellationToken = default);
+
+    Task<int> UpdateCitiesSelectQueryAsync(
+        UpdateSapCityQuerySettingsData settings,
+        CancellationToken cancellationToken = default);
 }

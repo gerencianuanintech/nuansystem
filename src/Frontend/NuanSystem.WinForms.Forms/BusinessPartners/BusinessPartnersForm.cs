@@ -3,7 +3,7 @@ using NuanSystem.WinForms.Forms.Audit;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Services.Audit;
 using NuanSystem.WinForms.Services.BusinessPartners.Models;
-using NuanSystem.WinForms.Services.Geography;
+using NuanSystem.WinForms.Services.Definitions.General.Common;
 using NuanSystem.WinForms.Services.GridColumnSettings;
 using NuanSystem.WinForms.Services.Session;
 using NuanSystem.WinForms.ViewModels.BusinessPartners;

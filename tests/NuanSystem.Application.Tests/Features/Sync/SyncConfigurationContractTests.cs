@@ -345,9 +345,9 @@ public sealed class SyncConfigurationContractTests
         var executionService = ReadSourceFile(
             "src", "Backend", "NuanSystem.Application", "Features", "Sync", "Execution", "Services", "SyncProfileExecutionService.cs");
         var publishers = string.Join(Environment.NewLine,
-            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Geography", "Commands", "CountrySyncPublisher.cs"),
-            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Geography", "Commands", "ProvinceSyncPublisher.cs"),
-            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Geography", "Commands", "CitySyncPublisher.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Definitions", "General", "Countries", "Commands", "CountrySyncEventFactory.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Definitions", "General", "Provinces", "Commands", "ProvinceSyncEventFactory.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "Definitions", "General", "Cities", "Commands", "CitySyncEventFactory.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "FinancialCatalogs", "Catalogs", "Commands", "CurrencySyncEventFactory.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "BusinessPartners", "Commands", "BusinessPartnerSyncEventFactory.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.Application", "Features", "GeneralInventory", "ItemGroups", "Commands", "ItemGroupSyncEventFactory.cs"),
@@ -408,12 +408,22 @@ public sealed class SyncConfigurationContractTests
 
         applicationRegistration.Should().Contain("AddScoped<IItemGroupLocalOutboxWriter, ItemGroupLocalOutboxWriter>()")
             .And.Contain("AddScoped<IWarehouseLocalOutboxWriter, WarehouseLocalOutboxWriter>()")
-            .And.Contain("AddScoped<ICurrencyLocalOutboxWriter, CurrencyLocalOutboxWriter>()");
+            .And.Contain("AddScoped<ICurrencyLocalOutboxWriter, CurrencyLocalOutboxWriter>()")
+            .And.Contain("AddScoped<ICountryLocalOutboxWriter, CountryLocalOutboxWriter>()")
+            .And.Contain("AddScoped<IProvinceLocalOutboxWriter, ProvinceLocalOutboxWriter>()")
+            .And.Contain("AddScoped<ICityLocalOutboxWriter, CityLocalOutboxWriter>()");
         tenantInitializer.Should().Contain("129_tenant_item_group_transactional_outbox.sql")
             .And.Contain("131_tenant_item_sync_payload_v2.sql")
             .And.Contain("133_tenant_warehouse_transactional_outbox.sql")
             .And.Contain("135_tenant_warehouse_tombstone_code_reservation.sql")
-            .And.Contain("136_tenant_currency_transactional_outbox.sql");
+            .And.Contain("136_tenant_currency_transactional_outbox.sql")
+            .And.Contain("168_tenant_country_transactional_outbox.sql")
+            .And.Contain("172_tenant_province_transactional_outbox.sql")
+            .And.Contain("175_tenant_city_transactional_outbox.sql");
+        tenantInitializer.IndexOf("172_tenant_province_transactional_outbox.sql", StringComparison.Ordinal)
+            .Should().BeLessThan(tenantInitializer.IndexOf("173_tenant_sap_province_execution_snapshot.sql", StringComparison.Ordinal));
+        tenantInitializer.IndexOf("173_tenant_sap_province_execution_snapshot.sql", StringComparison.Ordinal)
+            .Should().BeLessThan(tenantInitializer.IndexOf("175_tenant_city_transactional_outbox.sql", StringComparison.Ordinal));
         masterInitializer.Should().Contain("130_master_item_group_sync_registration.sql")
             .And.Contain("132_master_item_unit_of_measure_dependency.sql")
             .And.Contain("134_master_warehouse_sync_registration.sql")

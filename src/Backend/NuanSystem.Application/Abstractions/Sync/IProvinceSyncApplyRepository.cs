@@ -1,4 +1,4 @@
-using NuanSystem.Application.Features.Geography.Dtos;
+using NuanSystem.Application.Features.Definitions.General.Provinces.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Shared.Sync;
 
@@ -6,11 +6,6 @@ namespace NuanSystem.Application.Abstractions.Sync;
 
 public interface IProvinceSyncApplyRepository
 {
-    Task<bool> ExistsByGlobalIdAsync(
-        int branchCompanyId,
-        Guid globalId,
-        CancellationToken cancellationToken = default);
-
     Task<ProvinceSyncApplyResult> UpsertFromSyncAsync(
         int branchCompanyId,
         SyncEventApplyContext context,
@@ -29,5 +24,7 @@ public interface IProvinceSyncApplyRepository
 public sealed record ProvinceSyncApplyResult(
     bool Applied,
     bool AlreadyApplied,
+    bool TerminalConflict,
     int? ProvinceId,
-    string Message);
+    string Message,
+    string? ErrorCode = null);

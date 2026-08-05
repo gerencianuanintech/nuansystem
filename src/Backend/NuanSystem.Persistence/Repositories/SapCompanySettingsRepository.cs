@@ -11,6 +11,7 @@ public sealed class SapCompanySettingsRepository(IMasterConnectionFactory connec
     private const string GetByCompanyIdProcedure = "dbo.SP_NA_GET_SAPCOMPANYSETTINGS_BUSCARPOREMPRESAID";
     private const string GetByCompanyCodeProcedure = "dbo.SP_NA_GET_SAPCOMPANYSETTINGS_BUSCARPOREMPRESACODIGO";
     private const string UpsertServiceLayerProcedure = "dbo.SP_NA_PUT_SAPCOMPANYSETTINGS_SERVICELAYER";
+    private const string UpdateCitiesSelectQueryProcedure = "dbo.SP_NA_PUT_SAPCOMPANYSETTINGS_CITIESQUERY";
 
     public async Task<SapCompanySettingsDto?> GetByCompanyIdAsync(
         int companyId,
@@ -47,6 +48,18 @@ public sealed class SapCompanySettingsRepository(IMasterConnectionFactory connec
         using var connection = connectionFactory.CreateConnection();
         return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
             UpsertServiceLayerProcedure,
+            settings,
+            cancellationToken: cancellationToken,
+            commandType: CommandType.StoredProcedure));
+    }
+
+    public async Task<int> UpdateCitiesSelectQueryAsync(
+        UpdateSapCityQuerySettingsData settings,
+        CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            UpdateCitiesSelectQueryProcedure,
             settings,
             cancellationToken: cancellationToken,
             commandType: CommandType.StoredProcedure));

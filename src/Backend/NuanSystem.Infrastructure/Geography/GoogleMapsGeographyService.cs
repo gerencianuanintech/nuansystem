@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using NuanSystem.Application.Abstractions.Geography;
-using NuanSystem.Application.Features.Geography.Dtos;
+using NuanSystem.Application.Features.Geography.Common.Dtos;
 
 namespace NuanSystem.Infrastructure.Geography;
 

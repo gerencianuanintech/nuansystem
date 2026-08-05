@@ -1,6 +1,6 @@
 using System.Text.Json;
 using NuanSystem.Application.Abstractions.Sync;
-using NuanSystem.Application.Features.Geography.Dtos;
+using NuanSystem.Application.Features.Definitions.General.Countries.Dtos;
 using NuanSystem.Application.Features.Sync.Configuration;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Shared.Sync;
@@ -25,16 +25,37 @@ public sealed class CountrySyncEventApplier(
     {
         if (context.TargetCompanyId is null)
         {
-            return new SyncEventApplyResult(false, "Countries requiere sucursal destino.", "SYNC_TARGET_REQUIRED");
+            return new SyncEventApplyResult(false, "Countries requiere sucursal destino.", "SYNC_TARGET_REQUIRED", Terminal: true);
         }
 
-        var payload = ReadPayload(context.PayloadJson);
+        CountrySyncPayload payload;
+        try
+        {
+            payload = ReadPayload(context.PayloadJson);
+        }
+        catch (JsonException)
+        {
+            return new SyncEventApplyResult(false, "Payload Countries no es JSON valido.", "SYNC_PAYLOAD_INVALID", Terminal: true);
+        }
+
         if (payload.GlobalId == Guid.Empty || payload.GlobalId != context.EntityGlobalId)
         {
-            return new SyncEventApplyResult(false, "Payload Countries no coincide con EntityGlobalId.", "SYNC_PAYLOAD_GLOBAL_ID_MISMATCH");
+            return new SyncEventApplyResult(false, "Payload Countries no coincide con EntityGlobalId.", "SYNC_PAYLOAD_GLOBAL_ID_MISMATCH", Terminal: true);
         }
 
-        var operation = Enum.Parse<SyncOperation>(context.Operation, ignoreCase: true);
+        if (!Enum.TryParse<SyncOperation>(context.Operation, ignoreCase: true, out var operation) || !Enum.IsDefined(operation))
+        {
+            return new SyncEventApplyResult(false, "Operacion Countries no permitida.", "SYNC_OPERATION_INVALID", Terminal: true);
+        }
+
+        if (string.IsNullOrWhiteSpace(payload.Code) || payload.Code.Trim().Length > 10 ||
+            string.IsNullOrWhiteSpace(payload.Name) || payload.Name.Trim().Length > 120 ||
+            payload.Iso2?.Trim().Length > 2 || payload.Iso3?.Trim().Length > 3 ||
+            payload.PhonePrefix?.Trim().Length > 10 || payload.ExternalSystem?.Trim().Length > 50 ||
+            payload.ExternalCode?.Trim().Length > 100)
+        {
+            return new SyncEventApplyResult(false, "Payload Countries incumple campos obligatorios o longitudes.", "SYNC_COUNTRY_PAYLOAD_INVALID", Terminal: true);
+        }
         var result = operation switch
         {
             SyncOperation.Disabled => await repository.DisableFromSyncAsync(
@@ -59,7 +80,7 @@ public sealed class CountrySyncEventApplier(
                 cancellationToken)
         };
 
-        return new SyncEventApplyResult(result.Applied, result.Message);
+        return new SyncEventApplyResult(result.Applied, result.Message, result.ErrorCode, Terminal: result.TerminalConflict);
     }
 
     private static CountrySyncPayload ReadPayload(string payloadJson)
@@ -67,10 +88,10 @@ public sealed class CountrySyncEventApplier(
         using var document = JsonDocument.Parse(payloadJson);
         if (!document.RootElement.TryGetProperty("payload", out var payloadElement))
         {
-            throw new InvalidOperationException("Payload SyncOutbox no contiene nodo payload.");
+            throw new JsonException("Payload SyncOutbox no contiene nodo payload.");
         }
 
         return payloadElement.Deserialize<CountrySyncPayload>(JsonOptions)
-            ?? throw new InvalidOperationException("Payload Countries no pudo ser deserializado.");
+            ?? throw new JsonException("Payload Countries no pudo ser deserializado.");
     }
 }

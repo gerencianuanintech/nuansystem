@@ -5,6 +5,8 @@ using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using NuanSystem.Api.Endpoints;
+using NuanSystem.Api.Endpoints.Definitions.General;
+using NuanSystem.Api.Endpoints.Geography.Common;
 using NuanSystem.Api.Extensions;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Shared.Responses;
@@ -134,6 +136,7 @@ try
     app.MapFinancialCatalogEndpoints();
     app.MapGeneralSupplierEndpoints();
     app.MapGeographyEndpoints();
+    app.MapGeographyCommonEndpoints();
     app.MapInventoryCatalogEndpoints();
     app.MapOperationalCatalogEndpoints();
     app.MapPurchaseOrderEndpoints();

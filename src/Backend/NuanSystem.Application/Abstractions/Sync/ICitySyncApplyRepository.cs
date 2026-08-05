@@ -1,4 +1,4 @@
-using NuanSystem.Application.Features.Geography.Dtos;
+using NuanSystem.Application.Features.Definitions.General.Cities.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Shared.Sync;
 
@@ -6,11 +6,6 @@ namespace NuanSystem.Application.Abstractions.Sync;
 
 public interface ICitySyncApplyRepository
 {
-    Task<bool> ExistsByGlobalIdAsync(
-        int branchCompanyId,
-        Guid globalId,
-        CancellationToken cancellationToken = default);
-
     Task<CitySyncApplyResult> UpsertFromSyncAsync(
         int branchCompanyId,
         SyncEventApplyContext context,
@@ -29,5 +24,7 @@ public interface ICitySyncApplyRepository
 public sealed record CitySyncApplyResult(
     bool Applied,
     bool AlreadyApplied,
+    bool TerminalConflict,
     int? CityId,
-    string Message);
+    string Message,
+    string? ErrorCode = null);

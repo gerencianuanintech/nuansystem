@@ -4,7 +4,7 @@ using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Views.Grid;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Services.BusinessPartners.Models;
-using NuanSystem.WinForms.Services.Geography;
+using NuanSystem.WinForms.Services.Definitions.General.Common;
 using NuanSystem.WinForms.Services.Session;
 using NuanSystem.WinForms.ViewModels.BusinessPartners.Suppliers;
 

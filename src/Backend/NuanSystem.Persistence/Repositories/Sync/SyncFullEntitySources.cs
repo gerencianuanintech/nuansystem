@@ -7,7 +7,9 @@ using NuanSystem.Application.Features.FinancialCatalogs.Catalogs.Dtos;
 using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Dtos;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Dtos;
 using NuanSystem.Application.Features.GeneralInventory.Warehouses.Dtos;
-using NuanSystem.Application.Features.Geography.Dtos;
+using NuanSystem.Application.Features.Definitions.General.Cities.Dtos;
+using NuanSystem.Application.Features.Definitions.General.Countries.Dtos;
+using NuanSystem.Application.Features.Definitions.General.Provinces.Dtos;
 using NuanSystem.Application.Features.Items.Dtos;
 using NuanSystem.Application.Features.Sync.Configuration;
 using NuanSystem.Application.Features.Sync.Execution.Dtos;
@@ -32,11 +34,13 @@ public sealed class CountryFullEntitySource(ICompanyResolver companyResolver) : 
                 Iso3,
                 PhonePrefix,
                 IsActive,
+                IsDeleted,
+                ExternalSystem,
+                ExternalCode,
                 CreatedAt,
                 UpdatedAt
             FROM dbo.Countries
-            WHERE IsDeleted = 0
-              AND (@LastKey IS NULL OR Code > @LastKey)
+            WHERE (@LastKey IS NULL OR Code > @LastKey)
             ORDER BY Code;
             """;
 
@@ -48,7 +52,7 @@ public sealed class CountryFullEntitySource(ICompanyResolver companyResolver) : 
         var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context)).Select(row => new SyncSourceRecord(
             row.GlobalId,
             row.Code,
-            row.IsActive,
+            !row.IsDeleted && row.IsActive,
             new CountrySyncPayload(
                 row.GlobalId,
                 row.Code,
@@ -56,7 +60,10 @@ public sealed class CountryFullEntitySource(ICompanyResolver companyResolver) : 
                 row.Iso2,
                 row.Iso3,
                 row.PhonePrefix,
-                row.IsActive,
+                !row.IsDeleted && row.IsActive,
+                row.IsDeleted,
+                row.ExternalSystem,
+                row.ExternalCode,
                 row.CreatedAt,
                 row.UpdatedAt))).ToArray();
 
@@ -71,6 +78,9 @@ public sealed class CountryFullEntitySource(ICompanyResolver companyResolver) : 
         string? Iso3,
         string? PhonePrefix,
         bool IsActive,
+        bool IsDeleted,
+        string? ExternalSystem,
+        string? ExternalCode,
         DateTime CreatedAt,
         DateTime? UpdatedAt);
 }
@@ -91,13 +101,15 @@ public sealed class ProvinceFullEntitySource(ICompanyResolver companyResolver) :
                 province.Code,
                 province.Name,
                 province.IsActive,
+                province.IsDeleted,
+                province.ExternalSystem,
+                province.ExternalCode,
                 province.CreatedAt,
                 province.UpdatedAt,
                 CONCAT(country.Code, N'|', province.Code) AS EntityKey
             FROM dbo.Provinces AS province
             INNER JOIN dbo.Countries AS country ON country.CountryId = province.CountryId
-            WHERE province.IsDeleted = 0
-              AND country.IsDeleted = 0
+            WHERE country.IsDeleted = 0
               AND (@LastKey IS NULL OR CONCAT(country.Code, N'|', province.Code) > @LastKey)
             ORDER BY country.Code, province.Code;
             """;
@@ -110,14 +122,17 @@ public sealed class ProvinceFullEntitySource(ICompanyResolver companyResolver) :
         var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context)).Select(row => new SyncSourceRecord(
             row.GlobalId,
             row.EntityKey,
-            row.IsActive,
+            !row.IsDeleted && row.IsActive,
             new ProvinceSyncPayload(
                 row.GlobalId,
                 row.CountryGlobalId,
                 row.CountryCode,
                 row.Code,
                 row.Name,
-                row.IsActive,
+                !row.IsDeleted && row.IsActive,
+                row.IsDeleted,
+                row.ExternalSystem,
+                row.ExternalCode,
                 row.CreatedAt,
                 row.UpdatedAt))).ToArray();
 
@@ -131,6 +146,9 @@ public sealed class ProvinceFullEntitySource(ICompanyResolver companyResolver) :
         string Code,
         string Name,
         bool IsActive,
+        bool IsDeleted,
+        string? ExternalSystem,
+        string? ExternalCode,
         DateTime CreatedAt,
         DateTime? UpdatedAt,
         string EntityKey);
@@ -154,14 +172,16 @@ public sealed class CityFullEntitySource(ICompanyResolver companyResolver) : ISy
                 city.Code,
                 city.Name,
                 city.IsActive,
+                city.IsDeleted,
+                city.ExternalSystem,
+                city.ExternalCode,
                 city.CreatedAt,
                 city.UpdatedAt,
                 CONCAT(country.Code, N'|', province.Code, N'|', city.Code) AS EntityKey
             FROM dbo.Cities AS city
             INNER JOIN dbo.Countries AS country ON country.CountryId = city.CountryId
             INNER JOIN dbo.Provinces AS province ON province.ProvinceId = city.ProvinceId
-            WHERE city.IsDeleted = 0
-              AND country.IsDeleted = 0
+            WHERE country.IsDeleted = 0
               AND province.IsDeleted = 0
               AND province.CountryId = country.CountryId
               AND (@LastKey IS NULL OR CONCAT(country.Code, N'|', province.Code, N'|', city.Code) > @LastKey)
@@ -176,7 +196,7 @@ public sealed class CityFullEntitySource(ICompanyResolver companyResolver) : ISy
         var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context)).Select(row => new SyncSourceRecord(
             row.GlobalId,
             row.EntityKey,
-            row.IsActive,
+            !row.IsDeleted && row.IsActive,
             new CitySyncPayload(
                 row.GlobalId,
                 row.CountryGlobalId,
@@ -185,7 +205,10 @@ public sealed class CityFullEntitySource(ICompanyResolver companyResolver) : ISy
                 row.ProvinceCode,
                 row.Code,
                 row.Name,
-                row.IsActive,
+                !row.IsDeleted && row.IsActive,
+                row.IsDeleted,
+                row.ExternalSystem,
+                row.ExternalCode,
                 row.CreatedAt,
                 row.UpdatedAt))).ToArray();
 
@@ -201,6 +224,9 @@ public sealed class CityFullEntitySource(ICompanyResolver companyResolver) : ISy
         string Code,
         string Name,
         bool IsActive,
+        bool IsDeleted,
+        string? ExternalSystem,
+        string? ExternalCode,
         DateTime CreatedAt,
         DateTime? UpdatedAt,
         string EntityKey);

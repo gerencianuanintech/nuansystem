@@ -2,7 +2,7 @@ using System.Text.Json;
 using FluentAssertions;
 using NSubstitute;
 using NuanSystem.Application.Abstractions.Sync;
-using NuanSystem.Application.Features.Geography.Dtos;
+using NuanSystem.Application.Features.Definitions.General.Countries.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.MasterBranchSyncWorker.Services;
 using NuanSystem.Shared.Sync;
@@ -18,7 +18,7 @@ public sealed class CountrySyncEventApplierTests
         var payload = CreatePayload();
         var context = CreateContext(payload, SyncOperation.Created);
         repository.UpsertFromSyncAsync(2, context, payload, SyncOperation.Created, Arg.Any<CancellationToken>())
-            .Returns(new CountrySyncApplyResult(true, false, 1, "Creado."));
+            .Returns(new CountrySyncApplyResult(true, false, false, 1, "Creado."));
         var applier = new CountrySyncEventApplier(repository);
 
         var result = await applier.ApplyAsync(context, CancellationToken.None);
@@ -39,7 +39,7 @@ public sealed class CountrySyncEventApplierTests
         var payload = CreatePayload(isActive: false);
         var context = CreateContext(payload, SyncOperation.Deleted);
         repository.DisableFromSyncAsync(2, context, payload, true, Arg.Any<CancellationToken>())
-            .Returns(new CountrySyncApplyResult(true, false, 1, "Eliminado."));
+            .Returns(new CountrySyncApplyResult(true, false, false, 1, "Eliminado."));
         var applier = new CountrySyncEventApplier(repository);
 
         var result = await applier.ApplyAsync(context, CancellationToken.None);
@@ -54,17 +54,31 @@ public sealed class CountrySyncEventApplierTests
     }
 
     [Fact]
-    public void Persistence_ReconcilesLegacyRowsByCodeAndProtectsInboxIdempotency()
+    public async Task CodeCollision_IsReportedAsTerminalWithoutAdoption()
+    {
+        var repository = Substitute.For<ICountrySyncApplyRepository>();
+        var payload = CreatePayload();
+        var context = CreateContext(payload, SyncOperation.Created);
+        repository.UpsertFromSyncAsync(2, context, payload, SyncOperation.Created, Arg.Any<CancellationToken>())
+            .Returns(new CountrySyncApplyResult(false, false, true, null, "Conflicto.", "SYNC_COUNTRY_CODE_CONFLICT"));
+        var applier = new CountrySyncEventApplier(repository);
+
+        var result = await applier.ApplyAsync(context, CancellationToken.None);
+
+        result.Applied.Should().BeFalse();
+        result.Terminal.Should().BeTrue();
+        result.ErrorCode.Should().Be("SYNC_COUNTRY_CODE_CONFLICT");
+    }
+
+    [Fact]
+    public void Persistence_UsesTerminalProcedureWithoutCodeAdoption()
     {
         var repository = ReadSourceFile(
             "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync", "CountrySyncApplyRepository.cs");
 
-        repository.Should().Contain("WHERE GlobalId = @GlobalId");
-        repository.Should().Contain("WHERE Code = @Code");
-        repository.Should().Contain("WHERE EventId = @EventId");
-        repository.Should().Contain("Status = N'Applied'");
-        repository.Should().NotContain("ProvinceId");
-        repository.Should().NotContain("CityId");
+        repository.Should().Contain("SP_NA_POST_COUNTRY_SYNC_APPLY_EVENT");
+        repository.Should().Contain("SYNC_COUNTRY_CODE_CONFLICT");
+        repository.Should().NotContain("WHERE Code = @Code");
     }
 
     private static CountrySyncPayload CreatePayload(bool isActive = true)
@@ -77,6 +91,9 @@ public sealed class CountrySyncEventApplierTests
             "ECU",
             "+593",
             isActive,
+            false,
+            "SAP_B1",
+            "EC",
             new DateTime(2026, 7, 16, 10, 0, 0, DateTimeKind.Utc),
             null);
     }

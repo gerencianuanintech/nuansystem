@@ -16,4 +16,8 @@ internal static class SwaggerTags
     public const string SapBusinessOneSyncExecutions = "SAP Business One - Sync Executions";
     public const string MatrixBranchSynchronization = "Synchronization - Matrix-Branch";
     public const string Sri = "SRI";
+    public const string DefinitionsGeneralCountries = "Definitions - General - Countries";
+    public const string DefinitionsGeneralProvinces = "Definitions - General - Provinces";
+    public const string DefinitionsGeneralCities = "Definitions - General - Cities";
+    public const string GeographyMaps = "Geography - Maps";
 }
