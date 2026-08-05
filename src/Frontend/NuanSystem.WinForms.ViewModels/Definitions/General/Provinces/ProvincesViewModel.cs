@@ -1,4 +1,5 @@
 using NuanSystem.WinForms.Services.Definitions.General.Common;
+using NuanSystem.WinForms.Services.Definitions.General.Countries;
 using NuanSystem.WinForms.Services.Definitions.General.Provinces;
 using NuanSystem.WinForms.ViewModels.Common;
 
@@ -18,6 +19,42 @@ public sealed class ProvincesViewModel(IGeographyClient geographyClient)
     public Task<ProvinceItem> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return geographyClient.GetProvinceByIdAsync(id, cancellationToken);
+    }
+
+    public Task<CountryItem> GetCountryByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return geographyClient.GetCountryByIdAsync(id, cancellationToken);
+    }
+
+    public async Task<CountryItem> CreateCountryAsync(SaveCountryRequest request, CancellationToken cancellationToken = default)
+    {
+        var saved = await geographyClient.CreateCountryAsync(request, cancellationToken);
+        UpdateCountryLookup(saved);
+        return saved;
+    }
+
+    public async Task<CountryItem> UpdateCountryAsync(int id, SaveCountryRequest request, CancellationToken cancellationToken = default)
+    {
+        var saved = await geographyClient.UpdateCountryAsync(id, request, cancellationToken);
+        UpdateCountryLookup(saved);
+        return saved;
+    }
+
+    private void UpdateCountryLookup(CountryItem country)
+    {
+        Countries = Countries
+            .Where(item => item.Id != country.Id)
+            .Concat(country.IsActive
+                ? [new GeographyLookupItem
+                {
+                    Id = country.Id,
+                    Code = country.Code,
+                    Name = country.Name,
+                    IsActive = true
+                }]
+                : [])
+            .OrderBy(item => item.Name)
+            .ToArray();
     }
 
     public override Task CreateAsync(SaveProvinceRequest request, CancellationToken cancellationToken = default)

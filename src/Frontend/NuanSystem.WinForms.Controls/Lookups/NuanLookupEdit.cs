@@ -17,6 +17,8 @@ public class NuanLookupEdit : LookUpEdit
 
     public event EventHandler? CreateButtonClick;
 
+    public event EventHandler? EditButtonClick;
+
     [DefaultValue(false)]
     public bool CreateButtonEnabled
     {
@@ -39,6 +41,20 @@ public class NuanLookupEdit : LookUpEdit
         {
             EnsureActionButtons();
             foreach (var button in ActionButtons(ButtonPredefines.Delete))
+            {
+                button.Enabled = value;
+            }
+        }
+    }
+
+    [DefaultValue(false)]
+    public bool EditButtonEnabled
+    {
+        get => ActionButtons(ButtonPredefines.Ellipsis).Any(button => button.Enabled);
+        set
+        {
+            EnsureActionButtons();
+            foreach (var button in ActionButtons(ButtonPredefines.Ellipsis))
             {
                 button.Enabled = value;
             }
@@ -69,6 +85,7 @@ public class NuanLookupEdit : LookUpEdit
 
         NormalizeActionButton(ButtonPredefines.Delete, "Limpiar seleccion", enabledByDefault: true);
         NormalizeActionButton(ButtonPredefines.Plus, "Crear nuevo", enabledByDefault: false);
+        NormalizeActionButton(ButtonPredefines.Ellipsis, "Editar seleccionado", enabledByDefault: false);
     }
 
     private void NormalizeActionButton(
@@ -120,6 +137,12 @@ public class NuanLookupEdit : LookUpEdit
         if (e.Button.Kind == ButtonPredefines.Plus && e.Button.Enabled)
         {
             CreateButtonClick?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+
+        if (e.Button.Kind == ButtonPredefines.Ellipsis && e.Button.Enabled)
+        {
+            EditButtonClick?.Invoke(this, EventArgs.Empty);
         }
     }
 }

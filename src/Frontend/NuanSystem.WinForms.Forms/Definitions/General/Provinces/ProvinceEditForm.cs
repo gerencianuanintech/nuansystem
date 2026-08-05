@@ -1,31 +1,51 @@
 using System.ComponentModel;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
+using NuanSystem.WinForms.Controls.Lookups;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Services.Definitions.General.Common;
+using NuanSystem.WinForms.Services.Definitions.General.Countries;
 using NuanSystem.WinForms.Services.Definitions.General.Provinces;
 
 namespace NuanSystem.WinForms.Forms.Definitions.General.Provinces;
 
 public sealed partial class ProvinceEditForm : BaseEditForm
 {
+    private readonly List<GeographyLookupItem> countries;
+    private readonly bool canManageCountries;
+    private bool managingCountry;
+
     public ProvinceEditForm()
+        : this(Array.Empty<GeographyLookupItem>())
     {
+    }
+
+    public ProvinceEditForm(
+        IReadOnlyCollection<GeographyLookupItem> countries,
+        bool canManageCountries = false,
+        int? selectedCountryId = null)
+    {
+        this.countries = countries.ToList();
+        this.canManageCountries = canManageCountries;
         InitializeComponent();
         ConfigureForm();
+        BindCountries();
+        lueCountry.EditValue = selectedCountryId;
     }
 
-    public ProvinceEditForm(IReadOnlyCollection<GeographyLookupItem> countries)
-        : this()
-    {
-        BindCountries(countries);
-    }
-
-    public ProvinceEditForm(IReadOnlyCollection<GeographyLookupItem> countries, ProvinceItem item, bool copyMode = false)
-        : this(countries)
+    public ProvinceEditForm(
+        IReadOnlyCollection<GeographyLookupItem> countries,
+        ProvinceItem item,
+        bool copyMode = false,
+        bool canManageCountries = false)
+        : this(countries, canManageCountries, item.CountryId)
     {
         LoadProvince(item, copyMode);
     }
+
+    public event Func<ProvinceEditForm, Task<CountryItem?>>? CreateCountryRequested;
+
+    public event Func<ProvinceEditForm, int, Task<CountryItem?>>? EditCountryRequested;
 
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -58,10 +78,19 @@ public sealed partial class ProvinceEditForm : BaseEditForm
     {
         Text = "Nueva provincia";
         chkIsActive.Checked = true;
-        btnSave.Click += (_, _) => Save();
+        lueCountry.RefreshButtons();
+        lueCountry.ClearButtonEnabled = false;
+        lueCountry.CreateButtonEnabled = canManageCountries;
+        lueCountry.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
+        lueCountry.Properties.SearchMode = SearchMode.AutoSearch;
+        lueCountry.Properties.BestFitMode = BestFitMode.BestFitResizePopup;
+        lueCountry.CreateButtonClick += CountryLookupCreateButtonClick;
+        lueCountry.EditButtonClick += CountryLookupEditButtonClick;
+        lueCountry.EditValueChanged += CountryLookupEditValueChanged;
+        UpdateCountryEditButton();
     }
 
-    private void BindCountries(IReadOnlyCollection<GeographyLookupItem> countries)
+    private void BindCountries()
     {
         lueCountry.Properties.DataSource = countries;
         lueCountry.Properties.DisplayMember = nameof(GeographyLookupItem.Name);
@@ -69,6 +98,91 @@ public sealed partial class ProvinceEditForm : BaseEditForm
         lueCountry.Properties.Columns.Clear();
         lueCountry.Properties.Columns.Add(new LookUpColumnInfo(nameof(GeographyLookupItem.Code), "Código", 80));
         lueCountry.Properties.Columns.Add(new LookUpColumnInfo(nameof(GeographyLookupItem.Name), "Nombre", 180));
+    }
+
+    private async void CountryLookupCreateButtonClick(object? sender, EventArgs e)
+    {
+        await ManageCountryAsync(null);
+    }
+
+    private async void CountryLookupEditButtonClick(object? sender, EventArgs e)
+    {
+        if (lueCountry.EditValue is not null)
+        {
+            await ManageCountryAsync(Convert.ToInt32(lueCountry.EditValue));
+        }
+    }
+
+    private void CountryLookupEditValueChanged(object? sender, EventArgs e)
+    {
+        UpdateCountryEditButton();
+    }
+
+    private async Task ManageCountryAsync(int? countryId)
+    {
+        if (managingCountry || !canManageCountries)
+        {
+            return;
+        }
+
+        if ((!countryId.HasValue && CreateCountryRequested is null)
+            || (countryId.HasValue && EditCountryRequested is null))
+        {
+            return;
+        }
+
+        managingCountry = true;
+        lueCountry.Enabled = false;
+        try
+        {
+            CountryItem? saved = null;
+            await RunWithUiExceptionHandlingAsync(async () =>
+            {
+                saved = countryId.HasValue
+                    ? await EditCountryRequested!(this, countryId.Value)
+                    : await CreateCountryRequested!(this);
+            });
+
+            if (saved is not null)
+            {
+                UpsertCountry(saved);
+                lueCountry.EditValue = saved.Id;
+            }
+        }
+        finally
+        {
+            managingCountry = false;
+            lueCountry.Enabled = true;
+            UpdateCountryEditButton();
+        }
+    }
+
+    private void UpsertCountry(CountryItem country)
+    {
+        var lookup = new GeographyLookupItem
+        {
+            Id = country.Id,
+            Code = country.Code,
+            Name = country.Name,
+            IsActive = country.IsActive
+        };
+        var index = countries.FindIndex(item => item.Id == country.Id);
+        if (index >= 0)
+        {
+            countries[index] = lookup;
+        }
+        else
+        {
+            countries.Add(lookup);
+        }
+
+        lueCountry.Properties.DataSource = null;
+        BindCountries();
+    }
+
+    private void UpdateCountryEditButton()
+    {
+        lueCountry.EditButtonEnabled = canManageCountries && lueCountry.EditValue is not null;
     }
 
     private void LoadProvince(ProvinceItem item, bool copyMode)

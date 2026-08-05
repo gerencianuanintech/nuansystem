@@ -1,5 +1,7 @@
 using NuanSystem.Shared.Constants;
 using NuanSystem.WinForms.Forms.Common;
+using NuanSystem.WinForms.Forms.Definitions.General.Countries;
+using NuanSystem.WinForms.Services.Definitions.General.Countries;
 using NuanSystem.WinForms.Services.Definitions.General.Provinces;
 using NuanSystem.WinForms.Services.GridColumnSettings;
 using NuanSystem.WinForms.Services.Session;
@@ -53,7 +55,7 @@ public sealed partial class ProvincesForm : BaseGridCrudListForm
 
     protected override async Task CreateAsync()
     {
-        using var form = new ProvinceEditForm(viewModel.Countries);
+        using var form = CreateProvinceEditor();
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -72,7 +74,7 @@ public sealed partial class ProvincesForm : BaseGridCrudListForm
         }
 
         var fullItem = await viewModel.GetByIdAsync(item.Id);
-        using var form = new ProvinceEditForm(viewModel.Countries, fullItem);
+        using var form = CreateProvinceEditor(fullItem);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -91,7 +93,7 @@ public sealed partial class ProvincesForm : BaseGridCrudListForm
         }
 
         var fullItem = await viewModel.GetByIdAsync(item.Id);
-        using var form = new ProvinceEditForm(viewModel.Countries, fullItem, copyMode: true);
+        using var form = CreateProvinceEditor(fullItem, copyMode: true);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -135,6 +137,40 @@ public sealed partial class ProvincesForm : BaseGridCrudListForm
     }
 
     private ProvinceItem? SelectedItem() => SelectedGridItem<ProvinceItem>();
+
+    private ProvinceEditForm CreateProvinceEditor(ProvinceItem? item = null, bool copyMode = false)
+    {
+        var canManageCountries = session?.HasPermission(PermissionCodes.GeographyCountriesManage) == true;
+        var form = item is null
+            ? new ProvinceEditForm(viewModel.Countries, canManageCountries)
+            : new ProvinceEditForm(viewModel.Countries, item, copyMode, canManageCountries);
+        form.CreateCountryRequested += owner => CreateCountryAsync(owner);
+        form.EditCountryRequested += (owner, countryId) => EditCountryAsync(owner, countryId);
+        return form;
+    }
+
+    private async Task<CountryItem?> CreateCountryAsync(IWin32Window owner)
+    {
+        using var form = new CountryEditForm();
+        if (form.ShowDialog(owner) != DialogResult.OK)
+        {
+            return null;
+        }
+
+        return await viewModel.CreateCountryAsync(form.Request);
+    }
+
+    private async Task<CountryItem?> EditCountryAsync(IWin32Window owner, int countryId)
+    {
+        var country = await viewModel.GetCountryByIdAsync(countryId);
+        using var form = new CountryEditForm(country);
+        if (form.ShowDialog(owner) != DialogResult.OK)
+        {
+            return null;
+        }
+
+        return await viewModel.UpdateCountryAsync(countryId, form.Request);
+    }
 
     private void ConfigureColumn(string fieldName, string caption, int visibleIndex, int width)
     {

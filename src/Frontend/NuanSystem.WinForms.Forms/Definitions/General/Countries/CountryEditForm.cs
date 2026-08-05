@@ -45,7 +45,6 @@ public sealed partial class CountryEditForm : BaseEditForm
     {
         Text = "Nuevo país";
         chkIsActive.Checked = true;
-        btnSave.Click += (_, _) => Save();
     }
 
     private void LoadCountry(CountryItem item, bool copyMode)

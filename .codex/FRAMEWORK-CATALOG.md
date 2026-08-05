@@ -84,12 +84,12 @@ Status values:
 ### 4.2 `NuanLookupEdit`
 
 - **Location:** `src/Frontend/NuanSystem.WinForms.Controls/Lookups/NuanLookupEdit.cs`
-- **Status:** Active/preferred for corporate lookups requiring clear/create affordances.
-- **Responsibility:** `LookUpEdit` with managed clear/create buttons and `ClearButtonClick` / `CreateButtonClick` events.
-- **Contract observed:** `CreateButtonEnabled`, `ClearButtonEnabled`, and `RefreshButtons`.
-- **Use when:** selecting a related catalog and optionally creating or clearing the relation.
+- **Status:** Active/preferred for corporate lookups requiring clear/create/edit affordances.
+- **Responsibility:** `LookUpEdit` with managed clear/create/edit buttons and `ClearButtonClick` / `CreateButtonClick` / `EditButtonClick` events.
+- **Contract observed:** `CreateButtonEnabled`, `EditButtonEnabled`, `ClearButtonEnabled`, and `RefreshButtons`.
+- **Use when:** selecting a related catalog and optionally creating, editing, or clearing the relation.
 - **Do not use when:** a read-only label, fixed enum editor, or specialized search/grid lookup is required and the control cannot meet it.
-- **Extension rule:** configure the control and wire permission-aware events; refresh the source and select a newly created record.
+- **Extension rule:** configure the control and wire permission-aware events; refresh the source and preserve/select the created or edited record.
 - **Representative consumers:**
   - `src/Frontend/NuanSystem.WinForms.Forms/GeneralInventory/ItemGroups/ItemGroupEditForm.Designer.cs`
   - `src/Frontend/NuanSystem.WinForms.Forms/Security/Users/UserEditForm.Designer.cs`

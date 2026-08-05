@@ -103,6 +103,7 @@ NuanLookupEdit
   provides:
     -> clear action/event
     -> create action/event
+    -> edit-selected action/event
     -> permission-aware enablement hooks
   representative consumers:
     -> GeneralInventory/ItemGroups/ItemGroupEditForm.Designer.cs
@@ -112,7 +113,7 @@ NuanLookupEdit
     -> create permission
     -> related edit dialog
     -> source refresh
-    -> select new record
+    -> select created or edited record
 ```
 
 Impact rule: button collection, events, default enablement, or Designer properties are shared-control changes.
