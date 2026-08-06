@@ -154,8 +154,9 @@ public sealed class GeographyEditFormContractTests
             .And.Contain("await crudForm.ExecuteRefreshAsync()")
             .And.Contain(".OrderByDescending(operation => operation.IsAllowed)")
             .And.Contain(
-                "customButton.Button.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;")
-            .And.Contain("customButton.Button.Enabled = canExecuteCustomOperation;");
+                "ApplyRibbonActionState(customButton.Button, canExecuteCustomOperation);")
+            .And.Contain("UpdateRibbonGroupVisibility();")
+            .And.Contain("Operaciones/consultar_32.svg");
         baseCrud.Replace("\r\n", "\n", StringComparison.Ordinal).Should().Contain(
             "protected override async void OnShown(EventArgs e)\n"
             + "    {\n"

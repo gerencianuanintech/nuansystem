@@ -46,7 +46,8 @@ BaseGridCrudListForm
     -> typed data and selection helpers
     -> edit/copy/delete/consult/history lifecycle
     -> fail-closed FormKey operation access before initial refresh or Ribbon action
-    -> denied registered Ribbon operations remain visible and disabled
+    -> only executable Ribbon operations are visible; groups without visible actions are hidden
+    -> Consultar falls back to Operaciones/consultar_32.svg when its configured icon is absent or invalid
     -> column configuration and personalization
     -> Excel/PDF/JSON/XML export
   representative consumers:

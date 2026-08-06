@@ -235,7 +235,7 @@ public sealed class SriTxtImportFrontendContractTests
     }
 
     [Fact]
-    public void Shell_KeepsRegisteredCustomOperationsVisibleAndPermissionAware()
+    public void Shell_ShowsOnlyExecutableCustomOperationsAndHidesEmptyGroups()
     {
         var shell = ReadSourceFile(
             "src", "Frontend", "NuanSystem.WinForms.Forms",
@@ -248,8 +248,9 @@ public sealed class SriTxtImportFrontendContractTests
             ".Where(operation => crudForm.CanExecuteCustomOperation(OperationKey(operation)))");
         shell.Should().Contain("customButton.IsAllowed")
             .And.Contain(
-                "customButton.Button.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;")
-            .And.Contain("customButton.Button.Enabled = canExecuteCustomOperation;");
+                "ApplyRibbonActionState(customButton.Button, canExecuteCustomOperation);")
+            .And.Contain("UpdateRibbonGroupVisibility();")
+            .And.Contain("group.Visible = group.ItemLinks.Cast<BarItemLink>()");
     }
 
     [Fact]

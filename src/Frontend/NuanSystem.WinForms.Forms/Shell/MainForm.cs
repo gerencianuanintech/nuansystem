@@ -589,11 +589,15 @@ public sealed class MainForm : RibbonForm
         button.ImageOptions.SvgImageSize = new Size(32, 32);
     }
 
-    private static void ApplyRibbonButtonDatabaseImage(BarButtonItem button, string? imageName)
+    private static void ApplyRibbonButtonDatabaseImage(
+        BarButtonItem button,
+        string? imageName,
+        string? fallbackImageName = null)
     {
         button.ImageOptions.SvgImage = null;
 
-        var image = LoadDatabaseSvgImage(imageName);
+        var image = LoadDatabaseSvgImage(imageName)
+            ?? LoadDatabaseSvgImage(fallbackImageName);
         if (image is null)
         {
             return;
@@ -1479,7 +1483,10 @@ public sealed class MainForm : RibbonForm
             button.Caption = operation.Name;
         }
 
-        ApplyRibbonButtonDatabaseImage(button, operation.IconLarge ?? operation.IconSmall);
+        ApplyRibbonButtonDatabaseImage(
+            button,
+            operation.IconLarge ?? operation.IconSmall,
+            ResolveBuiltInRibbonFallbackIcon(operation));
         ConfigureRibbonButtonHelp(button, ResolveOperationDescription(operation), ResolveOperationShortcut(operation));
         MoveRibbonButton(
             button,
@@ -1527,6 +1534,16 @@ public sealed class MainForm : RibbonForm
         if (MatchesAnyOperation(operation, "history", "historia", "historial"))
         {
             return ("Inicio", "Seguimiento", "Historial");
+        }
+
+        return null;
+    }
+
+    private static string? ResolveBuiltInRibbonFallbackIcon(FormOperationAccessItem operation)
+    {
+        if (MatchesAnyOperation(operation, "consult", "consultar", "read", "buscar", "view"))
+        {
+            return "Operaciones/consultar_32.svg";
         }
 
         return null;
@@ -1990,48 +2007,52 @@ public sealed class MainForm : RibbonForm
         }
 
         var activeCrudForm = tabControl.SelectedTabPage?.Tag as BaseCrudListForm;
-        var hasActiveCrudForm = activeCrudForm is not null;
-
         reloadAccessButton.Visibility = BarItemVisibility.Always;
         reloadAccessButton.Enabled = true;
 
-        refreshButton.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;
-        createButton.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;
-        copyButton.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;
-        editButton.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;
-        consultButton.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;
-        historyButton.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;
-        columnsButton.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;
-        deleteButton.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;
-        excelButton.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;
-        pdfButton.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;
-        jsonButton.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;
-        xmlButton.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;
-
-        refreshButton.Enabled = activeCrudForm?.CanRefresh ?? false;
-        createButton.Enabled = activeCrudForm?.CanCreate ?? false;
-        copyButton.Enabled = activeCrudForm?.CanCopy ?? false;
-        editButton.Enabled = activeCrudForm?.CanUpdate ?? false;
-        consultButton.Enabled = activeCrudForm?.CanConsult ?? false;
-        historyButton.Enabled = activeCrudForm?.CanHistory ?? false;
-        columnsButton.Enabled = activeCrudForm?.CanCustomizeColumns ?? false;
-        deleteButton.Enabled = activeCrudForm?.CanDelete ?? false;
-        excelButton.Enabled = activeCrudForm?.CanExportExcel ?? false;
-        pdfButton.Enabled = activeCrudForm?.CanExportPdf ?? false;
-        jsonButton.Enabled = activeCrudForm?.CanExportJson ?? false;
-        xmlButton.Enabled = activeCrudForm?.CanExportXml ?? false;
+        ApplyRibbonActionState(refreshButton, activeCrudForm?.CanRefresh ?? false);
+        ApplyRibbonActionState(createButton, activeCrudForm?.CanCreate ?? false);
+        ApplyRibbonActionState(copyButton, activeCrudForm?.CanCopy ?? false);
+        ApplyRibbonActionState(editButton, activeCrudForm?.CanUpdate ?? false);
+        ApplyRibbonActionState(consultButton, activeCrudForm?.CanConsult ?? false);
+        ApplyRibbonActionState(historyButton, activeCrudForm?.CanHistory ?? false);
+        ApplyRibbonActionState(columnsButton, activeCrudForm?.CanCustomizeColumns ?? false);
+        ApplyRibbonActionState(deleteButton, activeCrudForm?.CanDelete ?? false);
+        ApplyRibbonActionState(excelButton, activeCrudForm?.CanExportExcel ?? false);
+        ApplyRibbonActionState(pdfButton, activeCrudForm?.CanExportPdf ?? false);
+        ApplyRibbonActionState(jsonButton, activeCrudForm?.CanExportJson ?? false);
+        ApplyRibbonActionState(xmlButton, activeCrudForm?.CanExportXml ?? false);
 
         foreach (var customButton in customOperationButtons)
         {
             var canExecuteCustomOperation = customButton.IsAllowed
                 && (activeCrudForm?.CanExecuteCustomOperation(customButton.OperationKey) ?? false);
-            customButton.Button.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;
-            customButton.Button.Enabled = canExecuteCustomOperation;
+            ApplyRibbonActionState(customButton.Button, canExecuteCustomOperation);
         }
 
         if (ribbon.Pages.Cast<RibbonPage>().FirstOrDefault(page => string.Equals(page.Text, "Inicio", StringComparison.OrdinalIgnoreCase)) is { } homeRibbonPage)
         {
             MoveSessionGroupToEnd(homeRibbonPage);
+        }
+
+        UpdateRibbonGroupVisibility();
+    }
+
+    private static void ApplyRibbonActionState(BarButtonItem button, bool canExecute)
+    {
+        button.Visibility = canExecute ? BarItemVisibility.Always : BarItemVisibility.Never;
+        button.Enabled = canExecute;
+    }
+
+    private void UpdateRibbonGroupVisibility()
+    {
+        foreach (var page in ribbon.Pages.Cast<RibbonPage>())
+        {
+            foreach (var group in page.Groups.Cast<RibbonPageGroup>())
+            {
+                group.Visible = group.ItemLinks.Cast<BarItemLink>()
+                    .Any(link => link.Item.Visibility != BarItemVisibility.Never);
+            }
         }
     }
 
