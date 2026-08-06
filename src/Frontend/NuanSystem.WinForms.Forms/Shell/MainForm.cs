@@ -467,7 +467,7 @@ public sealed class MainForm : RibbonForm
         editButton.ItemClick += async (_, _) => await ExecuteActiveCrudActionAsync(form => form.ExecuteEditAsync());
         groupMaintenance.ItemLinks.Add(editButton);
 
-        consultButton = CreateRibbonButton("Consultar", null, RibbonItemStyles.Large);
+        consultButton = CreateRibbonButton("Consultar", "Operaciones/consultar_32.svg", RibbonItemStyles.Large);
         ConfigureRibbonButtonHelp(consultButton, "Consultar el registro seleccionado sin permitir cambios.", new RibbonShortcut(Keys.Control | Keys.Q, "Ctrl + Q"));
         consultButton.ItemClick += async (_, _) => await ExecuteActiveCrudActionAsync(form => form.ExecuteConsultAsync());
         groupActions.ItemLinks.Add(consultButton);
@@ -711,10 +711,10 @@ public sealed class MainForm : RibbonForm
         tabControl.AppearancePage.Header.Font = new Font("Segoe UI", 9F);
         tabControl.AppearancePage.Header.Options.UseFont = true;
         tabControl.CloseButtonClick += TabControl_CloseButtonClick;
-        tabControl.SelectedPageChanged += (_, e) =>
+        tabControl.SelectedPageChanged += async (_, e) =>
         {
             UpdateStatusBar(e.Page?.Text ?? "Inicio");
-            ApplyActiveRibbonOperations();
+            await RefreshActiveRibbonOperationsAsync();
         };
     }
 
@@ -1370,7 +1370,10 @@ public sealed class MainForm : RibbonForm
         OpenModulePage(monitorModule,sriDocumentMonitorFormFactory(e.ImportId),pageTitle);
     }
 
-    private async Task ApplyOperationAccessAsync(ShellModuleItem module, BaseCrudListForm crudForm)
+    private async Task ApplyOperationAccessAsync(
+        ShellModuleItem module,
+        BaseCrudListForm crudForm,
+        bool refreshData = true)
     {
         if (viewModel is null)
         {
@@ -1384,7 +1387,7 @@ public sealed class MainForm : RibbonForm
         }
 
         crudFormOperations[crudForm] = operations;
-        var allowedOperations = operations
+        var allowedOperations = ResolveCrudOperations(operations)
             .Where(operation => operation.IsAllowed)
             .SelectMany(operation => new[] { operation.ActionKey, operation.Code, operation.Name })
             .Where(value => !string.IsNullOrWhiteSpace(value))
@@ -1392,13 +1395,42 @@ public sealed class MainForm : RibbonForm
             .ToArray();
 
         crudForm.ConfigureCrudOperationAccess(allowedOperations);
-        await crudForm.ExecuteRefreshAsync();
+        if (refreshData)
+        {
+            await crudForm.ExecuteRefreshAsync();
+        }
+
         if (ReferenceEquals(tabControl.SelectedTabPage?.Tag, crudForm))
         {
             ApplyOperationImages(operations, crudForm);
         }
 
         UpdateRibbonActionState();
+    }
+
+    private async Task RefreshActiveRibbonOperationsAsync()
+    {
+        if (tabControl.SelectedTabPage?.Tag is not BaseCrudListForm activeCrudForm)
+        {
+            ApplyActiveRibbonOperations();
+            return;
+        }
+
+        var activeModuleKey = openModuleTabs
+            .FirstOrDefault(pair => ReferenceEquals(pair.Value, tabControl.SelectedTabPage))
+            .Key;
+        var activeModule = viewModel?.Modules.FirstOrDefault(module =>
+            string.Equals(module.Key, activeModuleKey, StringComparison.OrdinalIgnoreCase));
+
+        if (activeModule is null)
+        {
+            activeCrudForm.ConfigureCrudOperationAccess(Array.Empty<string>());
+            RemoveCustomOperationButtons();
+            UpdateRibbonActionState();
+            return;
+        }
+
+        await ApplyOperationAccessAsync(activeModule, activeCrudForm, refreshData: false);
     }
 
     private void ApplyActiveRibbonOperations()
@@ -1429,9 +1461,9 @@ public sealed class MainForm : RibbonForm
         var buttonOperations = new[]
         {
             ResolveOperationButton(refreshButton, operations, "refresh", "actualizar", "reload"),
-            ResolveOperationButton(createButton, operations, "create", "crear", "new", "nuevo", "post"),
+            ResolveOperationButton(createButton, operations, "new", "nuevo", "create", "crear", "post"),
             ResolveOperationButton(copyButton, operations, "copy", "copiar", "duplicate", "duplicar"),
-            ResolveOperationButton(editButton, operations, "update", "editar", "edit", "modificar", "put", "patch"),
+            ResolveOperationButton(editButton, operations, "edit", "editar", "update", "modificar", "put", "patch"),
             ResolveOperationButton(consultButton, operations, "consult", "consultar", "read", "buscar", "view"),
             ResolveOperationButton(historyButton, operations, "history", "historia", "historial"),
             ResolveOperationButton(columnsButton, operations, "customizecolumns", "customize-columns", "columns", "columnas", "personalizarcolumnas", "configurarcolumnas"),
@@ -1468,6 +1500,29 @@ public sealed class MainForm : RibbonForm
     private static OperationButton ResolveOperationButton(BarButtonItem button, IReadOnlyCollection<FormOperationAccessItem> operations, params string[] keys)
     {
         return new OperationButton(button, ResolveOperation(operations, keys));
+    }
+
+    private static IReadOnlyCollection<FormOperationAccessItem> ResolveCrudOperations(
+        IReadOnlyCollection<FormOperationAccessItem> operations)
+    {
+        return new FormOperationAccessItem?[]
+            {
+                ResolveOperation(operations, "refresh", "actualizar", "reload"),
+                ResolveOperation(operations, "new", "nuevo", "create", "crear", "post"),
+                ResolveOperation(operations, "copy", "copiar", "duplicate", "duplicar"),
+                ResolveOperation(operations, "edit", "editar", "update", "modificar", "put", "patch"),
+                ResolveOperation(operations, "consult", "consultar", "read", "buscar", "view"),
+                ResolveOperation(operations, "history", "historia", "historial"),
+                ResolveOperation(operations, "customizecolumns", "customize-columns", "columns", "columnas", "personalizarcolumnas", "configurarcolumnas"),
+                ResolveOperation(operations, "delete", "eliminar", "remove"),
+                ResolveOperation(operations, "exportexcel", "export-excel", "excel"),
+                ResolveOperation(operations, "exportpdf", "export-pdf", "pdf"),
+                ResolveOperation(operations, "exportjson", "export-json", "json"),
+                ResolveOperation(operations, "exportxml", "export-xml", "xml")
+            }
+            .Where(operation => operation is not null)
+            .Select(operation => operation!)
+            .ToArray();
     }
 
     private void ApplyOperationButtonSettings(BarButtonItem button, FormOperationAccessItem operation)
@@ -1716,15 +1771,23 @@ public sealed class MainForm : RibbonForm
 
     private static FormOperationAccessItem? ResolveOperation(IReadOnlyCollection<FormOperationAccessItem> operations, params string[] keys)
     {
-        return operations
-            .Where(operation =>
-                keys.Any(key =>
+        foreach (var key in keys)
+        {
+            var operation = operations
+                .Where(operation =>
                     MatchesOperationKey(operation.ActionKey, key) ||
                     MatchesOperationKey(operation.Code, key) ||
-                    MatchesOperationKey(operation.Name, key)))
-            .OrderByDescending(operation => operation.IsAllowed)
-            .ThenBy(operation => operation.DisplayOrder)
-            .FirstOrDefault();
+                    MatchesOperationKey(operation.Name, key))
+                .OrderBy(operation => operation.DisplayOrder)
+                .FirstOrDefault();
+
+            if (operation is not null)
+            {
+                return operation;
+            }
+        }
+
+        return null;
     }
 
     private void MoveRibbonButton(BarButtonItem button, string? pageName, string? groupName)

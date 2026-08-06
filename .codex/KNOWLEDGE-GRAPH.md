@@ -47,7 +47,9 @@ BaseGridCrudListForm
     -> edit/copy/delete/consult/history lifecycle
     -> fail-closed FormKey operation access before initial refresh or Ribbon action
     -> only executable Ribbon operations are visible; groups without visible actions are hidden
-    -> Consultar falls back to Operaciones/consultar_32.svg when its configured icon is absent or invalid
+    -> activating an open tab refreshes operation access without reloading catalog data
+    -> NEW/EDIT UI access takes precedence over CREATE/UPDATE aliases, including explicit denial
+    -> Consultar is created with Operaciones/consultar_32.svg and retains it as metadata fallback
     -> column configuration and personalization
     -> Excel/PDF/JSON/XML export
   representative consumers:
