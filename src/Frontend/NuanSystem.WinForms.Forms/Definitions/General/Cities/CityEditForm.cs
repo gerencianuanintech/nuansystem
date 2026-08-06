@@ -13,8 +13,10 @@ public sealed partial class CityEditForm : BaseEditForm
 {
     private readonly List<GeographyLookupItem> countries;
     private readonly List<GeographyLookupItem> provinces;
-    private readonly bool canManageCountries;
-    private readonly bool canManageProvinces;
+    private readonly bool canCreateCountries;
+    private readonly bool canUpdateCountries;
+    private readonly bool canCreateProvinces;
+    private readonly bool canUpdateProvinces;
     private bool suppressCountryChange;
     private bool managingLookup;
     private int provinceLoadVersion;
@@ -27,13 +29,17 @@ public sealed partial class CityEditForm : BaseEditForm
     public CityEditForm(
         IReadOnlyCollection<GeographyLookupItem> countries,
         IReadOnlyCollection<GeographyLookupItem> provinces,
-        bool canManageCountries = false,
-        bool canManageProvinces = false)
+        bool canCreateCountries = false,
+        bool canUpdateCountries = false,
+        bool canCreateProvinces = false,
+        bool canUpdateProvinces = false)
     {
         this.countries = countries.ToList();
         this.provinces = provinces.ToList();
-        this.canManageCountries = canManageCountries;
-        this.canManageProvinces = canManageProvinces;
+        this.canCreateCountries = canCreateCountries;
+        this.canUpdateCountries = canUpdateCountries;
+        this.canCreateProvinces = canCreateProvinces;
+        this.canUpdateProvinces = canUpdateProvinces;
         InitializeComponent();
         ConfigureForm();
         BindCountries();
@@ -45,9 +51,17 @@ public sealed partial class CityEditForm : BaseEditForm
         IReadOnlyCollection<GeographyLookupItem> provinces,
         CityItem item,
         bool copyMode = false,
-        bool canManageCountries = false,
-        bool canManageProvinces = false)
-        : this(countries, provinces, canManageCountries, canManageProvinces)
+        bool canCreateCountries = false,
+        bool canUpdateCountries = false,
+        bool canCreateProvinces = false,
+        bool canUpdateProvinces = false)
+        : this(
+            countries,
+            provinces,
+            canCreateCountries,
+            canUpdateCountries,
+            canCreateProvinces,
+            canUpdateProvinces)
     {
         LoadCity(item, copyMode);
     }
@@ -100,8 +114,8 @@ public sealed partial class CityEditForm : BaseEditForm
     {
         Text = "Nueva ciudad";
         chkIsActive.Checked = true;
-        ConfigureLookup(lueCountry, canManageCountries);
-        ConfigureLookup(lueProvince, canManageProvinces);
+        ConfigureLookup(lueCountry, canCreateCountries);
+        ConfigureLookup(lueProvince, canCreateProvinces);
         lueCountry.EditValueChanged += CountryLookupEditValueChanged;
         lueCountry.CreateButtonClick += CountryLookupCreateButtonClick;
         lueCountry.EditButtonClick += CountryLookupEditButtonClick;
@@ -111,11 +125,11 @@ public sealed partial class CityEditForm : BaseEditForm
         UpdateLookupButtons();
     }
 
-    private static void ConfigureLookup(NuanLookupEdit lookup, bool canManage)
+    private static void ConfigureLookup(NuanLookupEdit lookup, bool canCreate)
     {
         lookup.RefreshButtons();
         lookup.ClearButtonEnabled = false;
-        lookup.CreateButtonEnabled = canManage;
+        lookup.CreateButtonEnabled = canCreate;
         lookup.EditButtonEnabled = false;
         lookup.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
         lookup.Properties.SearchMode = SearchMode.AutoSearch;
@@ -204,7 +218,8 @@ public sealed partial class CityEditForm : BaseEditForm
 
     private async Task ManageCountryAsync(int? countryId)
     {
-        if (managingLookup || !canManageCountries)
+        var hasAccess = countryId.HasValue ? canUpdateCountries : canCreateCountries;
+        if (managingLookup || !hasAccess)
         {
             return;
         }
@@ -249,7 +264,8 @@ public sealed partial class CityEditForm : BaseEditForm
 
     private async Task ManageProvinceAsync(int? provinceId, int countryId)
     {
-        if (managingLookup || !canManageProvinces)
+        var hasAccess = provinceId.HasValue ? canUpdateProvinces : canCreateProvinces;
+        if (managingLookup || !hasAccess)
         {
             return;
         }
@@ -411,10 +427,10 @@ public sealed partial class CityEditForm : BaseEditForm
     {
         var hasCountry = lueCountry.EditValue is not null;
         lueProvince.Enabled = !managingLookup && hasCountry;
-        lueCountry.CreateButtonEnabled = canManageCountries && !managingLookup;
-        lueCountry.EditButtonEnabled = canManageCountries && !managingLookup && hasCountry;
-        lueProvince.CreateButtonEnabled = canManageProvinces && !managingLookup && hasCountry;
-        lueProvince.EditButtonEnabled = canManageProvinces
+        lueCountry.CreateButtonEnabled = canCreateCountries && !managingLookup;
+        lueCountry.EditButtonEnabled = canUpdateCountries && !managingLookup && hasCountry;
+        lueProvince.CreateButtonEnabled = canCreateProvinces && !managingLookup && hasCountry;
+        lueProvince.EditButtonEnabled = canUpdateProvinces
             && !managingLookup
             && hasCountry
             && lueProvince.EditValue is not null;

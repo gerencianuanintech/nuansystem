@@ -1316,6 +1316,7 @@ public sealed class MainForm : RibbonForm
         if (form is BaseCrudListForm crudForm)
         {
             crudForm.ActionStateChanged += ActiveCrudForm_ActionStateChanged;
+            crudForm.ConfigureCrudOperationAccess(Array.Empty<string>());
         }
         if (form is SriTxtImportForm sriTxtImportForm)
         {
@@ -1373,6 +1374,11 @@ public sealed class MainForm : RibbonForm
         }
 
         var operations = await viewModel.GetFormOperationsAsync(module.Key);
+        if (crudForm.IsDisposed)
+        {
+            return;
+        }
+
         crudFormOperations[crudForm] = operations;
         var allowedOperations = operations
             .Where(operation => operation.IsAllowed)
@@ -1382,6 +1388,7 @@ public sealed class MainForm : RibbonForm
             .ToArray();
 
         crudForm.ConfigureCrudOperationAccess(allowedOperations);
+        await crudForm.ExecuteRefreshAsync();
         if (ReferenceEquals(tabControl.SelectedTabPage?.Tag, crudForm))
         {
             ApplyOperationImages(operations, crudForm);

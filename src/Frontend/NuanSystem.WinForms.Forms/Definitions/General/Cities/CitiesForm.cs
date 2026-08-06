@@ -149,17 +149,23 @@ public sealed partial class CitiesForm : BaseGridCrudListForm
         CityItem? item = null,
         bool copyMode = false)
     {
-        var canManageCountries = session?.HasPermission(PermissionCodes.GeographyCountriesManage) == true;
-        var canManageProvinces = session?.HasPermission(PermissionCodes.GeographyProvincesManage) == true;
         var form = item is null
-            ? new CityEditForm(viewModel.Countries, provinces, canManageCountries, canManageProvinces)
+            ? new CityEditForm(
+                viewModel.Countries,
+                provinces,
+                viewModel.CanCreateCountries,
+                viewModel.CanUpdateCountries,
+                viewModel.CanCreateProvinces,
+                viewModel.CanUpdateProvinces)
             : new CityEditForm(
                 viewModel.Countries,
                 provinces,
                 item,
                 copyMode,
-                canManageCountries,
-                canManageProvinces);
+                viewModel.CanCreateCountries,
+                viewModel.CanUpdateCountries,
+                viewModel.CanCreateProvinces,
+                viewModel.CanUpdateProvinces);
         form.LoadProvincesRequested += (_, countryCode) => viewModel.LoadProvincesAsync(countryCode);
         form.CreateCountryRequested += owner => CreateCountryAsync(owner);
         form.EditCountryRequested += (owner, countryId) => EditCountryAsync(owner, countryId);
@@ -216,10 +222,17 @@ public sealed partial class CitiesForm : BaseGridCrudListForm
 
     private ProvinceEditForm CreateProvinceEditor(int countryId, ProvinceItem? province = null)
     {
-        var canManageCountries = session?.HasPermission(PermissionCodes.GeographyCountriesManage) == true;
         var form = province is null
-            ? new ProvinceEditForm(viewModel.Countries, canManageCountries, countryId)
-            : new ProvinceEditForm(viewModel.Countries, province, canManageCountries: canManageCountries);
+            ? new ProvinceEditForm(
+                viewModel.Countries,
+                viewModel.CanCreateCountries,
+                viewModel.CanUpdateCountries,
+                countryId)
+            : new ProvinceEditForm(
+                viewModel.Countries,
+                province,
+                canCreateCountries: viewModel.CanCreateCountries,
+                canUpdateCountries: viewModel.CanUpdateCountries);
         form.CreateCountryRequested += owner => CreateCountryAsync(owner);
         form.EditCountryRequested += (owner, selectedCountryId) => EditCountryAsync(owner, selectedCountryId);
         return form;

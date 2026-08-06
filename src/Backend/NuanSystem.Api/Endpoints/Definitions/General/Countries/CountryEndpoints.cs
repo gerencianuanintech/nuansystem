@@ -9,26 +9,28 @@ namespace NuanSystem.Api.Endpoints.Definitions.General.Countries;
 
 internal static class CountryEndpoints
 {
+    private const string FormKey = "countries";
+
     public static RouteGroupBuilder MapCountryEndpoints(this RouteGroupBuilder group)
     {
-        group.MapGet("/countries", async (ISender sender, CancellationToken cancellationToken) => (await sender.Send(new GetCountriesQuery(), cancellationToken)).ToHttpResult()).RequirePermission(PermissionCodes.GeographyCountriesRead);
+        group.MapGet("/countries", async (ISender sender, CancellationToken cancellationToken) => (await sender.Send(new GetCountriesQuery(), cancellationToken)).ToHttpResult()).RequirePermission(PermissionCodes.GeographyCountriesRead).RequireFormOperation(FormKey, "refresh");
         group.MapGet("/countries/lookup", async (ISender sender, CancellationToken cancellationToken) => (await sender.Send(new GetCountryLookupQuery(), cancellationToken)).ToHttpResult()).RequirePermission(PermissionCodes.GeographyCountriesRead);
-        group.MapGet("/countries/{id:int}", async (int id, ISender sender, CancellationToken cancellationToken) => (await sender.Send(new GetCountryByIdQuery(id), cancellationToken)).ToHttpResult()).RequirePermission(PermissionCodes.GeographyCountriesRead);
+        group.MapGet("/countries/{id:int}", async (int id, ISender sender, CancellationToken cancellationToken) => (await sender.Send(new GetCountryByIdQuery(id), cancellationToken)).ToHttpResult()).RequirePermission(PermissionCodes.GeographyCountriesRead).RequireFormOperation(FormKey, "consult");
         group.MapPost("/countries", async (SaveCountryRequest request, ISender sender, ClaimsPrincipal user, CancellationToken cancellationToken) =>
         {
             var auditUser = user.GetAuditUser();
             return (await sender.Send(new CreateCountryCommand(request.Code, request.Name, request.Iso2, request.Iso3, request.PhonePrefix, request.IsActive, auditUser.UserId, auditUser.UserName), cancellationToken)).ToHttpResult();
-        }).RequirePermission(PermissionCodes.GeographyCountriesManage);
+        }).RequirePermission(PermissionCodes.GeographyCountriesManage).RequireFormOperation(FormKey, "create");
         group.MapPut("/countries/{id:int}", async (int id, SaveCountryRequest request, ISender sender, ClaimsPrincipal user, CancellationToken cancellationToken) =>
         {
             var auditUser = user.GetAuditUser();
             return (await sender.Send(new UpdateCountryCommand(id, request.Code, request.Name, request.Iso2, request.Iso3, request.PhonePrefix, request.IsActive, auditUser.UserId, auditUser.UserName), cancellationToken)).ToHttpResult();
-        }).RequirePermission(PermissionCodes.GeographyCountriesManage);
+        }).RequirePermission(PermissionCodes.GeographyCountriesManage).RequireFormOperation(FormKey, "update");
         group.MapDelete("/countries/{id:int}", async (int id, ISender sender, ClaimsPrincipal user, CancellationToken cancellationToken) =>
         {
             var auditUser = user.GetAuditUser();
             return (await sender.Send(new DeleteCountryCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken)).ToHttpResult();
-        }).RequirePermission(PermissionCodes.GeographyCountriesManage);
+        }).RequirePermission(PermissionCodes.GeographyCountriesManage).RequireFormOperation(FormKey, "delete");
         return group;
     }
 

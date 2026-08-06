@@ -126,7 +126,7 @@ public class BaseCrudListForm : XtraForm
     protected override async void OnShown(EventArgs e)
     {
         base.OnShown(e);
-        await LoadDataAsync();
+        await ExecuteRefreshAsync();
     }
 
     public Task ExecuteRefreshAsync()

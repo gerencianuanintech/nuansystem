@@ -1,18 +1,32 @@
 using NuanSystem.WinForms.Services.Definitions.General.Common;
 using NuanSystem.WinForms.Services.Definitions.General.Countries;
 using NuanSystem.WinForms.Services.Definitions.General.Provinces;
+using NuanSystem.WinForms.Services.Security.Access;
 using NuanSystem.WinForms.ViewModels.Common;
+using NuanSystem.WinForms.ViewModels.Definitions.General.Common;
 
 namespace NuanSystem.WinForms.ViewModels.Definitions.General.Provinces;
 
-public sealed class ProvincesViewModel(IGeographyClient geographyClient)
+public sealed class ProvincesViewModel(
+    IGeographyClient geographyClient,
+    ISecurityAccessClient securityAccessClient)
     : CrudViewModel<ProvinceItem, SaveProvinceRequest>
 {
     public IReadOnlyCollection<GeographyLookupItem> Countries { get; private set; } = Array.Empty<GeographyLookupItem>();
 
+    public bool CanCreateCountries { get; private set; }
+
+    public bool CanUpdateCountries { get; private set; }
+
     public override async Task LoadAsync(CancellationToken cancellationToken = default)
     {
         Countries = await geographyClient.GetCountryLookupAsync(cancellationToken);
+        var countryAccess = await GeographyRelatedFormAccess.LoadAsync(
+            securityAccessClient,
+            "countries",
+            cancellationToken);
+        CanCreateCountries = countryAccess.CanCreate;
+        CanUpdateCountries = countryAccess.CanUpdate;
         await LoadItemsAsync(geographyClient.GetProvincesAsync, cancellationToken);
     }
 

@@ -12,7 +12,8 @@ namespace NuanSystem.WinForms.Forms.Definitions.General.Provinces;
 public sealed partial class ProvinceEditForm : BaseEditForm
 {
     private readonly List<GeographyLookupItem> countries;
-    private readonly bool canManageCountries;
+    private readonly bool canCreateCountries;
+    private readonly bool canUpdateCountries;
     private bool managingCountry;
 
     public ProvinceEditForm()
@@ -22,11 +23,13 @@ public sealed partial class ProvinceEditForm : BaseEditForm
 
     public ProvinceEditForm(
         IReadOnlyCollection<GeographyLookupItem> countries,
-        bool canManageCountries = false,
+        bool canCreateCountries = false,
+        bool canUpdateCountries = false,
         int? selectedCountryId = null)
     {
         this.countries = countries.ToList();
-        this.canManageCountries = canManageCountries;
+        this.canCreateCountries = canCreateCountries;
+        this.canUpdateCountries = canUpdateCountries;
         InitializeComponent();
         ConfigureForm();
         BindCountries();
@@ -37,8 +40,9 @@ public sealed partial class ProvinceEditForm : BaseEditForm
         IReadOnlyCollection<GeographyLookupItem> countries,
         ProvinceItem item,
         bool copyMode = false,
-        bool canManageCountries = false)
-        : this(countries, canManageCountries, item.CountryId)
+        bool canCreateCountries = false,
+        bool canUpdateCountries = false)
+        : this(countries, canCreateCountries, canUpdateCountries, item.CountryId)
     {
         LoadProvince(item, copyMode);
     }
@@ -80,7 +84,7 @@ public sealed partial class ProvinceEditForm : BaseEditForm
         chkIsActive.Checked = true;
         lueCountry.RefreshButtons();
         lueCountry.ClearButtonEnabled = false;
-        lueCountry.CreateButtonEnabled = canManageCountries;
+        lueCountry.CreateButtonEnabled = canCreateCountries;
         lueCountry.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
         lueCountry.Properties.SearchMode = SearchMode.AutoSearch;
         lueCountry.Properties.BestFitMode = BestFitMode.BestFitResizePopup;
@@ -120,7 +124,8 @@ public sealed partial class ProvinceEditForm : BaseEditForm
 
     private async Task ManageCountryAsync(int? countryId)
     {
-        if (managingCountry || !canManageCountries)
+        var hasAccess = countryId.HasValue ? canUpdateCountries : canCreateCountries;
+        if (managingCountry || !hasAccess)
         {
             return;
         }
@@ -182,7 +187,7 @@ public sealed partial class ProvinceEditForm : BaseEditForm
 
     private void UpdateCountryEditButton()
     {
-        lueCountry.EditButtonEnabled = canManageCountries && lueCountry.EditValue is not null;
+        lueCountry.EditButtonEnabled = canUpdateCountries && lueCountry.EditValue is not null;
     }
 
     private void LoadProvince(ProvinceItem item, bool copyMode)

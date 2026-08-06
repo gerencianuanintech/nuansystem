@@ -34,9 +34,9 @@ public sealed class DefinitionGeneralBackendStructureTests
         root.Should().Contain("SwaggerTags.DefinitionsGeneralCountries")
             .And.Contain("SwaggerTags.DefinitionsGeneralProvinces")
             .And.Contain("SwaggerTags.DefinitionsGeneralCities");
-        country.Should().Contain("\"/countries\"").And.Contain("GeographyCountriesRead").And.Contain("GeographyCountriesManage");
-        province.Should().Contain("\"/provinces\"").And.Contain("GeographyProvincesRead").And.Contain("GeographyProvincesManage");
-        city.Should().Contain("\"/cities\"").And.Contain("GeographyCitiesRead").And.Contain("GeographyCitiesManage");
+        AssertCrudAuthorization(country, "countries", "GeographyCountriesRead", "GeographyCountriesManage");
+        AssertCrudAuthorization(province, "provinces", "GeographyProvincesRead", "GeographyProvincesManage");
+        AssertCrudAuthorization(city, "cities", "GeographyCitiesRead", "GeographyCitiesManage");
         common.Should().Contain("\"/reverse-geocode\"")
             .And.Contain("\"/static-map\"")
             .And.Contain("SwaggerTags.GeographyMaps");
@@ -44,6 +44,23 @@ public sealed class DefinitionGeneralBackendStructureTests
             .And.Contain("Definitions - General - Provinces")
             .And.Contain("Definitions - General - Cities")
             .And.Contain("Geography - Maps");
+    }
+
+    private static void AssertCrudAuthorization(
+        string endpoint,
+        string formKey,
+        string readPermission,
+        string managePermission)
+    {
+        endpoint.Should().Contain($"\"/{formKey}\"")
+            .And.Contain(readPermission)
+            .And.Contain(managePermission)
+            .And.Contain($"private const string FormKey = \"{formKey}\"")
+            .And.Contain("RequireFormOperation(FormKey, \"refresh\")")
+            .And.Contain("RequireFormOperation(FormKey, \"consult\")")
+            .And.Contain("RequireFormOperation(FormKey, \"create\")")
+            .And.Contain("RequireFormOperation(FormKey, \"update\")")
+            .And.Contain("RequireFormOperation(FormKey, \"delete\")");
     }
 
     private static string Read(params string[] parts) => File.ReadAllText(PathInRoot(parts));

@@ -731,7 +731,7 @@ internal sealed class FrontendComposition : IDisposable
     public ProvincesForm CreateProvincesForm()
     {
         return new ProvincesForm(
-            new ProvincesViewModel(geographyClient),
+            new ProvincesViewModel(geographyClient, securityAccessClient),
             session,
             gridColumnSettingsClient);
     }
@@ -739,7 +739,7 @@ internal sealed class FrontendComposition : IDisposable
     public CitiesForm CreateCitiesForm()
     {
         return new CitiesForm(
-            new CitiesViewModel(geographyClient),
+            new CitiesViewModel(geographyClient, securityAccessClient),
             session,
             gridColumnSettingsClient);
     }

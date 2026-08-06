@@ -2,21 +2,48 @@ using NuanSystem.WinForms.Services.Definitions.General.Cities;
 using NuanSystem.WinForms.Services.Definitions.General.Common;
 using NuanSystem.WinForms.Services.Definitions.General.Countries;
 using NuanSystem.WinForms.Services.Definitions.General.Provinces;
+using NuanSystem.WinForms.Services.Security.Access;
 using NuanSystem.WinForms.ViewModels.Common;
+using NuanSystem.WinForms.ViewModels.Definitions.General.Common;
 
 namespace NuanSystem.WinForms.ViewModels.Definitions.General.Cities;
 
-public sealed class CitiesViewModel(IGeographyClient geographyClient)
+public sealed class CitiesViewModel(
+    IGeographyClient geographyClient,
+    ISecurityAccessClient securityAccessClient)
     : CrudViewModel<CityItem, SaveCityRequest>
 {
     public IReadOnlyCollection<GeographyLookupItem> Countries { get; private set; } = Array.Empty<GeographyLookupItem>();
 
     public IReadOnlyCollection<GeographyLookupItem> Provinces { get; private set; } = Array.Empty<GeographyLookupItem>();
 
+    public bool CanCreateCountries { get; private set; }
+
+    public bool CanUpdateCountries { get; private set; }
+
+    public bool CanCreateProvinces { get; private set; }
+
+    public bool CanUpdateProvinces { get; private set; }
+
     public override async Task LoadAsync(CancellationToken cancellationToken = default)
     {
         Countries = await geographyClient.GetCountryLookupAsync(cancellationToken);
         Provinces = Array.Empty<GeographyLookupItem>();
+        var countryAccessTask = GeographyRelatedFormAccess.LoadAsync(
+            securityAccessClient,
+            "countries",
+            cancellationToken);
+        var provinceAccessTask = GeographyRelatedFormAccess.LoadAsync(
+            securityAccessClient,
+            "provinces",
+            cancellationToken);
+        await Task.WhenAll(countryAccessTask, provinceAccessTask);
+        var countryAccess = await countryAccessTask;
+        var provinceAccess = await provinceAccessTask;
+        CanCreateCountries = countryAccess.CanCreate;
+        CanUpdateCountries = countryAccess.CanUpdate;
+        CanCreateProvinces = provinceAccess.CanCreate;
+        CanUpdateProvinces = provinceAccess.CanUpdate;
         await LoadItemsAsync(geographyClient.GetCitiesAsync, cancellationToken);
     }
 

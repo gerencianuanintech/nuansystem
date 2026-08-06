@@ -45,6 +45,7 @@ BaseGridCrudListForm
     -> GridControl and GridView
     -> typed data and selection helpers
     -> edit/copy/delete/consult/history lifecycle
+    -> fail-closed FormKey operation access before initial refresh or Ribbon action
     -> column configuration and personalization
     -> Excel/PDF/JSON/XML export
   representative consumers:

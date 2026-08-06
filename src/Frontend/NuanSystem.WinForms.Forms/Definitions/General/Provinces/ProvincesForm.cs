@@ -140,10 +140,17 @@ public sealed partial class ProvincesForm : BaseGridCrudListForm
 
     private ProvinceEditForm CreateProvinceEditor(ProvinceItem? item = null, bool copyMode = false)
     {
-        var canManageCountries = session?.HasPermission(PermissionCodes.GeographyCountriesManage) == true;
         var form = item is null
-            ? new ProvinceEditForm(viewModel.Countries, canManageCountries)
-            : new ProvinceEditForm(viewModel.Countries, item, copyMode, canManageCountries);
+            ? new ProvinceEditForm(
+                viewModel.Countries,
+                viewModel.CanCreateCountries,
+                viewModel.CanUpdateCountries)
+            : new ProvinceEditForm(
+                viewModel.Countries,
+                item,
+                copyMode,
+                viewModel.CanCreateCountries,
+                viewModel.CanUpdateCountries);
         form.CreateCountryRequested += owner => CreateCountryAsync(owner);
         form.EditCountryRequested += (owner, countryId) => EditCountryAsync(owner, countryId);
         return form;
