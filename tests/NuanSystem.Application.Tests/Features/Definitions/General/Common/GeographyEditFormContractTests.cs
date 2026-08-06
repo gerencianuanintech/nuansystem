@@ -151,7 +151,11 @@ public sealed class GeographyEditFormContractTests
             "src", "Frontend", "NuanSystem.WinForms.Forms", "Common", "BaseCrudListForm.cs");
 
         shell.Should().Contain("crudForm.ConfigureCrudOperationAccess(Array.Empty<string>())")
-            .And.Contain("await crudForm.ExecuteRefreshAsync()");
+            .And.Contain("await crudForm.ExecuteRefreshAsync()")
+            .And.Contain(".OrderByDescending(operation => operation.IsAllowed)")
+            .And.Contain(
+                "customButton.Button.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;")
+            .And.Contain("customButton.Button.Enabled = canExecuteCustomOperation;");
         baseCrud.Replace("\r\n", "\n", StringComparison.Ordinal).Should().Contain(
             "protected override async void OnShown(EventArgs e)\n"
             + "    {\n"

@@ -1453,7 +1453,6 @@ public sealed class MainForm : RibbonForm
         }
 
         foreach (var operation in operations
-            .Where(operation => operation.IsAllowed)
             .Where(operation => !IsBuiltInOperation(operation))
             .OrderBy(operation => operation.DisplayOrder)
             .ThenBy(operation => operation.Name))
@@ -1538,13 +1537,14 @@ public sealed class MainForm : RibbonForm
         var operationKey = OperationKey(operation);
         var customPlacement = ResolveCustomOperationRibbonPlacement(operation);
         var button = CreateRibbonButton(operation.Name, operation.IconLarge ?? operation.IconSmall, RibbonItemStyles.Large);
+        button.Enabled = operation.IsAllowed;
         ConfigureRibbonButtonHelp(button, ResolveOperationDescription(operation), ResolveOperationShortcut(operation));
         button.ItemClick += async (_, _) => await ExecuteActiveCrudActionAsync(form => form.ExecuteCustomOperationAsync(operationKey));
         MoveRibbonButton(
             button,
             customPlacement?.PageName ?? operation.RibbonPageName,
             customPlacement?.GroupName ?? operation.RibbonGroupName);
-        customOperationButtons.Add(new CustomOperationButton(button, operationKey));
+        customOperationButtons.Add(new CustomOperationButton(button, operationKey, operation.IsAllowed));
     }
 
     private static (string PageName, string GroupName)? ResolveCustomOperationRibbonPlacement(FormOperationAccessItem operation)
@@ -1700,12 +1700,14 @@ public sealed class MainForm : RibbonForm
     private static FormOperationAccessItem? ResolveOperation(IReadOnlyCollection<FormOperationAccessItem> operations, params string[] keys)
     {
         return operations
-            .Where(operation => operation.IsAllowed)
-            .FirstOrDefault(operation =>
+            .Where(operation =>
                 keys.Any(key =>
                     MatchesOperationKey(operation.ActionKey, key) ||
                     MatchesOperationKey(operation.Code, key) ||
-                    MatchesOperationKey(operation.Name, key)));
+                    MatchesOperationKey(operation.Name, key)))
+            .OrderByDescending(operation => operation.IsAllowed)
+            .ThenBy(operation => operation.DisplayOrder)
+            .FirstOrDefault();
     }
 
     private void MoveRibbonButton(BarButtonItem button, string? pageName, string? groupName)
@@ -1793,7 +1795,7 @@ public sealed class MainForm : RibbonForm
 
     private sealed record OperationButton(BarButtonItem Button, FormOperationAccessItem? Operation);
 
-    private sealed record CustomOperationButton(BarButtonItem Button, string OperationKey);
+    private sealed record CustomOperationButton(BarButtonItem Button, string OperationKey, bool IsAllowed);
 
     private sealed record RibbonShortcut(Keys Keys, string Text);
 
@@ -2021,8 +2023,9 @@ public sealed class MainForm : RibbonForm
 
         foreach (var customButton in customOperationButtons)
         {
-            var canExecuteCustomOperation = activeCrudForm?.CanExecuteCustomOperation(customButton.OperationKey) ?? false;
-            customButton.Button.Visibility = canExecuteCustomOperation ? BarItemVisibility.Always : BarItemVisibility.Never;
+            var canExecuteCustomOperation = customButton.IsAllowed
+                && (activeCrudForm?.CanExecuteCustomOperation(customButton.OperationKey) ?? false);
+            customButton.Button.Visibility = hasActiveCrudForm ? BarItemVisibility.Always : BarItemVisibility.Never;
             customButton.Button.Enabled = canExecuteCustomOperation;
         }
 

@@ -73,15 +73,15 @@ public sealed class SapSyncWinFormsContractTests
     }
 
     [Fact]
-    public void RibbonBuiltInOperationResolution_IgnoresDeniedAliasesBeforeAllowedAction()
+    public void RibbonBuiltInOperationResolution_PrefersAllowedAliasButRetainsDeniedOperation()
     {
         var main = Read("src", "Frontend", "NuanSystem.WinForms.Forms", "Shell", "MainForm.cs");
         var resolveOperation = main[main.IndexOf("private static FormOperationAccessItem? ResolveOperation", StringComparison.Ordinal)..];
         resolveOperation = resolveOperation[..resolveOperation.IndexOf("private void MoveRibbonButton", StringComparison.Ordinal)];
 
-        resolveOperation.Should().Contain(".Where(operation => operation.IsAllowed)")
-            .And.Contain(".FirstOrDefault(operation =>")
-            .And.MatchRegex("IsAllowed\\)\\s*\\.FirstOrDefault");
+        resolveOperation.Should().NotContain(".Where(operation => operation.IsAllowed)")
+            .And.Contain(".OrderByDescending(operation => operation.IsAllowed)")
+            .And.Contain(".FirstOrDefault();");
     }
 
     [Fact]
