@@ -1,6 +1,4 @@
-using System.Security.Claims;
 using NuanSystem.Application.Abstractions.Data;
-using NuanSystem.Shared.Constants;
 
 namespace NuanSystem.Api.Extensions;
 
@@ -25,11 +23,6 @@ public static class EndpointAuthorizationExtensions
                 if (!context.HttpContext.User.TryGetUserId(out var userId))
                 {
                     return Results.Unauthorized();
-                }
-
-                if (HasSecurityAdminBypass(context.HttpContext.User))
-                {
-                    return await next(context);
                 }
 
                 var resolvedFormKey = ResolveRouteValue(context, formKey);
@@ -58,11 +51,6 @@ public static class EndpointAuthorizationExtensions
                 if (!context.HttpContext.User.TryGetUserId(out var userId))
                 {
                     return Results.Unauthorized();
-                }
-
-                if (HasSecurityAdminBypass(context.HttpContext.User))
-                {
-                    return await next(context);
                 }
 
                 var entityName = context.HttpContext.Request.Query["entityName"].ToString();
@@ -115,17 +103,7 @@ public static class EndpointAuthorizationExtensions
 
     private static IReadOnlyCollection<string> ResolveOperationAliases(string actionKey)
     {
-        return NormalizeOperation(actionKey) switch
-        {
-            "refresh" => ["refresh", "actualizar", "read", "consult", "consultar"],
-            "create" => ["create", "new", "nuevo", "crear"],
-            "update" => ["update", "edit", "editar", "modificar"],
-            "delete" => ["delete", "eliminar", "borrar"],
-            "consult" => ["consult", "consultar", "view", "ver"],
-            "history" => ["history", "historial", "audit", "auditoria"],
-            "customizecolumns" => ["customizecolumns", "columns", "columnas", "personalizarcolumnas", "configurarcolumnas"],
-            _ => [actionKey]
-        };
+        return [actionKey];
     }
 
     private static string ResolveRouteValue(EndpointFilterInvocationContext context, string value)
@@ -139,11 +117,6 @@ public static class EndpointAuthorizationExtensions
         }
 
         return value;
-    }
-
-    private static bool HasSecurityAdminBypass(ClaimsPrincipal user)
-    {
-        return user.HasClaim(AuthClaimNames.Permission, PermissionCodes.SecurityAccessBypass);
     }
 
     private static IResult Forbidden(string message, string code, string detail)

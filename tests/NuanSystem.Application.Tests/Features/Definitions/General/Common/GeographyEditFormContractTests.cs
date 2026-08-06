@@ -153,7 +153,7 @@ public sealed class GeographyEditFormContractTests
         shell.Should().Contain("crudForm.ConfigureCrudOperationAccess(Array.Empty<string>())")
             .And.Contain("await crudForm.ExecuteRefreshAsync()")
             .And.Contain("ResolveCrudOperations(operations)")
-            .And.Contain("ResolveOperation(operations, \"new\", \"nuevo\", \"create\", \"crear\", \"post\")")
+            .And.Contain("ResolveOperation(operations, \"create\", \"crear\", \"new\", \"nuevo\", \"post\")")
             .And.Contain("CreateRibbonButton(\"Consultar\", \"Operaciones/consultar_32.svg\"")
             .And.Contain("await RefreshActiveRibbonOperationsAsync();")
             .And.Contain("ApplyOperationAccessAsync(activeModule, activeCrudForm, refreshData: false)")

@@ -1508,9 +1508,9 @@ public sealed class MainForm : RibbonForm
         return new FormOperationAccessItem?[]
             {
                 ResolveOperation(operations, "refresh", "actualizar", "reload"),
-                ResolveOperation(operations, "new", "nuevo", "create", "crear", "post"),
+                ResolveOperation(operations, "create", "crear", "new", "nuevo", "post"),
                 ResolveOperation(operations, "copy", "copiar", "duplicate", "duplicar"),
-                ResolveOperation(operations, "edit", "editar", "update", "modificar", "put", "patch"),
+                ResolveOperation(operations, "update", "modificar", "edit", "editar", "put", "patch"),
                 ResolveOperation(operations, "consult", "consultar", "read", "buscar", "view"),
                 ResolveOperation(operations, "history", "historia", "historial"),
                 ResolveOperation(operations, "customizecolumns", "customize-columns", "columns", "columnas", "personalizarcolumnas", "configurarcolumnas"),
