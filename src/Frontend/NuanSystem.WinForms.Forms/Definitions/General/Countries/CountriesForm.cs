@@ -19,8 +19,6 @@ public sealed partial class CountriesForm : BaseGridCrudListForm
 
     private readonly CountriesViewModel viewModel;
     private readonly ApiSession session;
-    private readonly System.Windows.Forms.Timer findDebounceTimer = new() { Interval = 400 };
-    private string appliedFindText = string.Empty;
 
     public CountriesForm()
     {
@@ -37,9 +35,8 @@ public sealed partial class CountriesForm : BaseGridCrudListForm
         InitializeComponent();
         ConfigureColumnPersonalization(columnSettingsClient, FormKey);
         EnableServerPaging(50);
+        EnableServerFind(ApplyServerFindAsync);
         NuanGrid.PageRequested += OnPageRequested;
-        GridView.ColumnFilterChanged += OnColumnFilterChanged;
-        findDebounceTimer.Tick += OnFindDebounceTick;
         WirePermissions();
     }
 
@@ -178,46 +175,20 @@ public sealed partial class CountriesForm : BaseGridCrudListForm
         await LoadDataAsync();
     }
 
-    private void OnColumnFilterChanged(object? sender, EventArgs args)
+    private async Task ApplyServerFindAsync(string? searchText)
     {
-        var currentFindText = NormalizeFindText(GridView.FindFilterText);
-        if (string.Equals(currentFindText, appliedFindText, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        findDebounceTimer.Stop();
-        findDebounceTimer.Start();
-    }
-
-    private async void OnFindDebounceTick(object? sender, EventArgs args)
-    {
-        findDebounceTimer.Stop();
-        var currentFindText = NormalizeFindText(GridView.FindFilterText);
-        if (string.Equals(currentFindText, appliedFindText, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        appliedFindText = currentFindText;
-        viewModel.Search = string.IsNullOrEmpty(currentFindText) ? null : currentFindText;
+        viewModel.Search = searchText;
         viewModel.PageNumber = 1;
         await LoadDataAsync();
     }
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
-        findDebounceTimer.Stop();
-        findDebounceTimer.Tick -= OnFindDebounceTick;
         if (viewModel is not null)
         {
             NuanGrid.PageRequested -= OnPageRequested;
-            GridView.ColumnFilterChanged -= OnColumnFilterChanged;
         }
 
-        findDebounceTimer.Dispose();
         base.OnFormClosed(e);
     }
-
-    private static string NormalizeFindText(string? value) => value?.Trim() ?? string.Empty;
 }

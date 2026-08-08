@@ -36,7 +36,7 @@ public sealed class CountryPagedSearchTests
     }
 
     [Fact]
-    public void CountriesForm_ShouldUseRemoteFindWithoutChangingSharedGrid()
+    public void CountriesForm_ShouldUseInheritedRemoteFindWithoutChangingGridControl()
     {
         var endpoint = Read(
             "src", "Backend", "NuanSystem.Api", "Endpoints", "Definitions", "General",
@@ -47,6 +47,9 @@ public sealed class CountryPagedSearchTests
         var form = Read(
             "src", "Frontend", "NuanSystem.WinForms.Forms", "Definitions", "General",
             "Countries", "CountriesForm.cs");
+        var baseForm = Read(
+            "src", "Frontend", "NuanSystem.WinForms.Forms", "Common",
+            "BaseGridCrudListForm.cs");
         var sharedGrid = Read(
             "src", "Frontend", "NuanSystem.WinForms.Controls", "Grids",
             "NuanDataGridControl.cs");
@@ -56,10 +59,17 @@ public sealed class CountryPagedSearchTests
         client.Should().Contain("/api/geography/countries/page?")
             .And.Contain("Uri.EscapeDataString(search.Trim())");
         form.Should().Contain("EnableServerPaging(50)")
-            .And.Contain("GridView.ColumnFilterChanged += OnColumnFilterChanged")
-            .And.Contain("findDebounceTimer")
+            .And.Contain("EnableServerFind(ApplyServerFindAsync)")
+            .And.Contain("ApplyServerFindAsync(string? searchText)")
             .And.Contain("viewModel.PageNumber = 1")
-            .And.Contain("SetPagedGridData(");
+            .And.Contain("SetPagedGridData(")
+            .And.NotContain("ColumnFilterChanged +=")
+            .And.NotContain("findDebounceTimer");
+        baseForm.Should().Contain("protected void EnableServerFind(")
+            .And.Contain("serverFindDebounceTimer")
+            .And.Contain("gridView.ColumnFilterChanged += OnServerFindColumnFilterChanged")
+            .And.Contain("await findHandler(")
+            .And.Contain("serverFindDebounceTimer.Dispose()");
         sharedGrid.Should().NotContain("SearchCountriesAsync");
     }
 

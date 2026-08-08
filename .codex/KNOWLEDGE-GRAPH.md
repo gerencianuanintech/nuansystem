@@ -51,9 +51,12 @@ BaseGridCrudListForm
     -> NEW/EDIT UI access takes precedence over CREATE/UPDATE aliases, including explicit denial
     -> Consultar is created with Operaciones/consultar_32.svg and retains it as metadata fallback
     -> column configuration and personalization
+    -> opt-in server Find debounce through EnableServerFind(async callback)
+         -> feature callback applies typed API search, resets page, and reloads
+         -> forms without a backend search contract remain unchanged
     -> Excel/PDF/JSON/XML export
   representative consumers:
-    -> Geography/Cities/CitiesForm.cs
+    -> Definitions/General/Countries/CountriesForm.cs
     -> GeneralSupplier/SupplierGroups/SupplierGroupsForm.cs
     -> Security/Roles/RolesForm.cs
   governed by:
@@ -61,7 +64,7 @@ BaseGridCrudListForm
     -> PATTERN-CATALOG.md P1
 ```
 
-Impact rule: changing base selection, command lifecycle, personalization, export, or grid defaults is high risk and requires a repository-wide derived-type/consumer search.
+Impact rule: changing base selection, command lifecycle, personalization, export, paging, Find orchestration, or grid defaults is high risk and requires a repository-wide derived-type/consumer search.
 
 ### 4.2 Standard edit/consult
 

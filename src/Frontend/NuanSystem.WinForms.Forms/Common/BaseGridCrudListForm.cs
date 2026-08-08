@@ -44,6 +44,10 @@ public partial class BaseGridCrudListForm : BaseCrudListForm
     private object? batchSelectedItem;
     private int currentPage = 1;
     private int pageSize = 20;
+    private System.Windows.Forms.Timer? serverFindDebounceTimer;
+    private Func<string?, Task>? serverFindHandler;
+    private string appliedServerFindText = string.Empty;
+    private bool serverFindEnabled;
 
     public BaseGridCrudListForm()
     {
@@ -244,6 +248,30 @@ public partial class BaseGridCrudListForm : BaseCrudListForm
         nuanGrid.PageSize = initialPageSize;
     }
 
+    protected void EnableServerFind(
+        Func<string?, Task> findHandler,
+        int debounceMilliseconds = 400)
+    {
+        ArgumentNullException.ThrowIfNull(findHandler);
+        ArgumentOutOfRangeException.ThrowIfLessThan(debounceMilliseconds, 1);
+
+        serverFindHandler = findHandler;
+        if (serverFindEnabled)
+        {
+            serverFindDebounceTimer!.Interval = debounceMilliseconds;
+            return;
+        }
+
+        serverFindEnabled = true;
+        serverFindDebounceTimer = new System.Windows.Forms.Timer
+        {
+            Interval = debounceMilliseconds
+        };
+        serverFindDebounceTimer.Tick += OnServerFindDebounceTick;
+        gridView.ColumnFilterChanged += OnServerFindColumnFilterChanged;
+        Disposed += OnBaseGridCrudListFormDisposed;
+    }
+
     protected void SetPagedGridData<TItem>(
         IEnumerable<TItem> source,
         int page,
@@ -432,6 +460,53 @@ public partial class BaseGridCrudListForm : BaseCrudListForm
             }
         };
     }
+
+    private void OnServerFindColumnFilterChanged(object? sender, EventArgs args)
+    {
+        var currentFindText = NormalizeServerFindText(gridView.FindFilterText);
+        if (string.Equals(currentFindText, appliedServerFindText, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        serverFindDebounceTimer!.Stop();
+        serverFindDebounceTimer.Start();
+    }
+
+    private async void OnServerFindDebounceTick(object? sender, EventArgs args)
+    {
+        serverFindDebounceTimer?.Stop();
+        var currentFindText = NormalizeServerFindText(gridView.FindFilterText);
+        if (string.Equals(currentFindText, appliedServerFindText, StringComparison.Ordinal)
+            || serverFindHandler is not { } findHandler)
+        {
+            return;
+        }
+
+        appliedServerFindText = currentFindText;
+        await findHandler(string.IsNullOrEmpty(currentFindText) ? null : currentFindText);
+    }
+
+    private void OnBaseGridCrudListFormDisposed(object? sender, EventArgs args)
+    {
+        serverFindDebounceTimer?.Stop();
+        if (serverFindDebounceTimer is not null)
+        {
+            serverFindDebounceTimer.Tick -= OnServerFindDebounceTick;
+            serverFindDebounceTimer.Dispose();
+            serverFindDebounceTimer = null;
+        }
+
+        if (serverFindEnabled)
+        {
+            gridView.ColumnFilterChanged -= OnServerFindColumnFilterChanged;
+        }
+
+        serverFindHandler = null;
+        Disposed -= OnBaseGridCrudListFormDisposed;
+    }
+
+    private static string NormalizeServerFindText(string? value) => value?.Trim() ?? string.Empty;
 
     private void ApplyPage()
     {
