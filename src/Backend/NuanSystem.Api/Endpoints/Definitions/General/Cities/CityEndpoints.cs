@@ -14,6 +14,10 @@ internal static class CityEndpoints
     public static RouteGroupBuilder MapCityEndpoints(this RouteGroupBuilder group)
     {
         group.MapGet("/cities", async (ISender sender, CancellationToken cancellationToken) => (await sender.Send(new GetCitiesQuery(), cancellationToken)).ToHttpResult()).RequirePermission(PermissionCodes.GeographyCitiesRead).RequireFormOperation(FormKey, "refresh");
+        group.MapGet("/cities/page", async (string? search, int? pageNumber, int? pageSize, ISender sender, CancellationToken cancellationToken) =>
+            (await sender.Send(new SearchCitiesQuery(search, pageNumber ?? 1, pageSize ?? 50), cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.GeographyCitiesRead)
+            .RequireFormOperation(FormKey, "refresh");
         group.MapGet("/cities/lookup", async (string? countryCode, string? provinceCode, ISender sender, CancellationToken cancellationToken) => (await sender.Send(new GetCityLookupQuery(countryCode, provinceCode), cancellationToken)).ToHttpResult()).RequirePermission(PermissionCodes.GeographyCitiesRead);
         group.MapGet("/cities/{id:int}", async (int id, ISender sender, CancellationToken cancellationToken) => (await sender.Send(new GetCityByIdQuery(id), cancellationToken)).ToHttpResult()).RequirePermission(PermissionCodes.GeographyCitiesRead).RequireFormOperation(FormKey, "consult");
         group.MapPost("/cities", async (SaveCityRequest request, ISender sender, ClaimsPrincipal user, CancellationToken cancellationToken) =>

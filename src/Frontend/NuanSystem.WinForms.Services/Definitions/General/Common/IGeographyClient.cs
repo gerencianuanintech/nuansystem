@@ -12,7 +12,11 @@ public interface IGeographyClient
 
     Task<IReadOnlyCollection<ProvinceItem>> GetProvincesAsync(CancellationToken cancellationToken = default);
 
+    Task<ProvincePage> SearchProvincesAsync(string? search, int pageNumber, int pageSize, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyCollection<CityItem>> GetCitiesAsync(CancellationToken cancellationToken = default);
+
+    Task<CityPage> SearchCitiesAsync(string? search, int pageNumber, int pageSize, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyCollection<GeographyLookupItem>> GetCountryLookupAsync(CancellationToken cancellationToken = default);
 

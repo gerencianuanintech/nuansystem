@@ -17,6 +17,17 @@ public sealed class ProvinceDto
     public DateTime? UpdatedAt { get; set; }
 }
 
+public sealed record ProvinceListFilter(
+    string? Search,
+    int PageNumber = 1,
+    int PageSize = 50);
+
+public sealed record ProvincePageDto(
+    IReadOnlyCollection<ProvinceDto> Items,
+    int TotalCount,
+    int PageNumber,
+    int PageSize);
+
 public sealed record ProvinceSyncPayload(
     Guid GlobalId,
     Guid CountryGlobalId,

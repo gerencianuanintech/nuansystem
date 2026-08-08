@@ -21,6 +21,17 @@ public sealed class CityDto
     public DateTime? UpdatedAt { get; set; }
 }
 
+public sealed record CityListFilter(
+    string? Search,
+    int PageNumber = 1,
+    int PageSize = 50);
+
+public sealed record CityPageDto(
+    IReadOnlyCollection<CityDto> Items,
+    int TotalCount,
+    int PageNumber,
+    int PageSize);
+
 public sealed record CitySyncPayload(
     Guid GlobalId,
     Guid CountryGlobalId,

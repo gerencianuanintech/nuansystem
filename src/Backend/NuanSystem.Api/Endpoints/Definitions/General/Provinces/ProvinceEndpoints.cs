@@ -14,6 +14,10 @@ internal static class ProvinceEndpoints
     public static RouteGroupBuilder MapProvinceEndpoints(this RouteGroupBuilder group)
     {
         group.MapGet("/provinces", async (ISender sender, CancellationToken cancellationToken) => (await sender.Send(new GetProvincesQuery(), cancellationToken)).ToHttpResult()).RequirePermission(PermissionCodes.GeographyProvincesRead).RequireFormOperation(FormKey, "refresh");
+        group.MapGet("/provinces/page", async (string? search, int? pageNumber, int? pageSize, ISender sender, CancellationToken cancellationToken) =>
+            (await sender.Send(new SearchProvincesQuery(search, pageNumber ?? 1, pageSize ?? 50), cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.GeographyProvincesRead)
+            .RequireFormOperation(FormKey, "refresh");
         group.MapGet("/provinces/lookup", async (string? countryCode, ISender sender, CancellationToken cancellationToken) => (await sender.Send(new GetProvinceLookupQuery(countryCode), cancellationToken)).ToHttpResult()).RequirePermission(PermissionCodes.GeographyProvincesRead);
         group.MapGet("/provinces/{id:int}", async (int id, ISender sender, CancellationToken cancellationToken) => (await sender.Send(new GetProvinceByIdQuery(id), cancellationToken)).ToHttpResult()).RequirePermission(PermissionCodes.GeographyProvincesRead).RequireFormOperation(FormKey, "consult");
         group.MapPost("/provinces", async (SaveProvinceRequest request, ISender sender, ClaimsPrincipal user, CancellationToken cancellationToken) =>

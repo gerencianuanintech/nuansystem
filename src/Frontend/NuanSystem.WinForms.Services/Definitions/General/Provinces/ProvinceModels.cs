@@ -17,6 +17,12 @@ public sealed class ProvinceItem
     public bool IsActive { get; set; }
 }
 
+public sealed record ProvincePage(
+    IReadOnlyCollection<ProvinceItem> Items,
+    int TotalCount,
+    int PageNumber,
+    int PageSize);
+
 public sealed record SaveProvinceRequest(
     int CountryId,
     string Code,

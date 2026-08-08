@@ -39,9 +39,31 @@ public sealed class GeographyClient(INuanApiClient apiClient) : IGeographyClient
         return apiClient.GetAsync<IReadOnlyCollection<ProvinceItem>>("/api/geography/provinces", cancellationToken);
     }
 
+    public Task<ProvincePage> SearchProvincesAsync(
+        string? search,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        return apiClient.GetAsync<ProvincePage>(
+            BuildPagedSearchRoute("/api/geography/provinces/page", search, pageNumber, pageSize),
+            cancellationToken);
+    }
+
     public Task<IReadOnlyCollection<CityItem>> GetCitiesAsync(CancellationToken cancellationToken = default)
     {
         return apiClient.GetAsync<IReadOnlyCollection<CityItem>>("/api/geography/cities", cancellationToken);
+    }
+
+    public Task<CityPage> SearchCitiesAsync(
+        string? search,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        return apiClient.GetAsync<CityPage>(
+            BuildPagedSearchRoute("/api/geography/cities/page", search, pageNumber, pageSize),
+            cancellationToken);
     }
 
     public Task<IReadOnlyCollection<GeographyLookupItem>> GetCountryLookupAsync(CancellationToken cancellationToken = default)
@@ -152,5 +174,24 @@ public sealed class GeographyClient(INuanApiClient apiClient) : IGeographyClient
         }
 
         return parameters.Count == 0 ? string.Empty : $"?{string.Join("&", parameters)}";
+    }
+
+    private static string BuildPagedSearchRoute(
+        string route,
+        string? search,
+        int pageNumber,
+        int pageSize)
+    {
+        var parameters = new List<string>
+        {
+            $"pageNumber={pageNumber}",
+            $"pageSize={pageSize}"
+        };
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            parameters.Add($"search={Uri.EscapeDataString(search.Trim())}");
+        }
+
+        return $"{route}?{string.Join("&", parameters)}";
     }
 }

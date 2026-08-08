@@ -12,6 +12,14 @@ public sealed class ProvincesViewModel(
     ISecurityAccessClient securityAccessClient)
     : CrudViewModel<ProvinceItem, SaveProvinceRequest>
 {
+    public string? Search { get; set; }
+
+    public int PageNumber { get; set; } = 1;
+
+    public int PageSize { get; set; } = 50;
+
+    public int TotalCount { get; private set; }
+
     public IReadOnlyCollection<GeographyLookupItem> Countries { get; private set; } = Array.Empty<GeographyLookupItem>();
 
     public bool CanCreateCountries { get; private set; }
@@ -20,14 +28,30 @@ public sealed class ProvincesViewModel(
 
     public override async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        Countries = await geographyClient.GetCountryLookupAsync(cancellationToken);
-        var countryAccess = await GeographyRelatedFormAccess.LoadAsync(
-            securityAccessClient,
-            "countries",
-            cancellationToken);
-        CanCreateCountries = countryAccess.CanCreate;
-        CanUpdateCountries = countryAccess.CanUpdate;
-        await LoadItemsAsync(geographyClient.GetProvincesAsync, cancellationToken);
+        IsBusy = true;
+        try
+        {
+            Countries = await geographyClient.GetCountryLookupAsync(cancellationToken);
+            var countryAccess = await GeographyRelatedFormAccess.LoadAsync(
+                securityAccessClient,
+                "countries",
+                cancellationToken);
+            CanCreateCountries = countryAccess.CanCreate;
+            CanUpdateCountries = countryAccess.CanUpdate;
+            var page = await geographyClient.SearchProvincesAsync(
+                Search,
+                PageNumber,
+                PageSize,
+                cancellationToken);
+            Items = page.Items;
+            TotalCount = page.TotalCount;
+            PageNumber = page.PageNumber;
+            PageSize = page.PageSize;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     public Task<ProvinceItem> GetByIdAsync(int id, CancellationToken cancellationToken = default)

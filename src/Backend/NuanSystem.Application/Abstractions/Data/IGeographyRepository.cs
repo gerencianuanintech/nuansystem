@@ -14,7 +14,11 @@ public interface IGeographyRepository : IRepository
 
     Task<IReadOnlyCollection<ProvinceDto>> GetProvincesAsync(CancellationToken cancellationToken = default);
 
+    Task<ProvincePageDto> SearchProvincesAsync(ProvinceListFilter filter, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyCollection<CityDto>> GetCitiesAsync(CancellationToken cancellationToken = default);
+
+    Task<CityPageDto> SearchCitiesAsync(CityListFilter filter, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyCollection<GeographyLookupDto>> GetCountryLookupAsync(CancellationToken cancellationToken = default);
 

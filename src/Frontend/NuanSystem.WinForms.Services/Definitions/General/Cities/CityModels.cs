@@ -23,6 +23,12 @@ public sealed class CityItem
     public bool IsActive { get; set; }
 }
 
+public sealed record CityPage(
+    IReadOnlyCollection<CityItem> Items,
+    int TotalCount,
+    int PageNumber,
+    int PageSize);
+
 public sealed record SaveCityRequest(
     int CountryId,
     int ProvinceId,

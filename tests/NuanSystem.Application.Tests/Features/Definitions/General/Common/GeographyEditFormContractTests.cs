@@ -117,8 +117,12 @@ public sealed class GeographyEditFormContractTests
         var client = Substitute.For<IGeographyClient>();
         client.GetCountryLookupAsync(Arg.Any<CancellationToken>())
             .Returns(Array.Empty<GeographyLookupItem>());
-        client.GetCitiesAsync(Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<NuanSystem.WinForms.Services.Definitions.General.Cities.CityItem>());
+        client.SearchCitiesAsync(null, 1, 50, Arg.Any<CancellationToken>())
+            .Returns(new NuanSystem.WinForms.Services.Definitions.General.Cities.CityPage(
+                Array.Empty<NuanSystem.WinForms.Services.Definitions.General.Cities.CityItem>(),
+                0,
+                1,
+                50));
         var accessClient = Substitute.For<ISecurityAccessClient>();
         accessClient.GetFormOperationsAsync("countries", Arg.Any<CancellationToken>())
             .Returns(

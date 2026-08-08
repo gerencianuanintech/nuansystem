@@ -1,4 +1,5 @@
 using NuanSystem.Shared.Constants;
+using NuanSystem.WinForms.Controls.Grids;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Forms.Definitions.General.Countries;
 using NuanSystem.WinForms.Services.Definitions.General.Countries;
@@ -35,6 +36,9 @@ public sealed partial class ProvincesForm : BaseGridCrudListForm
         this.session = session;
         InitializeComponent();
         ConfigureColumnPersonalization(columnSettingsClient, FormKey);
+        EnableServerPaging(50);
+        EnableServerFind(ApplyServerFindAsync);
+        NuanGrid.PageRequested += OnPageRequested;
         WirePermissions();
     }
 
@@ -48,7 +52,11 @@ public sealed partial class ProvincesForm : BaseGridCrudListForm
         await RunWithBusyStateAsync(async () =>
         {
             await viewModel.LoadAsync();
-            SetGridData(viewModel.Items);
+            SetPagedGridData(
+                viewModel.Items,
+                viewModel.PageNumber,
+                viewModel.PageSize,
+                viewModel.TotalCount);
             await ApplyColumnSettingsAsync();
         });
     }
@@ -199,5 +207,29 @@ public sealed partial class ProvincesForm : BaseGridCrudListForm
         {
             ConfigureCrudPermissions(session, Permissions);
         }
+    }
+
+    private async void OnPageRequested(object? sender, NuanGridPageRequestEventArgs args)
+    {
+        viewModel.PageNumber = args.Page;
+        viewModel.PageSize = args.PageSize;
+        await LoadDataAsync();
+    }
+
+    private async Task ApplyServerFindAsync(string? searchText)
+    {
+        viewModel.Search = searchText;
+        viewModel.PageNumber = 1;
+        await LoadDataAsync();
+    }
+
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        if (viewModel is not null)
+        {
+            NuanGrid.PageRequested -= OnPageRequested;
+        }
+
+        base.OnFormClosed(e);
     }
 }

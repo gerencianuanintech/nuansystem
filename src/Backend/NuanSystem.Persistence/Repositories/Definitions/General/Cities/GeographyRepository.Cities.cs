@@ -13,6 +13,27 @@ public sealed partial class GeographyRepository
         return (await connection.QueryAsync<CityDto>(new CommandDefinition("dbo.SP_NA_GET_CITIES_LISTAR", cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure))).AsList();
     }
 
+    public async Task<CityPageDto> SearchCitiesAsync(
+        CityListFilter filter,
+        CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        using var grid = await connection.QueryMultipleAsync(new CommandDefinition(
+            "dbo.SP_NA_GET_CITIES_BUSCARPAGINADO",
+            new
+            {
+                Search = string.IsNullOrWhiteSpace(filter.Search) ? null : filter.Search.Trim(),
+                filter.PageNumber,
+                filter.PageSize
+            },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+
+        var items = (await grid.ReadAsync<CityDto>()).AsList();
+        var totalCount = await grid.ReadSingleAsync<int>();
+        return new CityPageDto(items, totalCount, filter.PageNumber, filter.PageSize);
+    }
+
     public async Task<IReadOnlyCollection<GeographyLookupDto>> GetCityLookupAsync(string? countryCode = null, string? provinceCode = null, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();

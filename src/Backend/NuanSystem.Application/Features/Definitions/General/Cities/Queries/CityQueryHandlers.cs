@@ -12,6 +12,17 @@ public sealed class GetCitiesQueryHandler(IGeographyRepository repository) : IQu
     public async Task<Result<IReadOnlyCollection<CityDto>>> Handle(GetCitiesQuery request, CancellationToken cancellationToken) => Result<IReadOnlyCollection<CityDto>>.Success(await repository.GetCitiesAsync(cancellationToken));
 }
 
+public sealed class SearchCitiesQueryHandler(IGeographyRepository repository) : IQueryHandler<SearchCitiesQuery, CityPageDto>
+{
+    public async Task<Result<CityPageDto>> Handle(SearchCitiesQuery request, CancellationToken cancellationToken)
+    {
+        var page = await repository.SearchCitiesAsync(
+            new CityListFilter(request.Search, request.PageNumber, request.PageSize),
+            cancellationToken);
+        return Result<CityPageDto>.Success(page);
+    }
+}
+
 public sealed class GetCityLookupQueryHandler(IGeographyRepository repository) : IQueryHandler<GetCityLookupQuery, IReadOnlyCollection<GeographyLookupDto>>
 {
     public async Task<Result<IReadOnlyCollection<GeographyLookupDto>>> Handle(GetCityLookupQuery request, CancellationToken cancellationToken) => Result<IReadOnlyCollection<GeographyLookupDto>>.Success(await repository.GetCityLookupAsync(request.CountryCode, request.ProvinceCode, cancellationToken));
