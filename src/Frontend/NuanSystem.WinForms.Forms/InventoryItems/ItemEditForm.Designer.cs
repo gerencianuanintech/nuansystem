@@ -6,6 +6,7 @@ using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraEditors.Repository;
 using DevExpress.XtraTab;
+using NuanSystem.WinForms.Forms.Common;
 
 namespace NuanSystem.WinForms.Forms.InventoryItems;
 
@@ -24,6 +25,8 @@ partial class ItemEditForm
     private LabelControl lblBrand;
     private LabelControl lblBaseUnit;
     private LabelControl lblStatusCaption;
+    private LabelControl lblUnsavedIndicator;
+    private LabelControl lblValidationIndicator;
     private TextEdit txtItemCode;
     private TextEdit txtDescription;
     private TextEdit txtCommercialName;
@@ -79,6 +82,8 @@ partial class ItemEditForm
         lueBaseUnit = new LookUpEdit();
         lblStatusCaption = new LabelControl();
         lblStatus = new LabelControl();
+        lblUnsavedIndicator = new LabelControl();
+        lblValidationIndicator = new LabelControl();
         pnlFooter = new PanelControl();
         btnSave = new SimpleButton();
         btnCancel = new SimpleButton();
@@ -613,6 +618,12 @@ partial class ItemEditForm
         lblGeneralSummaryTitle = new LabelControl();
         tglBlockedEcommerce = new ToggleSwitch();
         lblBlockedEcommerce = new LabelControl();
+        tabCommercial = new XtraTabPage();
+        tabCommercialSections = new XtraTabControl();
+        tabFinance = new XtraTabPage();
+        tabFinanceSections = new XtraTabControl();
+        tabDocuments = new XtraTabPage();
+        tabDocumentSections = new XtraTabControl();
         tabMain = new XtraTabControl();
         btnClearSapFields = new SimpleButton();
         btnRemoveSapField = new SimpleButton();
@@ -1001,6 +1012,15 @@ partial class ItemEditForm
         ((System.ComponentModel.ISupportInitialize)pnlKpiStock).BeginInit();
         pnlKpiStock.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)tglBlockedEcommerce.Properties).BeginInit();
+        tabCommercial.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)tabCommercialSections).BeginInit();
+        tabCommercialSections.SuspendLayout();
+        tabFinance.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)tabFinanceSections).BeginInit();
+        tabFinanceSections.SuspendLayout();
+        tabDocuments.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)tabDocumentSections).BeginInit();
+        tabDocumentSections.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)tabMain).BeginInit();
         tabMain.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)grdSapFieldMapping).BeginInit();
@@ -1078,17 +1098,19 @@ partial class ItemEditForm
         pnlHeader.Controls.Add(lueBaseUnit);
         pnlHeader.Controls.Add(lblStatusCaption);
         pnlHeader.Controls.Add(lblStatus);
+        pnlHeader.Controls.Add(lblUnsavedIndicator);
+        pnlHeader.Controls.Add(lblValidationIndicator);
         pnlHeader.Dock = DockStyle.Top;
         pnlHeader.Location = new Point(0, 0);
         pnlHeader.Name = "pnlHeader";
-        pnlHeader.Size = new Size(1420, 204);
+        pnlHeader.Size = new Size(1420, 112);
         pnlHeader.TabIndex = 3;
         // 
         // lblStockTotalCaption
         // 
         lblStockTotalCaption.Appearance.Font = new Font("Segoe UI", 9F);
         lblStockTotalCaption.Appearance.Options.UseFont = true;
-        lblStockTotalCaption.Location = new Point(990, 29);
+        lblStockTotalCaption.Location = new Point(1110, 18);
         lblStockTotalCaption.Name = "lblStockTotalCaption";
         lblStockTotalCaption.Size = new Size(59, 15);
         lblStockTotalCaption.TabIndex = 19;
@@ -1101,7 +1123,7 @@ partial class ItemEditForm
         lblStockTotal.Appearance.Options.UseTextOptions = true;
         lblStockTotal.Appearance.TextOptions.HAlignment = HorzAlignment.Far;
         lblStockTotal.AutoSizeMode = LabelAutoSizeMode.None;
-        lblStockTotal.Location = new Point(1126, 27);
+        lblStockTotal.Location = new Point(1298, 16);
         lblStockTotal.Name = "lblStockTotal";
         lblStockTotal.Size = new Size(92, 18);
         lblStockTotal.TabIndex = 20;
@@ -1111,7 +1133,7 @@ partial class ItemEditForm
         // 
         lblAverageCostCaption.Appearance.Font = new Font("Segoe UI", 9F);
         lblAverageCostCaption.Appearance.Options.UseFont = true;
-        lblAverageCostCaption.Location = new Point(990, 56);
+        lblAverageCostCaption.Location = new Point(1110, 46);
         lblAverageCostCaption.Name = "lblAverageCostCaption";
         lblAverageCostCaption.Size = new Size(89, 15);
         lblAverageCostCaption.TabIndex = 21;
@@ -1124,7 +1146,7 @@ partial class ItemEditForm
         lblAverageCost.Appearance.Options.UseTextOptions = true;
         lblAverageCost.Appearance.TextOptions.HAlignment = HorzAlignment.Far;
         lblAverageCost.AutoSizeMode = LabelAutoSizeMode.None;
-        lblAverageCost.Location = new Point(1126, 54);
+        lblAverageCost.Location = new Point(1298, 44);
         lblAverageCost.Name = "lblAverageCost";
         lblAverageCost.Size = new Size(92, 18);
         lblAverageCost.TabIndex = 22;
@@ -1134,7 +1156,7 @@ partial class ItemEditForm
         // 
         lblSalesPriceCaption.Appearance.Font = new Font("Segoe UI", 9F);
         lblSalesPriceCaption.Appearance.Options.UseFont = true;
-        lblSalesPriceCaption.Location = new Point(990, 84);
+        lblSalesPriceCaption.Location = new Point(1110, 74);
         lblSalesPriceCaption.Name = "lblSalesPriceCaption";
         lblSalesPriceCaption.Size = new Size(68, 15);
         lblSalesPriceCaption.TabIndex = 23;
@@ -1147,7 +1169,7 @@ partial class ItemEditForm
         lblSalesPrice.Appearance.Options.UseTextOptions = true;
         lblSalesPrice.Appearance.TextOptions.HAlignment = HorzAlignment.Far;
         lblSalesPrice.AutoSizeMode = LabelAutoSizeMode.None;
-        lblSalesPrice.Location = new Point(1126, 82);
+        lblSalesPrice.Location = new Point(1298, 72);
         lblSalesPrice.Name = "lblSalesPrice";
         lblSalesPrice.Size = new Size(92, 18);
         lblSalesPrice.TabIndex = 24;
@@ -1162,6 +1184,7 @@ partial class ItemEditForm
         lblLastPurchaseCaption.Size = new Size(82, 15);
         lblLastPurchaseCaption.TabIndex = 25;
         lblLastPurchaseCaption.Text = "Última compra:";
+        lblLastPurchaseCaption.Visible = false;
         // 
         // lblLastPurchase
         // 
@@ -1175,6 +1198,7 @@ partial class ItemEditForm
         lblLastPurchase.Size = new Size(92, 18);
         lblLastPurchase.TabIndex = 26;
         lblLastPurchase.Text = "15/05/2026";
+        lblLastPurchase.Visible = false;
         // 
         // lblSapSyncedCaption
         // 
@@ -1185,6 +1209,7 @@ partial class ItemEditForm
         lblSapSyncedCaption.Size = new Size(95, 15);
         lblSapSyncedCaption.TabIndex = 27;
         lblSapSyncedCaption.Text = "Sincronizado SAP:";
+        lblSapSyncedCaption.Visible = false;
         // 
         // lblSapSynced
         // 
@@ -1200,10 +1225,11 @@ partial class ItemEditForm
         lblSapSynced.Size = new Size(92, 18);
         lblSapSynced.TabIndex = 28;
         lblSapSynced.Text = "Confirmado";
+        lblSapSynced.Visible = false;
         // 
         // picItem
         // 
-        picItem.Location = new Point(18, 26);
+        picItem.Location = new Point(16, 14);
         picItem.Name = "picItem";
         picItem.Properties.Appearance.BackColor = Color.White;
         picItem.Properties.Appearance.Options.UseBackColor = true;
@@ -1211,14 +1237,14 @@ partial class ItemEditForm
         picItem.Properties.NullText = "Imagen";
         picItem.Properties.ShowCameraMenuItem = CameraMenuItemVisibility.Auto;
         picItem.Properties.SizeMode = PictureSizeMode.Zoom;
-        picItem.Size = new Size(142, 156);
+        picItem.Size = new Size(84, 84);
         picItem.TabIndex = 0;
         // 
         // lblItemCode
         // 
         lblItemCode.Appearance.Font = new Font("Segoe UI", 9F);
         lblItemCode.Appearance.Options.UseFont = true;
-        lblItemCode.Location = new Point(195, 28);
+        lblItemCode.Location = new Point(120, 19);
         lblItemCode.Name = "lblItemCode";
         lblItemCode.Size = new Size(42, 15);
         lblItemCode.TabIndex = 1;
@@ -1226,18 +1252,18 @@ partial class ItemEditForm
         // 
         // txtItemCode
         // 
-        txtItemCode.Location = new Point(325, 24);
+        txtItemCode.Location = new Point(185, 16);
         txtItemCode.Name = "txtItemCode";
         txtItemCode.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         txtItemCode.Properties.Appearance.Options.UseFont = true;
-        txtItemCode.Size = new Size(185, 22);
+        txtItemCode.Size = new Size(165, 22);
         txtItemCode.TabIndex = 2;
         // 
         // lblDescription
         // 
         lblDescription.Appearance.Font = new Font("Segoe UI", 9F);
         lblDescription.Appearance.Options.UseFont = true;
-        lblDescription.Location = new Point(195, 55);
+        lblDescription.Location = new Point(370, 19);
         lblDescription.Name = "lblDescription";
         lblDescription.Size = new Size(65, 15);
         lblDescription.TabIndex = 3;
@@ -1245,18 +1271,18 @@ partial class ItemEditForm
         // 
         // txtDescription
         // 
-        txtDescription.Location = new Point(325, 52);
+        txtDescription.Location = new Point(455, 16);
         txtDescription.Name = "txtDescription";
         txtDescription.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         txtDescription.Properties.Appearance.Options.UseFont = true;
-        txtDescription.Size = new Size(550, 22);
+        txtDescription.Size = new Size(325, 22);
         txtDescription.TabIndex = 4;
         // 
         // lblCommercialName
         // 
         lblCommercialName.Appearance.Font = new Font("Segoe UI", 9F);
         lblCommercialName.Appearance.Options.UseFont = true;
-        lblCommercialName.Location = new Point(195, 83);
+        lblCommercialName.Location = new Point(120, 47);
         lblCommercialName.Name = "lblCommercialName";
         lblCommercialName.Size = new Size(102, 15);
         lblCommercialName.TabIndex = 5;
@@ -1264,18 +1290,18 @@ partial class ItemEditForm
         // 
         // txtCommercialName
         // 
-        txtCommercialName.Location = new Point(325, 80);
+        txtCommercialName.Location = new Point(245, 44);
         txtCommercialName.Name = "txtCommercialName";
         txtCommercialName.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         txtCommercialName.Properties.Appearance.Options.UseFont = true;
-        txtCommercialName.Size = new Size(550, 22);
+        txtCommercialName.Size = new Size(285, 22);
         txtCommercialName.TabIndex = 6;
         // 
         // lblItemType
         // 
         lblItemType.Appearance.Font = new Font("Segoe UI", 9F);
         lblItemType.Appearance.Options.UseFont = true;
-        lblItemType.Location = new Point(195, 111);
+        lblItemType.Location = new Point(550, 47);
         lblItemType.Name = "lblItemType";
         lblItemType.Size = new Size(54, 15);
         lblItemType.TabIndex = 7;
@@ -1283,20 +1309,20 @@ partial class ItemEditForm
         // 
         // lueItemType
         // 
-        lueItemType.Location = new Point(325, 108);
+        lueItemType.Location = new Point(620, 44);
         lueItemType.Name = "lueItemType";
         lueItemType.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         lueItemType.Properties.Appearance.Options.UseFont = true;
         lueItemType.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueItemType.Properties.NullText = "";
-        lueItemType.Size = new Size(235, 22);
+        lueItemType.Size = new Size(180, 22);
         lueItemType.TabIndex = 8;
         // 
         // lblItemGroup
         // 
         lblItemGroup.Appearance.Font = new Font("Segoe UI", 9F);
         lblItemGroup.Appearance.Options.UseFont = true;
-        lblItemGroup.Location = new Point(581, 111);
+        lblItemGroup.Location = new Point(120, 77);
         lblItemGroup.Name = "lblItemGroup";
         lblItemGroup.Size = new Size(36, 15);
         lblItemGroup.TabIndex = 9;
@@ -1304,20 +1330,20 @@ partial class ItemEditForm
         // 
         // lueItemGroup
         // 
-        lueItemGroup.Location = new Point(640, 108);
+        lueItemGroup.Location = new Point(185, 74);
         lueItemGroup.Name = "lueItemGroup";
         lueItemGroup.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         lueItemGroup.Properties.Appearance.Options.UseFont = true;
         lueItemGroup.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo), new EditorButton(ButtonPredefines.Plus) });
         lueItemGroup.Properties.NullText = "";
-        lueItemGroup.Size = new Size(235, 22);
+        lueItemGroup.Size = new Size(165, 22);
         lueItemGroup.TabIndex = 10;
         // 
         // lblItemFamily
         // 
         lblItemFamily.Appearance.Font = new Font("Segoe UI", 9F);
         lblItemFamily.Appearance.Options.UseFont = true;
-        lblItemFamily.Location = new Point(195, 139);
+        lblItemFamily.Location = new Point(370, 77);
         lblItemFamily.Name = "lblItemFamily";
         lblItemFamily.Size = new Size(41, 15);
         lblItemFamily.TabIndex = 11;
@@ -1325,20 +1351,20 @@ partial class ItemEditForm
         // 
         // lueItemFamily
         // 
-        lueItemFamily.Location = new Point(325, 136);
+        lueItemFamily.Location = new Point(430, 74);
         lueItemFamily.Name = "lueItemFamily";
         lueItemFamily.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         lueItemFamily.Properties.Appearance.Options.UseFont = true;
         lueItemFamily.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo), new EditorButton(ButtonPredefines.Plus) });
         lueItemFamily.Properties.NullText = "";
-        lueItemFamily.Size = new Size(235, 22);
+        lueItemFamily.Size = new Size(160, 22);
         lueItemFamily.TabIndex = 12;
         // 
         // lblBrand
         // 
         lblBrand.Appearance.Font = new Font("Segoe UI", 9F);
         lblBrand.Appearance.Options.UseFont = true;
-        lblBrand.Location = new Point(581, 139);
+        lblBrand.Location = new Point(610, 77);
         lblBrand.Name = "lblBrand";
         lblBrand.Size = new Size(36, 15);
         lblBrand.TabIndex = 13;
@@ -1346,20 +1372,20 @@ partial class ItemEditForm
         // 
         // lueBrand
         // 
-        lueBrand.Location = new Point(640, 136);
+        lueBrand.Location = new Point(665, 74);
         lueBrand.Name = "lueBrand";
         lueBrand.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         lueBrand.Properties.Appearance.Options.UseFont = true;
         lueBrand.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo), new EditorButton(ButtonPredefines.Plus) });
         lueBrand.Properties.NullText = "";
-        lueBrand.Size = new Size(235, 22);
+        lueBrand.Size = new Size(155, 22);
         lueBrand.TabIndex = 14;
         // 
         // lblBaseUnit
         // 
         lblBaseUnit.Appearance.Font = new Font("Segoe UI", 9F);
         lblBaseUnit.Appearance.Options.UseFont = true;
-        lblBaseUnit.Location = new Point(195, 167);
+        lblBaseUnit.Location = new Point(840, 77);
         lblBaseUnit.Name = "lblBaseUnit";
         lblBaseUnit.Size = new Size(68, 15);
         lblBaseUnit.TabIndex = 15;
@@ -1367,20 +1393,20 @@ partial class ItemEditForm
         // 
         // lueBaseUnit
         // 
-        lueBaseUnit.Location = new Point(325, 164);
+        lueBaseUnit.Location = new Point(920, 74);
         lueBaseUnit.Name = "lueBaseUnit";
         lueBaseUnit.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         lueBaseUnit.Properties.Appearance.Options.UseFont = true;
         lueBaseUnit.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo), new EditorButton(ButtonPredefines.Plus) });
         lueBaseUnit.Properties.NullText = "";
-        lueBaseUnit.Size = new Size(235, 22);
+        lueBaseUnit.Size = new Size(165, 22);
         lueBaseUnit.TabIndex = 16;
         // 
         // lblStatusCaption
         // 
         lblStatusCaption.Appearance.Font = new Font("Segoe UI", 9F);
         lblStatusCaption.Appearance.Options.UseFont = true;
-        lblStatusCaption.Location = new Point(581, 167);
+        lblStatusCaption.Location = new Point(820, 47);
         lblStatusCaption.Name = "lblStatusCaption";
         lblStatusCaption.Size = new Size(38, 15);
         lblStatusCaption.TabIndex = 17;
@@ -1398,14 +1424,42 @@ partial class ItemEditForm
         lblStatus.Appearance.TextOptions.HAlignment = HorzAlignment.Center;
         lblStatus.AutoSizeMode = LabelAutoSizeMode.None;
         lblStatus.BorderStyle = BorderStyles.NoBorder;
-        lblStatus.Location = new Point(640, 161);
+        lblStatus.Location = new Point(875, 43);
         lblStatus.Name = "lblStatus";
         lblStatus.Size = new Size(82, 26);
         lblStatus.TabIndex = 18;
         lblStatus.Text = "Activo";
-        // 
+        //
+        // lblUnsavedIndicator
+        //
+        lblUnsavedIndicator.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        lblUnsavedIndicator.Appearance.ForeColor = BrandResources.CustomerAccent;
+        lblUnsavedIndicator.Appearance.Options.UseFont = true;
+        lblUnsavedIndicator.Appearance.Options.UseForeColor = true;
+        lblUnsavedIndicator.Location = new Point(820, 18);
+        lblUnsavedIndicator.Name = "lblUnsavedIndicator";
+        lblUnsavedIndicator.Size = new Size(116, 15);
+        lblUnsavedIndicator.TabIndex = 29;
+        lblUnsavedIndicator.Text = "● Cambios sin guardar";
+        lblUnsavedIndicator.Visible = false;
+        //
+        // lblValidationIndicator
+        //
+        lblValidationIndicator.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        lblValidationIndicator.Appearance.ForeColor = BrandResources.ErrorText;
+        lblValidationIndicator.Appearance.Options.UseFont = true;
+        lblValidationIndicator.Appearance.Options.UseForeColor = true;
+        lblValidationIndicator.Location = new Point(950, 18);
+        lblValidationIndicator.Name = "lblValidationIndicator";
+        lblValidationIndicator.Size = new Size(107, 15);
+        lblValidationIndicator.TabIndex = 30;
+        lblValidationIndicator.Text = "● Revise los errores";
+        lblValidationIndicator.Visible = false;
+        //
         // pnlFooter
-        // 
+        //
+        pnlFooter.Appearance.BackColor = BrandResources.Surface;
+        pnlFooter.Appearance.Options.UseBackColor = true;
         pnlFooter.BorderStyle = BorderStyles.NoBorder;
         pnlFooter.Controls.Add(btnSave);
         pnlFooter.Controls.Add(btnCancel);
@@ -1424,7 +1478,8 @@ partial class ItemEditForm
         btnSave.Appearance.Options.UseFont = true;
         btnSave.Appearance.Options.UseForeColor = true;
         btnSave.DialogResult = DialogResult.OK;
-        btnSave.Location = new Point(1190, 13);
+        btnSave.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+        btnSave.Location = new Point(1305, 12);
         btnSave.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         btnSave.LookAndFeel.UseDefaultLookAndFeel = false;
         btnSave.Name = "btnSave";
@@ -1441,7 +1496,8 @@ partial class ItemEditForm
         btnCancel.Appearance.Options.UseFont = true;
         btnCancel.Appearance.Options.UseForeColor = true;
         btnCancel.DialogResult = DialogResult.Cancel;
-        btnCancel.Location = new Point(1305, 13);
+        btnCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+        btnCancel.Location = new Point(1190, 12);
         btnCancel.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         btnCancel.LookAndFeel.UseDefaultLookAndFeel = false;
         btnCancel.Name = "btnCancel";
@@ -2084,7 +2140,7 @@ partial class ItemEditForm
         tabSap.Controls.Add(lueSapEnabled);
         tabSap.Name = "tabSap";
         tabSap.Size = new Size(1418, 537);
-        tabSap.Text = "SAP";
+        tabSap.Text = "Integración";
         // 
         // gridView3
         // 
@@ -2146,7 +2202,7 @@ partial class ItemEditForm
         tabLots.Controls.Add(pnlLotTraceabilityNote);
         tabLots.Name = "tabLots";
         tabLots.Size = new Size(1418, 537);
-        tabLots.Text = "Lotes / Series";
+        tabLots.Text = "Trazabilidad";
         // 
         // pnlLotTraceabilityNote
         // 
@@ -2665,7 +2721,7 @@ partial class ItemEditForm
         lblTaxConfigurationNote.Name = "lblTaxConfigurationNote";
         lblTaxConfigurationNote.Size = new Size(310, 42);
         lblTaxConfigurationNote.TabIndex = 1;
-        lblTaxConfigurationNote.Text = "La configuracion tributaria define como se comporta el articulo en compras, ventas, documentos electronicos y reportes fiscales.";
+        lblTaxConfigurationNote.Text = "La configuración tributaria define cómo se comporta el artículo en compras, ventas, documentos electrónicos y reportes fiscales.";
         // 
         // lblTaxConfigurationNoteIcon
         // 
@@ -2768,7 +2824,7 @@ partial class ItemEditForm
         lblFiscalCountry.Name = "lblFiscalCountry";
         lblFiscalCountry.Size = new Size(54, 15);
         lblFiscalCountry.TabIndex = 39;
-        lblFiscalCountry.Text = "Pais fiscal:";
+        lblFiscalCountry.Text = "País fiscal:";
         // 
         // txtFiscalCode
         // 
@@ -2788,7 +2844,7 @@ partial class ItemEditForm
         lblFiscalCode.Name = "lblFiscalCode";
         lblFiscalCode.Size = new Size(72, 15);
         lblFiscalCode.TabIndex = 37;
-        lblFiscalCode.Text = "Codigo fiscal:";
+        lblFiscalCode.Text = "Código fiscal:";
         // 
         // lueTaxSupport
         // 
@@ -2832,7 +2888,7 @@ partial class ItemEditForm
         lblTaxesSuggestedWithholding.Name = "lblTaxesSuggestedWithholding";
         lblTaxesSuggestedWithholding.Size = new Size(104, 15);
         lblTaxesSuggestedWithholding.TabIndex = 33;
-        lblTaxesSuggestedWithholding.Text = "Retencion sugerida:";
+        lblTaxesSuggestedWithholding.Text = "Retención sugerida:";
         // 
         // lueExciseTax
         // 
@@ -2920,7 +2976,7 @@ partial class ItemEditForm
         lblFiscalItemType.Name = "lblFiscalItemType";
         lblFiscalItemType.Size = new Size(119, 15);
         lblFiscalItemType.TabIndex = 25;
-        lblFiscalItemType.Text = "Tipo fiscal del articulo:";
+        lblFiscalItemType.Text = "Tipo fiscal del artículo:";
         // 
         // lblTaxConfigurationTitle
         // 
@@ -2932,7 +2988,7 @@ partial class ItemEditForm
         lblTaxConfigurationTitle.Name = "lblTaxConfigurationTitle";
         lblTaxConfigurationTitle.Size = new Size(179, 20);
         lblTaxConfigurationTitle.TabIndex = 24;
-        lblTaxConfigurationTitle.Text = "1. Configuracion tributaria";
+        lblTaxConfigurationTitle.Text = "1. Configuración tributaria";
         // 
         // tabAccounting
         // 
@@ -3069,7 +3125,7 @@ partial class ItemEditForm
         lblAccountingIntegrationMethod.Name = "lblAccountingIntegrationMethod";
         lblAccountingIntegrationMethod.Size = new Size(173, 15);
         lblAccountingIntegrationMethod.TabIndex = 13;
-        lblAccountingIntegrationMethod.Text = "Metodo de integracion contable:";
+        lblAccountingIntegrationMethod.Text = "Método de integración contable:";
         // 
         // spnReconciliationDays
         // 
@@ -3094,7 +3150,7 @@ partial class ItemEditForm
         lblReconciliationDays.Name = "lblReconciliationDays";
         lblReconciliationDays.Size = new Size(92, 15);
         lblReconciliationDays.TabIndex = 11;
-        lblReconciliationDays.Text = "Dias conciliacion:";
+        lblReconciliationDays.Text = "Días de conciliación:";
         // 
         // tglAccountingBlocked
         // 
@@ -3214,7 +3270,7 @@ partial class ItemEditForm
         lblAccountingRulesTitle.Name = "lblAccountingRulesTitle";
         lblAccountingRulesTitle.Size = new Size(129, 20);
         lblAccountingRulesTitle.TabIndex = 0;
-        lblAccountingRulesTitle.Text = "3. Reglas contables";
+        lblAccountingRulesTitle.Text = "2. Reglas contables";
         // 
         // pnlAccountingAccountsNote
         // 
@@ -3241,7 +3297,7 @@ partial class ItemEditForm
         lblAccountingAccountsNote.Name = "lblAccountingAccountsNote";
         lblAccountingAccountsNote.Size = new Size(400, 40);
         lblAccountingAccountsNote.TabIndex = 1;
-        lblAccountingAccountsNote.Text = "Las cuentas seleccionadas se usaran para la generacion automatica de asientos contables relacionados con este item.";
+        lblAccountingAccountsNote.Text = "Las cuentas seleccionadas se usarán para la generación automática de asientos contables relacionados con este ítem.";
         // 
         // lblAccountingAccountsNoteIcon
         // 
@@ -3357,7 +3413,7 @@ partial class ItemEditForm
         lblCostVarianceAccount.Name = "lblCostVarianceAccount";
         lblCostVarianceAccount.Size = new Size(124, 15);
         lblCostVarianceAccount.TabIndex = 29;
-        lblCostVarianceAccount.Text = "Cuenta variacion costo:";
+        lblCostVarianceAccount.Text = "Cuenta variación costo:";
         // 
         // sluePurchaseReturnAccount
         // 
@@ -3390,7 +3446,7 @@ partial class ItemEditForm
         lblPurchaseReturnAccount.Name = "lblPurchaseReturnAccount";
         lblPurchaseReturnAccount.Size = new Size(147, 15);
         lblPurchaseReturnAccount.TabIndex = 27;
-        lblPurchaseReturnAccount.Text = "Cuenta devolucion compra:";
+        lblPurchaseReturnAccount.Text = "Cuenta devolución compra:";
         // 
         // slueSalesReturnAccount
         // 
@@ -3423,7 +3479,7 @@ partial class ItemEditForm
         lblSalesReturnAccount.Name = "lblSalesReturnAccount";
         lblSalesReturnAccount.Size = new Size(135, 15);
         lblSalesReturnAccount.TabIndex = 25;
-        lblSalesReturnAccount.Text = "Cuenta devolucion venta:";
+        lblSalesReturnAccount.Text = "Cuenta devolución venta:";
         // 
         // slueCostOfGoodsSoldAccount
         // 
@@ -4121,7 +4177,7 @@ partial class ItemEditForm
         lblPricesMarginsTitle.Name = "lblPricesMarginsTitle";
         lblPricesMarginsTitle.Size = new Size(148, 20);
         lblPricesMarginsTitle.TabIndex = 0;
-        lblPricesMarginsTitle.Text = "3. Precios y márgenes";
+        lblPricesMarginsTitle.Text = "2. Precios y márgenes";
         // 
         // grdCostPriceHistory
         // 
@@ -4261,7 +4317,7 @@ partial class ItemEditForm
         lblCostPriceHistoryTitle.Name = "lblCostPriceHistoryTitle";
         lblCostPriceHistoryTitle.Size = new Size(206, 20);
         lblCostPriceHistoryTitle.TabIndex = 0;
-        lblCostPriceHistoryTitle.Text = "4. Historial de costos y precios";
+        lblCostPriceHistoryTitle.Text = "3. Historial de costos y precios";
         // 
         // tabSales
         // 
@@ -4799,7 +4855,7 @@ partial class ItemEditForm
         lblSalesPricePerformanceTitle.Name = "lblSalesPricePerformanceTitle";
         lblSalesPricePerformanceTitle.Size = new Size(215, 20);
         lblSalesPricePerformanceTitle.TabIndex = 0;
-        lblSalesPricePerformanceTitle.Text = "3. Listas de precio y desempeño";
+        lblSalesPricePerformanceTitle.Text = "2. Listas de precio y desempeño";
         // 
         // tabPurchases
         // 
@@ -5152,7 +5208,7 @@ partial class ItemEditForm
         lblPurchasesHistoryTitle.Name = "lblPurchasesHistoryTitle";
         lblPurchasesHistoryTitle.Size = new Size(252, 20);
         lblPurchasesHistoryTitle.TabIndex = 0;
-        lblPurchasesHistoryTitle.Text = "4. Historial y desempeño de compras";
+        lblPurchasesHistoryTitle.Text = "2. Historial y desempeño de compras";
         // 
         // pnlPurchaseKpiCompliance
         // 
@@ -6468,7 +6524,7 @@ partial class ItemEditForm
         lblPurchaseActive.Name = "lblPurchaseActive";
         lblPurchaseActive.Size = new Size(87, 15);
         lblPurchaseActive.TabIndex = 44;
-        lblPurchaseActive.Text = "Item de compra:";
+        lblPurchaseActive.Text = "Ítem de compra:";
         // 
         // tglSalesActive
         // 
@@ -6490,7 +6546,7 @@ partial class ItemEditForm
         lblSalesActive.Name = "lblSalesActive";
         lblSalesActive.Size = new Size(75, 15);
         lblSalesActive.TabIndex = 42;
-        lblSalesActive.Text = "Item de venta:";
+        lblSalesActive.Text = "Ítem de venta:";
         // 
         // txtReference
         // 
@@ -6721,7 +6777,7 @@ partial class ItemEditForm
         lblAffectsInventory.Name = "lblAffectsInventory";
         lblAffectsInventory.Size = new Size(99, 15);
         lblAffectsInventory.TabIndex = 65;
-        lblAffectsInventory.Text = "Item de inventario:";
+        lblAffectsInventory.Text = "Ítem de inventario:";
         // 
         // tglGeneralExpirationManaged
         // 
@@ -6875,7 +6931,7 @@ partial class ItemEditForm
         lblGeneralMobileItem.Name = "lblGeneralMobileItem";
         lblGeneralMobileItem.Size = new Size(86, 15);
         lblGeneralMobileItem.TabIndex = 72;
-        lblGeneralMobileItem.Text = "Item para móvil:";
+        lblGeneralMobileItem.Text = "Ítem para móvil:";
         // 
         // tglGeneralMobileItem
         // 
@@ -7140,7 +7196,88 @@ partial class ItemEditForm
         lblBlockedEcommerce.Name = "lblBlockedEcommerce";
         lblBlockedEcommerce.Size = new Size(98, 15);
         lblBlockedEcommerce.TabIndex = 81;
-        lblBlockedEcommerce.Text = "Item e-commerce:";
+        lblBlockedEcommerce.Text = "Ítem e-commerce:";
+        //
+        // tabCommercial
+        //
+        tabCommercial.Controls.Add(tabCommercialSections);
+        tabCommercial.Name = "tabCommercial";
+        tabCommercial.Size = new Size(1418, 629);
+        tabCommercial.Text = "Comercial";
+        //
+        // tabCommercialSections
+        //
+        tabCommercialSections.Appearance.Font = new Font("Segoe UI", 9F);
+        tabCommercialSections.Appearance.Options.UseFont = true;
+        tabCommercialSections.AppearancePage.Header.Font = new Font("Segoe UI", 9F);
+        tabCommercialSections.AppearancePage.Header.Options.UseFont = true;
+        tabCommercialSections.AppearancePage.HeaderActive.BackColor = BrandResources.PrimarySoft;
+        tabCommercialSections.AppearancePage.HeaderActive.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        tabCommercialSections.AppearancePage.HeaderActive.ForeColor = BrandResources.Primary;
+        tabCommercialSections.AppearancePage.HeaderActive.Options.UseBackColor = true;
+        tabCommercialSections.AppearancePage.HeaderActive.Options.UseFont = true;
+        tabCommercialSections.AppearancePage.HeaderActive.Options.UseForeColor = true;
+        tabCommercialSections.Dock = DockStyle.Fill;
+        tabCommercialSections.Location = new Point(0, 0);
+        tabCommercialSections.Name = "tabCommercialSections";
+        tabCommercialSections.SelectedTabPage = tabPurchases;
+        tabCommercialSections.Size = new Size(1418, 629);
+        tabCommercialSections.TabIndex = 0;
+        tabCommercialSections.TabPages.AddRange(new XtraTabPage[] { tabPurchases, tabSales });
+        //
+        // tabFinance
+        //
+        tabFinance.Controls.Add(tabFinanceSections);
+        tabFinance.Name = "tabFinance";
+        tabFinance.Size = new Size(1418, 629);
+        tabFinance.Text = "Finanzas";
+        //
+        // tabFinanceSections
+        //
+        tabFinanceSections.Appearance.Font = new Font("Segoe UI", 9F);
+        tabFinanceSections.Appearance.Options.UseFont = true;
+        tabFinanceSections.AppearancePage.Header.Font = new Font("Segoe UI", 9F);
+        tabFinanceSections.AppearancePage.Header.Options.UseFont = true;
+        tabFinanceSections.AppearancePage.HeaderActive.BackColor = BrandResources.PrimarySoft;
+        tabFinanceSections.AppearancePage.HeaderActive.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        tabFinanceSections.AppearancePage.HeaderActive.ForeColor = BrandResources.Primary;
+        tabFinanceSections.AppearancePage.HeaderActive.Options.UseBackColor = true;
+        tabFinanceSections.AppearancePage.HeaderActive.Options.UseFont = true;
+        tabFinanceSections.AppearancePage.HeaderActive.Options.UseForeColor = true;
+        tabFinanceSections.Dock = DockStyle.Fill;
+        tabFinanceSections.Location = new Point(0, 0);
+        tabFinanceSections.Name = "tabFinanceSections";
+        tabFinanceSections.SelectedTabPage = tabCosts;
+        tabFinanceSections.Size = new Size(1418, 629);
+        tabFinanceSections.TabIndex = 0;
+        tabFinanceSections.TabPages.AddRange(new XtraTabPage[] { tabCosts, tabAccounting, tabTaxes });
+        //
+        // tabDocuments
+        //
+        tabDocuments.Controls.Add(tabDocumentSections);
+        tabDocuments.Name = "tabDocuments";
+        tabDocuments.Size = new Size(1418, 629);
+        tabDocuments.Text = "Documentos";
+        //
+        // tabDocumentSections
+        //
+        tabDocumentSections.Appearance.Font = new Font("Segoe UI", 9F);
+        tabDocumentSections.Appearance.Options.UseFont = true;
+        tabDocumentSections.AppearancePage.Header.Font = new Font("Segoe UI", 9F);
+        tabDocumentSections.AppearancePage.Header.Options.UseFont = true;
+        tabDocumentSections.AppearancePage.HeaderActive.BackColor = BrandResources.PrimarySoft;
+        tabDocumentSections.AppearancePage.HeaderActive.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        tabDocumentSections.AppearancePage.HeaderActive.ForeColor = BrandResources.Primary;
+        tabDocumentSections.AppearancePage.HeaderActive.Options.UseBackColor = true;
+        tabDocumentSections.AppearancePage.HeaderActive.Options.UseFont = true;
+        tabDocumentSections.AppearancePage.HeaderActive.Options.UseForeColor = true;
+        tabDocumentSections.Dock = DockStyle.Fill;
+        tabDocumentSections.Location = new Point(0, 0);
+        tabDocumentSections.Name = "tabDocumentSections";
+        tabDocumentSections.SelectedTabPage = tabAttachments;
+        tabDocumentSections.Size = new Size(1418, 629);
+        tabDocumentSections.TabIndex = 0;
+        tabDocumentSections.TabPages.AddRange(new XtraTabPage[] { tabAttachments, tabRemarks });
         // 
         // tabMain
         // 
@@ -7148,15 +7285,19 @@ partial class ItemEditForm
         tabMain.Appearance.Options.UseFont = true;
         tabMain.AppearancePage.Header.Font = new Font("Segoe UI", 9F);
         tabMain.AppearancePage.Header.Options.UseFont = true;
+        tabMain.AppearancePage.HeaderActive.BackColor = BrandResources.PrimarySoft;
         tabMain.AppearancePage.HeaderActive.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        tabMain.AppearancePage.HeaderActive.ForeColor = BrandResources.Primary;
+        tabMain.AppearancePage.HeaderActive.Options.UseBackColor = true;
         tabMain.AppearancePage.HeaderActive.Options.UseFont = true;
+        tabMain.AppearancePage.HeaderActive.Options.UseForeColor = true;
         tabMain.Dock = DockStyle.Fill;
-        tabMain.Location = new Point(0, 204);
+        tabMain.Location = new Point(0, 112);
         tabMain.Name = "tabMain";
         tabMain.SelectedTabPage = tabGeneral;
-        tabMain.Size = new Size(1420, 564);
+        tabMain.Size = new Size(1420, 656);
         tabMain.TabIndex = 1;
-        tabMain.TabPages.AddRange(new XtraTabPage[] { tabGeneral, tabUnits, tabInventory, tabPurchases, tabSales, tabCosts, tabAccounting, tabTaxes, tabLots, tabSap, tabAttachments, tabRemarks });
+        tabMain.TabPages.AddRange(new XtraTabPage[] { tabGeneral, tabUnits, tabInventory, tabCommercial, tabFinance, tabLots, tabSap, tabDocuments });
         // 
         // btnClearSapFields
         // 
@@ -7321,7 +7462,7 @@ partial class ItemEditForm
         lblSapMapDescription.Name = "lblSapMapDescription";
         lblSapMapDescription.Size = new Size(65, 15);
         lblSapMapDescription.TabIndex = 69;
-        lblSapMapDescription.Text = "Descripcion:";
+        lblSapMapDescription.Text = "Descripción:";
         // 
         // lueSapMapRequired
         // 
@@ -7385,7 +7526,7 @@ partial class ItemEditForm
         lblSapHistoryTitle.Name = "lblSapHistoryTitle";
         lblSapHistoryTitle.Size = new Size(196, 20);
         lblSapHistoryTitle.TabIndex = 57;
-        lblSapHistoryTitle.Text = "3. Historial de sincronizacion";
+        lblSapHistoryTitle.Text = "3. Historial de sincronización";
         // 
         // txtSapMapSystemField
         // 
@@ -7523,7 +7664,7 @@ partial class ItemEditForm
         lblSapConfigTitle.Name = "lblSapConfigTitle";
         lblSapConfigTitle.Size = new Size(216, 20);
         lblSapConfigTitle.TabIndex = 56;
-        lblSapConfigTitle.Text = "2. Configuracion de integracion";
+        lblSapConfigTitle.Text = "2. Configuración de integración";
         // 
         // lblSapManualRetry
         // 
@@ -7635,7 +7776,7 @@ partial class ItemEditForm
         lblSapSyncStatus.Name = "lblSapSyncStatus";
         lblSapSyncStatus.Size = new Size(117, 15);
         lblSapSyncStatus.TabIndex = 82;
-        lblSapSyncStatus.Text = "Estado sincronizacion:";
+        lblSapSyncStatus.Text = "Estado sincronización:";
         // 
         // lueSapSyncStatus
         // 
@@ -7657,7 +7798,7 @@ partial class ItemEditForm
         lblSapLastSync.Name = "lblSapLastSync";
         lblSapLastSync.Size = new Size(117, 15);
         lblSapLastSync.TabIndex = 84;
-        lblSapLastSync.Text = "Ultima sincronizacion:";
+        lblSapLastSync.Text = "Última sincronización:";
         // 
         // txtSapLastSync
         // 
@@ -7678,7 +7819,7 @@ partial class ItemEditForm
         lblSapLastError.Name = "lblSapLastError";
         lblSapLastError.Size = new Size(67, 15);
         lblSapLastError.TabIndex = 86;
-        lblSapLastError.Text = "Ultimo error:";
+        lblSapLastError.Text = "Último error:";
         // 
         // txtSapLastError
         // 
@@ -8619,6 +8760,15 @@ partial class ItemEditForm
         pnlKpiStock.ResumeLayout(false);
         pnlKpiStock.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)tglBlockedEcommerce.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)tabCommercialSections).EndInit();
+        tabCommercialSections.ResumeLayout(false);
+        tabCommercial.ResumeLayout(false);
+        ((System.ComponentModel.ISupportInitialize)tabFinanceSections).EndInit();
+        tabFinanceSections.ResumeLayout(false);
+        tabFinance.ResumeLayout(false);
+        ((System.ComponentModel.ISupportInitialize)tabDocumentSections).EndInit();
+        tabDocumentSections.ResumeLayout(false);
+        tabDocuments.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)tabMain).EndInit();
         tabMain.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)grdSapFieldMapping).EndInit();
@@ -9203,6 +9353,12 @@ partial class ItemEditForm
     private ToggleSwitch tglSalesActive;
     private LabelControl lblPurchaseActive;
     private ToggleSwitch tglPurchaseActive;
+    private XtraTabPage tabCommercial;
+    private XtraTabControl tabCommercialSections;
+    private XtraTabPage tabFinance;
+    private XtraTabControl tabFinanceSections;
+    private XtraTabPage tabDocuments;
+    private XtraTabControl tabDocumentSections;
     private XtraTabControl tabMain;
     private SimpleButton btnClearSapFields;
     private SimpleButton btnRemoveSapField;

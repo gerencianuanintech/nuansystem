@@ -19,6 +19,7 @@ public sealed partial class ItemEditForm : BaseEditForm
     private Func<string, bool>? canCreateRelatedCatalog;
     private Func<string, Form?>? relatedCatalogFormFactory;
     private Func<CancellationToken, Task<ItemLookups>>? reloadLookupsAsync;
+    private bool dirtyTrackingEnabled;
 
     private const string UnitMeasuresFormKey = "inventory-unit-measures";
     private const string WarehousesFormKey = "inventory-warehouses";
@@ -56,8 +57,8 @@ public sealed partial class ItemEditForm : BaseEditForm
         this.reloadLookupsAsync = reloadLookupsAsync;
 
         Text = item is null || copyMode
-            ? "Maestro de items / Articulos - Nuevo"
-            : "Maestro de items / Articulos";
+            ? "Maestro de ítems / Artículos - Nuevo"
+            : "Maestro de ítems / Artículos";
 
         BindLookups(lookups);
         ConfigureRelatedLookupButtons();
@@ -70,6 +71,9 @@ public sealed partial class ItemEditForm : BaseEditForm
         {
             LoadItem(item);
         }
+
+        UpdateIntegrationWarning();
+        EnableDirtyTracking();
     }
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -143,6 +147,90 @@ public sealed partial class ItemEditForm : BaseEditForm
         btnRemoveSapField.Click += RemoveSapFieldClick;
         btnClearSapFields.Click -= ClearSapFieldsClick;
         btnClearSapFields.Click += ClearSapFieldsClick;
+    }
+
+    private void EnableDirtyTracking()
+    {
+        foreach (var editor in EnumerateControls(this).OfType<BaseEdit>())
+        {
+            editor.EditValueChanged += EditorEditValueChanged;
+        }
+
+        foreach (var table in GetEditableTables())
+        {
+            table.RowChanged += EditableTableChanged;
+            table.RowDeleted += EditableTableChanged;
+            table.TableNewRow += EditableTableNewRow;
+        }
+
+        txtSapLastError.EditValueChanged += (_, _) => UpdateIntegrationWarning();
+        dirtyTrackingEnabled = true;
+        lblUnsavedIndicator.Visible = false;
+        lblValidationIndicator.Visible = false;
+    }
+
+    private static IEnumerable<Control> EnumerateControls(Control parent)
+    {
+        foreach (Control child in parent.Controls)
+        {
+            yield return child;
+
+            foreach (var descendant in EnumerateControls(child))
+            {
+                yield return descendant;
+            }
+        }
+    }
+
+    private IEnumerable<DataTable> GetEditableTables()
+    {
+        yield return itemPresentationsTable;
+        yield return presentationBarcodesTable;
+        yield return warehouseStockTable;
+        yield return purchasesPresentationsTable;
+        yield return itemSuppliersTable;
+        yield return costComponentsTable;
+        yield return taxMatrixTable;
+        yield return variantAttributesTable;
+        yield return registeredVariantsTable;
+        yield return sapCompanySyncTable;
+        yield return sapFieldsTable;
+        yield return attachmentsTable;
+        yield return operationalAlertsTable;
+        yield return allowedLocationsTable;
+    }
+
+    private void EditorEditValueChanged(object? sender, EventArgs e)
+    {
+        MarkAsDirty();
+    }
+
+    private void EditableTableChanged(object? sender, DataRowChangeEventArgs e)
+    {
+        MarkAsDirty();
+    }
+
+    private void EditableTableNewRow(object? sender, DataTableNewRowEventArgs e)
+    {
+        MarkAsDirty();
+    }
+
+    private void MarkAsDirty()
+    {
+        if (dirtyTrackingEnabled)
+        {
+            lblUnsavedIndicator.Visible = true;
+        }
+    }
+
+    private void UpdateIntegrationWarning()
+    {
+        var hasWarning = !string.IsNullOrWhiteSpace(txtSapLastError.Text);
+        tabSap.Text = hasWarning ? "Integración ⚠" : "Integración";
+        tabSap.Appearance.Header.ForeColor = hasWarning
+            ? BrandResources.WarningText
+            : Color.Empty;
+        tabSap.Appearance.Header.Options.UseForeColor = hasWarning;
     }
 
     private void ConfigureRelatedLookupButtons()
@@ -223,7 +311,7 @@ public sealed partial class ItemEditForm : BaseEditForm
             XtraMessageBox.Show(
                 this,
                 "No fue posible abrir o actualizar el catalogo relacionado.",
-                "Maestro de items",
+                "Maestro de ítems",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
         }
@@ -839,7 +927,7 @@ public sealed partial class ItemEditForm : BaseEditForm
 
         if (lueItemType.EditValue is null)
         {
-            Validator.SetError(lueItemType, "Seleccione el tipo de item.");
+            Validator.SetError(lueItemType, "Seleccione el tipo de ítem.");
             isValid = false;
         }
 
@@ -847,6 +935,12 @@ public sealed partial class ItemEditForm : BaseEditForm
         {
             Validator.SetError(lueBaseUnit, "Seleccione la unidad base del artículo.");
             isValid = false;
+        }
+
+        lblValidationIndicator.Visible = !isValid;
+        if (!isValid)
+        {
+            tabMain.SelectedTabPage = tabGeneral;
         }
 
         return isValid;
