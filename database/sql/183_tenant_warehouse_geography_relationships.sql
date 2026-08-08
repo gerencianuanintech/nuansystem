@@ -29,7 +29,7 @@ SET CountryId = candidate.Id
 FROM dbo.Warehouses warehouse
 OUTER APPLY
 (
-    SELECT MIN(country.Id) AS Id
+    SELECT MIN(country.CountryId) AS Id
     FROM dbo.Countries country
     WHERE country.IsDeleted = 0
       AND (UPPER(LTRIM(RTRIM(country.Code))) = UPPER(LTRIM(RTRIM(warehouse.Country)))
@@ -46,7 +46,7 @@ SET ProvinceId = candidate.Id
 FROM dbo.Warehouses warehouse
 OUTER APPLY
 (
-    SELECT MIN(province.Id) AS Id
+    SELECT MIN(province.ProvinceId) AS Id
     FROM dbo.Provinces province
     WHERE province.IsDeleted = 0
       AND province.CountryId = warehouse.CountryId
@@ -65,7 +65,7 @@ SET CityId = candidate.Id
 FROM dbo.Warehouses warehouse
 OUTER APPLY
 (
-    SELECT MIN(city.Id) AS Id
+    SELECT MIN(city.CityId) AS Id
     FROM dbo.Cities city
     WHERE city.IsDeleted = 0
       AND city.CountryId = warehouse.CountryId
@@ -90,11 +90,11 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID(N'dbo.Warehou
 GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_Warehouses_Countries_CountryId')
-    ALTER TABLE dbo.Warehouses WITH CHECK ADD CONSTRAINT FK_Warehouses_Countries_CountryId FOREIGN KEY(CountryId) REFERENCES dbo.Countries(Id);
+    ALTER TABLE dbo.Warehouses WITH CHECK ADD CONSTRAINT FK_Warehouses_Countries_CountryId FOREIGN KEY(CountryId) REFERENCES dbo.Countries(CountryId);
 IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_Warehouses_Provinces_ProvinceId')
-    ALTER TABLE dbo.Warehouses WITH CHECK ADD CONSTRAINT FK_Warehouses_Provinces_ProvinceId FOREIGN KEY(ProvinceId) REFERENCES dbo.Provinces(Id);
+    ALTER TABLE dbo.Warehouses WITH CHECK ADD CONSTRAINT FK_Warehouses_Provinces_ProvinceId FOREIGN KEY(ProvinceId) REFERENCES dbo.Provinces(ProvinceId);
 IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_Warehouses_Cities_CityId')
-    ALTER TABLE dbo.Warehouses WITH CHECK ADD CONSTRAINT FK_Warehouses_Cities_CityId FOREIGN KEY(CityId) REFERENCES dbo.Cities(Id);
+    ALTER TABLE dbo.Warehouses WITH CHECK ADD CONSTRAINT FK_Warehouses_Cities_CityId FOREIGN KEY(CityId) REFERENCES dbo.Cities(CityId);
 GO
 
 CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_WAREHOUSES_LISTAR
@@ -113,9 +113,9 @@ BEGIN
            warehouse.UpdatedByUserId, warehouse.UpdatedByUserName, warehouse.UpdatedAt,
            warehouse.DeletedByUserId, warehouse.DeletedByUserName, warehouse.DeletedAt
     FROM dbo.Warehouses warehouse
-    LEFT JOIN dbo.Countries country ON country.Id=warehouse.CountryId
-    LEFT JOIN dbo.Provinces province ON province.Id=warehouse.ProvinceId
-    LEFT JOIN dbo.Cities city ON city.Id=warehouse.CityId
+    LEFT JOIN dbo.Countries country ON country.CountryId=warehouse.CountryId
+    LEFT JOIN dbo.Provinces province ON province.ProvinceId=warehouse.ProvinceId
+    LEFT JOIN dbo.Cities city ON city.CityId=warehouse.CityId
     WHERE warehouse.IsDeleted=0
     ORDER BY warehouse.IsDefault DESC, warehouse.Name, warehouse.Code;
 END;
@@ -137,9 +137,9 @@ BEGIN
            warehouse.UpdatedByUserId, warehouse.UpdatedByUserName, warehouse.UpdatedAt,
            warehouse.DeletedByUserId, warehouse.DeletedByUserName, warehouse.DeletedAt
     FROM dbo.Warehouses warehouse
-    LEFT JOIN dbo.Countries country ON country.Id=warehouse.CountryId
-    LEFT JOIN dbo.Provinces province ON province.Id=warehouse.ProvinceId
-    LEFT JOIN dbo.Cities city ON city.Id=warehouse.CityId
+    LEFT JOIN dbo.Countries country ON country.CountryId=warehouse.CountryId
+    LEFT JOIN dbo.Provinces province ON province.ProvinceId=warehouse.ProvinceId
+    LEFT JOIN dbo.Cities city ON city.CityId=warehouse.CityId
     WHERE warehouse.Id=@Id AND warehouse.IsDeleted=0;
 END;
 GO
@@ -159,9 +159,9 @@ BEGIN
     SET NOCOUNT ON;
     IF @ProvinceId IS NOT NULL AND @CountryId IS NULL THROW 51183, 'CountryId is required when ProvinceId is supplied.', 1;
     IF @CityId IS NOT NULL AND (@CountryId IS NULL OR @ProvinceId IS NULL) THROW 51183, 'CountryId and ProvinceId are required when CityId is supplied.', 1;
-    IF @CountryId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Countries WHERE Id=@CountryId AND IsDeleted=0) THROW 51183, 'CountryId does not exist.', 1;
-    IF @ProvinceId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Provinces WHERE Id=@ProvinceId AND CountryId=@CountryId AND IsDeleted=0) THROW 51183, 'ProvinceId does not belong to CountryId.', 1;
-    IF @CityId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Cities WHERE Id=@CityId AND CountryId=@CountryId AND ProvinceId=@ProvinceId AND IsDeleted=0) THROW 51183, 'CityId does not belong to CountryId and ProvinceId.', 1;
+    IF @CountryId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Countries WHERE CountryId=@CountryId AND IsDeleted=0) THROW 51183, 'CountryId does not exist.', 1;
+    IF @ProvinceId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Provinces WHERE ProvinceId=@ProvinceId AND CountryId=@CountryId AND IsDeleted=0) THROW 51183, 'ProvinceId does not belong to CountryId.', 1;
+    IF @CityId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Cities WHERE CityId=@CityId AND CountryId=@CountryId AND ProvinceId=@ProvinceId AND IsDeleted=0) THROW 51183, 'CityId does not belong to CountryId and ProvinceId.', 1;
 
     INSERT dbo.Warehouses
     (GlobalId,Code,Name,Description,BranchCode,Address,CityId,City,ProvinceId,Province,CountryId,Country,
@@ -190,9 +190,9 @@ BEGIN
     SET NOCOUNT ON;
     IF @ProvinceId IS NOT NULL AND @CountryId IS NULL THROW 51183, 'CountryId is required when ProvinceId is supplied.', 1;
     IF @CityId IS NOT NULL AND (@CountryId IS NULL OR @ProvinceId IS NULL) THROW 51183, 'CountryId and ProvinceId are required when CityId is supplied.', 1;
-    IF @CountryId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Countries WHERE Id=@CountryId AND IsDeleted=0) THROW 51183, 'CountryId does not exist.', 1;
-    IF @ProvinceId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Provinces WHERE Id=@ProvinceId AND CountryId=@CountryId AND IsDeleted=0) THROW 51183, 'ProvinceId does not belong to CountryId.', 1;
-    IF @CityId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Cities WHERE Id=@CityId AND CountryId=@CountryId AND ProvinceId=@ProvinceId AND IsDeleted=0) THROW 51183, 'CityId does not belong to CountryId and ProvinceId.', 1;
+    IF @CountryId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Countries WHERE CountryId=@CountryId AND IsDeleted=0) THROW 51183, 'CountryId does not exist.', 1;
+    IF @ProvinceId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Provinces WHERE ProvinceId=@ProvinceId AND CountryId=@CountryId AND IsDeleted=0) THROW 51183, 'ProvinceId does not belong to CountryId.', 1;
+    IF @CityId IS NOT NULL AND NOT EXISTS(SELECT 1 FROM dbo.Cities WHERE CityId=@CityId AND CountryId=@CountryId AND ProvinceId=@ProvinceId AND IsDeleted=0) THROW 51183, 'CityId does not belong to CountryId and ProvinceId.', 1;
 
     UPDATE dbo.Warehouses SET GlobalId=@GlobalId,Code=@Code,Name=@Name,Description=@Description,
         BranchCode=@BranchCode,Address=@Address,CityId=@CityId,City=@City,ProvinceId=@ProvinceId,
