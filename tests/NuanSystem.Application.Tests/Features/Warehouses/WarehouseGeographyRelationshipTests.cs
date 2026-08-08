@@ -58,6 +58,12 @@ public sealed class WarehouseGeographyRelationshipTests
         var designer = ReadSource(
             "src", "Frontend", "NuanSystem.WinForms.Forms", "GeneralInventory", "Warehouses",
             "WarehouseEditForm.Designer.cs");
+        var form = ReadSource(
+            "src", "Frontend", "NuanSystem.WinForms.Forms", "GeneralInventory", "Warehouses",
+            "WarehousesForm.cs");
+        var viewModel = ReadSource(
+            "src", "Frontend", "NuanSystem.WinForms.ViewModels", "GeneralInventory", "Warehouses",
+            "WarehousesViewModel.cs");
 
         designer.Should().Contain("NuanLookupEdit lueCountry")
             .And.Contain("NuanLookupEdit lueProvince")
@@ -68,8 +74,25 @@ public sealed class WarehouseGeographyRelationshipTests
         editor.Should().Contain("ReloadProvincesAsync")
             .And.Contain("ReloadCitiesAsync")
             .And.Contain("ClearButtonEnabled = true")
-            .And.Contain("CreateButtonEnabled = false")
-            .And.Contain("EditButtonEnabled = false");
+            .And.Contain("CreateButtonEnabled = canCreate")
+            .And.Contain("canCreateCountries && !managingLookup")
+            .And.Contain("canCreateProvinces && !managingLookup && hasCountry")
+            .And.Contain("canCreateCities && !managingLookup && hasCountry && hasProvince")
+            .And.Contain("CreateCountryRequested")
+            .And.Contain("CreateProvinceRequested")
+            .And.Contain("CreateCityRequested");
+        viewModel.Should().Contain("GeographyRelatedFormAccess.LoadAsync(securityAccessClient, \"countries\"")
+            .And.Contain("GeographyRelatedFormAccess.LoadAsync(securityAccessClient, \"provinces\"")
+            .And.Contain("GeographyRelatedFormAccess.LoadAsync(securityAccessClient, \"cities\"")
+            .And.Contain("CanCreateCountries = countryAccess.CanCreate")
+            .And.Contain("CanCreateProvinces = provinceAccess.CanCreate")
+            .And.Contain("CanCreateCities = cityAccess.CanCreate");
+        form.Should().Contain("form.CreateCountryRequested +=")
+            .And.Contain("form.CreateProvinceRequested +=")
+            .And.Contain("form.CreateCityRequested +=")
+            .And.Contain("new CountryEditForm")
+            .And.Contain("new ProvinceEditForm")
+            .And.Contain("new CityEditForm");
     }
 
     private static CreateWarehouseCommand CreateCommand(int? countryId, int? provinceId, int? cityId) =>

@@ -32,7 +32,9 @@ public sealed partial class CityEditForm : BaseEditForm
         bool canCreateCountries = false,
         bool canUpdateCountries = false,
         bool canCreateProvinces = false,
-        bool canUpdateProvinces = false)
+        bool canUpdateProvinces = false,
+        int? initialCountryId = null,
+        int? initialProvinceId = null)
     {
         this.countries = countries.ToList();
         this.provinces = provinces.ToList();
@@ -44,6 +46,14 @@ public sealed partial class CityEditForm : BaseEditForm
         ConfigureForm();
         BindCountries();
         BindProvinces();
+        if (initialCountryId.HasValue)
+        {
+            suppressCountryChange = true;
+            lueCountry.EditValue = initialCountryId.Value;
+            lueProvince.EditValue = initialProvinceId;
+            suppressCountryChange = false;
+            UpdateLookupButtons();
+        }
     }
 
     public CityEditForm(
