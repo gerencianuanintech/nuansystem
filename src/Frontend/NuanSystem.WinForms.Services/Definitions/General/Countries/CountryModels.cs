@@ -17,6 +17,12 @@ public sealed class CountryItem
     public bool IsActive { get; set; }
 }
 
+public sealed record CountryPage(
+    IReadOnlyCollection<CountryItem> Items,
+    int TotalCount,
+    int PageNumber,
+    int PageSize);
+
 public sealed record SaveCountryRequest(
     string Code,
     string Name,

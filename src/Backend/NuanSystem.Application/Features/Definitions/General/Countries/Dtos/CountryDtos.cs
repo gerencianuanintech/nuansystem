@@ -16,6 +16,17 @@ public sealed class CountryDto
     public DateTime? UpdatedAt { get; set; }
 }
 
+public sealed record CountryListFilter(
+    string? Search,
+    int PageNumber = 1,
+    int PageSize = 50);
+
+public sealed record CountryPageDto(
+    IReadOnlyCollection<CountryDto> Items,
+    int TotalCount,
+    int PageNumber,
+    int PageSize);
+
 public sealed record CountrySyncPayload(
     Guid GlobalId,
     string Code,

@@ -13,6 +13,27 @@ public sealed class GeographyClient(INuanApiClient apiClient) : IGeographyClient
         return apiClient.GetAsync<IReadOnlyCollection<CountryItem>>("/api/geography/countries", cancellationToken);
     }
 
+    public Task<CountryPage> SearchCountriesAsync(
+        string? search,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var parameters = new List<string>
+        {
+            $"pageNumber={pageNumber}",
+            $"pageSize={pageSize}"
+        };
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            parameters.Add($"search={Uri.EscapeDataString(search.Trim())}");
+        }
+
+        return apiClient.GetAsync<CountryPage>(
+            $"/api/geography/countries/page?{string.Join("&", parameters)}",
+            cancellationToken);
+    }
+
     public Task<IReadOnlyCollection<ProvinceItem>> GetProvincesAsync(CancellationToken cancellationToken = default)
     {
         return apiClient.GetAsync<IReadOnlyCollection<ProvinceItem>>("/api/geography/provinces", cancellationToken);

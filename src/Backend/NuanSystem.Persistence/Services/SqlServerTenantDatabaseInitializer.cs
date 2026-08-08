@@ -78,6 +78,7 @@ public sealed class SqlServerTenantDatabaseInitializer(
                       ,"173_tenant_sap_province_execution_snapshot.sql"
                       ,"175_tenant_city_transactional_outbox.sql"
                       ,"177_tenant_sap_city_execution_snapshot.sql"
+                      ,"180_tenant_country_paged_search.sql"
                    })
         {
             var scriptPath = FindDatabaseScriptPath(fileName);

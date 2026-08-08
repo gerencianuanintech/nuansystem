@@ -10,6 +10,8 @@ public interface IGeographyRepository : IRepository
 {
     Task<IReadOnlyCollection<CountryDto>> GetCountriesAsync(CancellationToken cancellationToken = default);
 
+    Task<CountryPageDto> SearchCountriesAsync(CountryListFilter filter, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyCollection<ProvinceDto>> GetProvincesAsync(CancellationToken cancellationToken = default);
 
     Task<IReadOnlyCollection<CityDto>> GetCitiesAsync(CancellationToken cancellationToken = default);

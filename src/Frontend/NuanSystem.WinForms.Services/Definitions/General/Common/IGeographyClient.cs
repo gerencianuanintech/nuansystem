@@ -8,6 +8,8 @@ public interface IGeographyClient
 {
     Task<IReadOnlyCollection<CountryItem>> GetCountriesAsync(CancellationToken cancellationToken = default);
 
+    Task<CountryPage> SearchCountriesAsync(string? search, int pageNumber, int pageSize, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyCollection<ProvinceItem>> GetProvincesAsync(CancellationToken cancellationToken = default);
 
     Task<IReadOnlyCollection<CityItem>> GetCitiesAsync(CancellationToken cancellationToken = default);

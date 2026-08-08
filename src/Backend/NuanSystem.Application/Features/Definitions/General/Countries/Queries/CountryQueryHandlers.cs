@@ -12,6 +12,17 @@ public sealed class GetCountriesQueryHandler(IGeographyRepository repository) : 
     public async Task<Result<IReadOnlyCollection<CountryDto>>> Handle(GetCountriesQuery request, CancellationToken cancellationToken) => Result<IReadOnlyCollection<CountryDto>>.Success(await repository.GetCountriesAsync(cancellationToken));
 }
 
+public sealed class SearchCountriesQueryHandler(IGeographyRepository repository) : IQueryHandler<SearchCountriesQuery, CountryPageDto>
+{
+    public async Task<Result<CountryPageDto>> Handle(SearchCountriesQuery request, CancellationToken cancellationToken)
+    {
+        var page = await repository.SearchCountriesAsync(
+            new CountryListFilter(request.Search, request.PageNumber, request.PageSize),
+            cancellationToken);
+        return Result<CountryPageDto>.Success(page);
+    }
+}
+
 public sealed class GetCountryLookupQueryHandler(IGeographyRepository repository) : IQueryHandler<GetCountryLookupQuery, IReadOnlyCollection<GeographyLookupDto>>
 {
     public async Task<Result<IReadOnlyCollection<GeographyLookupDto>>> Handle(GetCountryLookupQuery request, CancellationToken cancellationToken) => Result<IReadOnlyCollection<GeographyLookupDto>>.Success(await repository.GetCountryLookupAsync(cancellationToken));

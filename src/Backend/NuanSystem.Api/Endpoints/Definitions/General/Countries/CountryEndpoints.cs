@@ -14,6 +14,10 @@ internal static class CountryEndpoints
     public static RouteGroupBuilder MapCountryEndpoints(this RouteGroupBuilder group)
     {
         group.MapGet("/countries", async (ISender sender, CancellationToken cancellationToken) => (await sender.Send(new GetCountriesQuery(), cancellationToken)).ToHttpResult()).RequirePermission(PermissionCodes.GeographyCountriesRead).RequireFormOperation(FormKey, "refresh");
+        group.MapGet("/countries/page", async (string? search, int? pageNumber, int? pageSize, ISender sender, CancellationToken cancellationToken) =>
+            (await sender.Send(new SearchCountriesQuery(search, pageNumber ?? 1, pageSize ?? 50), cancellationToken)).ToHttpResult())
+            .RequirePermission(PermissionCodes.GeographyCountriesRead)
+            .RequireFormOperation(FormKey, "refresh");
         group.MapGet("/countries/lookup", async (ISender sender, CancellationToken cancellationToken) => (await sender.Send(new GetCountryLookupQuery(), cancellationToken)).ToHttpResult()).RequirePermission(PermissionCodes.GeographyCountriesRead);
         group.MapGet("/countries/{id:int}", async (int id, ISender sender, CancellationToken cancellationToken) => (await sender.Send(new GetCountryByIdQuery(id), cancellationToken)).ToHttpResult()).RequirePermission(PermissionCodes.GeographyCountriesRead).RequireFormOperation(FormKey, "consult");
         group.MapPost("/countries", async (SaveCountryRequest request, ISender sender, ClaimsPrincipal user, CancellationToken cancellationToken) =>
