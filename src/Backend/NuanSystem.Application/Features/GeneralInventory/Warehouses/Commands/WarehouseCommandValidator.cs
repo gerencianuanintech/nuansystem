@@ -21,6 +21,12 @@ public sealed class CreateWarehouseCommandValidator : AbstractValidator<CreateWa
         RuleFor(command => command.ExternalSystem).MaximumLength(50);
         RuleFor(command => command.ExternalCode).MaximumLength(100);
         RuleFor(command => command.SapCode).MaximumLength(100);
+        RuleFor(command => command.ProvinceId)
+            .Null().When(command => command.CountryId is null)
+            .WithMessage("Seleccione el pais antes de la provincia.");
+        RuleFor(command => command.CityId)
+            .Null().When(command => command.CountryId is null || command.ProvinceId is null)
+            .WithMessage("Seleccione el pais y la provincia antes de la ciudad.");
     }
 }
 
@@ -44,6 +50,12 @@ public sealed class UpdateWarehouseCommandValidator : AbstractValidator<UpdateWa
         RuleFor(command => command.ExternalSystem).MaximumLength(50);
         RuleFor(command => command.ExternalCode).MaximumLength(100);
         RuleFor(command => command.SapCode).MaximumLength(100);
+        RuleFor(command => command.ProvinceId)
+            .Null().When(command => command.CountryId is null)
+            .WithMessage("Seleccione el pais antes de la provincia.");
+        RuleFor(command => command.CityId)
+            .Null().When(command => command.CountryId is null || command.ProvinceId is null)
+            .WithMessage("Seleccione el pais y la provincia antes de la ciudad.");
     }
 }
 

@@ -26,4 +26,7 @@ public sealed record CreateWarehouseCommand(
     string? SapCode,
     bool IsActive,
     int? AuditUserId = null,
-    string? AuditUserName = null) : ICommand<WarehouseDto>;
+    string? AuditUserName = null,
+    int? CountryId = null,
+    int? ProvinceId = null,
+    int? CityId = null) : ICommand<WarehouseDto>;

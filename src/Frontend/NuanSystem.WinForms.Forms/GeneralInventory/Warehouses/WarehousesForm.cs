@@ -1,4 +1,5 @@
 using NuanSystem.WinForms.Forms.Common;
+using NuanSystem.WinForms.Services.Definitions.General.Common;
 using NuanSystem.WinForms.Services.GeneralInventory.Warehouses.Models;
 using NuanSystem.WinForms.Services.GridColumnSettings;
 using NuanSystem.WinForms.Services.Session;
@@ -45,7 +46,7 @@ public sealed partial class WarehousesForm : BaseGridCrudListForm
 
     protected override async Task CreateAsync()
     {
-        using var form = new WarehouseEditForm();
+        using var form = CreateEditForm([], []);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -64,7 +65,13 @@ public sealed partial class WarehousesForm : BaseGridCrudListForm
         }
 
         var fullItem = await viewModel.GetByIdAsync(item.Id);
-        using var form = new WarehouseEditForm(fullItem);
+        var provinces = string.IsNullOrWhiteSpace(fullItem.CountryCode)
+            ? []
+            : await viewModel.LoadProvincesAsync(fullItem.CountryCode);
+        var cities = string.IsNullOrWhiteSpace(fullItem.CountryCode) || string.IsNullOrWhiteSpace(fullItem.ProvinceCode)
+            ? []
+            : await viewModel.LoadCitiesAsync(fullItem.CountryCode, fullItem.ProvinceCode);
+        using var form = CreateEditForm(provinces, cities, fullItem);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -83,7 +90,13 @@ public sealed partial class WarehousesForm : BaseGridCrudListForm
         }
 
         var fullItem = await viewModel.GetByIdAsync(item.Id);
-        using var form = new WarehouseEditForm(fullItem, copyMode: true);
+        var provinces = string.IsNullOrWhiteSpace(fullItem.CountryCode)
+            ? []
+            : await viewModel.LoadProvincesAsync(fullItem.CountryCode);
+        var cities = string.IsNullOrWhiteSpace(fullItem.CountryCode) || string.IsNullOrWhiteSpace(fullItem.ProvinceCode)
+            ? []
+            : await viewModel.LoadCitiesAsync(fullItem.CountryCode, fullItem.ProvinceCode);
+        using var form = CreateEditForm(provinces, cities, fullItem, copyMode: true);
         if (form.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -136,6 +149,20 @@ public sealed partial class WarehousesForm : BaseGridCrudListForm
     private WarehouseItem? SelectedItem()
     {
         return SelectedGridItem<WarehouseItem>();
+    }
+
+    private WarehouseEditForm CreateEditForm(
+        IReadOnlyCollection<GeographyLookupItem> provinces,
+        IReadOnlyCollection<GeographyLookupItem> cities,
+        WarehouseItem? item = null,
+        bool copyMode = false)
+    {
+        var form = item is null
+            ? new WarehouseEditForm(viewModel.Countries, provinces, cities)
+            : new WarehouseEditForm(viewModel.Countries, provinces, cities, item, copyMode);
+        form.LoadProvincesRequested += (_, countryCode) => viewModel.LoadProvincesAsync(countryCode);
+        form.LoadCitiesRequested += (_, countryCode, provinceCode) => viewModel.LoadCitiesAsync(countryCode, provinceCode);
+        return form;
     }
 
     private void ConfigureColumn(string fieldName, string caption, int visibleIndex, int width)

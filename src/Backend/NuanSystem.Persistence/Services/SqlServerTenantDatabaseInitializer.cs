@@ -81,6 +81,7 @@ public sealed class SqlServerTenantDatabaseInitializer(
                       ,"180_tenant_country_paged_search.sql"
                       ,"181_tenant_province_paged_search.sql"
                       ,"182_tenant_city_paged_search.sql"
+                      ,"183_tenant_warehouse_geography_relationships.sql"
                    })
         {
             var scriptPath = FindDatabaseScriptPath(fileName);

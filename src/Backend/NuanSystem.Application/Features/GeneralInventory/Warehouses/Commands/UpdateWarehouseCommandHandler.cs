@@ -10,6 +10,7 @@ namespace NuanSystem.Application.Features.GeneralInventory.Warehouses.Commands;
 
 public sealed class UpdateWarehouseCommandHandler(
     IWarehouseRepository warehouseRepository,
+    IGeographyRepository geographyRepository,
     ITransactionRunner transactionRunner,
     IWarehouseLocalOutboxWriter localOutboxWriter)
     : ICommandHandler<UpdateWarehouseCommand, WarehouseDto>
@@ -35,6 +36,24 @@ public sealed class UpdateWarehouseCommandHandler(
                         [new ApiError("WarehouseNotFound", "No se encontro la bodega.", nameof(request.Id))]);
                 }
 
+                var geographyResult = await WarehouseGeographyResolver.ResolveAsync(
+                    geographyRepository,
+                    request.CountryId,
+                    request.ProvinceId,
+                    request.CityId,
+                    request.Country,
+                    request.Province,
+                    request.City,
+                    connection,
+                    transaction,
+                    token);
+                if (geographyResult.Error is not null)
+                {
+                    return Result<WarehouseDto>.Failure("La ubicacion geografica de la bodega no es valida.", [geographyResult.Error]);
+                }
+
+                var geography = geographyResult.Value!;
+
                 var updated = await warehouseRepository.UpdateAsync(new UpdateWarehouseData(
                     request.Id,
                     current.GlobalId,
@@ -43,9 +62,12 @@ public sealed class UpdateWarehouseCommandHandler(
                     WarehouseCommandHelpers.NormalizeOptional(request.Description),
                     WarehouseCommandHelpers.NormalizeOptional(request.BranchCode),
                     WarehouseCommandHelpers.NormalizeOptional(request.Address),
-                    WarehouseCommandHelpers.NormalizeOptional(request.City),
-                    WarehouseCommandHelpers.NormalizeOptional(request.Province),
-                    WarehouseCommandHelpers.NormalizeOptional(request.Country),
+                    geography.CityId,
+                    geography.City,
+                    geography.ProvinceId,
+                    geography.Province,
+                    geography.CountryId,
+                    geography.Country,
                     WarehouseCommandHelpers.NormalizeOptional(request.Phone),
                     WarehouseCommandHelpers.NormalizeOptional(request.Email),
                     WarehouseCommandHelpers.NormalizeOptional(request.ManagerName),

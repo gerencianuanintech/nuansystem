@@ -21,4 +21,7 @@ public sealed record SaveWarehouseRequest(
     string? ExternalSystem,
     string? ExternalCode,
     string? SapCode,
-    bool IsActive);
+    bool IsActive,
+    int? CountryId = null,
+    int? ProvinceId = null,
+    int? CityId = null);

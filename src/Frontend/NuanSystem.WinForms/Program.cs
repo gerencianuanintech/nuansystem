@@ -774,7 +774,7 @@ internal sealed class FrontendComposition : IDisposable
 
     public WarehousesForm CreateWarehousesForm()
     {
-        return new WarehousesForm(new WarehousesViewModel(warehouseClient), session, gridColumnSettingsClient);
+        return new WarehousesForm(new WarehousesViewModel(warehouseClient, geographyClient), session, gridColumnSettingsClient);
     }
 
     public ItemBrandsForm CreateItemBrandsForm()

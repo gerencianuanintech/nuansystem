@@ -9,8 +9,14 @@ public sealed class WarehouseItem
     public string? Description { get; set; }
     public string? BranchCode { get; set; }
     public string? Address { get; set; }
+    public int? CityId { get; set; }
+    public string? CityCode { get; set; }
     public string? City { get; set; }
+    public int? ProvinceId { get; set; }
+    public string? ProvinceCode { get; set; }
     public string? Province { get; set; }
+    public int? CountryId { get; set; }
+    public string? CountryCode { get; set; }
     public string? Country { get; set; }
     public string? Phone { get; set; }
     public string? Email { get; set; }

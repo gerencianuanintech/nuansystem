@@ -1,4 +1,5 @@
 using DevExpress.XtraEditors;
+using NuanSystem.WinForms.Controls.Lookups;
 
 namespace NuanSystem.WinForms.Forms.GeneralInventory.Warehouses;
 
@@ -17,11 +18,11 @@ partial class WarehouseEditForm
     private LabelControl lblAddress;
     private TextEdit txtAddress;
     private LabelControl lblCity;
-    private TextEdit txtCity;
+    private NuanLookupEdit lueCity;
     private LabelControl lblProvince;
-    private TextEdit txtProvince;
+    private NuanLookupEdit lueProvince;
     private LabelControl lblCountry;
-    private TextEdit txtCountry;
+    private NuanLookupEdit lueCountry;
     private LabelControl lblPhone;
     private TextEdit txtPhone;
     private LabelControl lblEmail;
@@ -59,11 +60,11 @@ partial class WarehouseEditForm
         lblAddress = new LabelControl();
         txtAddress = new TextEdit();
         lblCity = new LabelControl();
-        txtCity = new TextEdit();
+        lueCity = new NuanLookupEdit();
         lblProvince = new LabelControl();
-        txtProvince = new TextEdit();
+        lueProvince = new NuanLookupEdit();
         lblCountry = new LabelControl();
-        txtCountry = new TextEdit();
+        lueCountry = new NuanLookupEdit();
         lblPhone = new LabelControl();
         txtPhone = new TextEdit();
         lblEmail = new LabelControl();
@@ -91,9 +92,9 @@ partial class WarehouseEditForm
         ((System.ComponentModel.ISupportInitialize)memDescription.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtBranchCode.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtAddress.Properties).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)txtCity.Properties).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)txtProvince.Properties).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)txtCountry.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueCity.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueProvince.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueCountry.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtPhone.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtEmail.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtManagerName.Properties).BeginInit();
@@ -266,19 +267,18 @@ partial class WarehouseEditForm
         // 
         // lblCity
         // 
-        lblCity.Location = new Point(24, 212);
+        lblCity.Location = new Point(568, 212);
         lblCity.Name = "lblCity";
         lblCity.Size = new Size(33, 13);
         lblCity.TabIndex = 12;
         lblCity.Text = "Ciudad";
         // 
-        // txtCity
+        // lueCity
         // 
-        txtCity.Location = new Point(132, 209);
-        txtCity.Name = "txtCity";
-        txtCity.Properties.MaxLength = 100;
-        txtCity.Size = new Size(180, 20);
-        txtCity.TabIndex = 13;
+        lueCity.Location = new Point(612, 209);
+        lueCity.Name = "lueCity";
+        lueCity.Size = new Size(112, 20);
+        lueCity.TabIndex = 13;
         // 
         // lblProvince
         // 
@@ -288,29 +288,27 @@ partial class WarehouseEditForm
         lblProvince.TabIndex = 14;
         lblProvince.Text = "Provincia";
         // 
-        // txtProvince
+        // lueProvince
         // 
-        txtProvince.Location = new Point(414, 209);
-        txtProvince.Name = "txtProvince";
-        txtProvince.Properties.MaxLength = 100;
-        txtProvince.Size = new Size(135, 20);
-        txtProvince.TabIndex = 15;
+        lueProvince.Location = new Point(414, 209);
+        lueProvince.Name = "lueProvince";
+        lueProvince.Size = new Size(135, 20);
+        lueProvince.TabIndex = 15;
         // 
         // lblCountry
         // 
-        lblCountry.Location = new Point(568, 212);
+        lblCountry.Location = new Point(24, 212);
         lblCountry.Name = "lblCountry";
         lblCountry.Size = new Size(19, 13);
         lblCountry.TabIndex = 16;
         lblCountry.Text = "Pais";
         // 
-        // txtCountry
+        // lueCountry
         // 
-        txtCountry.Location = new Point(612, 209);
-        txtCountry.Name = "txtCountry";
-        txtCountry.Properties.MaxLength = 100;
-        txtCountry.Size = new Size(112, 20);
-        txtCountry.TabIndex = 17;
+        lueCountry.Location = new Point(132, 209);
+        lueCountry.Name = "lueCountry";
+        lueCountry.Size = new Size(180, 20);
+        lueCountry.TabIndex = 17;
         // 
         // lblPhone
         // 
@@ -505,11 +503,11 @@ partial class WarehouseEditForm
         Controls.Add(lblAddress);
         Controls.Add(txtAddress);
         Controls.Add(lblCity);
-        Controls.Add(txtCity);
+        Controls.Add(lueCity);
         Controls.Add(lblProvince);
-        Controls.Add(txtProvince);
+        Controls.Add(lueProvince);
         Controls.Add(lblCountry);
-        Controls.Add(txtCountry);
+        Controls.Add(lueCountry);
         Controls.Add(lblPhone);
         Controls.Add(txtPhone);
         Controls.Add(lblEmail);
@@ -555,11 +553,11 @@ partial class WarehouseEditForm
         Controls.SetChildIndex(lblEmail, 0);
         Controls.SetChildIndex(txtPhone, 0);
         Controls.SetChildIndex(lblPhone, 0);
-        Controls.SetChildIndex(txtCountry, 0);
+        Controls.SetChildIndex(lueCountry, 0);
         Controls.SetChildIndex(lblCountry, 0);
-        Controls.SetChildIndex(txtProvince, 0);
+        Controls.SetChildIndex(lueProvince, 0);
         Controls.SetChildIndex(lblProvince, 0);
-        Controls.SetChildIndex(txtCity, 0);
+        Controls.SetChildIndex(lueCity, 0);
         Controls.SetChildIndex(lblCity, 0);
         Controls.SetChildIndex(txtAddress, 0);
         Controls.SetChildIndex(lblAddress, 0);
@@ -581,9 +579,9 @@ partial class WarehouseEditForm
         ((System.ComponentModel.ISupportInitialize)memDescription.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtBranchCode.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtAddress.Properties).EndInit();
-        ((System.ComponentModel.ISupportInitialize)txtCity.Properties).EndInit();
-        ((System.ComponentModel.ISupportInitialize)txtProvince.Properties).EndInit();
-        ((System.ComponentModel.ISupportInitialize)txtCountry.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueCity.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueProvince.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueCountry.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtPhone.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtEmail.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtManagerName.Properties).EndInit();
