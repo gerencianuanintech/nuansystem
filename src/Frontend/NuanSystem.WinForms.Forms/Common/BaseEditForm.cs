@@ -28,6 +28,38 @@ public partial class BaseEditForm : XtraForm
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public bool IsReadOnlyMode { get; private set; }
 
+    [Category("Layout de acciones")]
+    [Description("Ubicación del botón Guardar dentro del formulario.")]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+    public Point SaveButtonLocation
+    {
+        get => btnGuardar.Location;
+        set => btnGuardar.Location = value;
+    }
+
+    [Category("Layout de acciones")]
+    [Description("Ubicación del botón Cancelar dentro del formulario.")]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+    public Point CancelButtonLocation
+    {
+        get => btnCancelar.Location;
+        set => btnCancelar.Location = value;
+    }
+
+    [Category("Layout de acciones")]
+    [Description("Anclaje utilizado por los botones Guardar y Cancelar.")]
+    [DefaultValue(AnchorStyles.Bottom | AnchorStyles.Right)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+    public AnchorStyles ActionButtonsAnchor
+    {
+        get => btnGuardar.Anchor;
+        set
+        {
+            btnGuardar.Anchor = value;
+            btnCancelar.Anchor = value;
+        }
+    }
+
     protected FormValidator Validator { get; }
 
     public static IDisposable BeginReadOnlyMode()
