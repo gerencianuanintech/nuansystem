@@ -30,6 +30,9 @@ partial class ItemOperationalAlertEditDialog
         dtValidTo = new DateEdit();
         chkBlocking = new CheckEdit();
         chkActive = new CheckEdit();
+        lblPriority = new LabelControl();
+        cboPriority = new ComboBoxEdit();
+        chkRequiresConfirmation = new CheckEdit();
         btnCancel = new SimpleButton();
         btnSave = new SimpleButton();
         ((System.ComponentModel.ISupportInitialize)cboAlertType.Properties).BeginInit();
@@ -41,6 +44,8 @@ partial class ItemOperationalAlertEditDialog
         ((System.ComponentModel.ISupportInitialize)dtValidTo.Properties.CalendarTimeProperties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)chkBlocking.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)chkActive.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)cboPriority.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)chkRequiresConfirmation.Properties).BeginInit();
         SuspendLayout();
         // 
         // lblAlertType
@@ -179,6 +184,33 @@ partial class ItemOperationalAlertEditDialog
         chkActive.Size = new Size(74, 20);
         chkActive.TabIndex = 11;
         // 
+        // lblPriority
+        // 
+        lblPriority.Appearance.Font = new Font("Segoe UI", 9F);
+        lblPriority.Appearance.Options.UseFont = true;
+        lblPriority.Location = new Point(322, 151);
+        lblPriority.Name = "lblPriority";
+        lblPriority.Size = new Size(51, 15);
+        lblPriority.TabIndex = 12;
+        lblPriority.Text = "Prioridad:";
+        // 
+        // cboPriority
+        // 
+        cboPriority.Location = new Point(384, 148);
+        cboPriority.Name = "cboPriority";
+        cboPriority.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+        cboPriority.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
+        cboPriority.Size = new Size(160, 22);
+        cboPriority.TabIndex = 13;
+        // 
+        // chkRequiresConfirmation
+        // 
+        chkRequiresConfirmation.Location = new Point(126, 176);
+        chkRequiresConfirmation.Name = "chkRequiresConfirmation";
+        chkRequiresConfirmation.Properties.Caption = "Requiere confirmación";
+        chkRequiresConfirmation.Size = new Size(150, 20);
+        chkRequiresConfirmation.TabIndex = 14;
+        // 
         // btnCancel
         // 
         btnCancel.Appearance.BackColor = Color.FromArgb(99, 110, 114);
@@ -188,7 +220,7 @@ partial class ItemOperationalAlertEditDialog
         btnCancel.Appearance.Options.UseFont = true;
         btnCancel.Appearance.Options.UseForeColor = true;
         btnCancel.DialogResult = DialogResult.Cancel;
-        btnCancel.Location = new Point(338, 177);
+        btnCancel.Location = new Point(338, 205);
         btnCancel.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         btnCancel.LookAndFeel.UseDefaultLookAndFeel = false;
         btnCancel.Name = "btnCancel";
@@ -204,7 +236,7 @@ partial class ItemOperationalAlertEditDialog
         btnSave.Appearance.Options.UseBackColor = true;
         btnSave.Appearance.Options.UseFont = true;
         btnSave.Appearance.Options.UseForeColor = true;
-        btnSave.Location = new Point(444, 177);
+        btnSave.Location = new Point(444, 205);
         btnSave.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         btnSave.LookAndFeel.UseDefaultLookAndFeel = false;
         btnSave.Name = "btnSave";
@@ -219,11 +251,14 @@ partial class ItemOperationalAlertEditDialog
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = btnCancel;
-        ClientSize = new Size(568, 223);
+        ClientSize = new Size(568, 251);
         Controls.Add(btnCancel);
         Controls.Add(btnSave);
         Controls.Add(chkActive);
         Controls.Add(chkBlocking);
+        Controls.Add(lblPriority);
+        Controls.Add(cboPriority);
+        Controls.Add(chkRequiresConfirmation);
         Controls.Add(dtValidTo);
         Controls.Add(lblValidTo);
         Controls.Add(dtValidFrom);
@@ -250,6 +285,8 @@ partial class ItemOperationalAlertEditDialog
         ((System.ComponentModel.ISupportInitialize)dtValidTo.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)chkBlocking.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)chkActive.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)cboPriority.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)chkRequiresConfirmation.Properties).EndInit();
         ResumeLayout(false);
         PerformLayout();
     }
@@ -266,6 +303,9 @@ partial class ItemOperationalAlertEditDialog
     private DateEdit dtValidTo;
     private CheckEdit chkBlocking;
     private CheckEdit chkActive;
+    private LabelControl lblPriority;
+    private ComboBoxEdit cboPriority;
+    private CheckEdit chkRequiresConfirmation;
     private SimpleButton btnCancel;
     private SimpleButton btnSave;
 }

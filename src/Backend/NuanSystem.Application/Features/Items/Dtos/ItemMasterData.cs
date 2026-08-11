@@ -301,7 +301,13 @@ public sealed record ItemAttachmentData(
     bool VisibleInSales,
     bool VisibleInPurchases,
     bool VisibleInPortal,
-    string? Status);
+    string? Status,
+    string? DocumentReference = null,
+    bool IsConfidential = false,
+    int DisplayOrder = 0,
+    DateTime? ValidFrom = null,
+    DateTime? ValidTo = null,
+    string? AlternativeText = null);
 
 public sealed record ItemRemarksData(
     string? GeneralRemarks,
@@ -310,7 +316,10 @@ public sealed record ItemRemarksData(
     string? SalesRemarks,
     string? InventoryRemarks,
     string? LogisticsQualityRemarks,
-    IReadOnlyCollection<ItemOperationalAlertData>? OperationalAlerts);
+    IReadOnlyCollection<ItemOperationalAlertData>? OperationalAlerts,
+    string? GeneralVisibility = null,
+    string? GeneralPriority = null,
+    bool GeneralIsActive = true);
 
 public sealed record ItemOperationalAlertData(
     string AlertType,
@@ -319,4 +328,6 @@ public sealed record ItemOperationalAlertData(
     DateTime ValidFrom,
     DateTime? ValidTo,
     bool IsBlocking,
-    bool IsActive);
+    bool IsActive,
+    string? Priority = null,
+    bool RequiresConfirmation = false);

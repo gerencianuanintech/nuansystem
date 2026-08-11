@@ -28,8 +28,10 @@ public sealed partial class ItemOperationalAlertEditDialog : XtraForm
     {
         cboAlertType.Properties.Items.AddRange(new object[] { "Advertencia", "Informativa", "Bloqueante" });
         cboProcess.Properties.Items.AddRange(new object[] { "Compras", "Ventas", "Inventario", "Logistica / Calidad", "SAP" });
+        cboPriority.Properties.Items.AddRange(new object[] { "Baja", "Media", "Alta" });
         cboAlertType.SelectedIndex = 0;
         cboProcess.SelectedIndex = 0;
+        cboPriority.SelectedItem = "Media";
         dtValidFrom.DateTime = DateTime.Today;
         chkActive.Checked = true;
 
@@ -45,6 +47,8 @@ public sealed partial class ItemOperationalAlertEditDialog : XtraForm
         dtValidTo.EditValue = row.ValidTo;
         chkBlocking.Checked = row.IsBlocking;
         chkActive.Checked = row.IsActive;
+        cboPriority.Text = row.Priority;
+        chkRequiresConfirmation.Checked = row.RequiresConfirmation;
     }
 
     private void SaveButtonClick(object? sender, EventArgs e)
@@ -61,7 +65,9 @@ public sealed partial class ItemOperationalAlertEditDialog : XtraForm
             dtValidFrom.DateTime.Date,
             dtValidTo.EditValue is DateTime validTo ? validTo.Date : null,
             chkBlocking.Checked,
-            chkActive.Checked);
+            chkActive.Checked,
+            cboPriority.Text.Trim(),
+            chkRequiresConfirmation.Checked);
 
         DialogResult = DialogResult.OK;
         Close();
@@ -113,7 +119,9 @@ public sealed record ItemOperationalAlertRow(
     DateTime ValidFrom,
     DateTime? ValidTo,
     bool IsBlocking,
-    bool IsActive)
+    bool IsActive,
+    string Priority = "Media",
+    bool RequiresConfirmation = false)
 {
     public static ItemOperationalAlertRow Empty { get; } = new(
         "Advertencia",

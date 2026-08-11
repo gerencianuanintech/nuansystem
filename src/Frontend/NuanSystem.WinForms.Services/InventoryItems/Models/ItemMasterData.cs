@@ -339,6 +339,12 @@ public sealed class ItemAttachmentData
     public bool VisibleInPurchases { get; set; }
     public bool VisibleInPortal { get; set; }
     public string Status { get; set; } = "Activo";
+    public string? DocumentReference { get; set; }
+    public bool IsConfidential { get; set; }
+    public int DisplayOrder { get; set; }
+    public DateTime? ValidFrom { get; set; }
+    public DateTime? ValidTo { get; set; }
+    public string? AlternativeText { get; set; }
 }
 
 public sealed class ItemRemarksData
@@ -350,6 +356,9 @@ public sealed class ItemRemarksData
     public string? InventoryRemarks { get; set; }
     public string? LogisticsQualityRemarks { get; set; }
     public List<ItemOperationalAlertData> OperationalAlerts { get; set; } = [];
+    public string? GeneralVisibility { get; set; }
+    public string? GeneralPriority { get; set; }
+    public bool GeneralIsActive { get; set; } = true;
 }
 
 public sealed class ItemOperationalAlertData
@@ -361,4 +370,6 @@ public sealed class ItemOperationalAlertData
     public DateTime? ValidTo { get; set; }
     public bool IsBlocking { get; set; }
     public bool IsActive { get; set; } = true;
+    public string? Priority { get; set; }
+    public bool RequiresConfirmation { get; set; }
 }

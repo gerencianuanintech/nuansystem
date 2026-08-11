@@ -5,6 +5,7 @@ namespace NuanSystem.WinForms.Forms.InventoryItems;
 
 public sealed partial class ItemAttachmentEditDialog : XtraForm
 {
+    private ItemAttachmentRow sourceRow = ItemAttachmentRow.Empty;
     public ItemAttachmentEditDialog()
         : this(null)
     {
@@ -49,6 +50,7 @@ public sealed partial class ItemAttachmentEditDialog : XtraForm
 
     private void LoadRow(ItemAttachmentRow row)
     {
+        sourceRow = row;
         cboDocumentType.Text = row.DocumentType;
         txtFileName.Text = row.FileName;
         memDescription.Text = row.Description;
@@ -84,7 +86,13 @@ public sealed partial class ItemAttachmentEditDialog : XtraForm
             chkVisibleSales.Checked,
             chkVisiblePurchases.Checked,
             chkVisiblePortal.Checked,
-            cboStatus.Text.Trim());
+            cboStatus.Text.Trim(),
+            sourceRow.DocumentReference,
+            sourceRow.IsConfidential,
+            sourceRow.DisplayOrder,
+            sourceRow.ValidFrom,
+            sourceRow.ValidTo,
+            sourceRow.AlternativeText);
 
         DialogResult = DialogResult.OK;
         Close();
@@ -142,7 +150,13 @@ public sealed record ItemAttachmentRow(
     bool VisibleInSales,
     bool VisibleInPurchases,
     bool VisibleInPortal,
-    string Status)
+    string Status,
+    string DocumentReference = "",
+    bool IsConfidential = false,
+    int DisplayOrder = 0,
+    DateTime? ValidFrom = null,
+    DateTime? ValidTo = null,
+    string AlternativeText = "")
 {
     public static ItemAttachmentRow Empty { get; } = new(
         "Imagen producto",

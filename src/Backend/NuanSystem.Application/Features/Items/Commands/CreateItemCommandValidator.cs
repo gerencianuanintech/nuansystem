@@ -109,6 +109,11 @@ public sealed class CreateItemCommandValidator : AbstractValidator<CreateItemCom
                 .All(item => item.ValidTo is null || item.ValidTo.Value.Date >= item.ValidFrom.Date))
             .WithMessage("La fecha hasta de una alerta operativa no puede ser menor que la fecha desde.");
 
+        RuleFor(command => command.MasterData)
+            .Must(masterData => (masterData?.Attachments?.Files ?? Array.Empty<ItemAttachmentData>())
+                .All(item => item.DisplayOrder >= 0 && (item.ValidTo is null || item.ValidFrom is null || item.ValidTo.Value.Date >= item.ValidFrom.Value.Date)))
+            .WithMessage("La publicación de un anexo debe tener un orden válido y una vigencia coherente.");
+
         RuleFor(command => command.Barcodes ?? Array.Empty<SaveItemBarcodeData>())
             .Must(items => items.Count(item => item.IsMain && item.IsActive) <= 1)
             .WithMessage("Solo puede existir un codigo de barra principal activo.");

@@ -332,7 +332,9 @@ public sealed class CreateItemCommandHandler(
                     Extension = item.Extension?.Trim(),
                     Size = item.Size?.Trim(),
                     User = item.User?.Trim(),
-                    Status = item.Status?.Trim()
+                    Status = item.Status?.Trim(),
+                    DocumentReference = item.DocumentReference?.Trim(),
+                    AlternativeText = item.AlternativeText?.Trim()
                 })
                 .ToArray()
         };
@@ -348,13 +350,16 @@ public sealed class CreateItemCommandHandler(
             SalesRemarks = value.SalesRemarks?.Trim(),
             InventoryRemarks = value.InventoryRemarks?.Trim(),
             LogisticsQualityRemarks = value.LogisticsQualityRemarks?.Trim(),
+            GeneralVisibility = value.GeneralVisibility?.Trim(),
+            GeneralPriority = value.GeneralPriority?.Trim(),
             OperationalAlerts = (value.OperationalAlerts ?? [])
                 .Where(item => !string.IsNullOrWhiteSpace(item.Message))
                 .Select(item => item with
                 {
                     AlertType = item.AlertType.Trim(),
                     Process = item.Process.Trim(),
-                    Message = item.Message.Trim()
+                    Message = item.Message.Trim(),
+                    Priority = item.Priority?.Trim()
                 })
                 .ToArray()
         };

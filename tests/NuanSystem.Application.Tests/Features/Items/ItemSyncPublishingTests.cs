@@ -42,6 +42,26 @@ public sealed class ItemSyncPublishingTests
     }
 
     [Fact]
+    public async Task CreateValidator_RejectsAttachmentWithInvalidValidityRange()
+    {
+        var validator = new CreateItemCommandValidator();
+        var attachment = new ItemAttachmentData(
+            "Imagen producto", "articulo.png", null, "Comercial", "PNG", "1 MB",
+            DateTime.Today, "admin", true, true, false, true, "Activo",
+            ValidFrom: new DateTime(2026, 8, 11),
+            ValidTo: new DateTime(2026, 8, 10));
+        var command = CreateCommand() with
+        {
+            MasterData = new ItemMasterData(Attachments: new ItemAttachmentsData([attachment]))
+        };
+
+        var result = await validator.ValidateAsync(command);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(error => error.ErrorMessage.Contains("vigencia coherente"));
+    }
+
+    [Fact]
     public async Task Create_WritesLocalOutboxInsideTheSameTransaction()
     {
         var item = CreateItem();
