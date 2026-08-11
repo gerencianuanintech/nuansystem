@@ -3,6 +3,7 @@ using System.Data;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraGrid.Views.Grid;
+using NuanSystem.WinForms.Controls.Kpi;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Services.GeneralInventory.Catalogs.Models;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemFamilies.Models;
@@ -20,6 +21,7 @@ public sealed partial class ItemEditForm : BaseEditForm
     private Func<string, Form?>? relatedCatalogFormFactory;
     private Func<CancellationToken, Task<ItemLookups>>? reloadLookupsAsync;
     private bool dirtyTrackingEnabled;
+    private TraceabilityManagement traceabilityManagement = TraceabilityManagement.Batch;
 
     private const string UnitMeasuresFormKey = "inventory-unit-measures";
     private const string WarehousesFormKey = "inventory-warehouses";
@@ -34,6 +36,15 @@ public sealed partial class ItemEditForm : BaseEditForm
     {
         Request = EmptyRequest();
         InitializeComponent();
+        SetTraceabilityManagement(TraceabilityManagement.Batch);
+        ConfigureUnitsAndCodesTab();
+        ConfigureInventoryTab();
+        ConfigureTraceabilityTab();
+        ConfigureCommercialTab();
+        ConfigureFinanceTab();
+        ConfigureIntegrationTab();
+        ConfigureDocumentsTab();
+        InitializeOperationalKpiIcons();
         ConfigureRuntimeBehavior();
     }
 
@@ -73,6 +84,8 @@ public sealed partial class ItemEditForm : BaseEditForm
         }
 
         UpdateIntegrationWarning();
+        UpdateUnitsPresentationSummary();
+        UpdateInventoryWarehouseSummary();
         EnableDirtyTracking();
     }
 
@@ -89,12 +102,10 @@ public sealed partial class ItemEditForm : BaseEditForm
         EnsureWarehouseColumns();
         EnsureOperationalAlertColumns();
         EnsureAttachmentColumns();
+        LoadAttachmentEditor(gvAttachments.GetFocusedDataRow());
         EnsureSapFieldColumns();
         grdSapFieldMapping.DataSource = sapFieldsTable;
 
-        btnSave.DialogResult = DialogResult.None;
-        btnCancel.DialogResult = DialogResult.Cancel;
-        btnSave.Click += (_, _) => Save();
         btnAddItemPresentation.Click -= AddItemPresentationClick;
         btnAddItemPresentation.Click += AddItemPresentationClick;
         btnUpdateItemPresentation.Click -= UpdateItemPresentationClick;
@@ -147,6 +158,7 @@ public sealed partial class ItemEditForm : BaseEditForm
         btnRemoveSapField.Click += RemoveSapFieldClick;
         btnClearSapFields.Click -= ClearSapFieldsClick;
         btnClearSapFields.Click += ClearSapFieldsClick;
+        UpdateOperationalKpis();
     }
 
     private void EnableDirtyTracking()
@@ -202,17 +214,92 @@ public sealed partial class ItemEditForm : BaseEditForm
 
     private void EditorEditValueChanged(object? sender, EventArgs e)
     {
+        UpdateOperationalKpis();
         MarkAsDirty();
     }
 
     private void EditableTableChanged(object? sender, DataRowChangeEventArgs e)
     {
+        if (ReferenceEquals(sender, itemPresentationsTable))
+        {
+            UpdateUnitsPresentationSummary();
+        }
+
+        if (ReferenceEquals(sender, warehouseStockTable))
+        {
+            UpdateInventoryWarehouseSummary();
+            UpdateStockKpi();
+        }
+
         MarkAsDirty();
     }
 
     private void EditableTableNewRow(object? sender, DataTableNewRowEventArgs e)
     {
         MarkAsDirty();
+    }
+
+    private void UpdateStockKpi()
+    {
+        var warehouseRows = warehouseStockTable.Rows
+            .Cast<DataRow>()
+            .Where(row => row.RowState != DataRowState.Deleted)
+            .ToArray();
+        var availableStock = warehouseRows.Sum(row => ToDecimal(row["Disponible"]));
+        var committedStock = warehouseRows.Sum(row => ToDecimal(row["Comprometido"]));
+        var orderedStock = warehouseRows.Sum(row => ToDecimal(row["Pedido"]));
+        var inventoryUnitId = GetLookupInt(lueInventoryUnit) ?? GetLookupInt(lueBaseUnit);
+        var inventoryUnit = ResolveUnitCode(inventoryUnitId) ?? "UND";
+
+        kpiStockAvailable.ValueText = availableStock.ToString("N2");
+        kpiStockAvailable.UnitText = inventoryUnit;
+        kpiOnOrder.ValueText = orderedStock.ToString("N2");
+        kpiOnOrder.UnitText = inventoryUnit;
+        kpiCommitted.ValueText = committedStock.ToString("N2");
+        kpiCommitted.UnitText = inventoryUnit;
+        lblHeaderStockValue.Text = availableStock.ToString("N2");
+
+        SetKpiAccessibility(kpiStockAvailable);
+        SetKpiAccessibility(kpiOnOrder);
+        SetKpiAccessibility(kpiCommitted);
+    }
+
+    private void UpdateOperationalKpis()
+    {
+        UpdateStockKpi();
+
+        var purchaseCost = spnLastCost.Value > 0 ? spnLastCost.Value : spnAverageCost.Value;
+        var salesPrice = spnBaseSalesPrice.Value > 0 ? spnBaseSalesPrice.Value : spnAnalysisBasePrice.Value;
+        var marginPercent = salesPrice == 0
+            ? 0
+            : ((salesPrice - purchaseCost) / salesPrice) * 100;
+
+        kpiMargin.ValueText = marginPercent.ToString("N2");
+        kpiPurchaseCost.ValueText = purchaseCost.ToString("N2");
+        kpiAverageCost.ValueText = spnAverageCost.Value.ToString("N2");
+        kpiSalesPrice.ValueText = salesPrice.ToString("N2");
+        lblHeaderAverageCostValue.Text = spnAverageCost.Value.ToString("N2");
+        lblHeaderSalesPriceValue.Text = salesPrice.ToString("N2");
+
+        SetKpiAccessibility(kpiOnOrder);
+        SetKpiAccessibility(kpiCommitted);
+        SetKpiAccessibility(kpiPurchases);
+        SetKpiAccessibility(kpiSales);
+        SetKpiAccessibility(kpiSapStatus);
+        SetKpiAccessibility(kpiMargin);
+        SetKpiAccessibility(kpiPurchaseCost);
+        SetKpiAccessibility(kpiAverageCost);
+        SetKpiAccessibility(kpiSalesPrice);
+        UpdateCommercialPresentation();
+        UpdateFinancePresentation();
+    }
+
+    private static void SetKpiAccessibility(NuanOperationalKpiCardControl card)
+    {
+        card.AccessibleName = card.Title;
+        card.AccessibleDescription = string.IsNullOrWhiteSpace(card.UnitText)
+            ? card.ValueText
+            : $"{card.ValueText} {card.UnitText}";
     }
 
     private void MarkAsDirty()
@@ -223,10 +310,84 @@ public sealed partial class ItemEditForm : BaseEditForm
         }
     }
 
+    private bool IsBatchManaged => traceabilityManagement == TraceabilityManagement.Batch;
+
+    private bool IsSerialManaged => traceabilityManagement == TraceabilityManagement.Serial;
+
+    private void TraceabilityNoneClick(object? sender, EventArgs e)
+    {
+        SetTraceabilityManagement(TraceabilityManagement.None);
+        MarkAsDirty();
+    }
+
+    private void TraceabilityBatchClick(object? sender, EventArgs e)
+    {
+        SetTraceabilityManagement(TraceabilityManagement.Batch);
+        MarkAsDirty();
+    }
+
+    private void TraceabilitySerialClick(object? sender, EventArgs e)
+    {
+        SetTraceabilityManagement(TraceabilityManagement.Serial);
+        MarkAsDirty();
+    }
+
+    private void SetTraceabilityManagement(TraceabilityManagement value)
+    {
+        traceabilityManagement = value;
+        ApplyTraceabilityButtonAppearance(btnTraceabilityNone, value == TraceabilityManagement.None);
+        ApplyTraceabilityButtonAppearance(btnTraceabilityBatch, value == TraceabilityManagement.Batch);
+        ApplyTraceabilityButtonAppearance(btnTraceabilitySerial, value == TraceabilityManagement.Serial);
+        UpdateTraceabilityInheritedSummary();
+
+        btnTraceabilityNone.AccessibleDescription = value == TraceabilityManagement.None
+            ? "Seleccionado"
+            : "No seleccionado";
+        btnTraceabilityBatch.AccessibleDescription = value == TraceabilityManagement.Batch
+            ? "Seleccionado"
+            : "No seleccionado";
+        btnTraceabilitySerial.AccessibleDescription = value == TraceabilityManagement.Serial
+            ? "Seleccionado"
+            : "No seleccionado";
+    }
+
+    private static void ApplyTraceabilityButtonAppearance(SimpleButton button, bool selected)
+    {
+        button.Appearance.BackColor = selected ? BrandResources.Primary : Color.White;
+        button.Appearance.BorderColor = selected ? BrandResources.Primary : Color.FromArgb(203, 213, 225);
+        button.Appearance.ForeColor = selected ? Color.White : BrandResources.Text;
+    }
+
+    private static TraceabilityManagement ParseTraceabilityManagement(string? managedBy)
+    {
+        if (string.Equals(managedBy, "Serial", StringComparison.OrdinalIgnoreCase))
+        {
+            return TraceabilityManagement.Serial;
+        }
+
+        return string.Equals(managedBy, "Batch", StringComparison.OrdinalIgnoreCase)
+            ? TraceabilityManagement.Batch
+            : TraceabilityManagement.None;
+    }
+
+    private static TraceabilityManagement ResolveTraceabilityManagement(bool batchManaged, bool serialManaged)
+    {
+        if (serialManaged)
+        {
+            return TraceabilityManagement.Serial;
+        }
+
+        return batchManaged
+            ? TraceabilityManagement.Batch
+            : TraceabilityManagement.None;
+    }
+
     private void UpdateIntegrationWarning()
     {
         var hasWarning = !string.IsNullOrWhiteSpace(txtSapLastError.Text);
-        tabSap.Text = hasWarning ? "Integración ⚠" : "Integración";
+        tabSap.Text = hasWarning
+            ? "Integración ⚠"
+            : "Integración";
         tabSap.Appearance.Header.ForeColor = hasWarning
             ? BrandResources.WarningText
             : Color.Empty;
@@ -352,6 +513,19 @@ public sealed partial class ItemEditForm : BaseEditForm
             new LookupOption("Allowed", "Permitido")
         });
 
+        BindFixedLookup(lueIssueMethod, new[]
+        {
+            new LookupOption("FEFO - Primero en vencer", "FEFO - Primero en vencer"),
+            new LookupOption("FIFO - Primero en entrar", "FIFO - Primero en entrar")
+        });
+
+        BindFixedLookup(lueNumberingMethod, new[]
+        {
+            new LookupOption("Automático por recepción", "Automático por recepción"),
+            new LookupOption("Automático por fecha", "Automático por fecha"),
+            new LookupOption("Manual", "Manual")
+        });
+
         BindFixedLookup(lueOrigin, new[]
         {
             new LookupOption("Local", "Local"),
@@ -374,6 +548,7 @@ public sealed partial class ItemEditForm : BaseEditForm
         BindCatalogLookup(lueLine, source.ItemLines);
         BindCatalogLookup(lueSubGroup, source.ItemSubgroups);
         BindCatalogLookup(lueReplenishmentMethod, source.ReplenishmentMethods);
+        BindCatalogLookup(lueSalesChannel, source.SalesChannels);
         BindLookup(lueBaseUnit, source.UnitOfMeasures, "DisplayText", "Id");
         BindLookup(lueInventoryUnit, source.UnitOfMeasures, "DisplayText", "Id");
         BindLookup(luePurchaseUnit, source.UnitOfMeasures, "DisplayText", "Id");
@@ -526,6 +701,7 @@ public sealed partial class ItemEditForm : BaseEditForm
         }
 
         SetActiveBadge(true);
+        UpdateOperationalKpis();
         BuildRequest();
     }
 
@@ -550,8 +726,7 @@ public sealed partial class ItemEditForm : BaseEditForm
         tglSalesActive.IsOn = item.IsSalesItem;
         tglAffectsInventory.IsOn = item.IsInventoryItem;
         tglGeneralAllowDiscount.IsOn = item.AllowDiscount;
-        tglGeneralBatchManaged.IsOn = item.ManagedBy.Equals("Batch", StringComparison.OrdinalIgnoreCase);
-        tglGeneralSerialManaged.IsOn = item.ManagedBy.Equals("Serial", StringComparison.OrdinalIgnoreCase);
+        SetTraceabilityManagement(ParseTraceabilityManagement(item.ManagedBy));
 
         spnBaseSalesPrice.Value = item.BaseSalesPrice;
         spnAnalysisBasePrice.Value = item.BaseSalesPrice;
@@ -1226,6 +1401,7 @@ public sealed partial class ItemEditForm : BaseEditForm
 
     private ItemEditState BuildEditState()
     {
+        CommitAttachmentEditor();
         var inventoryUnitId = GetLookupInt(lueInventoryUnit) ?? GetLookupInt(lueBaseUnit);
         var purchaseUnitId = GetLookupInt(luePurchaseUnit) ?? inventoryUnitId;
         var salesUnitId = GetLookupInt(lueSalesUnit) ?? inventoryUnitId;
@@ -1246,7 +1422,7 @@ public sealed partial class ItemEditForm : BaseEditForm
                 AverageCost = spnAverageCost.Value,
                 SalesPrice = spnBaseSalesPrice.Value,
                 LastPurchaseDate = ToDate(DateTime.Today),
-                SapStatus = lblKpiSapValue.Text.Trim()
+                SapStatus = kpiSapStatus.ValueText.Trim()
             },
             General = new ItemGeneralState
             {
@@ -1264,8 +1440,8 @@ public sealed partial class ItemEditForm : BaseEditForm
                 ManageInventory = tglAffectsInventory.IsOn,
                 IsService = string.Equals(GetLookupString(lueItemType), "Service", StringComparison.OrdinalIgnoreCase),
                 IsKit = string.Equals(GetLookupString(lueProductType), "Kit", StringComparison.OrdinalIgnoreCase),
-                BatchManaged = tglGeneralBatchManaged.IsOn,
-                SerialManaged = tglGeneralSerialManaged.IsOn,
+                BatchManaged = IsBatchManaged,
+                SerialManaged = IsSerialManaged,
                 Perishable = tglGeneralPerishable.IsOn,
                 ExpirationManaged = tglGeneralExpirationManaged.IsOn,
                 RequiresScale = tglGeneralRequiresScale.IsOn,
@@ -1305,8 +1481,8 @@ public sealed partial class ItemEditForm : BaseEditForm
                 ReplenishmentMethod = GetLookupString(lueReplenishmentMethod),
                 AbcClassification = GetLookupString(lueAbcClassification),
                 DefaultLocationCode = NullIfWhiteSpace(slueDefaultBinLocation.Text),
-                BatchRequired = tglGeneralBatchManaged.IsOn,
-                SerialRequired = tglGeneralSerialManaged.IsOn,
+                BatchRequired = IsBatchManaged,
+                SerialRequired = IsSerialManaged,
                 AllowTransfers = !tglBlockedForMovements.IsOn,
                 Storable = tglAffectsInventory.IsOn,
                 OperationNote = NullIfWhiteSpace(memInventoryOperationNote.Text)
@@ -1314,11 +1490,12 @@ public sealed partial class ItemEditForm : BaseEditForm
             Purchasing = new ItemPurchasingState
             {
                 PurchaseEnabled = tglPurchaseActive.IsOn,
-                MainSupplierCode = NullIfWhiteSpace(slueSupplierSku.Text),
+                MainSupplierCode = NullIfWhiteSpace(slueMainPurchaseSupplier.Text) ?? NullIfWhiteSpace(slueSupplierSku.Text),
                 PurchaseUnitOfMeasureId = purchaseUnitId,
-                PurchaseMultiple = GetMainPresentationFactor(),
-                MinimumOrderQuantity = spnSuggestedPurchaseQty.Value,
-                LeadTimeDays = decimal.ToInt32(spnLeadTimeDays.Value),
+                PurchaseMultiple = spnPurchaseMultiple.Value,
+                MinimumOrderQuantity = spnPurchaseMinimumQuantity.Value,
+                LeadTimeDays = decimal.ToInt32(spnPurchaseDeliveryDays.Value),
+                PreferredPurchaseCurrency = GetLookupString(luePreferredPurchaseCurrency),
                 AllowBackorder = tglSupplierBackorderAllowed.IsOn,
                 RequiresPurchaseApproval = tglPurchaseApprovalRequired.IsOn,
                 LastPurchaseCost = spnLastCost.Value,
@@ -1345,8 +1522,9 @@ public sealed partial class ItemEditForm : BaseEditForm
                 TaxableProduct = tglTaxableGoods.IsOn,
                 AffectsPromotions = tglAffectsPromotions.IsOn,
                 AllowsReturns = true,
-                BlockedForEcommerce = tglBlockedEcommerce.IsOn,
-                CommercialPolicy = NullIfWhiteSpace(memSalesNotes.Text)
+                BlockedForEcommerce = !tglSalesEcommerce.IsOn,
+                PreferredChannel = GetLookupString(lueSalesChannel),
+                CommercialPolicy = NullIfWhiteSpace(memSalesCommercialObservation.Text) ?? NullIfWhiteSpace(memSalesNotes.Text)
             },
             Costs = new ItemCostsState
             {
@@ -1359,10 +1537,10 @@ public sealed partial class ItemEditForm : BaseEditForm
                 CostingMethod = GetLookupString(lueValuationMethod) ?? "MovingAverage",
                 BasePrice = spnAnalysisBasePrice.Value,
                 SuggestedPrice = spnSuggestedPrice.Value,
-                GrossMargin = ToDecimal(lblGrossMarginValue.Text),
-                GrossMarginPercent = ToDecimal(lblGrossMarginPercentValue.Text.Replace("%", string.Empty)),
+                GrossMargin = ToDecimal(kpiFinanceGrossMargin.ValueText),
+                GrossMarginPercent = ToDecimal(kpiFinanceGrossMarginPercent.ValueText),
                 MinimumAllowedMarginPercent = spnMinimumMarginPercent.Value,
-                TwelveMonthProfitabilityPercent = ToDecimal(lblProfitability12mValue.Text.Replace("%", string.Empty)),
+                TwelveMonthProfitabilityPercent = ToDecimal(kpiFinanceProfitability.ValueText),
                 PriceUpdatedAt = ToDate(dtPriceUpdatedAt.EditValue)
             },
             Accounting = new ItemAccountingState
@@ -1405,8 +1583,8 @@ public sealed partial class ItemEditForm : BaseEditForm
             },
             Traceability = new ItemTraceabilityState
             {
-                BatchControl = tglGeneralBatchManaged.IsOn,
-                SerialControl = tglGeneralSerialManaged.IsOn,
+                BatchControl = IsBatchManaged,
+                SerialControl = IsSerialManaged,
                 RequiresExpiration = tglRequiresExpiration.IsOn,
                 ExpirationRequired = tglExpirationMandatory.IsOn,
                 ExpirationAlertDays = decimal.ToInt32(spnExpirationAlertDays.Value),
@@ -1416,14 +1594,15 @@ public sealed partial class ItemEditForm : BaseEditForm
                 SerialLength = decimal.ToInt32(spnSerialLength.Value),
                 FefoFifoMethod = GetLookupString(lueIssueMethod),
                 AllowsMultipleLotsPerDocument = tglAllowMultipleBatches.IsOn,
+                AllowsReceiptWithoutLot = tglAllowReceiptWithoutLot.IsOn,
                 AllowsExpiredLotSale = tglAllowExpiredBatchSale.IsOn,
-                RequiresLotInTransfers = tglGeneralBatchManaged.IsOn,
-                RequiresSerialInDispatch = tglGeneralSerialManaged.IsOn,
+                RequiresLotInTransfers = IsBatchManaged,
+                RequiresSerialInDispatch = IsSerialManaged,
                 OperationNote = NullIfWhiteSpace(memLotOperationalNotes.Text)
             },
             Sap = new ItemSapState
             {
-                IsSynchronized = string.Equals(lblKpiSapValue.Text, "Sincronizado", StringComparison.OrdinalIgnoreCase),
+                IsSynchronized = string.Equals(kpiSapStatus.ValueText, "Sincronizado", StringComparison.OrdinalIgnoreCase),
                 SapItemCode = txtItemCode.Text.Trim(),
                 LastSynchronizationAt = ToDate(txtSapLastSync.Text),
                 SynchronizationStatus = GetLookupString(lueSapSyncStatus),
@@ -1431,8 +1610,8 @@ public sealed partial class ItemEditForm : BaseEditForm
                 LastError = NullIfWhiteSpace(txtSapLastError.Text),
                 SynchronizeItem = string.Equals(GetLookupString(lueSapEnabled), "Si", StringComparison.OrdinalIgnoreCase),
                 SapGroup = GetLookupString(lueSapMode),
-                ManagesBatchInSap = tglGeneralBatchManaged.IsOn,
-                ManagesSerialInSap = tglGeneralSerialManaged.IsOn
+                ManagesBatchInSap = IsBatchManaged,
+                ManagesSerialInSap = IsSerialManaged
             },
             Remarks = new ItemRemarksState
             {
@@ -1441,7 +1620,10 @@ public sealed partial class ItemEditForm : BaseEditForm
                 PurchasingRemarks = NullIfWhiteSpace(memPurchaseNotes.Text),
                 SalesRemarks = NullIfWhiteSpace(memSalesNotes.Text),
                 InventoryRemarks = NullIfWhiteSpace(memInventoryNotes.Text),
-                LogisticsQualityRemarks = NullIfWhiteSpace(memLogisticsQualityNotes.Text)
+                LogisticsQualityRemarks = NullIfWhiteSpace(memLogisticsQualityNotes.Text),
+                GeneralVisibility = GetLookupString(lueNoteVisibility),
+                GeneralPriority = GetLookupString(lueNotePriority),
+                GeneralIsActive = chkGeneralNoteActive.IsOn
             }
         };
 
@@ -1754,7 +1936,13 @@ public sealed partial class ItemEditForm : BaseEditForm
                     VisibleInSales = x.VisibleInSales,
                     VisibleInPurchases = x.VisibleInPurchases,
                     VisibleInPortal = x.VisibleInPortal,
-                    Status = x.Status
+                    Status = x.Status,
+                    DocumentReference = x.DocumentReference,
+                    IsConfidential = x.IsConfidential,
+                    DisplayOrder = x.DisplayOrder,
+                    ValidFrom = x.ValidFrom,
+                    ValidTo = x.ValidTo,
+                    AlternativeText = x.AlternativeText
                 }).ToList()
             },
             Remarks = new ItemRemarksData
@@ -1765,6 +1953,9 @@ public sealed partial class ItemEditForm : BaseEditForm
                 SalesRemarks = state.Remarks.SalesRemarks,
                 InventoryRemarks = state.Remarks.InventoryRemarks,
                 LogisticsQualityRemarks = state.Remarks.LogisticsQualityRemarks,
+                GeneralVisibility = state.Remarks.GeneralVisibility,
+                GeneralPriority = state.Remarks.GeneralPriority,
+                GeneralIsActive = state.Remarks.GeneralIsActive,
                 OperationalAlerts = state.Remarks.OperationalAlerts.Select(x => new ItemOperationalAlertData
                 {
                     AlertType = x.AlertType,
@@ -1773,7 +1964,9 @@ public sealed partial class ItemEditForm : BaseEditForm
                     ValidFrom = x.ValidFrom,
                     ValidTo = x.ValidTo,
                     IsBlocking = x.IsBlocking,
-                    IsActive = x.IsActive
+                    IsActive = x.IsActive,
+                    Priority = x.Priority,
+                    RequiresConfirmation = x.RequiresConfirmation
                 }).ToList()
             }
         };
@@ -1798,6 +1991,7 @@ public sealed partial class ItemEditForm : BaseEditForm
         ApplySapData(masterData.Sap);
         ApplyAttachmentsData(masterData.Attachments);
         ApplyRemarksData(masterData.Remarks);
+        UpdateOperationalKpis();
     }
 
     private void ApplyGeneralData(ItemGeneralData? data)
@@ -1819,8 +2013,7 @@ public sealed partial class ItemEditForm : BaseEditForm
         tglSalesActive.IsOn = data.SalesActive;
         tglPurchaseActive.IsOn = data.PurchaseActive;
         tglAffectsInventory.IsOn = data.AffectsInventory;
-        tglGeneralBatchManaged.IsOn = data.BatchManaged;
-        tglGeneralSerialManaged.IsOn = data.SerialManaged;
+        SetTraceabilityManagement(ResolveTraceabilityManagement(data.BatchManaged, data.SerialManaged));
         tglGeneralPerishable.IsOn = data.Perishable;
         tglGeneralExpirationManaged.IsOn = data.ExpirationManaged;
         tglGeneralRequiresScale.IsOn = data.RequiresScale;
@@ -1896,8 +2089,10 @@ public sealed partial class ItemEditForm : BaseEditForm
         SetLookupValue(lueReplenishmentMethod, data.ReplenishmentMethod);
         SetLookupValue(lueAbcClassification, data.AbcClassification);
         slueDefaultBinLocation.Text = data.DefaultLocationCode ?? string.Empty;
-        tglGeneralBatchManaged.IsOn = data.BatchRequired || tglGeneralBatchManaged.IsOn;
-        tglGeneralSerialManaged.IsOn = data.SerialRequired || tglGeneralSerialManaged.IsOn;
+        if (data.BatchRequired || data.SerialRequired)
+        {
+            SetTraceabilityManagement(ResolveTraceabilityManagement(data.BatchRequired, data.SerialRequired));
+        }
         tglBlockedForMovements.IsOn = !data.AllowTransfers;
         memInventoryOperationNote.Text = data.OperationNote ?? string.Empty;
 
@@ -1922,6 +2117,8 @@ public sealed partial class ItemEditForm : BaseEditForm
                 row.IsDefaultWarehouse,
                 row.IsLocked);
         }
+
+        UpdateStockKpi();
     }
 
     private void ApplyPurchasingData(ItemPurchasingData? data)
@@ -1933,9 +2130,14 @@ public sealed partial class ItemEditForm : BaseEditForm
 
         tglPurchaseActive.IsOn = data.PurchaseEnabled;
         slueSupplierSku.Text = data.MainSupplierCode ?? slueSupplierSku.Text;
+        slueMainPurchaseSupplier.Text = data.MainSupplierCode ?? string.Empty;
         luePurchaseUnit.EditValue = data.PurchaseUnitOfMeasureId ?? luePurchaseUnit.EditValue;
         spnSuggestedPurchaseQty.Value = data.MinimumOrderQuantity;
         spnLeadTimeDays.Value = data.LeadTimeDays;
+        spnPurchaseMinimumQuantity.Value = data.MinimumOrderQuantity;
+        spnPurchaseMultiple.Value = data.PurchaseMultiple;
+        spnPurchaseDeliveryDays.Value = data.LeadTimeDays;
+        SetLookupValue(luePreferredPurchaseCurrency, data.PreferredPurchaseCurrency);
         tglSupplierBackorderAllowed.IsOn = data.AllowBackorder;
         tglPurchaseApprovalRequired.IsOn = data.RequiresPurchaseApproval;
         spnLastCost.Value = data.LastPurchaseCost;
@@ -1968,6 +2170,9 @@ public sealed partial class ItemEditForm : BaseEditForm
         tglTaxableGoods.IsOn = data.TaxableProduct;
         tglAffectsPromotions.IsOn = data.AffectsPromotions;
         tglBlockedEcommerce.IsOn = data.BlockedForEcommerce;
+        tglSalesEcommerce.IsOn = !data.BlockedForEcommerce;
+        SetLookupValue(lueSalesChannel, data.PreferredChannel);
+        memSalesCommercialObservation.Text = data.CommercialPolicy ?? string.Empty;
         memSalesNotes.Text = data.CommercialPolicy ?? string.Empty;
     }
 
@@ -1988,6 +2193,9 @@ public sealed partial class ItemEditForm : BaseEditForm
         spnSuggestedPrice.Value = data.SuggestedPrice;
         spnMinimumMarginPercent.Value = data.MinimumAllowedMarginPercent;
         dtPriceUpdatedAt.EditValue = data.PriceUpdatedAt;
+        kpiFinanceGrossMargin.ValueText = data.GrossMargin.ToString("N2");
+        kpiFinanceGrossMarginPercent.ValueText = data.GrossMarginPercent.ToString("N2");
+        kpiFinanceProfitability.ValueText = data.TwelveMonthProfitabilityPercent.ToString("N2");
     }
 
     private void ApplyAccountingData(ItemAccountingData? data)
@@ -2042,8 +2250,7 @@ public sealed partial class ItemEditForm : BaseEditForm
             return;
         }
 
-        tglGeneralBatchManaged.IsOn = data.BatchControl;
-        tglGeneralSerialManaged.IsOn = data.SerialControl;
+        SetTraceabilityManagement(ResolveTraceabilityManagement(data.BatchControl, data.SerialControl));
         tglRequiresExpiration.IsOn = data.RequiresExpiration;
         tglExpirationMandatory.IsOn = data.ExpirationRequired;
         spnExpirationAlertDays.Value = data.ExpirationAlertDays;
@@ -2053,6 +2260,7 @@ public sealed partial class ItemEditForm : BaseEditForm
         spnSerialLength.Value = data.SerialLength;
         SetLookupValue(lueIssueMethod, data.FefoFifoMethod);
         tglAllowMultipleBatches.IsOn = data.AllowsMultipleLotsPerDocument;
+        tglAllowReceiptWithoutLot.IsOn = data.AllowsReceiptWithoutLot;
         tglAllowExpiredBatchSale.IsOn = data.AllowsExpiredLotSale;
         memLotOperationalNotes.Text = data.OperationNote ?? string.Empty;
     }
@@ -2106,7 +2314,13 @@ public sealed partial class ItemEditForm : BaseEditForm
                 row.VisibleInPurchases,
                 row.Status,
                 row.Category ?? string.Empty,
-                row.VisibleInPortal);
+                row.VisibleInPortal,
+                row.DocumentReference ?? string.Empty,
+                row.IsConfidential,
+                row.DisplayOrder,
+                row.ValidFrom.HasValue ? row.ValidFrom.Value : DBNull.Value,
+                row.ValidTo.HasValue ? row.ValidTo.Value : DBNull.Value,
+                row.AlternativeText ?? string.Empty);
         }
     }
 
@@ -2123,6 +2337,9 @@ public sealed partial class ItemEditForm : BaseEditForm
         memSalesNotes.Text = data.SalesRemarks ?? string.Empty;
         memInventoryNotes.Text = data.InventoryRemarks ?? string.Empty;
         memLogisticsQualityNotes.Text = data.LogisticsQualityRemarks ?? string.Empty;
+        lueNoteVisibility.EditValue = data.GeneralVisibility ?? "Internal";
+        lueNotePriority.EditValue = data.GeneralPriority ?? "Media";
+        chkGeneralNoteActive.IsOn = data.GeneralIsActive;
 
         operationalAlertsTable.Clear();
         foreach (var row in data.OperationalAlerts)
@@ -2134,7 +2351,9 @@ public sealed partial class ItemEditForm : BaseEditForm
                 row.ValidFrom,
                 row.ValidTo.HasValue ? row.ValidTo.Value : DBNull.Value,
                 row.IsBlocking,
-                row.IsActive);
+                row.IsActive,
+                row.Priority ?? "Media",
+                row.RequiresConfirmation);
         }
     }
 
@@ -2447,7 +2666,9 @@ public sealed partial class ItemEditForm : BaseEditForm
             row.ValidFrom,
             row.ValidTo.HasValue ? row.ValidTo.Value : DBNull.Value,
             row.IsBlocking,
-            row.IsActive);
+            row.IsActive,
+            row.Priority,
+            row.RequiresConfirmation);
     }
 
     private void ApplyOperationalAlertRow(DataRow dataRow, ItemOperationalAlertRow row)
@@ -2459,6 +2680,8 @@ public sealed partial class ItemEditForm : BaseEditForm
         dataRow["Hasta"] = row.ValidTo.HasValue ? row.ValidTo.Value : DBNull.Value;
         dataRow["Bloqueante"] = row.IsBlocking;
         dataRow["Activa"] = row.IsActive;
+        dataRow["Prioridad"] = row.Priority;
+        dataRow["Confirmacion"] = row.RequiresConfirmation;
     }
 
     private ItemOperationalAlertRow CreateOperationalAlertRow(DataRow dataRow)
@@ -2470,7 +2693,9 @@ public sealed partial class ItemEditForm : BaseEditForm
             ToDate(dataRow["Desde"]) ?? DateTime.Today,
             ToDate(dataRow["Hasta"]),
             ToBool(dataRow["Bloqueante"]),
-            ToBool(dataRow["Activa"], true));
+            ToBool(dataRow["Activa"], true),
+            Convert.ToString(dataRow["Prioridad"]) ?? "Media",
+            ToBool(dataRow["Confirmacion"]));
     }
 
     private void AddAttachmentRow(ItemAttachmentRow row)
@@ -2488,7 +2713,13 @@ public sealed partial class ItemEditForm : BaseEditForm
             row.VisibleInPurchases,
             row.Status,
             row.Category,
-            row.VisibleInPortal);
+            row.VisibleInPortal,
+            row.DocumentReference,
+            row.IsConfidential,
+            row.DisplayOrder,
+            row.ValidFrom.HasValue ? row.ValidFrom.Value : DBNull.Value,
+            row.ValidTo.HasValue ? row.ValidTo.Value : DBNull.Value,
+            row.AlternativeText);
     }
 
     private void ApplyAttachmentRow(DataRow dataRow, ItemAttachmentRow row)
@@ -2506,6 +2737,12 @@ public sealed partial class ItemEditForm : BaseEditForm
         dataRow["Estado"] = row.Status;
         dataRow["Categoria"] = row.Category;
         dataRow["VisiblePortal"] = row.VisibleInPortal;
+        dataRow["ReferenciaDocumental"] = row.DocumentReference;
+        dataRow["Confidencial"] = row.IsConfidential;
+        dataRow["OrdenVisual"] = row.DisplayOrder;
+        dataRow["VigenciaDesde"] = row.ValidFrom.HasValue ? row.ValidFrom.Value : DBNull.Value;
+        dataRow["VigenciaHasta"] = row.ValidTo.HasValue ? row.ValidTo.Value : DBNull.Value;
+        dataRow["TextoAlternativo"] = row.AlternativeText;
     }
 
     private ItemAttachmentRow CreateAttachmentRow(DataRow dataRow)
@@ -2523,7 +2760,13 @@ public sealed partial class ItemEditForm : BaseEditForm
             ToBool(dataRow["VisibleVentas"]),
             ToBool(dataRow["VisibleCompras"]),
             ToBool(dataRow["VisiblePortal"]),
-            Convert.ToString(dataRow["Estado"]) ?? "Activo");
+            Convert.ToString(dataRow["Estado"]) ?? "Activo",
+            Convert.ToString(dataRow["ReferenciaDocumental"]) ?? string.Empty,
+            ToBool(dataRow["Confidencial"]),
+            ToInt(dataRow["OrdenVisual"]),
+            ToDate(dataRow["VigenciaDesde"]),
+            ToDate(dataRow["VigenciaHasta"]),
+            Convert.ToString(dataRow["TextoAlternativo"]) ?? string.Empty);
     }
 
     private void ClearMainAttachment(DataRow? exceptRow = null)
@@ -2629,12 +2872,19 @@ public sealed partial class ItemEditForm : BaseEditForm
 
     private string ResolveManagedBy()
     {
-        if (tglGeneralSerialManaged.IsOn)
+        return traceabilityManagement switch
         {
-            return "Serial";
-        }
+            TraceabilityManagement.Batch => "Batch",
+            TraceabilityManagement.Serial => "Serial",
+            _ => "None"
+        };
+    }
 
-        return tglGeneralBatchManaged.IsOn ? "Batch" : "None";
+    private enum TraceabilityManagement
+    {
+        None,
+        Batch,
+        Serial
     }
 
     private static int? GetLookupInt(LookUpEdit lookup)
@@ -2780,7 +3030,13 @@ public sealed partial class ItemEditForm : BaseEditForm
                 VisibleInSales = ToBool(row["VisibleVentas"]),
                 VisibleInPurchases = ToBool(row["VisibleCompras"]),
                 VisibleInPortal = ToBool(row["VisiblePortal"]),
-                Status = Convert.ToString(row["Estado"]) ?? "Activo"
+                Status = Convert.ToString(row["Estado"]) ?? "Activo",
+                DocumentReference = NullIfWhiteSpace(Convert.ToString(row["ReferenciaDocumental"])),
+                IsConfidential = ToBool(row["Confidencial"]),
+                DisplayOrder = ToInt(row["OrdenVisual"]),
+                ValidFrom = ToDate(row["VigenciaDesde"]),
+                ValidTo = ToDate(row["VigenciaHasta"]),
+                AlternativeText = NullIfWhiteSpace(Convert.ToString(row["TextoAlternativo"]))
             });
         }
     }
@@ -2812,7 +3068,9 @@ public sealed partial class ItemEditForm : BaseEditForm
                 ValidFrom = ToDate(row["Desde"]) ?? DateTime.Today,
                 ValidTo = ToDate(row["Hasta"]),
                 IsBlocking = ToBool(row["Bloqueante"]),
-                IsActive = ToBool(row["Activa"], true)
+                IsActive = ToBool(row["Activa"], true),
+                Priority = NullIfWhiteSpace(Convert.ToString(row["Prioridad"])),
+                RequiresConfirmation = ToBool(row["Confirmacion"])
             });
         }
     }
@@ -2870,6 +3128,8 @@ public sealed partial class ItemEditForm : BaseEditForm
         EnsureColumn(operationalAlertsTable, "Hasta", typeof(DateTime));
         EnsureColumn(operationalAlertsTable, "Bloqueante", typeof(bool));
         EnsureColumn(operationalAlertsTable, "Activa", typeof(bool));
+        EnsureColumn(operationalAlertsTable, "Prioridad", typeof(string));
+        EnsureColumn(operationalAlertsTable, "Confirmacion", typeof(bool));
     }
 
     private void EnsureAttachmentColumns()
@@ -2887,6 +3147,12 @@ public sealed partial class ItemEditForm : BaseEditForm
         EnsureColumn(attachmentsTable, "Estado", typeof(string));
         EnsureColumn(attachmentsTable, "Categoria", typeof(string));
         EnsureColumn(attachmentsTable, "VisiblePortal", typeof(bool));
+        EnsureColumn(attachmentsTable, "ReferenciaDocumental", typeof(string));
+        EnsureColumn(attachmentsTable, "Confidencial", typeof(bool));
+        EnsureColumn(attachmentsTable, "OrdenVisual", typeof(int));
+        EnsureColumn(attachmentsTable, "VigenciaDesde", typeof(DateTime));
+        EnsureColumn(attachmentsTable, "VigenciaHasta", typeof(DateTime));
+        EnsureColumn(attachmentsTable, "TextoAlternativo", typeof(string));
     }
 
     private void EnsureSapFieldColumns()

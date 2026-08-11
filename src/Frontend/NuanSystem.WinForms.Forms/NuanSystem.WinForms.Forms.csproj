@@ -9,6 +9,8 @@
   <ItemGroup>
     <Content Include="Assets\Brand\*.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\Icons\**\*.svg" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\KPI\*.svg" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\Tabs\*.svg" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
