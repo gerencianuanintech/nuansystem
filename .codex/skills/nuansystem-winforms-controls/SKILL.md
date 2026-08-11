@@ -28,6 +28,7 @@ Use `$nuansystem-winforms-designer` for `.Designer.cs`, `$nuansystem-winforms-la
 | Standard CRUD list | `BaseGridCrudListForm` | Owns CRUD lifecycle and an internal `NuanDataGridControl` |
 | Standard edit/consult | `BaseEditForm` | UI validation is not authoritative business validation |
 | Standard action | `NuanActionButton` | Configure `ButtonKind` before custom styling |
+| Embedded grid-local action | compact link-style `SimpleButton` | Follow `$nuansystem-winforms-grids` embedded operation-bar standard; not a primary form action |
 | Related catalog selector | `NuanLookupEdit` | Use create/clear events with permissions |
 | Small fixed closed catalog | direct `LookUpEdit` | Use only when values are local/contractual and no related maintenance exists |
 | Reusable feature grid | `NuanDataGridControl` | Do not add a second instance to a standard CRUD list |

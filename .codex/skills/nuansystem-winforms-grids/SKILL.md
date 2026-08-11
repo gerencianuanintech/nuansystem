@@ -101,6 +101,18 @@ For coded fixed catalogs, display the approved readable label and the business v
 - Avoid event recursion when binding, refreshing, or changing focused rows.
 - Unsubscribe owned runtime handlers when required.
 
+### Embedded grid operation bar
+
+For a grid inside an edit, detail, operational, or document form, render its local operations as a compact link-style bar immediately above the grid and align the group to the right.
+
+- Use borderless, transparent `SimpleButton` controls with Segoe UI 9 pt, 28 px height, a 16 x 16 operation icon on the left, 4 px icon/text spacing, and no filled card or panel background.
+- Use the established labels and semantic colors when applicable: `Agregar` with the green plus icon, `Editar` with the blue pencil icon, `Quitar` with the red minus icon, and `Marcar principal` with the green approval/check icon.
+- Use the matching semantic operation icon and blue or established state color for additional actions such as abrir, descargar, actualizar, or limpiar.
+- Reuse `OperationButtonIcons` and `Assets/Icons/Operaciones`; do not draw glyphs, use Unicode symbols, or add feature-local copies of corporate operation icons.
+- Keep unavailable operations visible but disabled when the form-operation permission contract requires discoverability. Do not rely on frontend state as authorization.
+- Stop title separator lines before the action group; never draw a line behind button text or icons.
+- Reserve filled `NuanActionButton` controls for primary form or workflow actions such as Guardar, Cancelar, Aprobar, or Procesar. Do not use those 100 x 36 buttons inside an embedded grid operation bar.
+
 ## Performance
 
 - Avoid repeated full rebinding when a targeted refresh works with the existing pattern.
