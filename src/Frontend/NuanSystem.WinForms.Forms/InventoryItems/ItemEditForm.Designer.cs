@@ -1212,10 +1212,9 @@ partial class ItemEditForm
         this.btnCancelar.ImageOptions.ImageToTextIndent = 0;
         this.btnCancelar.ImageOptions.Location = ImageLocation.MiddleLeft;
         this.btnCancelar.ImageOptions.SvgImageSize = new Size(24, 24);
-        this.btnCancelar.Location = new Point(1286, 606);
+        this.btnCancelar.Location = new Point(1362, 629);
         this.btnCancelar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         this.btnCancelar.LookAndFeel.UseDefaultLookAndFeel = false;
-        this.btnCancelar.Size = new Size(142, 40);
         // 
         // btnGuardar
         // 
@@ -1242,10 +1241,9 @@ partial class ItemEditForm
         this.btnGuardar.ImageOptions.ImageToTextIndent = 0;
         this.btnGuardar.ImageOptions.Location = ImageLocation.MiddleLeft;
         this.btnGuardar.ImageOptions.SvgImageSize = new Size(24, 24);
-        this.btnGuardar.Location = new Point(1434, 606);
+        this.btnGuardar.Location = new Point(1469, 629);
         this.btnGuardar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         this.btnGuardar.LookAndFeel.UseDefaultLookAndFeel = false;
-        this.btnGuardar.Size = new Size(148, 40);
         // 
         // lblHeaderDataTitle
         // 
@@ -1775,7 +1773,6 @@ partial class ItemEditForm
         tabRemarks.Appearance.PageClient.BackColor = Color.White;
         tabRemarks.Appearance.PageClient.BackColor2 = Color.White;
         tabRemarks.Appearance.PageClient.Options.UseBackColor = true;
-        tabRemarks.BackColor = Color.White;
         tabRemarks.Controls.Add(lblNotesGeneralTitle);
         tabRemarks.Controls.Add(lblGeneralNotes);
         tabRemarks.Controls.Add(memGeneralNotes);
@@ -1807,7 +1804,7 @@ partial class ItemEditForm
         tabRemarks.Controls.Add(sepNotesAlertsTitle);
         tabRemarks.Controls.Add(sepRemarksColumn);
         tabRemarks.Name = "tabRemarks";
-        tabRemarks.Size = new Size(1404, 399);
+        tabRemarks.Size = new Size(1402, 421);
         tabRemarks.Text = "Observaciones";
         tabRemarks.Paint += DocumentsTabPagePaint;
         // 
@@ -2236,7 +2233,6 @@ partial class ItemEditForm
         tabAttachments.Appearance.PageClient.BackColor = Color.White;
         tabAttachments.Appearance.PageClient.BackColor2 = Color.White;
         tabAttachments.Appearance.PageClient.Options.UseBackColor = true;
-        tabAttachments.BackColor = Color.White;
         tabAttachments.Controls.Add(lblAttachmentGridTitle);
         tabAttachments.Controls.Add(grdAttachments);
         tabAttachments.Controls.Add(btnAddAttachment);
@@ -2292,7 +2288,7 @@ partial class ItemEditForm
         tabAttachments.Controls.Add(lblAttachmentPreviewNoteIcon);
         tabAttachments.Controls.Add(lblAttachmentPreviewNote);
         tabAttachments.Name = "tabAttachments";
-        tabAttachments.Size = new Size(1404, 399);
+        tabAttachments.Size = new Size(1402, 421);
         tabAttachments.Text = "Imágenes / Anexos";
         tabAttachments.Paint += DocumentsTabPagePaint;
         // 
@@ -3112,7 +3108,7 @@ partial class ItemEditForm
         tabSap.Controls.Add(tabSapSections);
         tabSap.ImageOptions.SvgImageSize = new Size(22, 22);
         tabSap.Name = "tabSap";
-        tabSap.Size = new Size(1406, 426);
+        tabSap.Size = new Size(1406, 449);
         tabSap.Text = "Integración";
         // 
         // tabSapSections
@@ -3136,7 +3132,7 @@ partial class ItemEditForm
         tabSapSections.LookAndFeel.UseDefaultLookAndFeel = false;
         tabSapSections.Name = "tabSapSections";
         tabSapSections.SelectedTabPage = tabSapStatusPage;
-        tabSapSections.Size = new Size(1406, 426);
+        tabSapSections.Size = new Size(1406, 449);
         tabSapSections.TabIndex = 0;
         tabSapSections.TabPages.AddRange(new XtraTabPage[] { tabSapStatusPage, tabSapHistoryPage });
         tabSapSections.TabPageWidth = 220;
@@ -3201,7 +3197,7 @@ partial class ItemEditForm
         tabSapStatusPage.Controls.Add(txtSapRetryCount);
         tabSapStatusPage.Controls.Add(lblSapEnabled);
         tabSapStatusPage.Name = "tabSapStatusPage";
-        tabSapStatusPage.Size = new Size(1402, 398);
+        tabSapStatusPage.Size = new Size(1402, 421);
         tabSapStatusPage.Text = "Estado y correspondencia SAP";
         // 
         // lblSapIntegrationNote
@@ -8962,7 +8958,7 @@ partial class ItemEditForm
         tabGeneral.Controls.Add(txtReference);
         tabGeneral.ImageOptions.SvgImageSize = new Size(22, 22);
         tabGeneral.Name = "tabGeneral";
-        tabGeneral.Size = new Size(1406, 426);
+        tabGeneral.Size = new Size(1406, 449);
         tabGeneral.Text = "General";
         // 
         // sepGeneralColumnTwo
@@ -10479,11 +10475,10 @@ partial class ItemEditForm
         tabDocuments.Appearance.PageClient.BackColor = Color.White;
         tabDocuments.Appearance.PageClient.BackColor2 = Color.White;
         tabDocuments.Appearance.PageClient.Options.UseBackColor = true;
-        tabDocuments.BackColor = Color.White;
         tabDocuments.Controls.Add(tabDocumentSections);
         tabDocuments.ImageOptions.SvgImageSize = new Size(22, 22);
         tabDocuments.Name = "tabDocuments";
-        tabDocuments.Size = new Size(1406, 426);
+        tabDocuments.Size = new Size(1406, 449);
         tabDocuments.Text = "Documentos";
         // 
         // tabDocumentSections
@@ -10503,7 +10498,6 @@ partial class ItemEditForm
         tabDocumentSections.AppearancePage.PageClient.BackColor = Color.White;
         tabDocumentSections.AppearancePage.PageClient.BackColor2 = Color.White;
         tabDocumentSections.AppearancePage.PageClient.Options.UseBackColor = true;
-        tabDocumentSections.BackColor = Color.White;
         tabDocumentSections.Dock = DockStyle.Fill;
         tabDocumentSections.HeaderAutoFill = DefaultBoolean.False;
         tabDocumentSections.Location = new Point(0, 0);
@@ -10511,7 +10505,7 @@ partial class ItemEditForm
         tabDocumentSections.LookAndFeel.UseDefaultLookAndFeel = false;
         tabDocumentSections.Name = "tabDocumentSections";
         tabDocumentSections.SelectedTabPage = tabAttachments;
-        tabDocumentSections.Size = new Size(1406, 426);
+        tabDocumentSections.Size = new Size(1406, 449);
         tabDocumentSections.TabIndex = 0;
         tabDocumentSections.TabPages.AddRange(new XtraTabPage[] { tabAttachments, tabRemarks });
         tabDocumentSections.TabPageWidth = 220;
@@ -10549,7 +10543,7 @@ partial class ItemEditForm
         tabMain.Name = "tabMain";
         tabMain.PaintStyleName = "PropertyView";
         tabMain.SelectedTabPage = tabGeneral;
-        tabMain.Size = new Size(1582, 426);
+        tabMain.Size = new Size(1582, 449);
         tabMain.TabIndex = 1;
         tabMain.TabPages.AddRange(new XtraTabPage[] { tabGeneral, tabUnits, tabInventory, tabCommercial, tabFinance, tabLots, tabSap, tabDocuments });
         tabMain.TabPageWidth = 164;
@@ -10575,7 +10569,7 @@ partial class ItemEditForm
         this.AutoScaleDimensions = new SizeF(7F, 15F);
         this.AutoScaleMode = AutoScaleMode.Font;
         this.CancelButton = null;
-        this.CancelButtonLocation = new Point(1286, 606);
+        this.CancelButtonLocation = new Point(1362, 629);
         this.ClientSize = new Size(1594, 828);
         this.Controls.Add(lblHeaderCommercialSummaryTitle);
         this.Controls.Add(lblHeaderClassificationTitle);
@@ -10619,7 +10613,7 @@ partial class ItemEditForm
         this.Controls.Add(lblSalesActive);
         this.MinimumSize = new Size(1440, 860);
         this.Name = "ItemEditForm";
-        this.SaveButtonLocation = new Point(1434, 606);
+        this.SaveButtonLocation = new Point(1469, 629);
         this.Text = "Maestro de ítems / Artículos";
         this.Controls.SetChildIndex(lblSalesActive, 0);
         this.Controls.SetChildIndex(tglSalesActive, 0);
