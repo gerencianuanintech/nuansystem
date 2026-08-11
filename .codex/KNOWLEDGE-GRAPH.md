@@ -157,6 +157,13 @@ SyncMonitorForm.Designer.cs
   -> NuanKpiCardControl
        location: Controls/Kpi/NuanKpiCardControl.cs
        complete long counters through automatic font fitting
+  -> NuanOperationalKpiCardControl
+       location: Controls/Kpi/NuanOperationalKpiCardControl.cs
+       independent option-3 presentation with unit and status badge
+       numeric value/unit groups align right; text values align left; units inherit value font and accent color
+        ItemEditForm uses it for available, on-order and committed stock,
+        purchases, sales, SAP status, average cost, margin, purchase cost,
+        and sales price
   -> NuanDataGridControl
   -> NuanActionButton
   -> typed frontend services

@@ -127,6 +127,16 @@ Status values:
 - **Representative consumers:** `src/Frontend/NuanSystem.WinForms.Forms/Sync/SyncMonitorForm.Designer.cs` and `src/Frontend/NuanSystem.WinForms.Forms/SriTxtImports/SriTxtImportForm.Designer.cs`.
 - **Antipatterns:** custom painted KPI panels or copied KPI styling.
 
+### 4.5.1 `NuanOperationalKpiCardControl`
+
+- **Location:** `src/Frontend/NuanSystem.WinForms.Controls/Kpi/NuanOperationalKpiCardControl.cs`
+- **Status:** Active/specialized for operational KPI summaries.
+- **Responsibility:** Independent option-3 KPI card with icon medallion, title, fitted value, unit, and status badge; numeric value/unit groups align right, text values align left, and the unit shares the value font and accent color. It owns presentation only and never calculates business state.
+- **Use when:** an operational or master-data summary needs the larger option-3 visual language and its compact responsive form.
+- **Do not use when:** the execution/monitor card contract of `NuanKpiCardControl` is required, or the value is editable.
+- **Representative consumer:** `src/Frontend/NuanSystem.WinForms.Forms/InventoryItems/ItemEditForm.Designer.cs` for the item operational and commercial summary.
+- **Antipatterns:** adding operational properties back into `NuanKpiCardControl`, computing authoritative health/status inside the control, or copying its paint logic into forms.
+
 ## 5. Visual resources
 
 ### 5.1 `BrandResources`
