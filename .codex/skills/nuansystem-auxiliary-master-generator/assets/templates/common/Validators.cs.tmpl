@@ -1,0 +1,30 @@
+using FluentValidation;
+
+namespace NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Commands;
+
+internal static class {{SINGULAR}}ValidationRules
+{
+    public static void Apply<T>(AbstractValidator<T> validator)
+    {
+{{VALIDATOR_RULES}}
+    }
+}
+
+public sealed class Create{{SINGULAR}}CommandValidator : AbstractValidator<Create{{SINGULAR}}Command>
+{
+    public Create{{SINGULAR}}CommandValidator() => {{SINGULAR}}ValidationRules.Apply(this);
+}
+
+public sealed class Update{{SINGULAR}}CommandValidator : AbstractValidator<Update{{SINGULAR}}Command>
+{
+    public Update{{SINGULAR}}CommandValidator()
+    {
+        RuleFor(x => x.Id).GreaterThan(0);
+        {{SINGULAR}}ValidationRules.Apply(this);
+    }
+}
+
+public sealed class Delete{{SINGULAR}}CommandValidator : AbstractValidator<Delete{{SINGULAR}}Command>
+{
+    public Delete{{SINGULAR}}CommandValidator() => RuleFor(x => x.Id).GreaterThan(0);
+}

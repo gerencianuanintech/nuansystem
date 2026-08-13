@@ -1,0 +1,22 @@
+using NuanSystem.WinForms.Services.Definitions.Inventory.{{PLURAL}}.Models;
+using NuanSystem.WinForms.Services.Http;
+
+namespace NuanSystem.WinForms.Services.Definitions.Inventory.{{PLURAL}};
+
+public interface I{{SINGULAR}}Client
+{
+    Task<IReadOnlyCollection<{{SINGULAR}}Item>> GetAsync(CancellationToken ct = default);
+    Task<{{SINGULAR}}Item> GetByIdAsync(int id, CancellationToken ct = default);
+    Task<{{SINGULAR}}Item> CreateAsync(Save{{SINGULAR}}Request request, CancellationToken ct = default);
+    Task<{{SINGULAR}}Item> UpdateAsync(int id, Save{{SINGULAR}}Request request, CancellationToken ct = default);
+    Task DeleteAsync(int id, CancellationToken ct = default);
+}
+public sealed class {{SINGULAR}}Client(INuanApiClient apiClient) : I{{SINGULAR}}Client
+{
+    private const string Route = "{{API_ROUTE}}";
+    public async Task<IReadOnlyCollection<{{SINGULAR}}Item>> GetAsync(CancellationToken ct = default) => await apiClient.GetAsync<List<{{SINGULAR}}Item>>(Route, ct);
+    public Task<{{SINGULAR}}Item> GetByIdAsync(int id, CancellationToken ct = default) => apiClient.GetAsync<{{SINGULAR}}Item>($"{Route}/{id}", ct);
+    public Task<{{SINGULAR}}Item> CreateAsync(Save{{SINGULAR}}Request request, CancellationToken ct = default) => apiClient.PostAsync<Save{{SINGULAR}}Request, {{SINGULAR}}Item>(Route, request, ct);
+    public Task<{{SINGULAR}}Item> UpdateAsync(int id, Save{{SINGULAR}}Request request, CancellationToken ct = default) => apiClient.PutAsync<Save{{SINGULAR}}Request, {{SINGULAR}}Item>($"{Route}/{id}", request, ct);
+    public async Task DeleteAsync(int id, CancellationToken ct = default) => await apiClient.DeleteAsync<object>($"{Route}/{id}", ct);
+}

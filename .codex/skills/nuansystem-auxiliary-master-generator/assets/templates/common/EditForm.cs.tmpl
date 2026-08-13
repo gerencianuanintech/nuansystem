@@ -1,0 +1,34 @@
+using System.ComponentModel;
+using NuanSystem.WinForms.Forms.Common;
+using NuanSystem.WinForms.Services.Definitions.Inventory.{{PLURAL}}.Models;
+
+namespace NuanSystem.WinForms.Forms.Definitions.Inventory.{{PLURAL}};
+
+public sealed partial class {{SINGULAR}}EditForm : BaseEditForm
+{
+{{CLASSIFICATION_BLOCK}}{{DEPENDENCY_BLOCK}}    public {{SINGULAR}}EditForm()
+    {
+        InitializeComponent();
+    }
+    public {{SINGULAR}}EditForm({{SINGULAR}}Item item) : this()
+    {
+{{EDIT_ASSIGNMENTS}}
+    }
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Save{{SINGULAR}}Request Request { get; private set; } = EmptyRequest();
+    protected override bool ValidateForm()
+    {
+        var valid = true;
+{{FORM_VALIDATION}}
+        return valid;
+    }
+    protected override void BuildRequest()
+    {
+        Request = new Save{{SINGULAR}}Request(
+{{BUILD_REQUEST_ARGUMENTS}});
+    }
+    private static string? Optional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    private static Save{{SINGULAR}}Request EmptyRequest() => new({{EMPTY_REQUEST_ARGUMENTS}});
+    private sealed record ClassificationOption(string Code, string Name);
+}

@@ -1,0 +1,64 @@
+using DevExpress.XtraEditors;
+using DevExpress.XtraEditors.Controls;
+using NuanSystem.WinForms.Controls.Editors;
+using NuanSystem.WinForms.Forms.Common;
+
+namespace NuanSystem.WinForms.Forms.Definitions.Inventory.{{PLURAL}};
+
+partial class {{SINGULAR}}EditForm
+{
+    private System.ComponentModel.IContainer components = null;
+    private LabelControl lblGeneralTitle;
+    private LabelControl lineGeneralTitle;
+    private NuanActionButton btnGeneratedPrimary;
+{{DESIGNER_DECLARATIONS}}
+    private void InitializeComponent()
+    {
+        lblGeneralTitle = new LabelControl();
+        lineGeneralTitle = new LabelControl();
+        btnGeneratedPrimary = new NuanActionButton();
+{{DESIGNER_CREATES}}
+{{DESIGNER_BEGIN_INIT}}
+        SuspendLayout();
+        lblGeneralTitle.Appearance.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
+        lblGeneralTitle.Appearance.ForeColor = BrandResources.Primary;
+        lblGeneralTitle.Appearance.Options.UseFont = true;
+        lblGeneralTitle.Appearance.Options.UseForeColor = true;
+        lblGeneralTitle.Location = new Point(32, 22);
+        lblGeneralTitle.Name = "lblGeneralTitle";
+        lblGeneralTitle.Text = "1. Información general";
+        lineGeneralTitle.Appearance.BackColor = BrandResources.Border;
+        lineGeneralTitle.Appearance.Options.UseBackColor = true;
+        lineGeneralTitle.AutoSizeMode = LabelAutoSizeMode.None;
+        lineGeneralTitle.Location = new Point(218, 34);
+        lineGeneralTitle.Name = "lineGeneralTitle";
+        lineGeneralTitle.Size = new Size(950, 1);
+        btnGeneratedPrimary.ActionKind = NuanActionKind.Primary;
+        btnGeneratedPrimary.Location = new Point(1030, 22);
+        btnGeneratedPrimary.Name = "btnGeneratedPrimary";
+        btnGeneratedPrimary.Size = new Size(138, 36);
+        btnGeneratedPrimary.Text = "Acción";
+{{DESIGNER_LAYOUT}}
+        Appearance.BackColor = Color.White;
+        Appearance.Options.UseBackColor = true;
+        AutoScaleDimensions = new SizeF(7F, 15F);
+        AutoScaleMode = AutoScaleMode.Font;
+        ClientSize = new Size(1200, {{FORM_HEIGHT}});
+        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        Controls.Add(lblGeneralTitle);
+        Controls.Add(lineGeneralTitle);
+        Controls.Add(btnGeneratedPrimary);
+{{DESIGNER_ADDS}}
+        MinimumSize = new Size(1216, {{FORM_HEIGHT}});
+        Name = "{{SINGULAR}}EditForm";
+        Text = "{{TITLE}}";
+{{DESIGNER_END_INIT}}
+        ResumeLayout(false);
+        PerformLayout();
+    }
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) components?.Dispose();
+        base.Dispose(disposing);
+    }
+}

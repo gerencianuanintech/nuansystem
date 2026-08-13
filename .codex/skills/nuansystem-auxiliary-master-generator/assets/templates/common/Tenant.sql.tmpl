@@ -1,0 +1,157 @@
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+SET NOCOUNT ON;
+SET XACT_ABORT ON;
+GO
+IF DB_NAME() = N'NuanSystem_Master' THROW 51{{MIGRATION_TENANT}}, 'Migration {{MIGRATION_TENANT}} must run only in tenant databases.', 1;
+IF OBJECT_ID(N'dbo.SchemaHistory', N'U') IS NULL THROW 51{{MIGRATION_TENANT}}, 'SchemaHistory is required.', 1;
+GO
+BEGIN TRY
+ BEGIN TRANSACTION;
+ IF OBJECT_ID(N'{{TABLE}}', N'U') IS NULL
+ BEGIN
+  CREATE TABLE {{TABLE}}(
+        [Id] int IDENTITY(1,1) NOT NULL CONSTRAINT PK_{{TABLE_NAME}} PRIMARY KEY,
+        [GlobalId] uniqueidentifier NOT NULL CONSTRAINT DF_{{TABLE_NAME}}_GlobalId DEFAULT(NEWSEQUENTIALID()),
+{{SQL_COLUMNS}},
+        [IsDeleted] bit NOT NULL CONSTRAINT DF_{{TABLE_NAME}}_IsDeleted DEFAULT(0),
+        [CreatedAt] datetime2(0) NOT NULL CONSTRAINT DF_{{TABLE_NAME}}_CreatedAt DEFAULT(SYSUTCDATETIME()),
+        [UpdatedAt] datetime2(0) NULL,
+        [DeletedAt] datetime2(0) NULL
+  );
+  CREATE UNIQUE INDEX UX_{{TABLE_NAME}}_GlobalId ON {{TABLE}}(GlobalId);
+ END;
+ IF NOT EXISTS(SELECT 1 FROM dbo.SchemaHistory WHERE Version=N'20260813.{{MIGRATION_TENANT}}')
+  INSERT dbo.SchemaHistory(Version,Description) VALUES(N'20260813.{{MIGRATION_TENANT}}',N'Creates {{TITLE}} auxiliary master');
+ COMMIT;
+END TRY
+BEGIN CATCH
+ IF XACT_STATE()<>0 ROLLBACK;
+ THROW;
+END CATCH;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_GENERAL_INVENTORY_{{PLURAL}}_LISTAR
+AS
+BEGIN
+ SET NOCOUNT ON;
+ SELECT * FROM {{TABLE}} WHERE IsDeleted=0 ORDER BY {{CODE_FIELD}};
+END;
+GO
+CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_GENERAL_INVENTORY_{{PLURAL}}_LOOKUP
+AS
+BEGIN
+ SET NOCOUNT ON;
+ SELECT * FROM {{TABLE}} WHERE IsDeleted=0 AND IsActive=1 ORDER BY {{CODE_FIELD}};
+END;
+GO
+CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_GENERAL_INVENTORY_{{PLURAL}}_BUSCARPORID @Id int
+AS
+BEGIN
+ SET NOCOUNT ON;
+ SELECT * FROM {{TABLE}} WHERE Id=@Id AND IsDeleted=0;
+END;
+GO
+CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_GENERAL_INVENTORY_{{PLURAL}}_BUSCARPORCODIGO @Code nvarchar(50),@ExcluirId int=NULL
+AS
+BEGIN
+ SET NOCOUNT ON;
+ SELECT COUNT(1) FROM {{TABLE}} WHERE {{CODE_FIELD}}=@Code AND IsDeleted=0 AND (@ExcluirId IS NULL OR Id<>@ExcluirId);
+END;
+GO
+CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_GENERAL_INVENTORY_{{PLURAL}}_HISTORIAL @Id int
+AS
+BEGIN
+ SET NOCOUNT ON;
+ SELECT Id,EntityName,RecordId,[Action],FieldName,OldValue,NewValue,UserId,UserName,[Source],CreatedAt
+ FROM dbo.AuditCatalogChanges WHERE EntityName=N'{{ENTITY_CODE}}' AND RecordId=CONVERT(nvarchar(80),@Id)
+ ORDER BY CreatedAt DESC,Id DESC;
+END;
+GO
+CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_GENERAL_INVENTORY_{{PLURAL}}_CREAR
+ @GlobalId uniqueidentifier=NULL,{{SQL_PARAMETERS}},@CreatedByUserId int=NULL,@CreatedByUserName nvarchar(120)=NULL
+AS
+BEGIN
+ SET NOCOUNT ON; SET XACT_ABORT ON;
+ SET @GlobalId=COALESCE(@GlobalId,NEWID());
+ BEGIN TRY
+  DECLARE @OwnTransaction bit=CASE WHEN @@TRANCOUNT=0 THEN 1 ELSE 0 END;
+  IF @OwnTransaction=1 BEGIN TRANSACTION;
+  IF EXISTS(SELECT 1 FROM {{TABLE}} WITH(UPDLOCK,HOLDLOCK) WHERE {{CODE_FIELD}}=@{{CODE_FIELD}} OR GlobalId=@GlobalId)
+  BEGIN IF @OwnTransaction=1 COMMIT; SELECT -1; RETURN; END;
+  INSERT {{TABLE}}(GlobalId,{{SQL_INSERT_COLUMNS}},IsDeleted,CreatedAt)
+  VALUES(@GlobalId,{{SQL_INSERT_VALUES}},0,SYSUTCDATETIME());
+  DECLARE @Id int=CONVERT(int,SCOPE_IDENTITY());
+  INSERT dbo.AuditCatalogChanges(EntityName,RecordId,[Action],FieldName,OldValue,NewValue,UserId,UserName)
+  SELECT N'{{ENTITY_CODE}}',CONVERT(nvarchar(80),@Id),N'INSERT',FieldName,NULL,NewValue,@CreatedByUserId,@CreatedByUserName
+  FROM(VALUES {{SQL_AUDIT_NEW_VALUES}})v(FieldName,NewValue);
+  IF @OwnTransaction=1 COMMIT; SELECT @Id;
+ END TRY BEGIN CATCH
+  IF @OwnTransaction=1 AND XACT_STATE()<>0 ROLLBACK;
+  IF ERROR_NUMBER() IN(2601,2627) BEGIN SELECT -1; RETURN; END;
+  THROW;
+ END CATCH;
+END;
+GO
+CREATE OR ALTER PROCEDURE dbo.SP_NA_PUT_GENERAL_INVENTORY_{{PLURAL}}_ACTUALIZAR
+ @Id int,{{SQL_PARAMETERS}},@UpdatedByUserId int=NULL,@UpdatedByUserName nvarchar(120)=NULL
+AS
+BEGIN
+ SET NOCOUNT ON; SET XACT_ABORT ON;
+ BEGIN TRY
+  DECLARE @OwnTransaction bit=CASE WHEN @@TRANCOUNT=0 THEN 1 ELSE 0 END;
+  IF @OwnTransaction=1 BEGIN TRANSACTION;
+  DECLARE {{SQL_OLD_DECLARATIONS}};
+  SELECT {{SQL_OLD_SELECTION}} FROM {{TABLE}} WITH(UPDLOCK,HOLDLOCK) WHERE Id=@Id AND IsDeleted=0;
+  IF @Old{{CODE_FIELD}} IS NULL BEGIN IF @OwnTransaction=1 COMMIT; SELECT 0; RETURN; END;
+  IF EXISTS(SELECT 1 FROM {{TABLE}} WITH(UPDLOCK,HOLDLOCK) WHERE {{CODE_FIELD}}=@{{CODE_FIELD}} AND Id<>@Id AND IsDeleted=0)
+  BEGIN IF @OwnTransaction=1 COMMIT; SELECT -1; RETURN; END;
+  UPDATE {{TABLE}} SET {{SQL_UPDATE_SET}},UpdatedAt=SYSUTCDATETIME() WHERE Id=@Id AND IsDeleted=0;
+  INSERT dbo.AuditCatalogChanges(EntityName,RecordId,[Action],FieldName,OldValue,NewValue,UserId,UserName)
+  SELECT N'{{ENTITY_CODE}}',CONVERT(nvarchar(80),@Id),N'UPDATE',FieldName,OldValue,NewValue,@UpdatedByUserId,@UpdatedByUserName
+  FROM(VALUES {{SQL_AUDIT_CHANGED_VALUES}})v(FieldName,OldValue,NewValue)
+  WHERE ISNULL(OldValue,N'')<>ISNULL(NewValue,N'');
+  IF @OwnTransaction=1 COMMIT; SELECT 1;
+ END TRY BEGIN CATCH
+  IF @OwnTransaction=1 AND XACT_STATE()<>0 ROLLBACK;
+  IF ERROR_NUMBER() IN(2601,2627) BEGIN SELECT -1; RETURN; END;
+  THROW;
+ END CATCH;
+END;
+GO
+CREATE OR ALTER PROCEDURE dbo.SP_NA_DELETE_GENERAL_INVENTORY_{{PLURAL}}_ELIMINAR @Id int,@DeletedByUserId int=NULL,@DeletedByUserName nvarchar(120)=NULL
+AS
+BEGIN
+ SET NOCOUNT ON; SET XACT_ABORT ON;
+ UPDATE {{TABLE}} SET {{ACTIVE_FIELD}}=0,IsDeleted=1,DeletedAt=SYSUTCDATETIME() WHERE Id=@Id AND IsDeleted=0;
+ IF @@ROWCOUNT>0
+  INSERT dbo.AuditCatalogChanges(EntityName,RecordId,[Action],FieldName,OldValue,NewValue,UserId,UserName)
+  VALUES(N'{{ENTITY_CODE}}',CONVERT(nvarchar(80),@Id),N'DELETE',N'IsDeleted',N'0',N'1',@DeletedByUserId,@DeletedByUserName);
+ SELECT @@ROWCOUNT;
+END;
+GO
+
+/* Sync contracts are generated disabled-by-default and require integration review. */
+CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_{{ENTITY_CODE}}_SYNC_FULL
+AS BEGIN SET NOCOUNT ON; SELECT * FROM {{TABLE}} WHERE IsDeleted=0 ORDER BY Id; END;
+GO
+CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_{{ENTITY_CODE}}_SYNC_APPLY
+ @GlobalId uniqueidentifier,{{SQL_PARAMETERS}},@IsDeleted bit,@UpdatedAt datetime2(0)=NULL
+AS
+BEGIN
+ SET NOCOUNT ON; SET XACT_ABORT ON;
+ DECLARE @Id int=(SELECT Id FROM {{TABLE}} WITH(UPDLOCK,HOLDLOCK) WHERE GlobalId=@GlobalId);
+ IF @Id IS NULL
+ BEGIN
+  INSERT {{TABLE}}(GlobalId,{{SQL_INSERT_COLUMNS}},IsDeleted,CreatedAt,UpdatedAt)
+  VALUES(@GlobalId,{{SQL_INSERT_VALUES}},@IsDeleted,COALESCE(@UpdatedAt,SYSUTCDATETIME()),@UpdatedAt);
+  SET @Id=CONVERT(int,SCOPE_IDENTITY());
+ END
+ ELSE
+  UPDATE {{TABLE}} SET {{SQL_UPDATE_SET}},IsDeleted=@IsDeleted,UpdatedAt=COALESCE(@UpdatedAt,SYSUTCDATETIME()) WHERE Id=@Id;
+ INSERT dbo.AuditCatalogChanges(EntityName,RecordId,[Action],FieldName,OldValue,NewValue,UserName,[Source])
+ VALUES(N'{{ENTITY_CODE}}',CONVERT(nvarchar(80),@Id),N'SYNC',N'GlobalId',NULL,CONVERT(nvarchar(max),@GlobalId),N'MasterBranchSyncWorker',N'MasterBranchSyncWorker');
+ SELECT 1 ResultCode,@Id ItemId;
+END;
+GO
+/* Application publishes LocalOutbox in the same tenant transaction. */

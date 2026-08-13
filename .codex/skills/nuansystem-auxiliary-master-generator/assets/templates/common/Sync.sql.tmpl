@@ -1,0 +1,28 @@
+USE [NuanSystem_Master];
+GO
+SET NOCOUNT ON;
+SET XACT_ABORT ON;
+GO
+IF DB_NAME()<>N'NuanSystem_Master' THROW 51{{MIGRATION_SYNC}}, 'Migration {{MIGRATION_SYNC}} must run only in NuanSystem_Master.', 1;
+GO
+BEGIN TRY
+ BEGIN TRANSACTION;
+ /* Registration only: never enables profiles, routes or workers. */
+ IF EXISTS(SELECT 1 FROM dbo.SyncEntityDefinitions WHERE Code=N'{{ENTITY_CODE}}')
+  UPDATE dbo.SyncEntityDefinitions SET Name=N'{{TITLE}}',DefaultExecutionOrder={{SYNC_ORDER}},IsActive=1,IsDeleted=0,UpdatedAt=SYSUTCDATETIME() WHERE Code=N'{{ENTITY_CODE}}';
+ ELSE
+  INSERT dbo.SyncEntityDefinitions(Code,Name,Description,DefaultExecutionOrder,SupportsIncremental,SupportsInsert,SupportsUpdate,SupportsDeactivate,DefaultKeyField,DefaultModifiedAtField,IsSystem,IsActive,CreatedByUserName)
+  VALUES(N'{{ENTITY_CODE}}',N'{{TITLE}}',N'Generated auxiliary master',{{SYNC_ORDER}},1,1,1,1,N'GlobalId',N'UpdatedAt',1,1,N'Sistema');
+ IF OBJECT_ID(N'dbo.SyncEntityConfigurations',N'U') IS NOT NULL
+  INSERT dbo.SyncEntityConfigurations(CompanyId,EntityName,IsEnabled,Direction,ConflictPolicy,BatchSize,MaxAttempts)
+  SELECT company.Id,N'{{ENTITY_CODE}}',0,N'MasterToBranch',N'MasterWins',100,3 FROM dbo.Companies company
+  WHERE company.IsMaster=1 AND NOT EXISTS(SELECT 1 FROM dbo.SyncEntityConfigurations c WHERE c.CompanyId=company.Id AND c.EntityName=N'{{ENTITY_CODE}}');
+ IF NOT EXISTS(SELECT 1 FROM dbo.MasterSchemaHistory WHERE Version=N'20260813.{{MIGRATION_SYNC}}')
+  INSERT dbo.MasterSchemaHistory(Version,Description) VALUES(N'20260813.{{MIGRATION_SYNC}}',N'Registers {{TITLE}} sync disabled by default');
+ COMMIT;
+END TRY
+BEGIN CATCH
+ IF XACT_STATE()<>0 ROLLBACK;
+ THROW;
+END CATCH;
+GO

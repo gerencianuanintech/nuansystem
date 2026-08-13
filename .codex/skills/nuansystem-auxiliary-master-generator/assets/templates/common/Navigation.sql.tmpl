@@ -1,0 +1,50 @@
+USE [NuanSystem_Master];
+GO
+SET NOCOUNT ON;
+SET XACT_ABORT ON;
+GO
+IF DB_NAME()<>N'NuanSystem_Master' THROW 51{{MIGRATION_NAVIGATION}}, 'Migration {{MIGRATION_NAVIGATION}} must run only in NuanSystem_Master.', 1;
+GO
+BEGIN TRY
+ BEGIN TRANSACTION;
+ DECLARE @ModuleId int=(SELECT TOP(1) Id FROM dbo.Modules WHERE Code=N'CONFIGURATION' AND IsDeleted=0);
+ DECLARE @InventoryMenuId int=(SELECT TOP(1) Id FROM dbo.SecurityMenus WHERE Code=N'MENU.DEFINITIONS.INVENTORY' AND IsDeleted=0);
+ DECLARE @AdminRoleId int=(SELECT TOP(1) Id FROM dbo.Roles WHERE Code=N'ADMIN' AND IsDeleted=0);
+ IF @ModuleId IS NULL OR @InventoryMenuId IS NULL OR @AdminRoleId IS NULL THROW 51{{MIGRATION_NAVIGATION}},'Required navigation parents are missing.',1;
+ DECLARE @Permissions table(Code nvarchar(120) PRIMARY KEY,Name nvarchar(160));
+ INSERT @Permissions VALUES(N'{{PERMISSION_READ}}',N'Ver {{TITLE}}'),(N'{{PERMISSION_MANAGE}}',N'Gestionar {{TITLE}}');
+ INSERT dbo.Permissions(ModuleId,Code,Name,Description)
+ SELECT @ModuleId,p.Code,p.Name,p.Name FROM @Permissions p WHERE NOT EXISTS(SELECT 1 FROM dbo.Permissions x WHERE x.Code=p.Code);
+ INSERT dbo.RolePermissions(RoleId,PermissionId)
+ SELECT @AdminRoleId,p.Id FROM dbo.Permissions p WHERE p.Code IN(SELECT Code FROM @Permissions)
+ AND NOT EXISTS(SELECT 1 FROM dbo.RolePermissions x WHERE x.RoleId=@AdminRoleId AND x.PermissionId=p.Id);
+ DECLARE @FormId int=(SELECT TOP(1) Id FROM dbo.SecurityForms WHERE FormKey=N'{{FORM_KEY}}' AND IsDeleted=0);
+ IF @FormId IS NULL
+ BEGIN
+  INSERT dbo.SecurityForms(Code,Name,Description,FormKey,FormType,IsVisible,IsActive,CreatedByUserName,CreatedAt)
+  VALUES(N'FORM.DEFINITIONS.INVENTORY.{{PLURAL}}',N'{{TITLE}}',N'Mantenimiento de {{TITLE}}',N'{{FORM_KEY}}',1,1,1,N'Sistema',SYSUTCDATETIME());
+  SET @FormId=CONVERT(int,SCOPE_IDENTITY());
+ END;
+ DECLARE @MenuId int=(SELECT TOP(1) Id FROM dbo.SecurityMenus WHERE FormKey=N'{{FORM_KEY}}' AND IsDeleted=0);
+ IF @MenuId IS NULL
+ BEGIN
+  INSERT dbo.SecurityMenus(ParentId,Code,Name,Description,MenuType,FormId,FormKey,DisplayOrder,IsVisible,IsActive,CreatedByUserName,CreatedAt)
+  VALUES(@InventoryMenuId,N'{{MENU_CODE}}',N'{{TITLE}}',N'Mantenimiento de {{TITLE}}',3,@FormId,N'{{FORM_KEY}}',{{MENU_ORDER}},1,1,N'Sistema',SYSUTCDATETIME());
+  SET @MenuId=CONVERT(int,SCOPE_IDENTITY());
+ END;
+ INSERT dbo.SecurityRoleMenus(RoleId,MenuId,IsAllowed,CreatedByUserName,CreatedAt)
+ SELECT @AdminRoleId,@MenuId,1,N'Sistema',SYSUTCDATETIME()
+ WHERE NOT EXISTS(SELECT 1 FROM dbo.SecurityRoleMenus x WHERE x.RoleId=@AdminRoleId AND x.MenuId=@MenuId AND x.IsDeleted=0);
+ INSERT dbo.SecurityRoleFormOperations(RoleId,FormId,OperationId,IsAllowed,CreatedByUserName,CreatedAt)
+ SELECT @AdminRoleId,@FormId,o.Id,1,N'Sistema',SYSUTCDATETIME() FROM dbo.SecurityOperations o
+ WHERE o.IsDeleted=0 AND LOWER(o.ActionKey) IN(N'refresh',N'create',N'update',N'delete',N'consult',N'history',N'copy')
+ AND NOT EXISTS(SELECT 1 FROM dbo.SecurityRoleFormOperations x WHERE x.RoleId=@AdminRoleId AND x.FormId=@FormId AND x.OperationId=o.Id);
+ IF NOT EXISTS(SELECT 1 FROM dbo.MasterSchemaHistory WHERE Version=N'20260813.{{MIGRATION_NAVIGATION}}')
+  INSERT dbo.MasterSchemaHistory(Version,Description) VALUES(N'20260813.{{MIGRATION_NAVIGATION}}',N'Registers {{TITLE}} navigation and security');
+ COMMIT;
+END TRY
+BEGIN CATCH
+ IF XACT_STATE()<>0 ROLLBACK;
+ THROW;
+END CATCH;
+GO

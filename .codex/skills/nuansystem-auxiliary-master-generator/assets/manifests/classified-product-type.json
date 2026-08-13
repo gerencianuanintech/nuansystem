@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "1.1",
+  "archetype": "classified",
+  "entity": {
+    "singular": "ProductType",
+    "plural": "ProductTypes",
+    "title": "Tipos de producto",
+    "table": "dbo.ProductTypes",
+    "entityCode": "ProductType"
+  },
+  "api": {
+    "route": "/api/definitions/inventory/product-types",
+    "formKey": "product-types"
+  },
+  "navigation": {
+    "path": ["Configuration", "Definitions", "Inventory"],
+    "menuOrder": 50,
+    "menuCode": "MENU.DEFINITIONS.INVENTORY.PRODUCTTYPES"
+  },
+  "permissions": {
+    "read": "GeneralInventoryProductTypesRead",
+    "manage": "GeneralInventoryProductTypesManage",
+    "lookupConsumers": ["ItemsRead"]
+  },
+  "fields": [
+    { "name": "Code", "type": "string", "nullable": false, "required": true, "unique": true, "stringLength": 50, "role": "code" },
+    { "name": "Name", "type": "string", "nullable": false, "required": true, "unique": false, "stringLength": 150, "role": "name" },
+    { "name": "Description", "type": "string", "nullable": true, "required": false, "unique": false, "stringLength": 500, "role": "description" },
+    { "name": "NatureCode", "type": "string", "nullable": false, "required": true, "unique": false, "stringLength": 30, "default": "Other", "role": "classification" },
+    { "name": "SortOrder", "type": "int", "nullable": false, "required": true, "unique": false, "minimum": 0, "default": 0, "role": "sortOrder" },
+    { "name": "IsSystem", "type": "bool", "nullable": false, "required": true, "unique": false, "default": false, "role": "system" },
+    { "name": "IsActive", "type": "bool", "nullable": false, "required": true, "unique": false, "default": true, "role": "active" }
+  ],
+  "classification": {
+    "field": "NatureCode",
+    "label": "Naturaleza",
+    "allowedValues": [
+      { "code": "Merchandise", "label": "Mercadería" },
+      { "code": "FinishedGood", "label": "Producto terminado" },
+      { "code": "RawMaterial", "label": "Materia prima" },
+      { "code": "SemiFinished", "label": "Semielaborado" },
+      { "code": "Supply", "label": "Insumo" },
+      { "code": "Packaging", "label": "Empaque" },
+      { "code": "ByProduct", "label": "Subproducto" },
+      { "code": "Other", "label": "Otro" }
+    ],
+    "systemProtectedFields": ["Code", "NatureCode"]
+  },
+  "ui": {
+    "layout": "classified-section",
+    "showInfoLegends": false,
+    "showFooterDivider": false
+  },
+  "designApproval": {
+    "status": "approved",
+    "proposalHash": "785a5774536389e13a7c0c101b6f7925684a22c0ea56cb651f8b695d8ffae830",
+    "tableApproved": true,
+    "mockupApproved": true,
+    "mockupReference": "reference-fixture:classified-product-type-full-color",
+    "evidence": "Approved reference fixture for generator regression tests."
+  },
+  "audit": { "enabled": true },
+  "softDelete": { "enabled": true },
+  "synchronization": {
+    "mode": "full-source-local-outbox",
+    "enabledByDefault": false,
+    "executionOrder": 55,
+    "dependencies": []
+  },
+  "migrations": {
+    "tenant": 198,
+    "masterNavigation": 199,
+    "masterSync": 200
+  }
+}

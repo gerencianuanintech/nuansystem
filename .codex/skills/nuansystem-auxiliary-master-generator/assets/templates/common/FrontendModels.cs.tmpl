@@ -1,0 +1,17 @@
+namespace NuanSystem.WinForms.Services.Definitions.Inventory.{{PLURAL}}.Models;
+
+public sealed class {{SINGULAR}}Item
+{
+    public int Id { get; set; }
+    public Guid GlobalId { get; set; }
+{{DTO_PROPERTIES}}
+}
+public sealed record Save{{SINGULAR}}Request({{RECORD_PARAMETERS}});
+public sealed class {{SINGULAR}}AuditChange
+{
+    public string Action { get; set; } = string.Empty;
+    public string FieldName { get; set; } = string.Empty;
+    public string? OldValue { get; set; }
+    public string? NewValue { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
