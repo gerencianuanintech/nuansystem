@@ -6,15 +6,6 @@ namespace NuanSystem.WinForms.Forms.GeneralInventory.Catalogs;
 
 public static class GeneralInventoryCatalogDescriptors
 {
-    public static GeneralInventoryCatalogDescriptor UnitMeasures { get; } = new(
-        GeneralInventoryCatalogRoutes.UnitMeasures,
-        "inventory-unit-measures",
-        "Unidades de medida",
-        "unidad de medida",
-        "Codigo de unidad",
-        "Nombre de unidad",
-        Permissions(PermissionCodes.GeneralInventoryUnitMeasuresRead, PermissionCodes.GeneralInventoryUnitMeasuresManage));
-
     public static GeneralInventoryCatalogDescriptor Warehouses { get; } = new(
         GeneralInventoryCatalogRoutes.Warehouses,
         "inventory-warehouses",
@@ -24,15 +15,6 @@ public static class GeneralInventoryCatalogDescriptors
         "Nombre de bodega",
         Permissions(PermissionCodes.GeneralInventoryWarehousesRead, PermissionCodes.GeneralInventoryWarehousesManage));
 
-    public static GeneralInventoryCatalogDescriptor ItemBrands { get; } = new(
-        GeneralInventoryCatalogRoutes.ItemBrands,
-        "inventory-item-brands",
-        "Marcas de articulos",
-        "marca de articulo",
-        "Codigo de marca",
-        "Nombre de marca",
-        Permissions(PermissionCodes.GeneralInventoryItemBrandsRead, PermissionCodes.GeneralInventoryItemBrandsManage));
-
     public static GeneralInventoryCatalogDescriptor ItemTypes { get; } = new(
         GeneralInventoryCatalogRoutes.ItemTypes,
         "inventory-item-types",
@@ -41,24 +23,6 @@ public static class GeneralInventoryCatalogDescriptors
         "Codigo de tipo",
         "Nombre de tipo",
         Permissions(PermissionCodes.GeneralInventoryItemTypesRead, PermissionCodes.GeneralInventoryItemTypesManage));
-
-    public static GeneralInventoryCatalogDescriptor ProductTypes { get; } = new(
-        GeneralInventoryCatalogRoutes.ProductTypes,
-        "inventory-product-types",
-        "Tipos de producto",
-        "tipo de producto",
-        "Codigo de tipo",
-        "Nombre de tipo",
-        Permissions(PermissionCodes.GeneralInventoryProductTypesRead, PermissionCodes.GeneralInventoryProductTypesManage));
-
-    public static GeneralInventoryCatalogDescriptor ItemLines { get; } = new(
-        GeneralInventoryCatalogRoutes.ItemLines,
-        "inventory-item-lines",
-        "Lineas de articulos",
-        "linea de articulo",
-        "Codigo de linea",
-        "Nombre de linea",
-        Permissions(PermissionCodes.GeneralInventoryItemLinesRead, PermissionCodes.GeneralInventoryItemLinesManage));
 
     public static GeneralInventoryCatalogDescriptor ItemSubgroups { get; } = new(
         GeneralInventoryCatalogRoutes.ItemSubgroups,

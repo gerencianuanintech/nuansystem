@@ -1,5 +1,5 @@
 using System.Data;
-using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Dtos;
+using NuanSystem.Application.Features.Definitions.Inventory.ItemFamilies.Dtos;
 
 namespace NuanSystem.Application.Abstractions.Data;
 
@@ -7,7 +7,9 @@ public interface IItemFamilyRepository : IRepository
 {
     Task<IReadOnlyCollection<ItemFamilyDto>> GetAllAsync(CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyCollection<ItemFamilyDto>> GetByGroupAsync(int itemGroupId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<ItemFamilyLookupDto>> GetLookupAsync(int? itemGroupId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<ItemFamilyAuditChangeDto>> GetHistoryAsync(int id, CancellationToken cancellationToken = default);
 
     Task<ItemFamilyDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
@@ -45,9 +47,23 @@ public interface IItemFamilyRepository : IRepository
         IDbTransaction transaction,
         CancellationToken cancellationToken = default);
 
+    Task<int> UpdateWithResultAsync(
+        UpdateItemFamilyData itemFamily,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default);
+
     Task<bool> DeleteAsync(int id, int? deletedByUserId, string? deletedByUserName, CancellationToken cancellationToken = default);
 
     Task<bool> DeleteAsync(
+        int id,
+        int? deletedByUserId,
+        string? deletedByUserName,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default);
+
+    Task<int> DeleteWithResultAsync(
         int id,
         int? deletedByUserId,
         string? deletedByUserName,

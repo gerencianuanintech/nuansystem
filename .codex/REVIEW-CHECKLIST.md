@@ -141,6 +141,8 @@ Validation environment:
 - [ ] Established stored-procedure conventions are followed where required.
 - [ ] SQL is parameterized and company-scoped.
 - [ ] Script is idempotent where deployment requires it.
+- [ ] New columns are not consumed statically in the batch that adds them; the SQL batch validator passed.
+- [ ] Legacy, partial, and complete/rerun schema states are evidenced or explicitly reported as not validated.
 - [ ] Keys, foreign keys, uniqueness, defaults, indexes, audit, and logical deletion are explicit.
 - [ ] Result column names/types match Dapper/DTO contracts.
 - [ ] Transaction ownership is correct.

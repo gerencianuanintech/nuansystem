@@ -11,12 +11,7 @@ public sealed class GeneralInventoryCatalogRepository(ITenantConnectionFactory c
     private static readonly IReadOnlyDictionary<string, CatalogProcedures> Catalogs =
         new Dictionary<string, CatalogProcedures>(StringComparer.OrdinalIgnoreCase)
         {
-            ["unit-measures"] = Procedures("UNITMEASURES"),
             ["warehouses"] = Procedures("WAREHOUSES"),
-            ["item-brands"] = Procedures("ITEMBRANDS"),
-            ["item-types"] = Procedures("ITEMTYPES"),
-            ["product-types"] = Procedures("PRODUCTTYPES"),
-            ["item-lines"] = Procedures("ITEMLINES"),
             ["item-subgroups"] = Procedures("ITEMSUBGROUPS"),
             ["sales-channels"] = Procedures("SALESCHANNELS"),
             ["warehouse-locations"] = Procedures("WAREHOUSELOCATIONS"),

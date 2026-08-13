@@ -9,6 +9,8 @@ public sealed class ItemGroupRepository(ITenantConnectionFactory connectionFacto
 {
     private const string ListProcedure = "dbo.SP_NA_GET_ITEM_GROUPS_LISTAR";
     private const string GetByIdProcedure = "dbo.SP_NA_GET_ITEM_GROUPS_BUSCARPORID";
+    private const string LookupProcedure = "dbo.SP_NA_GET_ITEM_GROUPS_LOOKUP";
+    private const string HistoryProcedure = "dbo.SP_NA_GET_ITEM_GROUPS_HISTORIAL";
     private const string CreateProcedure = "dbo.SP_NA_POST_ITEM_GROUPS_CREAR";
     private const string ExistsByCodeProcedure = "dbo.SP_NA_GET_ITEM_GROUPSBUSCARPORCODIGO";
     private const string UpdateProcedure = "dbo.SP_NA_PUT_ITEM_GROUPS_ACTUALIZAR";
@@ -27,6 +29,20 @@ public sealed class ItemGroupRepository(ITenantConnectionFactory connectionFacto
     {
         using var connection = connectionFactory.CreateConnection();
         return await GetByIdCoreAsync(id, connection, transaction: null, cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<ItemGroupLookupDto>> GetLookupAsync(CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        var rows = await connection.QueryAsync<ItemGroupLookupDto>(new CommandDefinition(LookupProcedure, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        return rows.AsList();
+    }
+
+    public async Task<IReadOnlyCollection<ItemGroupAuditChangeDto>> GetHistoryAsync(int id, CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        var rows = await connection.QueryAsync<ItemGroupAuditChangeDto>(new CommandDefinition(HistoryProcedure, new { Id = id }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        return rows.AsList();
     }
 
     public Task<ItemGroupDto?> GetByIdAsync(
@@ -90,6 +106,9 @@ public sealed class ItemGroupRepository(ITenantConnectionFactory connectionFacto
         return UpdateCoreAsync(itemGroup, connection, transaction, cancellationToken);
     }
 
+    public Task<int> UpdateWithResultAsync(UpdateItemGroupData itemGroup, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default) =>
+        UpdateResultCoreAsync(itemGroup, connection, transaction, cancellationToken);
+
     public async Task<bool> DeleteAsync(int id, int? deletedByUserId, string? deletedByUserName, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
@@ -108,6 +127,9 @@ public sealed class ItemGroupRepository(ITenantConnectionFactory connectionFacto
         return DeleteCoreAsync(
             id, deletedByUserId, deletedByUserName, connection, transaction, cancellationToken);
     }
+
+    public Task<int> DeleteWithResultAsync(int id, int? deletedByUserId, string? deletedByUserName, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default) =>
+        DeleteResultCoreAsync(id, deletedByUserId, deletedByUserName, connection, transaction, cancellationToken);
 
     private static Task<ItemGroupDto?> GetByIdCoreAsync(
         int id,
@@ -162,9 +184,14 @@ public sealed class ItemGroupRepository(ITenantConnectionFactory connectionFacto
         IDbTransaction? transaction,
         CancellationToken cancellationToken)
     {
-        var affectedRows = await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(UpdateProcedure, itemGroup, transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        var affectedRows = await UpdateResultCoreAsync(itemGroup, connection, transaction, cancellationToken);
         return affectedRows > 0;
+    }
+
+    private static Task<int> UpdateResultCoreAsync(UpdateItemGroupData itemGroup, IDbConnection connection, IDbTransaction? transaction, CancellationToken cancellationToken)
+    {
+        return connection.ExecuteScalarAsync<int>(
+            new CommandDefinition(UpdateProcedure, itemGroup, transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
     }
 
     private static async Task<bool> DeleteCoreAsync(
@@ -175,13 +202,18 @@ public sealed class ItemGroupRepository(ITenantConnectionFactory connectionFacto
         IDbTransaction? transaction,
         CancellationToken cancellationToken)
     {
-        var affectedRows = await connection.ExecuteScalarAsync<int>(
+        var affectedRows = await DeleteResultCoreAsync(id, deletedByUserId, deletedByUserName, connection, transaction, cancellationToken);
+        return affectedRows > 0;
+    }
+
+    private static Task<int> DeleteResultCoreAsync(int id, int? deletedByUserId, string? deletedByUserName, IDbConnection connection, IDbTransaction? transaction, CancellationToken cancellationToken)
+    {
+        return connection.ExecuteScalarAsync<int>(
             new CommandDefinition(
                 DeleteProcedure,
                 new { Id = id, DeletedByUserId = deletedByUserId, DeletedByUserName = deletedByUserName },
                 transaction,
                 cancellationToken: cancellationToken,
                 commandType: CommandType.StoredProcedure));
-        return affectedRows > 0;
     }
 }

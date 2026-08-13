@@ -31,6 +31,13 @@ La compatibilidad futura con MySQL se trabajara desde abstracciones de persisten
 - `137_master_currency_transactional_registration.sql`: registra el contrato Currency transaccional, deshabilitado por defecto, y conserva la dependencia PriceList -> Currencies.
 - `138_tenant_sri_txt_import.sql`: agrega cargas TXT SRI tenant, detalle normalizado, estado `Staged` y enqueue explícito idempotente.
 - `139_master_sri_txt_import_security.sql`: registra permisos API de cargas TXT SRI sin concederlos automáticamente a roles.
+- `198_tenant_product_types_master.sql`: evoluciona ProductTypes con naturaleza ERP cerrada, auditoria, LocalOutbox transaccional y aplicacion por GlobalId sin adopcion por codigo.
+- `199_master_definitions_inventory_product_types_navigation.sql`: conserva identidades y accesos legacy al mover Tipos de producto a Configuracion > Definiciones > Inventario.
+- `200_master_product_types_sync_registration.sql`: registra ProductType antes de Item con configuracion y ownership deshabilitados por defecto.
+- `201_tenant_item_lines_master.sql`: evoluciona ItemLines con GlobalId, orden, auditoria, LocalOutbox transaccional y aplicacion por GlobalId sin adopcion por codigo; no agrega referencias SAP/externas.
+- `202_master_definitions_inventory_item_lines_navigation.sql`: conserva identidades y accesos legacy al mover Lineas de articulos a Configuracion > Definiciones > Inventario con FormKey `item-lines`.
+- `203_master_item_lines_sync_registration.sql`: registra ItemLine sin dependencias funcionales, con configuracion y ownership deshabilitados por defecto.
+- `204_master_product_types_dependency_repair.sql`: retira de forma forward-only la dependencia prematura Item -> ProductType hasta que el payload de articulos publique ProductTypeGlobalId.
 | `100_tenant_purchase_reference_catalog_sync.sql` | Tenant | Normaliza impuestos, unidades de medida y listas de precios para sincronizacion previa a ordenes. |
 | `101_tenant_sap_purchase_order_import.sql` | Tenant | Agrega identidad, version SAP y estado de enrutamiento a ordenes de compra. |
 | `112_tenant_sap_payment_terms_sync.sql` | Tenant | Importacion idempotente SAP B1 y aplicacion por GlobalId de condiciones de pago. |

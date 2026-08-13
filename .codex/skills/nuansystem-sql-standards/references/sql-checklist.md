@@ -18,6 +18,7 @@
 - [ ] UTC audit fields and logical-delete fields follow the approved standard.
 - [ ] Indexes support real list, lookup, uniqueness, history, and operational access paths.
 - [ ] SAP/external fields remain optional and are not local identity unless explicitly required.
+- [ ] Every newly added column is separated by `GO` from its first static `UPDATE`, `SELECT`, constraint, index, or procedure reference.
 
 ## 3. Procedures and Dapper
 
@@ -51,6 +52,8 @@
 ## 6. Evolution and evidence
 
 - [ ] Script is safely rerunnable and does not duplicate data/grants.
+- [ ] `Test-SqlMigrationBatches.ps1` passes for every changed migration and rejects a same-batch negative fixture.
+- [ ] Legacy-without-columns, partially evolved, and complete/rerun states were tested or explicitly marked not validated.
 - [ ] Existing installations receive a forward migration/hotfix rather than silent history edits.
 - [ ] Backfill, compatibility window, destructive risk, and recovery are explicit.
 - [ ] Static SQL checks distinguish syntax/contract inspection from real execution.

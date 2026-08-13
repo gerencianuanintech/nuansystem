@@ -281,7 +281,7 @@ Endpoints en `Program.cs`:
 Endpoints modularizados:
 
 - Accounting: `/api/accounting/chart-of-accounts`.
-- Inventory: `/api/items`, `/api/item-groups`, `/api/item-families`, catalogos auxiliares.
+- Inventory: `/api/items`, `/api/definitions/inventory/item-groups`, `/api/definitions/inventory/item-families`, catalogos auxiliares.
 - Geography: `/countries`, `/provinces`, `/cities`, `/reverse-geocode`, `/static-map`.
 - Financial catalogs: rutas por catalogo financiero.
 - General supplier: rutas por catalogo proveedor general.

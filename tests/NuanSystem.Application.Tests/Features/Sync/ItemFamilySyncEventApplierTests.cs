@@ -2,7 +2,7 @@ using System.Text.Json;
 using FluentAssertions;
 using NSubstitute;
 using NuanSystem.Application.Abstractions.Sync;
-using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Dtos;
+using NuanSystem.Application.Features.Definitions.Inventory.ItemFamilies.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.MasterBranchSyncWorker.Services;
 using NuanSystem.Shared.Sync;

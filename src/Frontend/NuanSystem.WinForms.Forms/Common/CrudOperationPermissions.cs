@@ -50,6 +50,24 @@ public sealed record CrudOperationPermissions(
         PermissionCodes.ItemsManage,
         PermissionCodes.ItemsManage);
 
+    public static CrudOperationPermissions ItemFamilies { get; } = new(
+        PermissionCodes.GeneralInventoryItemFamiliesRead,
+        PermissionCodes.GeneralInventoryItemFamiliesManage,
+        PermissionCodes.GeneralInventoryItemFamiliesManage,
+        PermissionCodes.GeneralInventoryItemFamiliesManage);
+
+    public static CrudOperationPermissions ItemBrands { get; } = new(
+        PermissionCodes.GeneralInventoryItemBrandsRead,
+        PermissionCodes.GeneralInventoryItemBrandsManage,
+        PermissionCodes.GeneralInventoryItemBrandsManage,
+        PermissionCodes.GeneralInventoryItemBrandsManage);
+
+    public static CrudOperationPermissions UnitMeasures { get; } = new(
+        PermissionCodes.GeneralInventoryUnitMeasuresRead,
+        PermissionCodes.GeneralInventoryUnitMeasuresManage,
+        PermissionCodes.GeneralInventoryUnitMeasuresManage,
+        PermissionCodes.GeneralInventoryUnitMeasuresManage);
+
     public static CrudOperationPermissions InventoryWarehouses { get; } = new(
         PermissionCodes.GeneralInventoryWarehousesRead,
         PermissionCodes.GeneralInventoryWarehousesManage,

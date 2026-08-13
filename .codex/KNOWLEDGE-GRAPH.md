@@ -126,6 +126,27 @@ NuanLookupEdit
 
 Impact rule: button collection, events, default enablement, or Designer properties are shared-control changes.
 
+### 4.4.1 Corporate Boolean switch
+
+```text
+NuanToggleSwitch
+  location: src/Frontend/NuanSystem.WinForms.Controls/Editors/NuanToggleSwitch.cs
+  extends:
+    -> DevExpress ToggleSwitch interaction, keyboard, focus, and read-only behavior
+  provides:
+    -> compact corporate rendering
+    -> explicit Sí/No state text
+    -> configurable active/inactive/text/thumb colors
+    -> Checked compatibility property
+  representative consumer:
+    -> Definitions/Inventory/ItemGroups/ItemGroupEditForm.Designer.cs
+         -> Activo
+         -> Grupo del sistema
+         -> BrandResources primary/border/text colors
+```
+
+Impact rule: rendering defaults or the `Checked` compatibility contract affect every consuming Boolean field; verify Designer serialization, keyboard toggling, disabled/read-only states, and a representative edit/consult form.
+
 ### 4.5 Corporate data grid
 
 ```text

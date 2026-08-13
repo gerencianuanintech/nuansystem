@@ -5,6 +5,11 @@ using NuanSystem.WinForms.Services.GeneralInventory.ItemGroups;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemGroups.Models;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemFamilies;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemFamilies.Models;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ItemBrands;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ItemLines;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ProductTypes;
+using NuanSystem.WinForms.Services.Definitions.Inventory.UnitMeasures;
+using DefinitionUnitMeasureLookupItem = NuanSystem.WinForms.Services.Definitions.Inventory.UnitMeasures.Models.UnitMeasureLookupItem;
 using NuanSystem.WinForms.Services.InventoryItems;
 using NuanSystem.WinForms.Services.InventoryItems.Models;
 using NuanSystem.WinForms.Services.Security.Access;
@@ -18,6 +23,10 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
     private readonly IItemClient itemClient;
     private readonly IItemGroupClient itemGroupClient;
     private readonly IItemFamilyClient itemFamilyClient;
+    private readonly IItemBrandClient itemBrandClient;
+    private readonly IItemLineClient itemLineClient;
+    private readonly IProductTypeClient productTypeClient;
+    private readonly IUnitMeasureClient unitMeasureClient;
     private readonly IGeneralInventoryCatalogClient generalInventoryCatalogClient;
     private readonly IChartOfAccountClient chartOfAccountClient;
     private readonly ISecurityAccessClient securityAccessClient;
@@ -25,12 +34,12 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
 
     private static readonly string[] RelatedCatalogFormKeys =
     {
-        "inventory-unit-measures",
+        "unit-measures",
         "inventory-warehouses",
-        "inventory-item-brands",
+        "item-brands",
         "inventory-item-types",
-        "inventory-product-types",
-        "inventory-item-lines",
+        "product-types",
+        "item-lines",
         "inventory-item-subgroups",
         "inventory-sales-channels",
         "inventory-warehouse-locations",
@@ -46,6 +55,10 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
         IItemClient itemClient,
         IItemGroupClient itemGroupClient,
         IItemFamilyClient itemFamilyClient,
+        IItemBrandClient itemBrandClient,
+        IItemLineClient itemLineClient,
+        IProductTypeClient productTypeClient,
+        IUnitMeasureClient unitMeasureClient,
         IGeneralInventoryCatalogClient generalInventoryCatalogClient,
         IChartOfAccountClient chartOfAccountClient,
         ISecurityAccessClient securityAccessClient)
@@ -53,6 +66,10 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
         this.itemClient = itemClient;
         this.itemGroupClient = itemGroupClient;
         this.itemFamilyClient = itemFamilyClient;
+        this.itemBrandClient = itemBrandClient;
+        this.itemLineClient = itemLineClient;
+        this.productTypeClient = productTypeClient;
+        this.unitMeasureClient = unitMeasureClient;
         this.generalInventoryCatalogClient = generalInventoryCatalogClient;
         this.chartOfAccountClient = chartOfAccountClient;
         this.securityAccessClient = securityAccessClient;
@@ -79,12 +96,12 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
         var lookupsTask = itemClient.GetLookupsAsync(cancellationToken);
         var itemFamiliesTask = itemFamilyClient.GetAsync(cancellationToken);
         var accountsTask = chartOfAccountClient.GetLookupAsync(cancellationToken);
-        var unitMeasuresTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.UnitMeasures, cancellationToken);
+        var unitMeasuresTask = unitMeasureClient.GetLookupAsync(cancellationToken);
         var warehousesTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.Warehouses, cancellationToken);
-        var brandsTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.ItemBrands, cancellationToken);
+        var brandsTask = itemBrandClient.GetLookupAsync(cancellationToken);
         var itemTypesTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.ItemTypes, cancellationToken);
-        var productTypesTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.ProductTypes, cancellationToken);
-        var itemLinesTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.ItemLines, cancellationToken);
+        var productTypesTask = productTypeClient.GetLookupAsync(cancellationToken);
+        var itemLinesTask = itemLineClient.GetLookupAsync(cancellationToken);
         var itemSubgroupsTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.ItemSubgroups, cancellationToken);
         var salesChannelsTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.SalesChannels, cancellationToken);
         var warehouseLocationsTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.WarehouseLocations, cancellationToken);
@@ -134,10 +151,44 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
                 .Where(account => account.IsActive)
                 .OrderBy(account => account.Code)
                 .ToArray(),
-            Brands = ActiveCatalog(await brandsTask),
+            Brands = (await brandsTask)
+                .Where(brand => brand.IsActive)
+                .OrderBy(brand => brand.Code)
+                .ThenBy(brand => brand.Name)
+                .Select(brand => new GeneralInventoryCatalogLookupItem
+                {
+                    Id = brand.Id,
+                    Code = brand.Code,
+                    Name = brand.Name,
+                    IsActive = brand.IsActive
+                })
+                .ToArray(),
             ItemTypes = ActiveCatalog(await itemTypesTask),
-            ProductTypes = ActiveCatalog(await productTypesTask),
-            ItemLines = ActiveCatalog(await itemLinesTask),
+            ProductTypes = (await productTypesTask)
+                .Where(item => item.IsActive)
+                .OrderBy(item => item.SortOrder)
+                .ThenBy(item => item.Code)
+                .Select(item => new GeneralInventoryCatalogLookupItem
+                {
+                    Id = item.Id,
+                    Code = item.Code,
+                    Name = item.Name,
+                    IsActive = item.IsActive
+                })
+                .ToArray(),
+            ItemLines = (await itemLinesTask)
+                .Where(item => item.IsActive)
+                .OrderBy(item => item.SortOrder)
+                .ThenBy(item => item.Code)
+                .ThenBy(item => item.Name)
+                .Select(item => new GeneralInventoryCatalogLookupItem
+                {
+                    Id = item.Id,
+                    Code = item.Code,
+                    Name = item.Name,
+                    IsActive = item.IsActive
+                })
+                .ToArray(),
             ItemSubgroups = ActiveCatalog(await itemSubgroupsTask),
             SalesChannels = ActiveCatalog(await salesChannelsTask),
             WarehouseLocations = ActiveCatalog(await warehouseLocationsTask),
@@ -253,11 +304,16 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
     }
 
     private static IReadOnlyCollection<UnitOfMeasureLookupItem> ToUnitMeasures(
-        IReadOnlyCollection<GeneralInventoryCatalogLookupItem> items,
+        IReadOnlyCollection<DefinitionUnitMeasureLookupItem> items,
         IReadOnlyCollection<UnitOfMeasureLookupItem> fallback)
     {
-        var activeItems = ActiveCatalog(items);
-        if (activeItems.Count == 0)
+        var activeItems = items
+            .Where(item => item.IsActive)
+            .OrderBy(item => item.SortOrder)
+            .ThenBy(item => item.Code)
+            .ThenBy(item => item.Name)
+            .ToArray();
+        if (activeItems.Length == 0)
         {
             return fallback;
         }

@@ -27,7 +27,7 @@ public sealed class DeleteItemGroupCommandHandler(
                         [new ApiError("ItemGroupNotFound", "No existe el grupo de articulos indicado.", nameof(request.Id))]);
                 }
 
-                var deleted = await itemGroupRepository.DeleteAsync(
+                var deleteResult = await itemGroupRepository.DeleteWithResultAsync(
                     request.Id,
                     request.AuditUserId,
                     CreateItemGroupCommandHandler.NormalizeOptional(request.AuditUserName),
@@ -35,7 +35,11 @@ public sealed class DeleteItemGroupCommandHandler(
                     transaction,
                     token);
 
-                if (!deleted)
+                if (deleteResult == -2)
+                    return Result<bool>.Failure("No se puede eliminar un grupo del sistema.", [new ApiError("ITEM_GROUP_SYSTEM_PROTECTED", "El grupo pertenece al sistema.", nameof(request.Id))]);
+                if (deleteResult == -3)
+                    return Result<bool>.Failure("No se puede eliminar el grupo porque esta en uso.", [new ApiError("ITEM_GROUP_IN_USE", "Existen familias o articulos asociados.", nameof(request.Id))]);
+                if (deleteResult <= 0)
                 {
                     return Result<bool>.Failure("No se pudo eliminar el grupo de articulos.");
                 }

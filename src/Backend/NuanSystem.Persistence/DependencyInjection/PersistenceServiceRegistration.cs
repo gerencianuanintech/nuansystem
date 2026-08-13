@@ -16,6 +16,7 @@ using NuanSystem.Persistence.Repositories.FinancialCatalogs;
 using NuanSystem.Persistence.Repositories.GeneralInventory;
 using NuanSystem.Persistence.Repositories.GeneralSupplier;
 using NuanSystem.Persistence.Repositories.Definitions.General;
+using NuanSystem.Persistence.Repositories.Definitions.Inventory;
 using NuanSystem.Persistence.Repositories.OperationalCatalogs;
 using NuanSystem.Persistence.Repositories.Purchasing;
 using NuanSystem.Persistence.Repositories.SapSync;
@@ -75,6 +76,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IPriceListRepository, PriceListRepository>();
         services.AddScoped<IGeographyRepository, GeographyRepository>();
         services.AddScoped<IGeneralInventoryCatalogRepository, GeneralInventoryCatalogRepository>();
+        services.AddScoped<IItemTypeRepository, ItemTypeRepository>();
         services.AddScoped<IGeneralSupplierCatalogRepository, GeneralSupplierCatalogRepository>();
         services.AddScoped<IOperationalCatalogRepository, OperationalCatalogRepository>();
         services.AddScoped<ISecurityDocumentSeriesRepository, SecurityDocumentSeriesRepository>();
@@ -93,7 +95,11 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IItemRepository, ItemRepository>();
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<IItemGroupRepository, ItemGroupRepository>();
-        services.AddScoped<IItemFamilyRepository, ItemFamilyRepository>();
+        services.AddScoped<IItemFamilyRepository, NuanSystem.Persistence.Repositories.Definitions.Inventory.ItemFamilyRepository>();
+        services.AddScoped<IItemBrandRepository, ItemBrandRepository>();
+        services.AddScoped<IUnitMeasureRepository, UnitMeasureRepository>();
+        services.AddScoped<IProductTypeRepository, ProductTypeRepository>();
+        services.AddScoped<IItemLineRepository, ItemLineRepository>();
         services.AddScoped<IChartOfAccountRepository, ChartOfAccountRepository>();
         services.AddScoped<ISapCompanySettingsRepository, SapCompanySettingsRepository>();
         services.AddScoped<ISapCatalogMappingRepository, SapCatalogMappingRepository>();
@@ -142,13 +148,16 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ISyncFullEntitySource, CityFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, CurrencyFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, TaxFullEntitySource>();
-        services.AddScoped<ISyncFullEntitySource, UnitOfMeasureFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, PriceListFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, PaymentTermFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, BusinessPartnerFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, CarrierFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, ItemGroupFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, ItemFamilyFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, ItemBrandFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, UnitMeasureFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, ProductTypeFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, ItemLineFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, ItemFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, WarehouseFullEntitySource>();
         services.AddScoped<IBusinessPartnerSyncApplyRepository, BusinessPartnerSyncApplyRepository>();
@@ -165,6 +174,10 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IPurchaseOrderSyncApplyRepository, PurchaseOrderSyncApplyRepository>();
         services.AddScoped<IItemGroupSyncApplyRepository, ItemGroupSyncApplyRepository>();
         services.AddScoped<IItemFamilySyncApplyRepository, ItemFamilySyncApplyRepository>();
+        services.AddScoped<IItemBrandSyncApplyRepository, ItemBrandSyncApplyRepository>();
+        services.AddScoped<IUnitMeasureSyncApplyRepository, UnitMeasureSyncApplyRepository>();
+        services.AddScoped<IProductTypeSyncApplyRepository, ProductTypeSyncApplyRepository>();
+        services.AddScoped<IItemLineSyncApplyRepository, ItemLineSyncApplyRepository>();
         services.AddScoped<ICarrierSyncApplyRepository, CarrierSyncApplyRepository>();
 
         return services;

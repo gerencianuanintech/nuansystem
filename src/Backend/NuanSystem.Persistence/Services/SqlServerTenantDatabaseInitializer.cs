@@ -82,6 +82,14 @@ public sealed class SqlServerTenantDatabaseInitializer(
                       ,"181_tenant_province_paged_search.sql"
                       ,"182_tenant_city_paged_search.sql"
                       ,"183_tenant_warehouse_geography_relationships.sql"
+                      ,"184_tenant_item_types_master.sql"
+                      ,"186_tenant_item_groups_master.sql"
+                      ,"188_tenant_item_families_master.sql"
+                      ,"190_tenant_item_brands_master.sql"
+                      ,"194_tenant_unit_of_measures_master.sql"
+                      ,"196_tenant_unit_of_measures_incremental_sync.sql"
+                      ,"198_tenant_product_types_master.sql"
+                      ,"201_tenant_item_lines_master.sql"
                    })
         {
             var scriptPath = FindDatabaseScriptPath(fileName);

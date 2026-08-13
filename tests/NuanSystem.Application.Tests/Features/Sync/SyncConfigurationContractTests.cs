@@ -302,6 +302,7 @@ public sealed class SyncConfigurationContractTests
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Currencies).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.ItemGroups).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.ItemFamilies).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.ItemLines).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.BusinessPartnerPaymentTerms).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Carrier).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative("CustomCatalog").Should().BeFalse();
@@ -312,6 +313,7 @@ public sealed class SyncConfigurationContractTests
             "Currencies",
             "Tax",
             "UnitOfMeasure",
+            "ProductType",
             "BusinessPartnerPaymentTerms",
             "SupplierGroups",
             "SupplierClasses",
@@ -321,6 +323,8 @@ public sealed class SyncConfigurationContractTests
             "BusinessPartner",
             "ItemGroups",
             "ItemFamilies",
+            "ItemBrands",
+            "ItemLine",
             "Item",
             "Warehouse",
             "PriceList",
@@ -438,7 +442,7 @@ public sealed class SyncConfigurationContractTests
 
         var unitOfMeasure = SyncMasterBranchEntityCodes.Find(SyncMasterBranchEntityCodes.UnitOfMeasures);
         unitOfMeasure.Should().NotBeNull();
-        unitOfMeasure!.SupportsIncremental.Should().BeFalse();
+        unitOfMeasure!.SupportsIncremental.Should().BeTrue();
 
         var item = SyncMasterBranchEntityCodes.Find(SyncMasterBranchEntityCodes.Item);
         item.Should().NotBeNull();

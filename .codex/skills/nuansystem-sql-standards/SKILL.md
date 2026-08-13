@@ -85,6 +85,36 @@ Once a script may have been executed:
 - preserve compatibility until code and schema rollout order is safe;
 - describe rollback/recovery for destructive or irreversible changes.
 
+### SQL Server batch compilation gate
+
+SQL Server compiles a batch before executing it. When a migration adds a
+column, never reference that column statically later in the same batch, even
+when the `ALTER TABLE` is guarded by `COL_LENGTH` or appears earlier inside a
+transaction. Use separate batches in this order:
+
+1. add columns as nullable;
+2. `GO`;
+3. backfill and validate;
+4. make columns required and add defaults/checks/indexes;
+5. `GO` before procedures that consume the evolved schema.
+
+Before deployment, run:
+
+```powershell
+& .codex/skills/nuansystem-sql-standards/scripts/Test-SqlMigrationBatches.ps1 `
+  -Path database/sql/<migration>.sql
+```
+
+The validator must pass for the real migration and fail for a negative fixture
+that adds and consumes a column in one batch. Dynamic SQL is not reported
+because it compiles when executed; use it only when a batch boundary is not
+viable and document the reason.
+
+Validate migrations against three schema states when practical: legacy before
+the new columns, partially evolved, and complete/rerun. A static pass is not a
+substitute for two authorized executions against a backed-up representative
+database.
+
 ## Operational SQL
 
 For stock, money, purchases, cash, documents, workflow, sync, or outbox:
@@ -124,4 +154,6 @@ Form-operation grants do not replace API permission grants. Runtime permission v
 - [ ] Audit, logical delete, constraints, indexes, UTC, and transactions are correct.
 - [ ] API permission and form-operation seeds are both addressed when applicable.
 - [ ] Existing-installation migration/repair and recovery are documented.
+- [ ] Added columns are separated from static use by `GO`; `Test-SqlMigrationBatches.ps1` passes.
+- [ ] Legacy, partial, and complete/rerun schema states were tested or explicitly reported as not validated.
 - [ ] Execution status is reported as Executed, Statically validated, Not executed, or Blocked.

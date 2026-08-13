@@ -23,11 +23,11 @@ public sealed partial class ItemEditForm : BaseEditForm
     private bool dirtyTrackingEnabled;
     private TraceabilityManagement traceabilityManagement = TraceabilityManagement.Batch;
 
-    private const string UnitMeasuresFormKey = "inventory-unit-measures";
+    private const string UnitMeasuresFormKey = "unit-measures";
     private const string WarehousesFormKey = "inventory-warehouses";
-    private const string ItemBrandsFormKey = "inventory-item-brands";
-    private const string ProductTypesFormKey = "inventory-product-types";
-    private const string ItemLinesFormKey = "inventory-item-lines";
+    private const string ItemBrandsFormKey = "item-brands";
+    private const string ProductTypesFormKey = "product-types";
+    private const string ItemLinesFormKey = "item-lines";
     private const string ItemSubgroupsFormKey = "inventory-item-subgroups";
     private const string WarehouseLocationsFormKey = "inventory-warehouse-locations";
     private const string ReplenishmentMethodsFormKey = "inventory-replenishment-methods";
@@ -544,8 +544,8 @@ public sealed partial class ItemEditForm : BaseEditForm
         BindLookup(lueItemGroup, source.ItemGroups, "DisplayText", "Id");
         BindLookup(lueItemFamily, source.ItemFamilies, "DisplayText", "Id");
         BindCatalogLookup(lueBrand, source.Brands, nameof(GeneralInventoryCatalogLookupItem.Id));
-        BindCatalogLookup(lueProductType, source.ProductTypes, keepCurrentWhenEmpty: true);
-        BindCatalogLookup(lueLine, source.ItemLines);
+        BindProductTypeLookup(source.ProductTypes);
+        BindItemLineLookup(source.ItemLines);
         BindCatalogLookup(lueSubGroup, source.ItemSubgroups);
         BindCatalogLookup(lueReplenishmentMethod, source.ReplenishmentMethods);
         BindCatalogLookup(lueSalesChannel, source.SalesChannels);
@@ -588,6 +588,44 @@ public sealed partial class ItemEditForm : BaseEditForm
             valueMember);
     }
 
+    private void BindProductTypeLookup(IReadOnlyCollection<GeneralInventoryCatalogLookupItem> items)
+    {
+        var historicalCode = GetLookupString(lueProductType);
+        var options = items.ToList();
+        if (!string.IsNullOrWhiteSpace(historicalCode) &&
+            options.All(item => !string.Equals(item.Code, historicalCode, StringComparison.OrdinalIgnoreCase)))
+        {
+            options.Add(new GeneralInventoryCatalogLookupItem
+            {
+                Code = historicalCode,
+                Name = $"{historicalCode} (valor histórico)",
+                IsActive = false
+            });
+        }
+
+        BindCatalogLookup(lueProductType, options, keepCurrentWhenEmpty: true);
+        if (!string.IsNullOrWhiteSpace(historicalCode)) lueProductType.EditValue = historicalCode;
+    }
+
+    private void BindItemLineLookup(IReadOnlyCollection<GeneralInventoryCatalogLookupItem> items)
+    {
+        var historicalCode = GetLookupString(lueLine);
+        var options = items.ToList();
+        if (!string.IsNullOrWhiteSpace(historicalCode) &&
+            options.All(item => !string.Equals(item.Code, historicalCode, StringComparison.OrdinalIgnoreCase)))
+        {
+            options.Add(new GeneralInventoryCatalogLookupItem
+            {
+                Code = historicalCode,
+                Name = $"{historicalCode} (valor histórico)",
+                IsActive = false
+            });
+        }
+
+        BindCatalogLookup(lueLine, options, keepCurrentWhenEmpty: true);
+        if (!string.IsNullOrWhiteSpace(historicalCode)) lueLine.EditValue = historicalCode;
+    }
+
     private static void BindFixedLookup(LookUpEdit lookup, IReadOnlyCollection<LookupOption> items)
     {
         lookup.Properties.DataSource = items.ToList();
@@ -623,6 +661,52 @@ public sealed partial class ItemEditForm : BaseEditForm
         }
 
         lookup.EditValue = value;
+    }
+
+    private void SetProductTypeLookupValue(string? code)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            lueProductType.EditValue = null;
+            return;
+        }
+
+        var options = (lueProductType.Properties.DataSource as IEnumerable<GeneralInventoryCatalogLookupItem>)?.ToList() ?? [];
+        if (options.All(item => !string.Equals(item.Code, code, StringComparison.OrdinalIgnoreCase)))
+        {
+            options.Add(new GeneralInventoryCatalogLookupItem
+            {
+                Code = code,
+                Name = $"{code} (valor histórico)",
+                IsActive = false
+            });
+            BindCatalogLookup(lueProductType, options);
+        }
+
+        lueProductType.EditValue = code;
+    }
+
+    private void SetItemLineLookupValue(string? code)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            lueLine.EditValue = null;
+            return;
+        }
+
+        var options = (lueLine.Properties.DataSource as IEnumerable<GeneralInventoryCatalogLookupItem>)?.ToList() ?? [];
+        if (options.All(item => !string.Equals(item.Code, code, StringComparison.OrdinalIgnoreCase)))
+        {
+            options.Add(new GeneralInventoryCatalogLookupItem
+            {
+                Code = code,
+                Name = $"{code} (valor histórico)",
+                IsActive = false
+            });
+            BindCatalogLookup(lueLine, options);
+        }
+
+        lueLine.EditValue = code;
     }
 
     private void BindWarehouseLookup(IReadOnlyCollection<WarehouseLookupItem> warehouses)
@@ -2004,9 +2088,9 @@ public sealed partial class ItemEditForm : BaseEditForm
         txtAlternateCode.Text = data.AlternateCode ?? string.Empty;
         slueSupplierSku.Text = data.SupplierSku ?? string.Empty;
         memLongDescription.Text = data.LongDescription ?? string.Empty;
-        SetLookupValue(lueProductType, data.ProductType);
+        SetProductTypeLookupValue(data.ProductType);
         SetLookupValue(lueOrigin, data.Origin);
-        SetLookupValue(lueLine, data.Line);
+        SetItemLineLookupValue(data.Line);
         SetLookupValue(lueSubGroup, data.SubGroup);
         txtModel.Text = data.Model ?? string.Empty;
         txtReference.Text = data.Reference ?? string.Empty;

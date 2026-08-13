@@ -5,6 +5,7 @@ using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
+using NuanSystem.Application.Features.Accounting.ChartOfAccounts.Dtos;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Commands;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
@@ -59,9 +60,9 @@ public sealed class ItemGroupSyncPublishingTests
         _repository.ExistsByCodeAsync(
                 "INV-PAP", itemGroup.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
             .Returns(false);
-        _repository.UpdateAsync(
+        _repository.UpdateWithResultAsync(
                 Arg.Any<UpdateItemGroupData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
-            .Returns(true);
+            .Returns(1);
         var handler = new UpdateItemGroupCommandHandler(
             _repository, _chartRepository, _transactionRunner, _writer);
 
@@ -83,14 +84,14 @@ public sealed class ItemGroupSyncPublishingTests
         _repository.GetByIdAsync(
                 itemGroup.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
             .Returns(itemGroup);
-        _repository.DeleteAsync(
+        _repository.DeleteWithResultAsync(
                 itemGroup.Id,
                 7,
                 "admin",
                 _transactionRunner.Connection,
                 _transactionRunner.Transaction,
                 Arg.Any<CancellationToken>())
-            .Returns(true);
+            .Returns(1);
         var handler = new DeleteItemGroupCommandHandler(_repository, _transactionRunner, _writer);
 
         var result = await handler.Handle(
@@ -104,6 +105,30 @@ public sealed class ItemGroupSyncPublishingTests
             _transactionRunner.Connection,
             _transactionRunner.Transaction,
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Update_RejectsInactiveCanonicalAccount()
+    {
+        _chartRepository.GetLookupAsync(Arg.Any<CancellationToken>())
+            .Returns([
+                new ChartOfAccountLookupDto(9, "5199", "Ajuste", "Expense", null, 1, false)
+            ]);
+        var handler = new UpdateItemGroupCommandHandler(
+            _repository, _chartRepository, _transactionRunner, _writer);
+        var command = new UpdateItemGroupCommand(
+            4, "INV-PAP", "Papeleria", null, null, null, true,
+            null, null, null, null, null, null, "5199", null, 0,
+            null, null, "114", "114", 7, "admin");
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error =>
+            error.Code == "ChartOfAccountNotFound" &&
+            error.Field == nameof(UpdateItemGroupCommand.InventoryAdjustmentAccountCode));
+        await _repository.DidNotReceiveWithAnyArgs().UpdateWithResultAsync(
+            default!, default!, default!, default);
     }
 
     [Fact]

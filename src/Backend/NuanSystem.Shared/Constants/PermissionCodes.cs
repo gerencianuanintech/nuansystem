@@ -90,6 +90,10 @@ public static class PermissionCodes
     public const string GeneralInventoryItemBrandsManage = "GENERALINVENTORY.ITEMBRANDS.MANAGE";
     public const string GeneralInventoryItemTypesRead = "GENERALINVENTORY.ITEMTYPES.READ";
     public const string GeneralInventoryItemTypesManage = "GENERALINVENTORY.ITEMTYPES.MANAGE";
+    public const string GeneralInventoryItemGroupsRead = "GENERALINVENTORY.ITEMGROUPS.READ";
+    public const string GeneralInventoryItemGroupsManage = "GENERALINVENTORY.ITEMGROUPS.MANAGE";
+    public const string GeneralInventoryItemFamiliesRead = "GENERALINVENTORY.ITEMFAMILIES.READ";
+    public const string GeneralInventoryItemFamiliesManage = "GENERALINVENTORY.ITEMFAMILIES.MANAGE";
     public const string GeneralInventoryProductTypesRead = "GENERALINVENTORY.PRODUCTTYPES.READ";
     public const string GeneralInventoryProductTypesManage = "GENERALINVENTORY.PRODUCTTYPES.MANAGE";
     public const string GeneralInventoryItemLinesRead = "GENERALINVENTORY.ITEMLINES.READ";
@@ -275,6 +279,10 @@ public static class PermissionCodes
         GeneralInventoryItemBrandsManage,
         GeneralInventoryItemTypesRead,
         GeneralInventoryItemTypesManage,
+        GeneralInventoryItemGroupsRead,
+        GeneralInventoryItemGroupsManage,
+        GeneralInventoryItemFamiliesRead,
+        GeneralInventoryItemFamiliesManage,
         GeneralInventoryProductTypesRead,
         GeneralInventoryProductTypesManage,
         GeneralInventoryItemLinesRead,

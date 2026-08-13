@@ -1,0 +1,13 @@
+namespace NuanSystem.WinForms.Services.Definitions.Inventory.ItemFamilies.Models;
+
+public sealed class ItemFamilyAuditChange
+{
+    public string RecordId { get; set; } = string.Empty;
+    public string Action { get; set; } = string.Empty;
+    public string FieldName { get; set; } = string.Empty;
+    public string? OldValue { get; set; }
+    public string? NewValue { get; set; }
+    public int? UserId { get; set; }
+    public string? UserName { get; set; }
+    public DateTime CreatedAt { get; set; }
+}

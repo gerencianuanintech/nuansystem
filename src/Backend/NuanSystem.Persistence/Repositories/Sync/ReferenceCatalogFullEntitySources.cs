@@ -17,13 +17,6 @@ public sealed class TaxFullEntitySource(ICompanyResolver resolver) : ISyncFullEn
         ReferenceCatalogFullSource.ReadAsync(resolver, context, EntityCode, cancellationToken);
 }
 
-public sealed class UnitOfMeasureFullEntitySource(ICompanyResolver resolver) : ISyncFullEntitySource
-{
-    public string EntityCode => SyncMasterBranchEntityCodes.UnitOfMeasures;
-    public Task<SyncSourcePage> ReadPageAsync(SyncSourceReadContext context, CancellationToken cancellationToken = default) =>
-        ReferenceCatalogFullSource.ReadAsync(resolver, context, EntityCode, cancellationToken);
-}
-
 public sealed class PriceListFullEntitySource(ICompanyResolver resolver) : ISyncFullEntitySource
 {
     public string EntityCode => SyncMasterBranchEntityCodes.PriceLists;

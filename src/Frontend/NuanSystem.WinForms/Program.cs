@@ -58,18 +58,24 @@ using NuanSystem.WinForms.Forms.Definitions.General.Provinces;
 using NuanSystem.WinForms.Forms.GeneralInventory.AttachmentCategories;
 using NuanSystem.WinForms.Forms.GeneralInventory.AttachmentDocumentTypes;
 using NuanSystem.WinForms.Forms.GeneralInventory.Catalogs;
-using NuanSystem.WinForms.Forms.GeneralInventory.ItemBrands;
-using NuanSystem.WinForms.Forms.GeneralInventory.ItemFamilies;
-using NuanSystem.WinForms.Forms.GeneralInventory.ItemGroups;
-using NuanSystem.WinForms.Forms.GeneralInventory.ItemLines;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemBrands;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemFamilies;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemGroups;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemLines;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.UnitMeasures;
 using NuanSystem.WinForms.Forms.GeneralInventory.ItemSubgroups;
-using NuanSystem.WinForms.Forms.GeneralInventory.ItemTypes;
-using NuanSystem.WinForms.Forms.GeneralInventory.ProductTypes;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemTypes;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ItemTypes;
+using NuanSystem.WinForms.ViewModels.Definitions.Inventory.ItemTypes;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ItemLines;
+using NuanSystem.WinForms.ViewModels.Definitions.Inventory.ItemLines;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ProductTypes;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ProductTypes;
+using NuanSystem.WinForms.ViewModels.Definitions.Inventory.ProductTypes;
 using NuanSystem.WinForms.Forms.GeneralInventory.ReplenishmentMethods;
 using NuanSystem.WinForms.Forms.GeneralInventory.SalesChannels;
 using NuanSystem.WinForms.Forms.GeneralInventory.StorageConditions;
 using NuanSystem.WinForms.Forms.GeneralInventory.StorageZones;
-using NuanSystem.WinForms.Forms.GeneralInventory.UnitMeasures;
 using NuanSystem.WinForms.Forms.GeneralInventory.VariantAttributes;
 using NuanSystem.WinForms.Forms.GeneralInventory.WarehouseLocations;
 using NuanSystem.WinForms.Forms.GeneralInventory.Warehouses;
@@ -97,7 +103,10 @@ using NuanSystem.WinForms.Services.TaxCatalogs.Taxes;
 using NuanSystem.WinForms.Services.Definitions.General.Common;
 using NuanSystem.WinForms.Services.GeneralInventory.Catalogs;
 using NuanSystem.WinForms.Services.GeneralSupplier.Catalogs;
-using NuanSystem.WinForms.Services.GeneralInventory.ItemFamilies;
+using DefinitionItemFamilyClient = NuanSystem.WinForms.Services.Definitions.Inventory.ItemFamilies.ItemFamilyClient;
+using DefinitionItemBrandClient = NuanSystem.WinForms.Services.Definitions.Inventory.ItemBrands.ItemBrandClient;
+using DefinitionUnitMeasureClient = NuanSystem.WinForms.Services.Definitions.Inventory.UnitMeasures.UnitMeasureClient;
+using LegacyItemFamilyClient = NuanSystem.WinForms.Services.GeneralInventory.ItemFamilies.ItemFamilyClient;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemGroups;
 using NuanSystem.WinForms.Services.GeneralInventory.Warehouses;
 using NuanSystem.WinForms.Services.InventoryItems;
@@ -132,8 +141,12 @@ using NuanSystem.WinForms.ViewModels.Definitions.General.Countries;
 using NuanSystem.WinForms.ViewModels.Definitions.General.Provinces;
 using NuanSystem.WinForms.ViewModels.GeneralInventory.Catalogs;
 using NuanSystem.WinForms.ViewModels.GeneralSupplier.Catalogs;
-using NuanSystem.WinForms.ViewModels.GeneralInventory.ItemFamilies;
+using NuanSystem.WinForms.ViewModels.Definitions.Inventory.ItemFamilies;
+using NuanSystem.WinForms.ViewModels.Definitions.Inventory.ItemBrands;
+using NuanSystem.WinForms.ViewModels.Definitions.Inventory.UnitMeasures;
 using NuanSystem.WinForms.ViewModels.GeneralInventory.ItemGroups;
+using DefinitionItemGroupClient = NuanSystem.WinForms.Services.Definitions.Inventory.ItemGroups.ItemGroupClient;
+using DefinitionItemGroupsViewModel = NuanSystem.WinForms.ViewModels.Definitions.Inventory.ItemGroups.ItemGroupsViewModel;
 using NuanSystem.WinForms.ViewModels.GeneralInventory.Warehouses;
 using NuanSystem.WinForms.ViewModels.InventoryItems;
 using NuanSystem.WinForms.ViewModels.Purchasing.PurchaseOrders;
@@ -258,11 +271,18 @@ internal sealed class FrontendComposition : IDisposable
     private readonly GeographyClient geographyClient;
     private readonly GeneralSupplierCatalogClient generalSupplierCatalogClient;
     private readonly GeneralInventoryCatalogClient generalInventoryCatalogClient;
+    private readonly ItemTypeClient itemTypeClient;
+    private readonly ProductTypeClient productTypeClient;
+    private readonly ItemLineClient itemLineClient;
     private readonly ItemGroupClient itemGroupClient;
+    private readonly DefinitionItemGroupClient definitionItemGroupClient;
     private readonly WarehouseClient warehouseClient;
     private readonly SecurityDocumentSeriesClient securityDocumentSeriesClient;
     private readonly OperationalCatalogClient operationalCatalogClient;
-    private readonly ItemFamilyClient itemFamilyClient;
+    private readonly LegacyItemFamilyClient itemFamilyClient;
+    private readonly DefinitionItemFamilyClient definitionItemFamilyClient;
+    private readonly DefinitionItemBrandClient definitionItemBrandClient;
+    private readonly DefinitionUnitMeasureClient definitionUnitMeasureClient;
     private readonly ItemClient itemClient;
     private readonly PurchaseOrderClient purchaseOrderClient;
     private readonly SapClient sapClient;
@@ -311,11 +331,18 @@ internal sealed class FrontendComposition : IDisposable
         geographyClient = new GeographyClient(apiClient);
         generalSupplierCatalogClient = new GeneralSupplierCatalogClient(apiClient);
         generalInventoryCatalogClient = new GeneralInventoryCatalogClient(apiClient);
+        itemTypeClient = new ItemTypeClient(apiClient);
+        productTypeClient = new ProductTypeClient(apiClient);
+        itemLineClient = new ItemLineClient(apiClient);
         itemGroupClient = new ItemGroupClient(apiClient);
+        definitionItemGroupClient = new DefinitionItemGroupClient(apiClient);
         warehouseClient = new WarehouseClient(apiClient);
         securityDocumentSeriesClient = new SecurityDocumentSeriesClient(apiClient);
         operationalCatalogClient = new OperationalCatalogClient(apiClient);
-        itemFamilyClient = new ItemFamilyClient(apiClient);
+        itemFamilyClient = new LegacyItemFamilyClient(apiClient);
+        definitionItemFamilyClient = new DefinitionItemFamilyClient(apiClient);
+        definitionItemBrandClient = new DefinitionItemBrandClient(apiClient);
+        definitionUnitMeasureClient = new DefinitionUnitMeasureClient(apiClient);
         itemClient = new ItemClient(apiClient);
         purchaseOrderClient = new PurchaseOrderClient(apiClient);
         sapClient = new SapClient(apiClient);
@@ -413,6 +440,7 @@ internal sealed class FrontendComposition : IDisposable
             CreateSecurityDocumentSeriesForm,
             CreateOperationalCatalogsForm,
             CreateItemFamiliesForm,
+            CreateItemBrandsForm,
             CreateItemsForm,
             CreatePurchaseOrdersForm,
             CreateSapSyncLogForm,
@@ -748,11 +776,13 @@ internal sealed class FrontendComposition : IDisposable
     {
         return formKey switch
         {
+            "unit-measures" => CreateUnitMeasuresForm(),
             "inventory-unit-measures" => CreateUnitMeasuresForm(),
             "inventory-warehouses" => CreateWarehousesForm(),
             "inventory-item-brands" => CreateItemBrandsForm(),
             "inventory-item-types" => CreateItemTypesForm(),
-            "inventory-product-types" => CreateProductTypesForm(),
+            "product-types" => CreateProductTypesForm(),
+            "item-lines" => CreateItemLinesForm(),
             "inventory-item-lines" => CreateItemLinesForm(),
             "inventory-item-subgroups" => CreateItemSubgroupsForm(),
             "inventory-sales-channels" => CreateSalesChannelsForm(),
@@ -769,7 +799,10 @@ internal sealed class FrontendComposition : IDisposable
 
     public UnitMeasuresForm CreateUnitMeasuresForm()
     {
-        return CreateCatalogForm<UnitMeasuresForm>(GeneralInventoryCatalogDescriptors.UnitMeasures);
+        return new UnitMeasuresForm(
+            new UnitMeasuresViewModel(definitionUnitMeasureClient),
+            session,
+            gridColumnSettingsClient);
     }
 
     public WarehousesForm CreateWarehousesForm()
@@ -782,22 +815,31 @@ internal sealed class FrontendComposition : IDisposable
 
     public ItemBrandsForm CreateItemBrandsForm()
     {
-        return CreateCatalogForm<ItemBrandsForm>(GeneralInventoryCatalogDescriptors.ItemBrands);
+        return new ItemBrandsForm(
+            new ItemBrandsViewModel(definitionItemBrandClient),
+            session,
+            gridColumnSettingsClient);
     }
 
     public ItemTypesForm CreateItemTypesForm()
     {
-        return CreateCatalogForm<ItemTypesForm>(GeneralInventoryCatalogDescriptors.ItemTypes);
+        return new ItemTypesForm(new ItemTypesViewModel(itemTypeClient), session, gridColumnSettingsClient);
     }
 
     public ProductTypesForm CreateProductTypesForm()
     {
-        return CreateCatalogForm<ProductTypesForm>(GeneralInventoryCatalogDescriptors.ProductTypes);
+        return new ProductTypesForm(
+            new ProductTypesViewModel(productTypeClient),
+            session,
+            gridColumnSettingsClient);
     }
 
     public ItemLinesForm CreateItemLinesForm()
     {
-        return CreateCatalogForm<ItemLinesForm>(GeneralInventoryCatalogDescriptors.ItemLines);
+        return new ItemLinesForm(
+            new ItemLinesViewModel(itemLineClient),
+            session,
+            gridColumnSettingsClient);
     }
 
     public ItemSubgroupsForm CreateItemSubgroupsForm()
@@ -854,7 +896,11 @@ internal sealed class FrontendComposition : IDisposable
 
     public ItemGroupsForm CreateItemGroupsForm()
     {
-        return new ItemGroupsForm(new ItemGroupsViewModel(itemGroupClient, chartOfAccountClient), session, auditClient, gridColumnSettingsClient);
+        return new ItemGroupsForm(
+            new DefinitionItemGroupsViewModel(definitionItemGroupClient, chartOfAccountClient, securityAccessClient),
+            session,
+            auditClient,
+            gridColumnSettingsClient);
     }
 
     public SecurityDocumentSeriesForm CreateSecurityDocumentSeriesForm()
@@ -876,7 +922,10 @@ internal sealed class FrontendComposition : IDisposable
 
     public ItemFamiliesForm CreateItemFamiliesForm()
     {
-        return new ItemFamiliesForm(new ItemFamiliesViewModel(itemFamilyClient, itemClient), session, auditClient, gridColumnSettingsClient);
+        return new ItemFamiliesForm(
+            new ItemFamiliesViewModel(definitionItemFamilyClient, definitionItemGroupClient, chartOfAccountClient, securityAccessClient),
+            session,
+            gridColumnSettingsClient);
     }
 
     public ConfigurationCompaniesForm CreateConfigurationCompaniesForm()
@@ -956,6 +1005,10 @@ internal sealed class FrontendComposition : IDisposable
                 itemClient,
                 itemGroupClient,
                 itemFamilyClient,
+                definitionItemBrandClient,
+                itemLineClient,
+                productTypeClient,
+                definitionUnitMeasureClient,
                 generalInventoryCatalogClient,
                 chartOfAccountClient,
                 securityAccessClient),

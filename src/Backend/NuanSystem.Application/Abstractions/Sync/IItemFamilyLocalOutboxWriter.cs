@@ -1,5 +1,5 @@
 using System.Data;
-using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Dtos;
+using NuanSystem.Application.Features.Definitions.Inventory.ItemFamilies.Dtos;
 using NuanSystem.Shared.Sync;
 
 namespace NuanSystem.Application.Abstractions.Sync;

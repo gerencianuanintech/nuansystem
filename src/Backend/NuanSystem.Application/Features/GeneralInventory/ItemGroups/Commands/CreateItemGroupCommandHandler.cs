@@ -22,9 +22,13 @@ public sealed class CreateItemGroupCommandHandler(
             chartOfAccountRepository,
             [
                 new AccountCodeField(nameof(request.InventoryAccountCode), NormalizeOptional(request.InventoryAccountCode), "cuenta de inventario"),
+                new AccountCodeField(nameof(request.IncomeAccountCode), NormalizeOptional(request.IncomeAccountCode), "cuenta de ingresos"),
                 new AccountCodeField(nameof(request.CostOfSalesAccountCode), NormalizeOptional(request.CostOfSalesAccountCode), "cuenta de costo de ventas"),
-                new AccountCodeField(nameof(request.SalesAccountCode), NormalizeOptional(request.SalesAccountCode), "cuenta de ventas"),
-                new AccountCodeField(nameof(request.PurchaseAccountCode), NormalizeOptional(request.PurchaseAccountCode), "cuenta de compras")
+                new AccountCodeField(nameof(request.SalesReturnAccountCode), NormalizeOptional(request.SalesReturnAccountCode), "cuenta de devoluciones en ventas"),
+                new AccountCodeField(nameof(request.PurchaseReturnAccountCode), NormalizeOptional(request.PurchaseReturnAccountCode), "cuenta de devoluciones en compras"),
+                new AccountCodeField(nameof(request.CostVarianceAccountCode), NormalizeOptional(request.CostVarianceAccountCode), "cuenta de variacion de costos"),
+                new AccountCodeField(nameof(request.InventoryAdjustmentAccountCode), NormalizeOptional(request.InventoryAdjustmentAccountCode), "cuenta de ajustes de inventario"),
+                new AccountCodeField(nameof(request.PurchaseExpenseAccountCode), NormalizeOptional(request.PurchaseExpenseAccountCode), "cuenta de gastos de compra")
             ],
             cancellationToken);
 
@@ -38,11 +42,20 @@ public sealed class CreateItemGroupCommandHandler(
             code,
             request.Name.Trim(),
             NormalizeOptional(request.Description),
+            NormalizeOptional(request.ExternalSystem),
+            NormalizeOptional(request.ExternalCode),
             request.IsActive,
             NormalizeOptional(request.InventoryAccountCode),
+            NormalizeOptional(request.IncomeAccountCode),
             NormalizeOptional(request.CostOfSalesAccountCode),
-            NormalizeOptional(request.SalesAccountCode),
-            NormalizeOptional(request.PurchaseAccountCode),
+            NormalizeOptional(request.SalesReturnAccountCode),
+            NormalizeOptional(request.PurchaseReturnAccountCode),
+            NormalizeOptional(request.CostVarianceAccountCode),
+            NormalizeOptional(request.InventoryAdjustmentAccountCode),
+            NormalizeOptional(request.PurchaseExpenseAccountCode),
+            request.SortOrder,
+            NormalizeOptional(request.IncomeAccountCode),
+            NormalizeOptional(request.PurchaseExpenseAccountCode),
             NormalizeOptional(request.SapGroupCode),
             NormalizeOptional(request.SapCode),
             request.AuditUserId,

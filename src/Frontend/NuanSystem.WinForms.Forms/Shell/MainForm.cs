@@ -47,8 +47,9 @@ using NuanSystem.WinForms.Forms.TaxCatalogs.Taxes;
 using NuanSystem.WinForms.Forms.Definitions.General.Cities;
 using NuanSystem.WinForms.Forms.Definitions.General.Countries;
 using NuanSystem.WinForms.Forms.Definitions.General.Provinces;
-using NuanSystem.WinForms.Forms.GeneralInventory.ItemFamilies;
-using NuanSystem.WinForms.Forms.GeneralInventory.ItemGroups;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemBrands;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemFamilies;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemGroups;
 using NuanSystem.WinForms.Forms.InventoryItems;
 using NuanSystem.WinForms.Forms.Purchasing.PurchaseOrders;
 using NuanSystem.WinForms.Forms.Sap;
@@ -127,6 +128,7 @@ public sealed class MainForm : RibbonForm
     private readonly Func<SecurityDocumentSeriesForm> securityDocumentSeriesFormFactory;
     private readonly Func<OperationalCatalogsForm> operationalCatalogsFormFactory;
     private readonly Func<ItemFamiliesForm> itemFamiliesFormFactory;
+    private readonly Func<ItemBrandsForm> itemBrandsFormFactory;
     private readonly Func<ItemsForm> itemsFormFactory;
     private readonly Func<PurchaseOrdersForm> purchaseOrdersFormFactory;
     private readonly Func<SapSyncLogForm> sapSyncLogFormFactory;
@@ -223,6 +225,7 @@ public sealed class MainForm : RibbonForm
         securityDocumentSeriesFormFactory = null!;
         operationalCatalogsFormFactory = null!;
         itemFamiliesFormFactory = null!;
+        itemBrandsFormFactory = null!;
         itemsFormFactory = null!;
         purchaseOrdersFormFactory = null!;
         sapSyncLogFormFactory = null!;
@@ -291,6 +294,7 @@ public sealed class MainForm : RibbonForm
         Func<SecurityDocumentSeriesForm> securityDocumentSeriesFormFactory,
         Func<OperationalCatalogsForm> operationalCatalogsFormFactory,
         Func<ItemFamiliesForm> itemFamiliesFormFactory,
+        Func<ItemBrandsForm> itemBrandsFormFactory,
         Func<ItemsForm> itemsFormFactory,
         Func<PurchaseOrdersForm> purchaseOrdersFormFactory,
         Func<SapSyncLogForm> sapSyncLogFormFactory,
@@ -356,6 +360,7 @@ public sealed class MainForm : RibbonForm
         this.securityDocumentSeriesFormFactory = securityDocumentSeriesFormFactory;
         this.operationalCatalogsFormFactory = operationalCatalogsFormFactory;
         this.itemFamiliesFormFactory = itemFamiliesFormFactory;
+        this.itemBrandsFormFactory = itemBrandsFormFactory;
         this.itemsFormFactory = itemsFormFactory;
         this.purchaseOrdersFormFactory = purchaseOrdersFormFactory;
         this.sapSyncLogFormFactory = sapSyncLogFormFactory;
@@ -1967,10 +1972,12 @@ public sealed class MainForm : RibbonForm
             "provinces" => provincesFormFactory(),
             "cities" => citiesFormFactory(),
             "inventory-unit-measures" => generalInventoryCatalogFormFactory(module.Key),
+            "unit-measures" => generalInventoryCatalogFormFactory(module.Key),
             "inventory-warehouses" => generalInventoryCatalogFormFactory(module.Key),
-            "inventory-item-brands" => generalInventoryCatalogFormFactory(module.Key),
+            "inventory-item-brands" => itemBrandsFormFactory(),
             "inventory-item-types" => generalInventoryCatalogFormFactory(module.Key),
-            "inventory-product-types" => generalInventoryCatalogFormFactory(module.Key),
+            "product-types" => generalInventoryCatalogFormFactory(module.Key),
+            "item-lines" => generalInventoryCatalogFormFactory(module.Key),
             "inventory-item-lines" => generalInventoryCatalogFormFactory(module.Key),
             "inventory-item-subgroups" => generalInventoryCatalogFormFactory(module.Key),
             "inventory-sales-channels" => generalInventoryCatalogFormFactory(module.Key),
@@ -1985,6 +1992,7 @@ public sealed class MainForm : RibbonForm
             "security-document-series" => securityDocumentSeriesFormFactory(),
             "operational-catalogs" => operationalCatalogsFormFactory(),
             "item-families" => itemFamiliesFormFactory(),
+            "item-brands" => itemBrandsFormFactory(),
             "items" => itemsFormFactory(),
             "purchase-orders" => purchaseOrdersFormFactory(),
             "sap" => sapSyncLogFormFactory(),

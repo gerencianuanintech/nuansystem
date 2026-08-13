@@ -5,8 +5,8 @@ using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
-using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Commands;
-using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Dtos;
+using NuanSystem.Application.Features.Definitions.Inventory.ItemFamilies.Commands;
+using NuanSystem.Application.Features.Definitions.Inventory.ItemFamilies.Dtos;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Application.Features.Sync.Services;
@@ -27,7 +27,7 @@ public sealed class ItemFamilySyncPublishingTests
     {
         var itemFamily = CreateItemFamily();
         _itemGroupRepository.GetByIdAsync(3, Arg.Any<CancellationToken>())
-            .Returns(new ItemGroupDto { Id = 3, GlobalId = itemFamily.ItemGroupGlobalId, Code = "GENERAL" });
+            .Returns(new ItemGroupDto { Id = 3, GlobalId = itemFamily.ItemGroupGlobalId, Code = "GENERAL", IsActive = true });
         _repository.ExistsByCodeAsync(
                 3, "FAM", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
             .Returns(false);
@@ -57,16 +57,16 @@ public sealed class ItemFamilySyncPublishingTests
     {
         var itemFamily = CreateItemFamily(isActive: false);
         _itemGroupRepository.GetByIdAsync(3, Arg.Any<CancellationToken>())
-            .Returns(new ItemGroupDto { Id = 3, GlobalId = itemFamily.ItemGroupGlobalId, Code = "GENERAL" });
+            .Returns(new ItemGroupDto { Id = 3, GlobalId = itemFamily.ItemGroupGlobalId, Code = "GENERAL", IsActive = true });
         _repository.GetByIdAsync(
                 itemFamily.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
             .Returns(itemFamily);
         _repository.ExistsByCodeAsync(
                 3, "FAM", itemFamily.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
             .Returns(false);
-        _repository.UpdateAsync(
+        _repository.UpdateWithResultAsync(
                 Arg.Any<UpdateItemFamilyData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
-            .Returns(true);
+            .Returns(1);
         var handler = new UpdateItemFamilyCommandHandler(
             _repository, _itemGroupRepository, _transactionRunner, _writer);
 
@@ -88,14 +88,14 @@ public sealed class ItemFamilySyncPublishingTests
         _repository.GetByIdAsync(
                 itemFamily.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
             .Returns(itemFamily);
-        _repository.DeleteAsync(
+        _repository.DeleteWithResultAsync(
                 itemFamily.Id,
                 7,
                 "admin",
                 _transactionRunner.Connection,
                 _transactionRunner.Transaction,
                 Arg.Any<CancellationToken>())
-            .Returns(true);
+            .Returns(1);
         var handler = new DeleteItemFamilyCommandHandler(_repository, _transactionRunner, _writer);
 
         var result = await handler.Handle(
@@ -112,11 +112,54 @@ public sealed class ItemFamilySyncPublishingTests
     }
 
     [Fact]
+    public async Task Update_RejectsReparenting_WhenFamilyIsUsedByItems()
+    {
+        var itemFamily = CreateItemFamily();
+        _itemGroupRepository.GetByIdAsync(9, Arg.Any<CancellationToken>())
+            .Returns(new ItemGroupDto { Id = 9, Code = "OTRO", Name = "Otro", IsActive = true });
+        _repository.GetByIdAsync(
+                itemFamily.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
+            .Returns(itemFamily);
+        _repository.UpdateWithResultAsync(
+                Arg.Any<UpdateItemFamilyData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
+            .Returns(-3);
+        var handler = new UpdateItemFamilyCommandHandler(
+            _repository, _itemGroupRepository, _transactionRunner, _writer);
+        var command = new UpdateItemFamilyCommand(
+            itemFamily.Id, 9, "FAM", "Familia", null, 0, true, null, null, null, null);
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().Contain(error => error.Code == "ItemFamilyGroupMismatch");
+        await _writer.DidNotReceiveWithAnyArgs().EnqueueAsync(default!, default, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Delete_RejectsFamilyInUse()
+    {
+        var itemFamily = CreateItemFamily();
+        _repository.GetByIdAsync(
+                itemFamily.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
+            .Returns(itemFamily);
+        _repository.DeleteWithResultAsync(
+                itemFamily.Id, 7, "admin", _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
+            .Returns(-4);
+        var handler = new DeleteItemFamilyCommandHandler(_repository, _transactionRunner, _writer);
+
+        var result = await handler.Handle(new DeleteItemFamilyCommand(itemFamily.Id, 7, "admin"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().Contain(error => error.Code == "ItemFamilyInUse");
+        await _writer.DidNotReceiveWithAnyArgs().EnqueueAsync(default!, default, default!, default!, default);
+    }
+
+    [Fact]
     public async Task Create_RollsBackWhenLocalOutboxFails()
     {
         var itemFamily = CreateItemFamily();
         _itemGroupRepository.GetByIdAsync(3, Arg.Any<CancellationToken>())
-            .Returns(new ItemGroupDto { Id = 3, GlobalId = itemFamily.ItemGroupGlobalId, Code = "GENERAL" });
+            .Returns(new ItemGroupDto { Id = 3, GlobalId = itemFamily.ItemGroupGlobalId, Code = "GENERAL", IsActive = true });
         _repository.ExistsByCodeAsync(
                 3, "FAM", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
             .Returns(false);

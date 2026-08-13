@@ -3,7 +3,7 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
-using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Dtos;
+using NuanSystem.Application.Features.Definitions.Inventory.ItemFamilies.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Domain.Tenancy;
 using NuanSystem.Shared.Sync;
@@ -230,6 +230,7 @@ SELECT CAST(SCOPE_IDENTITY() AS bigint);
                 Code = NormalizeRequired(payload.Code, "Code", 50),
                 Name = NormalizeRequired(payload.Name, "Name", 150),
                 Description = NormalizeOptional(payload.Description, 500),
+                payload.SortOrder,
                 IsActive = isActive,
                 IsDeleted = isDeleted,
                 SapFamilyCode = NormalizeOptional(payload.SapFamilyCode, 100),

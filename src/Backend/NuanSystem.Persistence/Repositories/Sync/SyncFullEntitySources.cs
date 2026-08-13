@@ -1,10 +1,15 @@
+using System.Data;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
 using NuanSystem.Application.Features.FinancialCatalogs.Catalogs.Dtos;
-using NuanSystem.Application.Features.GeneralInventory.ItemFamilies.Dtos;
+using NuanSystem.Application.Features.Definitions.Inventory.ItemFamilies.Dtos;
+using NuanSystem.Application.Features.Definitions.Inventory.ItemBrands.Dtos;
+using NuanSystem.Application.Features.Definitions.Inventory.UnitMeasures.Dtos;
+using NuanSystem.Application.Features.Definitions.Inventory.ProductTypes.Dtos;
+using NuanSystem.Application.Features.Definitions.Inventory.ItemLines.Dtos;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Dtos;
 using NuanSystem.Application.Features.GeneralInventory.Warehouses.Dtos;
 using NuanSystem.Application.Features.Definitions.General.Cities.Dtos;
@@ -382,10 +387,8 @@ public sealed class ItemGroupFullEntitySource(ICompanyResolver companyResolver) 
                 Code,
                 Name,
                 Description,
-                InventoryAccountCode,
-                CostOfSalesAccountCode,
-                SalesAccountCode,
-                PurchaseAccountCode,
+                SortOrder,
+                IsSystem,
                 SapGroupCode,
                 SapCode,
                 IsActive,
@@ -413,10 +416,18 @@ public sealed class ItemGroupFullEntitySource(ICompanyResolver companyResolver) 
                 row.Code,
                 row.Name,
                 row.Description,
-                row.InventoryAccountCode,
-                row.CostOfSalesAccountCode,
-                row.SalesAccountCode,
-                row.PurchaseAccountCode,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                row.SortOrder,
+                row.IsSystem,
+                null,
+                null,
                 row.SapGroupCode,
                 row.SapCode,
                 row.IsActive,
@@ -433,10 +444,8 @@ public sealed class ItemGroupFullEntitySource(ICompanyResolver companyResolver) 
         string Code,
         string Name,
         string? Description,
-        string? InventoryAccountCode,
-        string? CostOfSalesAccountCode,
-        string? SalesAccountCode,
-        string? PurchaseAccountCode,
+        int SortOrder,
+        bool IsSystem,
         string? SapGroupCode,
         string? SapCode,
         bool IsActive,
@@ -462,6 +471,7 @@ public sealed class ItemFamilyFullEntitySource(ICompanyResolver companyResolver)
                 family.Code,
                 family.Name,
                 family.Description,
+                family.SortOrder,
                 family.IsActive,
                 family.SapFamilyCode,
                 family.SapCode,
@@ -505,7 +515,8 @@ public sealed class ItemFamilyFullEntitySource(ICompanyResolver companyResolver)
                     row.ExternalSystem,
                     row.ExternalCode,
                     row.CreatedAt,
-                    row.UpdatedAt)))
+                    row.UpdatedAt,
+                    row.SortOrder)))
             .ToArray();
 
         return new SyncSourcePage(
@@ -521,6 +532,7 @@ public sealed class ItemFamilyFullEntitySource(ICompanyResolver companyResolver)
         string Code,
         string Name,
         string? Description,
+        int SortOrder,
         bool IsActive,
         string? SapFamilyCode,
         string? SapCode,
@@ -529,6 +541,140 @@ public sealed class ItemFamilyFullEntitySource(ICompanyResolver companyResolver)
         DateTime CreatedAt,
         DateTime? UpdatedAt,
         string EntityKey);
+}
+
+public sealed class ItemBrandFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource
+{
+    public string EntityCode => SyncMasterBranchEntityCodes.ItemBrands;
+
+    public async Task<SyncSourcePage> ReadPageAsync(
+        SyncSourceReadContext context,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT TOP (@Take)
+                GlobalId, Code, Name, Description, SortOrder, IsActive, IsDeleted,
+                COALESCE(UpdatedAt, CreatedAt) AS EffectiveUpdatedAt
+            FROM dbo.ItemBrands
+            WHERE (@LastKey IS NULL OR Code > @LastKey)
+            ORDER BY Code;
+            """;
+
+        var company = await SyncFullEntitySourceHelpers.ResolveSqlServerCompanyAsync(
+            companyResolver, context.CompanyId, cancellationToken);
+        await using var connection = new SqlConnection(company.ConnectionString);
+        var rows = (await connection.QueryAsync<ItemBrandSourceRow>(new CommandDefinition(
+            sql, SyncFullEntitySourceHelpers.ReadParameters(context), cancellationToken: cancellationToken))).AsList();
+
+        var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context)).Select(row =>
+            new SyncSourceRecord(row.GlobalId, row.Code, !row.IsDeleted && row.IsActive,
+                new ItemBrandSyncPayload(row.GlobalId, row.Code, row.Name, row.Description,
+                    row.SortOrder, !row.IsDeleted && row.IsActive, row.IsDeleted, row.EffectiveUpdatedAt)))
+            .ToArray();
+
+        return new SyncSourcePage(limited, limited.LastOrDefault()?.EntityKey,
+            rows.Count > SyncFullEntitySourceHelpers.GetPageLimit(context));
+    }
+
+    private sealed record ItemBrandSourceRow(Guid GlobalId, string Code, string Name,
+        string? Description, int SortOrder, bool IsActive, bool IsDeleted, DateTime EffectiveUpdatedAt);
+}
+
+public sealed class UnitMeasureFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource
+{
+    public string EntityCode => SyncMasterBranchEntityCodes.UnitOfMeasures;
+
+    public async Task<SyncSourcePage> ReadPageAsync(
+        SyncSourceReadContext context, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT TOP (@Take)
+                GlobalId,Code,Name,Description,Symbol,MagnitudeCode,SortOrder,IsActive,IsDeleted,
+                COALESCE(UpdatedAt,CreatedAt) AS EffectiveUpdatedAt
+            FROM dbo.UnitOfMeasures
+            WHERE (@LastKey IS NULL OR Code>@LastKey)
+            ORDER BY Code;
+            """;
+
+        var company = await SyncFullEntitySourceHelpers.ResolveSqlServerCompanyAsync(
+            companyResolver, context.CompanyId, cancellationToken);
+        await using var connection = new SqlConnection(company.ConnectionString);
+        var rows = (await connection.QueryAsync<UnitMeasureSourceRow>(new CommandDefinition(
+            sql, SyncFullEntitySourceHelpers.ReadParameters(context), cancellationToken: cancellationToken))).AsList();
+        var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context)).Select(row =>
+            new SyncSourceRecord(row.GlobalId, row.Code, !row.IsDeleted && row.IsActive,
+                new UnitMeasureSyncPayload(row.GlobalId, row.Code, row.Name, row.Description, row.Symbol,
+                    row.MagnitudeCode, row.SortOrder, !row.IsDeleted && row.IsActive,
+                    row.IsDeleted, row.EffectiveUpdatedAt))).ToArray();
+        return new SyncSourcePage(limited, limited.LastOrDefault()?.EntityKey,
+            rows.Count > SyncFullEntitySourceHelpers.GetPageLimit(context));
+    }
+
+    private sealed record UnitMeasureSourceRow(Guid GlobalId, string Code, string Name,
+        string? Description, string? Symbol, string MagnitudeCode, int SortOrder,
+        bool IsActive, bool IsDeleted, DateTime EffectiveUpdatedAt);
+}
+
+public sealed class ProductTypeFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource
+{
+    public string EntityCode => SyncMasterBranchEntityCodes.ProductTypes;
+
+    public async Task<SyncSourcePage> ReadPageAsync(
+        SyncSourceReadContext context, CancellationToken cancellationToken = default)
+    {
+        var afterId = int.TryParse(context.LastKey, out var parsed) ? parsed : (int?)null;
+        var take = SyncFullEntitySourceHelpers.GetPageLimit(context);
+        var requested = Math.Clamp(take + 1, 1, 10001);
+        var company = await SyncFullEntitySourceHelpers.ResolveSqlServerCompanyAsync(
+            companyResolver, context.CompanyId, cancellationToken);
+        await using var connection = new SqlConnection(company.ConnectionString);
+        var rows = (await connection.QueryAsync<ProductTypeSourceRow>(new CommandDefinition(
+            "dbo.SP_NA_GET_PRODUCT_TYPE_SYNC_FULL",
+            new { AfterId = afterId, BatchSize = requested },
+            cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure))).AsList();
+
+        var limited = rows.Take(take).Select(row =>
+            new SyncSourceRecord(row.GlobalId, row.Code, !row.IsDeleted && row.IsActive,
+                new ProductTypeSyncPayload(row.GlobalId, row.Code, row.Name, row.Description,
+                    row.NatureCode, row.SortOrder, row.IsSystem, !row.IsDeleted && row.IsActive,
+                    row.IsDeleted, row.UpdatedAt ?? row.CreatedAt))).ToArray();
+        return new SyncSourcePage(limited, rows.Take(take).LastOrDefault()?.Id.ToString(), rows.Count > take);
+    }
+
+    private sealed record ProductTypeSourceRow(int Id, Guid GlobalId, string Code, string Name,
+        string? Description, string NatureCode, int SortOrder, bool IsSystem, bool IsActive,
+        bool IsDeleted, DateTime CreatedAt, DateTime? UpdatedAt);
+}
+
+public sealed class ItemLineFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource
+{
+    public string EntityCode => SyncMasterBranchEntityCodes.ItemLines;
+
+    public async Task<SyncSourcePage> ReadPageAsync(
+        SyncSourceReadContext context, CancellationToken cancellationToken = default)
+    {
+        var afterId = int.TryParse(context.LastKey, out var parsed) ? parsed : (int?)null;
+        var take = SyncFullEntitySourceHelpers.GetPageLimit(context);
+        var requested = Math.Clamp(take + 1, 1, 10001);
+        var company = await SyncFullEntitySourceHelpers.ResolveSqlServerCompanyAsync(
+            companyResolver, context.CompanyId, cancellationToken);
+        await using var connection = new SqlConnection(company.ConnectionString);
+        var rows = (await connection.QueryAsync<ItemLineSourceRow>(new CommandDefinition(
+            "dbo.SP_NA_GET_ITEM_LINE_SYNC_FULL",
+            new { AfterId = afterId, BatchSize = requested },
+            cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure))).AsList();
+
+        var limited = rows.Take(take).Select(row =>
+            new SyncSourceRecord(row.GlobalId, row.Code, !row.IsDeleted && row.IsActive,
+                new ItemLineSyncPayload(row.GlobalId, row.Code, row.Name, row.Description,
+                    row.SortOrder, !row.IsDeleted && row.IsActive, row.IsDeleted,
+                    row.UpdatedAt ?? row.CreatedAt))).ToArray();
+        return new SyncSourcePage(limited, rows.Take(take).LastOrDefault()?.Id.ToString(), rows.Count > take);
+    }
+
+    private sealed record ItemLineSourceRow(int Id, Guid GlobalId, string Code, string Name,
+        string? Description, int SortOrder, bool IsActive, bool IsDeleted,
+        DateTime CreatedAt, DateTime? UpdatedAt);
 }
 
 public sealed class ItemFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource

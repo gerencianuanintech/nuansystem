@@ -72,10 +72,14 @@ try
             services.AddScoped<ISyncEntityEventApplier, PriceListSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, TaxSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, ReferenceCatalogSyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, UnitMeasureSyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, ProductTypeSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, PurchaseOrderSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, BusinessPartnerSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, ItemGroupSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, ItemFamilySyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, ItemBrandSyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, ItemLineSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, ItemSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, WarehouseSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, CarrierSyncEventApplier>();

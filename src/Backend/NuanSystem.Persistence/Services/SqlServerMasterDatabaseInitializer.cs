@@ -1045,6 +1045,84 @@ END;
         {
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
         }
+
+        scriptPath = FindDatabaseScriptPath("185_master_definitions_inventory_item_types_navigation.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("187_master_definitions_inventory_item_groups_navigation.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("189_master_definitions_inventory_item_families_navigation.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("191_master_definitions_inventory_item_brands_navigation.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("192_master_item_brands_sync_registration.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("193_master_item_brands_dependency_repair.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("195_master_definitions_inventory_unit_of_measures_navigation.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("197_master_unit_of_measures_sync_registration.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("199_master_definitions_inventory_product_types_navigation.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("200_master_product_types_sync_registration.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("202_master_definitions_inventory_item_lines_navigation.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("203_master_item_lines_sync_registration.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("204_master_product_types_dependency_repair.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
     }
 
     private static async Task ExecuteScriptFileAsync(

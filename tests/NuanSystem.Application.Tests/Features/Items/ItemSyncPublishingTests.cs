@@ -16,6 +16,8 @@ namespace NuanSystem.Application.Tests.Features.Items;
 public sealed class ItemSyncPublishingTests
 {
     private readonly IItemRepository _repository = Substitute.For<IItemRepository>();
+    private readonly IItemGroupRepository _groupRepository = Substitute.For<IItemGroupRepository>();
+    private readonly IItemFamilyRepository _familyRepository = Substitute.For<IItemFamilyRepository>();
     private readonly IItemLocalOutboxWriter _writer = Substitute.For<IItemLocalOutboxWriter>();
     private readonly ImmediateTransactionRunner _transactionRunner = new();
 
@@ -192,11 +194,27 @@ public sealed class ItemSyncPublishingTests
             .And.NotContain("\"masterData\"");
     }
 
-    private CreateItemCommandHandler CreateCreateHandler() => new(_repository, _transactionRunner, _writer);
+    private CreateItemCommandHandler CreateCreateHandler()
+    {
+        ConfigureValidClassification();
+        return new(_repository, _groupRepository, _familyRepository, _transactionRunner, _writer);
+    }
 
-    private UpdateItemCommandHandler CreateUpdateHandler() => new(_repository, _transactionRunner, _writer);
+    private UpdateItemCommandHandler CreateUpdateHandler()
+    {
+        ConfigureValidClassification();
+        return new(_repository, _groupRepository, _familyRepository, _transactionRunner, _writer);
+    }
 
     private DeleteItemCommandHandler CreateDeleteHandler() => new(_repository, _transactionRunner, _writer);
+
+    private void ConfigureValidClassification()
+    {
+        _groupRepository.GetByIdAsync(3, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
+            .Returns(new NuanSystem.Application.Features.GeneralInventory.ItemGroups.Dtos.ItemGroupDto { Id = 3, Code = "GENERAL", Name = "General", IsActive = true });
+        _familyRepository.GetByIdAsync(4, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
+            .Returns(new NuanSystem.Application.Features.Definitions.Inventory.ItemFamilies.Dtos.ItemFamilyDto { Id = 4, ItemGroupId = 3, Code = "FAM", Name = "Familia", IsActive = true });
+    }
 
     private static CompanyConnectionInfo Company(bool syncEnabled) =>
         new(

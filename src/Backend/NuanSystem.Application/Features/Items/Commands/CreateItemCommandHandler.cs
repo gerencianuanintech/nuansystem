@@ -10,6 +10,8 @@ namespace NuanSystem.Application.Features.Items.Commands;
 
 public sealed class CreateItemCommandHandler(
     IItemRepository itemRepository,
+    IItemGroupRepository itemGroupRepository,
+    IItemFamilyRepository itemFamilyRepository,
     ITransactionRunner transactionRunner,
     IItemLocalOutboxWriter localOutboxWriter)
     : ICommandHandler<CreateItemCommand, ItemDto>
@@ -58,6 +60,21 @@ public sealed class CreateItemCommandHandler(
         return await transactionRunner.ExecuteInTenantTransactionAsync(
             async (connection, transaction, token) =>
             {
+                var classificationError = await ItemClassificationValidator.ValidateAsync(
+                    request.ItemGroupId,
+                    request.ItemFamilyId,
+                    itemGroupRepository,
+                    itemFamilyRepository,
+                    connection,
+                    transaction,
+                    token);
+                if (classificationError is not null)
+                {
+                    return Result<ItemDto>.Failure(
+                        "La clasificación del artículo no es válida.",
+                        [classificationError]);
+                }
+
                 if (await itemRepository.ExistsByCodeAsync(code, null, connection, transaction, token))
                 {
                     return Result<ItemDto>.Failure(

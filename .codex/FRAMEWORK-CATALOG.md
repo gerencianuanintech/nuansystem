@@ -103,6 +103,16 @@ Status values:
 - **Representative consumer:** `src/Frontend/NuanSystem.WinForms.Forms/Carriers/CarrierEditForm.Designer.cs` for SRI identification-type codes `04`, `05`, and `06`.
 - **Antipatterns:** free text, duplicated related-create controls, persistence by caption/index, or frontend-only enforcement of a persisted closed set.
 
+### 4.3.1 `NuanToggleSwitch`
+
+- **Location:** `src/Frontend/NuanSystem.WinForms.Controls/Editors/NuanToggleSwitch.cs`
+- **Status:** Active/preferred for editable or read-only Boolean fields presented as Sí/No.
+- **Responsibility:** Extends the DevExpress `ToggleSwitch` interaction and accessibility contract with a uniform compact rendering, explicit Sí/No state text, configurable active/inactive/text/thumb colors, and a `Checked` compatibility property.
+- **Use when:** a form presents a Boolean business field whose state must remain immediately legible.
+- **Extension rule:** assign the active, inactive, and text colors from the authoritative form palette such as `BrandResources`; use the inherited `ReadOnly`, `IsOnChanged`, keyboard, and focus behavior rather than adding a second interaction layer.
+- **Representative consumer:** `src/Frontend/NuanSystem.WinForms.Forms/Definitions/Inventory/ItemGroups/ItemGroupEditForm.Designer.cs` for Activo and Grupo del sistema.
+- **Antipatterns:** raw per-form toggle styling, hard-coded feature brand colors, checkbox captions that hide the Boolean state, or custom click/keyboard handling outside the control.
+
 ### 4.4 `NuanDataGridControl`
 
 - **Location:** `src/Frontend/NuanSystem.WinForms.Controls/Grids/NuanDataGridControl.cs`
