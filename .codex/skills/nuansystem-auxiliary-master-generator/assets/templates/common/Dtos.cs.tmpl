@@ -1,0 +1,37 @@
+namespace NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Dtos;
+
+public sealed class {{SINGULAR}}Dto
+{
+    public int Id { get; set; }
+    public Guid GlobalId { get; set; }
+{{DTO_PROPERTIES}}
+    public int? CreatedByUserId { get; set; }
+    public string? CreatedByUserName { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public int? UpdatedByUserId { get; set; }
+    public string? UpdatedByUserName { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+}
+
+public sealed class {{SINGULAR}}LookupDto
+{
+    public int Id { get; set; }
+    public Guid GlobalId { get; set; }
+{{DTO_PROPERTIES}}
+}
+
+public sealed class {{SINGULAR}}AuditChangeDto
+{
+    public long Id { get; set; }
+    public string Action { get; set; } = string.Empty;
+    public string FieldName { get; set; } = string.Empty;
+    public string? OldValue { get; set; }
+    public string? NewValue { get; set; }
+    public int? UserId { get; set; }
+    public string? UserName { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public sealed record Create{{SINGULAR}}Data(Guid GlobalId, {{RECORD_PARAMETERS}}, int? CreatedByUserId, string? CreatedByUserName);
+public sealed record Update{{SINGULAR}}Data(int Id, {{RECORD_PARAMETERS}}, int? UpdatedByUserId, string? UpdatedByUserName);
+public sealed record {{SINGULAR}}SyncPayload(Guid GlobalId, {{RECORD_PARAMETERS}}, bool IsDeleted, DateTime UpdatedAt);

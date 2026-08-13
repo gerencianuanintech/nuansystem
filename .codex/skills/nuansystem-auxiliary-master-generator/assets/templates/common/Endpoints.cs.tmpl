@@ -1,0 +1,42 @@
+using System.Security.Claims;
+using MediatR;
+using NuanSystem.Api.Extensions;
+using NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Commands;
+using NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Queries;
+using NuanSystem.Shared.Constants;
+
+namespace NuanSystem.Api.Endpoints.Definitions.Inventory.{{PLURAL}};
+
+public static class {{SINGULAR}}Endpoints
+{
+    private const string FormKey = "{{FORM_KEY}}";
+    public static IEndpointRouteBuilder Map{{SINGULAR}}Endpoints(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("{{API_ROUTE}}");
+        group.MapGet("", async (ISender sender, CancellationToken ct) => (await sender.Send(new Get{{PLURAL}}Query(), ct)).ToHttpResult())
+            .RequirePermission(PermissionCodes.{{PERMISSION_READ}}).RequireFormOperation(FormKey, "refresh");
+        group.MapGet("/lookup", async (ISender sender, CancellationToken ct) => (await sender.Send(new Get{{SINGULAR}}LookupQuery(), ct)).ToHttpResult())
+            .RequirePermission(PermissionCodes.{{PERMISSION_READ}});
+        group.MapGet("/{id:int}", async (int id, ISender sender, CancellationToken ct) => (await sender.Send(new Get{{SINGULAR}}ByIdQuery(id), ct)).ToHttpResult())
+            .RequirePermission(PermissionCodes.{{PERMISSION_READ}}).RequireFormOperation(FormKey, "consult");
+        group.MapGet("/{id:int}/history", async (int id, ISender sender, CancellationToken ct) => (await sender.Send(new Get{{SINGULAR}}HistoryQuery(id), ct)).ToHttpResult())
+            .RequirePermission(PermissionCodes.{{PERMISSION_READ}}).RequireFormOperation(FormKey, "history");
+        group.MapPost("", async (Save{{SINGULAR}}Request request, ISender sender, ClaimsPrincipal user, CancellationToken ct) =>
+        {
+            var audit = user.GetAuditUser();
+            return (await sender.Send(new Create{{SINGULAR}}Command({{REQUEST_ARGUMENTS}}, audit.UserId, audit.UserName), ct)).ToHttpResult();
+        }).RequirePermission(PermissionCodes.{{PERMISSION_MANAGE}}).RequireFormOperation(FormKey, "create");
+        group.MapPut("/{id:int}", async (int id, Save{{SINGULAR}}Request request, ISender sender, ClaimsPrincipal user, CancellationToken ct) =>
+        {
+            var audit = user.GetAuditUser();
+            return (await sender.Send(new Update{{SINGULAR}}Command(id, {{REQUEST_ARGUMENTS}}, audit.UserId, audit.UserName), ct)).ToHttpResult();
+        }).RequirePermission(PermissionCodes.{{PERMISSION_MANAGE}}).RequireFormOperation(FormKey, "update");
+        group.MapDelete("/{id:int}", async (int id, ISender sender, ClaimsPrincipal user, CancellationToken ct) =>
+        {
+            var audit = user.GetAuditUser();
+            return (await sender.Send(new Delete{{SINGULAR}}Command(id, audit.UserId, audit.UserName), ct)).ToHttpResult();
+        }).RequirePermission(PermissionCodes.{{PERMISSION_MANAGE}}).RequireFormOperation(FormKey, "delete");
+        return app;
+    }
+    private sealed record Save{{SINGULAR}}Request({{RECORD_PARAMETERS}});
+}

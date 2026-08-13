@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.1",
+  "archetype": "basic",
+  "entity": {
+    "singular": "ItemLine",
+    "plural": "ItemLines",
+    "title": "Líneas de artículos",
+    "table": "dbo.ItemLines",
+    "entityCode": "ItemLine"
+  },
+  "api": {
+    "route": "/api/definitions/inventory/item-lines",
+    "formKey": "item-lines"
+  },
+  "navigation": {
+    "path": ["Configuration", "Definitions", "Inventory"],
+    "menuOrder": 60,
+    "menuCode": "MENU.DEFINITIONS.INVENTORY.ITEMLINES"
+  },
+  "permissions": {
+    "read": "GeneralInventoryItemLinesRead",
+    "manage": "GeneralInventoryItemLinesManage",
+    "lookupConsumers": ["ItemsRead"]
+  },
+  "fields": [
+    { "name": "Code", "type": "string", "nullable": false, "required": true, "unique": true, "stringLength": 50, "role": "code" },
+    { "name": "Name", "type": "string", "nullable": false, "required": true, "unique": false, "stringLength": 150, "role": "name" },
+    { "name": "Description", "type": "string", "nullable": true, "required": false, "unique": false, "stringLength": 500, "role": "description" },
+    { "name": "SortOrder", "type": "int", "nullable": false, "required": true, "unique": false, "minimum": 0, "default": 0, "role": "sortOrder" },
+    { "name": "IsActive", "type": "bool", "nullable": false, "required": true, "unique": false, "default": true, "role": "active" }
+  ],
+  "ui": {
+    "layout": "single-section",
+    "showInfoLegends": false,
+    "showFooterDivider": false
+  },
+  "designApproval": {
+    "status": "approved",
+    "proposalHash": "841d4437c0d8a812ce662479d9fa839d8a886c79e16a86f36e5db39a637cbdc3",
+    "tableApproved": true,
+    "mockupApproved": true,
+    "mockupReference": "reference-fixture:basic-item-line-full-color",
+    "evidence": "Approved reference fixture for generator regression tests."
+  },
+  "audit": { "enabled": true },
+  "softDelete": { "enabled": true },
+  "synchronization": {
+    "mode": "full-source-local-outbox",
+    "enabledByDefault": false,
+    "executionOrder": 209,
+    "dependencies": []
+  },
+  "migrations": {
+    "tenant": 201,
+    "masterNavigation": 202,
+    "masterSync": 203
+  }
+}

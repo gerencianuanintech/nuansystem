@@ -1,0 +1,23 @@
+using NuanSystem.Application.Abstractions.Data;
+using NuanSystem.Application.Abstractions.Messaging;
+using NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Dtos;
+using NuanSystem.Shared.Responses;
+
+namespace NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Queries;
+
+public sealed class Get{{PLURAL}}QueryHandler(I{{SINGULAR}}Repository repository) : IQueryHandler<Get{{PLURAL}}Query, IReadOnlyCollection<{{SINGULAR}}Dto>>
+{
+    public async Task<Result<IReadOnlyCollection<{{SINGULAR}}Dto>>> Handle(Get{{PLURAL}}Query request, CancellationToken ct) => Result<IReadOnlyCollection<{{SINGULAR}}Dto>>.Success(await repository.GetAllAsync(ct));
+}
+public sealed class Get{{SINGULAR}}LookupQueryHandler(I{{SINGULAR}}Repository repository) : IQueryHandler<Get{{SINGULAR}}LookupQuery, IReadOnlyCollection<{{SINGULAR}}LookupDto>>
+{
+    public async Task<Result<IReadOnlyCollection<{{SINGULAR}}LookupDto>>> Handle(Get{{SINGULAR}}LookupQuery request, CancellationToken ct) => Result<IReadOnlyCollection<{{SINGULAR}}LookupDto>>.Success(await repository.GetLookupAsync(ct));
+}
+public sealed class Get{{SINGULAR}}ByIdQueryHandler(I{{SINGULAR}}Repository repository) : IQueryHandler<Get{{SINGULAR}}ByIdQuery, {{SINGULAR}}Dto>
+{
+    public async Task<Result<{{SINGULAR}}Dto>> Handle(Get{{SINGULAR}}ByIdQuery request, CancellationToken ct) => (await repository.GetByIdAsync(request.Id, ct)) is { } item ? Result<{{SINGULAR}}Dto>.Success(item) : Result<{{SINGULAR}}Dto>.Failure("Registro no encontrado.");
+}
+public sealed class Get{{SINGULAR}}HistoryQueryHandler(I{{SINGULAR}}Repository repository) : IQueryHandler<Get{{SINGULAR}}HistoryQuery, IReadOnlyCollection<{{SINGULAR}}AuditChangeDto>>
+{
+    public async Task<Result<IReadOnlyCollection<{{SINGULAR}}AuditChangeDto>>> Handle(Get{{SINGULAR}}HistoryQuery request, CancellationToken ct) => Result<IReadOnlyCollection<{{SINGULAR}}AuditChangeDto>>.Success(await repository.GetHistoryAsync(request.Id, ct));
+}

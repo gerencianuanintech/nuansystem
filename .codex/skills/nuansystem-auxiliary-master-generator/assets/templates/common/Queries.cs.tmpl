@@ -1,0 +1,9 @@
+using NuanSystem.Application.Abstractions.Messaging;
+using NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Dtos;
+
+namespace NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Queries;
+
+public sealed record Get{{PLURAL}}Query : IQuery<IReadOnlyCollection<{{SINGULAR}}Dto>>;
+public sealed record Get{{SINGULAR}}LookupQuery : IQuery<IReadOnlyCollection<{{SINGULAR}}LookupDto>>;
+public sealed record Get{{SINGULAR}}ByIdQuery(int Id) : IQuery<{{SINGULAR}}Dto>;
+public sealed record Get{{SINGULAR}}HistoryQuery(int Id) : IQuery<IReadOnlyCollection<{{SINGULAR}}AuditChangeDto>>;

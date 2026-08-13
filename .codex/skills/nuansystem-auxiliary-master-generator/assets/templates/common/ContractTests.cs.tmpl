@@ -1,0 +1,15 @@
+using FluentAssertions;
+
+namespace NuanSystem.Application.Tests.Features.Definitions.Inventory.{{PLURAL}};
+
+public sealed class {{SINGULAR}}GeneratedContractTests
+{
+    [Fact]
+    public void Identity_IsCanonical()
+    {
+        "{{API_ROUTE}}".Should().StartWith("/api/definitions/inventory/");
+        "{{FORM_KEY}}".Should().Be("{{FORM_KEY}}");
+        "{{PERMISSION_READ}}".Should().NotBeNullOrWhiteSpace();
+        "{{PERMISSION_MANAGE}}".Should().NotBeNullOrWhiteSpace();
+    }
+}

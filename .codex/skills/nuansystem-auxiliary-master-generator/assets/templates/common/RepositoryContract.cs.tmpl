@@ -1,0 +1,17 @@
+using System.Data;
+using NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Dtos;
+
+namespace NuanSystem.Application.Abstractions.Data;
+
+public interface I{{SINGULAR}}Repository : IRepository
+{
+    Task<IReadOnlyCollection<{{SINGULAR}}Dto>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<{{SINGULAR}}LookupDto>> GetLookupAsync(CancellationToken cancellationToken = default);
+    Task<{{SINGULAR}}Dto?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+    Task<{{SINGULAR}}Dto?> GetByIdAsync(int id, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<{{SINGULAR}}AuditChangeDto>> GetHistoryAsync(int id, CancellationToken cancellationToken = default);
+    Task<bool> ExistsByCodeAsync(string code, int? excludingId, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
+    Task<int> CreateAsync(Create{{SINGULAR}}Data data, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
+    Task<int> UpdateAsync(Update{{SINGULAR}}Data data, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
+    Task<int> DeleteAsync(int id, int? auditUserId, string? auditUserName, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
+}
