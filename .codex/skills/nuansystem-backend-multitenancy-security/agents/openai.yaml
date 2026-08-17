@@ -1,4 +1,4 @@
 interface:
   display_name: "NuanSystem Backend Tenant Security"
-  short_description: "Tenant, permisos y auditoría backend"
+  short_description: "Tenant, permisos y auditorÃ­a backend"
   default_prompt: "Use $nuansystem-backend-multitenancy-security to preserve NuanSystem tenant, authorization, and audit boundaries."

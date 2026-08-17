@@ -7,7 +7,8 @@ description: Design, implement, or review the tenant-scoped durable queue used t
 
 ## Authority and current state
 
-Obey this order: `ENGINEERING-CONSTITUTION.md` > `ENGINEERING-KERNEL.md` > catalogs and knowledge graph > framework discovery and operational-use-case skills > this skill > local implementation.
+Run framework discovery and reuse its engineering-core record. Then apply the
+operational-use-case skill, this queue skill, and local implementation evidence.
 
 Read `references/contract-status.md` before proposing changes. For the approved first pilot, also read `../../../docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. Phase 5.2 queue behavior and Phase 5.5 monitor/download are deployed and runtime-validated; provider, worker, XML storage and remote SRI processing remain separate evidence gates. Never infer remote processing from queue or download evidence.
 

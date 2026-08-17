@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "1.3",
+  "archetype": "basic",
+  "entity": {
+    "singular": "SalesChannel",
+    "plural": "SalesChannels",
+    "title": "Canales de venta",
+    "table": "dbo.SalesChannels",
+    "entityCode": "SalesChannel"
+  },
+  "placement": {
+    "featurePath": ["Definitions", "Inventory", "SalesChannels"]
+  },
+  "api": {
+    "route": "/api/definitions/inventory/sales-channels",
+    "formKey": "sales-channels"
+  },
+  "navigation": {
+    "path": ["Configuration", "Definitions", "Inventory"],
+    "menuOrder": 100,
+    "menuCode": "MENU.DEFINITIONS.INVENTORY.SALESCHANNELS"
+  },
+  "permissions": {
+    "read": "GeneralInventorySalesChannelsRead",
+    "manage": "GeneralInventorySalesChannelsManage",
+    "lookupConsumers": ["ItemsRead"]
+  },
+  "fields": [
+    { "name": "Code", "label": "Código", "type": "string", "nullable": false, "required": true, "unique": true, "stringLength": 50, "role": "code" },
+    { "name": "Name", "label": "Nombre", "type": "string", "nullable": false, "required": true, "unique": false, "stringLength": 150, "role": "name" },
+    { "name": "Description", "label": "Descripción", "type": "string", "nullable": true, "required": false, "unique": false, "stringLength": 500, "role": "description" },
+    { "name": "SortOrder", "label": "Orden", "type": "int", "nullable": false, "required": true, "unique": false, "minimum": 0, "default": 0, "role": "sortOrder" },
+    { "name": "IsActive", "label": "Activo", "type": "bool", "nullable": false, "required": true, "unique": false, "default": true, "role": "active" }
+  ],
+  "ui": {
+    "layout": "single-section",
+    "showInfoLegends": false,
+    "showFooterDivider": false
+  },
+  "designApproval": {
+    "status": "approved",
+    "proposalHash": "67ba75ed1a4a81a717629dcc8ffb08ad5624c4a8cbc421f550db9183cf517c51",
+    "tableApproved": true,
+    "mockupApproved": true,
+    "mockupReference": "docs/architecture/auxiliary-masters/sales-channels-mockup.png",
+    "evidence": "El usuario aprobó explícitamente la tabla y el mockup el 2026-08-17: si esta bien procede."
+  },
+  "audit": { "enabled": true },
+  "softDelete": { "enabled": true },
+  "synchronization": {
+    "mode": "none",
+    "enabledByDefault": false,
+    "executionOrder": null,
+    "dependencies": []
+  },
+  "migrations": {
+    "versionDate": "20260817",
+    "tenant": 226,
+    "masterNavigation": 227,
+    "masterSync": null
+  }
+}

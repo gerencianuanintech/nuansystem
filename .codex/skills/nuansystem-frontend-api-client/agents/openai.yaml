@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem Frontend API Client"
+  short_description: "Mantiene el cliente HTTP centralizado"
+  default_prompt: "Use $nuansystem-frontend-api-client para modificar un cliente API tipado sin duplicar transporte ni sesión."

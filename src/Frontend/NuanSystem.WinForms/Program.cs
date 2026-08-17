@@ -62,19 +62,36 @@ using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemBrands;
 using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemFamilies;
 using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemGroups;
 using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemLines;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemOrigins;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemCommercialSegments;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemAlertTypes;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.SalesChannels;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemSubgroups;
 using NuanSystem.WinForms.Forms.Definitions.Inventory.UnitMeasures;
-using NuanSystem.WinForms.Forms.GeneralInventory.ItemSubgroups;
 using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemTypes;
 using NuanSystem.WinForms.Services.Definitions.Inventory.ItemTypes;
 using NuanSystem.WinForms.ViewModels.Definitions.Inventory.ItemTypes;
 using NuanSystem.WinForms.Services.Definitions.Inventory.ItemLines;
 using NuanSystem.WinForms.ViewModels.Definitions.Inventory.ItemLines;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ItemOrigins;
+using NuanSystem.WinForms.ViewModels.Definitions.Inventory.ItemOrigins;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ItemCommercialSegments;
+using NuanSystem.WinForms.ViewModels.Definitions.Inventory.ItemCommercialSegments;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ItemAlertTypes;
+using NuanSystem.WinForms.ViewModels.Definitions.Inventory.ItemAlertTypes;
+using NuanSystem.WinForms.Services.Definitions.Inventory.SalesChannels;
+using NuanSystem.WinForms.ViewModels.Definitions.Inventory.SalesChannels;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ItemSubgroups;
+using NuanSystem.WinForms.ViewModels.Definitions.Inventory.ItemSubgroups;
 using NuanSystem.WinForms.Forms.Definitions.Inventory.ProductTypes;
 using NuanSystem.WinForms.Services.Definitions.Inventory.ProductTypes;
 using NuanSystem.WinForms.ViewModels.Definitions.Inventory.ProductTypes;
-using NuanSystem.WinForms.Forms.GeneralInventory.ReplenishmentMethods;
-using NuanSystem.WinForms.Forms.GeneralInventory.SalesChannels;
-using NuanSystem.WinForms.Forms.GeneralInventory.StorageConditions;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ReplenishmentMethods;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ReplenishmentMethods;
+using NuanSystem.WinForms.ViewModels.Definitions.Inventory.ReplenishmentMethods;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.StorageConditions;
+using NuanSystem.WinForms.Services.Definitions.Inventory.StorageConditions;
+using NuanSystem.WinForms.ViewModels.Definitions.Inventory.StorageConditions;
 using NuanSystem.WinForms.Forms.GeneralInventory.StorageZones;
 using NuanSystem.WinForms.Forms.GeneralInventory.VariantAttributes;
 using NuanSystem.WinForms.Forms.GeneralInventory.WarehouseLocations;
@@ -274,6 +291,13 @@ internal sealed class FrontendComposition : IDisposable
     private readonly ItemTypeClient itemTypeClient;
     private readonly ProductTypeClient productTypeClient;
     private readonly ItemLineClient itemLineClient;
+    private readonly ItemOriginClient itemOriginClient;
+    private readonly ItemCommercialSegmentClient itemCommercialSegmentClient;
+    private readonly ItemAlertTypeClient itemAlertTypeClient;
+    private readonly SalesChannelClient salesChannelClient;
+    private readonly ReplenishmentMethodClient replenishmentMethodClient;
+    private readonly StorageConditionClient storageConditionClient;
+    private readonly ItemSubgroupClient itemSubgroupClient;
     private readonly ItemGroupClient itemGroupClient;
     private readonly DefinitionItemGroupClient definitionItemGroupClient;
     private readonly WarehouseClient warehouseClient;
@@ -334,6 +358,13 @@ internal sealed class FrontendComposition : IDisposable
         itemTypeClient = new ItemTypeClient(apiClient);
         productTypeClient = new ProductTypeClient(apiClient);
         itemLineClient = new ItemLineClient(apiClient);
+        itemOriginClient = new ItemOriginClient(apiClient);
+        itemCommercialSegmentClient = new ItemCommercialSegmentClient(apiClient);
+        itemAlertTypeClient = new ItemAlertTypeClient(apiClient);
+        salesChannelClient = new SalesChannelClient(apiClient);
+        replenishmentMethodClient = new ReplenishmentMethodClient(apiClient);
+        storageConditionClient = new StorageConditionClient(apiClient);
+        itemSubgroupClient = new ItemSubgroupClient(apiClient);
         itemGroupClient = new ItemGroupClient(apiClient);
         definitionItemGroupClient = new DefinitionItemGroupClient(apiClient);
         warehouseClient = new WarehouseClient(apiClient);
@@ -784,12 +815,16 @@ internal sealed class FrontendComposition : IDisposable
             "product-types" => CreateProductTypesForm(),
             "item-lines" => CreateItemLinesForm(),
             "inventory-item-lines" => CreateItemLinesForm(),
+            "item-origins" => CreateItemOriginsForm(),
+            "item-commercial-segments" => CreateItemCommercialSegmentsForm(),
+            "item-alert-types" => CreateItemAlertTypesForm(),
+            "item-subgroups" => CreateItemSubgroupsForm(),
             "inventory-item-subgroups" => CreateItemSubgroupsForm(),
-            "inventory-sales-channels" => CreateSalesChannelsForm(),
+            "sales-channels" => CreateSalesChannelsForm(),
             "inventory-warehouse-locations" => CreateWarehouseLocationsForm(),
             "inventory-storage-zones" => CreateStorageZonesForm(),
-            "inventory-storage-conditions" => CreateStorageConditionsForm(),
-            "inventory-replenishment-methods" => CreateReplenishmentMethodsForm(),
+            "storage-conditions" => CreateStorageConditionsForm(),
+            "replenishment-methods" => CreateReplenishmentMethodsForm(),
             "inventory-variant-attributes" => CreateVariantAttributesForm(),
             "inventory-attachment-document-types" => CreateAttachmentDocumentTypesForm(),
             "inventory-attachment-categories" => CreateAttachmentCategoriesForm(),
@@ -844,12 +879,18 @@ internal sealed class FrontendComposition : IDisposable
 
     public ItemSubgroupsForm CreateItemSubgroupsForm()
     {
-        return CreateCatalogForm<ItemSubgroupsForm>(GeneralInventoryCatalogDescriptors.ItemSubgroups);
+        return new ItemSubgroupsForm(
+            new ItemSubgroupsViewModel(itemSubgroupClient, definitionItemFamilyClient, definitionItemGroupClient, securityAccessClient),
+            session,
+            gridColumnSettingsClient);
     }
 
     public SalesChannelsForm CreateSalesChannelsForm()
     {
-        return CreateCatalogForm<SalesChannelsForm>(GeneralInventoryCatalogDescriptors.SalesChannels);
+        return new SalesChannelsForm(
+            new SalesChannelsViewModel(salesChannelClient),
+            session,
+            gridColumnSettingsClient);
     }
 
     public WarehouseLocationsForm CreateWarehouseLocationsForm()
@@ -864,12 +905,18 @@ internal sealed class FrontendComposition : IDisposable
 
     public StorageConditionsForm CreateStorageConditionsForm()
     {
-        return CreateCatalogForm<StorageConditionsForm>(GeneralInventoryCatalogDescriptors.StorageConditions);
+        return new StorageConditionsForm(
+            new StorageConditionsViewModel(storageConditionClient),
+            session,
+            gridColumnSettingsClient);
     }
 
     public ReplenishmentMethodsForm CreateReplenishmentMethodsForm()
     {
-        return CreateCatalogForm<ReplenishmentMethodsForm>(GeneralInventoryCatalogDescriptors.ReplenishmentMethods);
+        return new ReplenishmentMethodsForm(
+            new ReplenishmentMethodsViewModel(replenishmentMethodClient),
+            session,
+            gridColumnSettingsClient);
     }
 
     public VariantAttributesForm CreateVariantAttributesForm()
@@ -900,6 +947,30 @@ internal sealed class FrontendComposition : IDisposable
             new DefinitionItemGroupsViewModel(definitionItemGroupClient, chartOfAccountClient, securityAccessClient),
             session,
             auditClient,
+            gridColumnSettingsClient);
+    }
+
+    public ItemOriginsForm CreateItemOriginsForm()
+    {
+        return new ItemOriginsForm(
+            new ItemOriginsViewModel(itemOriginClient),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public ItemCommercialSegmentsForm CreateItemCommercialSegmentsForm()
+    {
+        return new ItemCommercialSegmentsForm(
+            new ItemCommercialSegmentsViewModel(itemCommercialSegmentClient),
+            session,
+            gridColumnSettingsClient);
+    }
+
+    public ItemAlertTypesForm CreateItemAlertTypesForm()
+    {
+        return new ItemAlertTypesForm(
+            new ItemAlertTypesViewModel(itemAlertTypeClient),
+            session,
             gridColumnSettingsClient);
     }
 
@@ -1007,7 +1078,13 @@ internal sealed class FrontendComposition : IDisposable
                 itemFamilyClient,
                 definitionItemBrandClient,
                 itemLineClient,
+                itemOriginClient,
+                itemCommercialSegmentClient,
+                itemSubgroupClient,
                 productTypeClient,
+                replenishmentMethodClient,
+                salesChannelClient,
+                storageConditionClient,
                 definitionUnitMeasureClient,
                 generalInventoryCatalogClient,
                 chartOfAccountClient,

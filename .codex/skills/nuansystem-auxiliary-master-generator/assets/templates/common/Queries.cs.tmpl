@@ -1,7 +1,7 @@
 using NuanSystem.Application.Abstractions.Messaging;
-using NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Dtos;
+using NuanSystem.Application.Features.{{FEATURE_NAMESPACE}}.Dtos;
 
-namespace NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Queries;
+namespace NuanSystem.Application.Features.{{FEATURE_NAMESPACE}}.Queries;
 
 public sealed record Get{{PLURAL}}Query : IQuery<IReadOnlyCollection<{{SINGULAR}}Dto>>;
 public sealed record Get{{SINGULAR}}LookupQuery : IQuery<IReadOnlyCollection<{{SINGULAR}}LookupDto>>;

@@ -1,197 +1,104 @@
 ---
 name: nuansystem-frontend-api-client
-description: Build or review NuanSystem WinForms API consumption through a centralized NuanApiClient, ApiSession, AuthService, CompanyService, module services, automatic JWT and X-Company-Code headers, HTTP error handling, JSON serialization, timeouts, cancellation tokens, and DevExpress user-friendly messages. Use when touching frontend services, login, company selection, API clients, or form-to-API communication.
+description: Build or review NuanSystem WinForms HTTP transport, sessions, and typed API clients through INuanApiClient. Use for NuanApiClient, ApiSession, authentication/company clients, ApiClientException, DI, or typed service contracts; skip for form-only changes that do not alter API consumption.
 ---
 
 # NuanSystem Frontend API Client
 
-## Core Rules
+## Authority and discovery
 
-- WinForms consumes only the backend REST API.
-- WinForms must never query SQL Server directly.
-- WinForms must never connect directly to SAP Business One.
-- Forms must not create `HttpClient` directly.
-- Forms must not manually add `Authorization` or `X-Company-Code` headers.
-- All HTTP communication goes through `NuanApiClient` or an approved service client.
-- Keep JWT and selected company in `ApiSession`.
-- Store tokens only in memory unless a secure persistence requirement is explicitly approved.
-- Clear session data on logout.
-- Convert API errors into user-friendly DevExpress messages through a common handler.
-- Use `CancellationToken` for long-running loads, search, exports, and sync operations.
+Run `$nuansystem-framework-discovery`, reuse its core record, and treat these repository contracts as authoritative:
 
-## Recommended Structure
+| Responsibility | Current implementation |
+|---|---|
+| HTTP abstraction | `src/Frontend/NuanSystem.WinForms.Services/Http/INuanApiClient.cs` |
+| HTTP transport | `src/Frontend/NuanSystem.WinForms.Services/Http/NuanApiClient.cs` |
+| API failure | `src/Frontend/NuanSystem.WinForms.Services/Http/ApiClientException.cs` |
+| Session state | `src/Frontend/NuanSystem.WinForms.Services/Session/ApiSession.cs` |
+| Authentication client | `src/Frontend/NuanSystem.WinForms.Services/Authentication/AuthenticationClient.cs` |
+| Authentication contract | `src/Frontend/NuanSystem.WinForms.Services/Authentication/IAuthenticationClient.cs` |
+| Company client | `src/Frontend/NuanSystem.WinForms.Services/Companies/CompanyClient.cs` |
+| Company contract | `src/Frontend/NuanSystem.WinForms.Services/Companies/ICompanyClient.cs` |
+
+Inspect the actual interfaces and one nearby typed client before changing a method signature or adding transport behavior. Documentation examples never override source contracts.
+
+## Request flow
 
 ```text
-NuanSystem.WinForms
-├── Services
-│   ├── NuanApiClient.cs
-│   ├── AuthService.cs
-│   ├── CompanyService.cs
-│   ├── CustomerService.cs
-│   └── SapSyncService.cs
-├── Session
-│   └── ApiSession.cs
-├── Models
-│   ├── Requests
-│   └── Responses
-└── ErrorHandling
-    └── ApiException.cs
+Form/ViewModel
+  -> typed feature client
+  -> INuanApiClient
+  -> NuanApiClient + ApiSession
+  -> REST API
+  -> typed response or ApiClientException
+  -> UI presentation at the form boundary
 ```
 
-## ApiSession
+- Forms depend on typed feature services; they do not create `HttpClient` or compose transport headers.
+- Typed clients own feature routes and request/response types, not shared transport mechanics.
+- `NuanApiClient` owns JSON serialization, HTTP execution, authentication/company headers, standard error parsing, file transfer, and availability checks exposed by its interface.
+- Backend business validation and authorization remain authoritative.
 
-```csharp
-public sealed class ApiSession
-{
-    public string? AccessToken { get; private set; }
-    public string? UserName { get; private set; }
-    public string? CompanyCode { get; private set; }
+## Session and company context
 
-    public bool IsAuthenticated => !string.IsNullOrWhiteSpace(AccessToken);
-    public bool HasCompany => !string.IsNullOrWhiteSpace(CompanyCode);
+- Use the registered `ApiSession`; do not create a second global session store.
+- Keep access tokens in the approved in-memory lifecycle unless secure persistence is explicitly designed and approved.
+- Clear authentication and company state through the existing logout/session flow.
+- Do not manually attach bearer tokens or `X-Company-Code` in forms or typed clients.
+- Treat the company header as request context only; backend middleware must validate user-company access.
+- When changing login, token renewal, company selection, or logout, inspect the authentication UI, dependency registration, and backend authentication/company contracts.
 
-    public void SetAuthenticatedUser(string accessToken, string userName)
-    {
-        AccessToken = accessToken;
-        UserName = userName;
-    }
+## Typed client rules
 
-    public void SelectCompany(string companyCode)
-    {
-        CompanyCode = companyCode;
-    }
+1. Reuse `INuanApiClient` public methods before extending the transport.
+2. Add a focused interface and implementation in the owning feature folder when the repository pattern requires one.
+3. Keep routes centralized in the typed client and preserve the API's exact JSON contract.
+4. Pass `CancellationToken` through supported async operations, especially loads, search, export, upload, and synchronization.
+5. Use the existing multipart and download methods for files; never expose the underlying `HttpClient` merely to bypass the abstraction.
+6. Register clients through the established frontend composition path and verify their consumers.
+7. Do not duplicate DTOs just to rename the same contract.
 
-    public void Clear()
-    {
-        AccessToken = null;
-        UserName = null;
-        CompanyCode = null;
-    }
-}
+## Errors and user messages
+
+- Preserve `ApiClientException` and the response metadata it exposes; do not introduce a parallel `ApiException` type.
+- Do not surface raw SQL, SAP, SRI, stack traces, or sensitive response bodies.
+- Typed clients may add feature context without discarding the original safe message or trace correlation.
+- Forms catch at the UI boundary using the established shared handling pattern, restore busy state, and show an understandable message.
+- Cancellation is not a generic failure and must not produce a misleading error dialog.
+
+Use `$nuansystem-api-error-logging` when the backend error envelope or Result-to-HTTP mapping changes. Use `$nuansystem-security-auth` when credentials, JWT behavior, login, logout, or token lifecycle changes.
+
+## Cross-layer impact
+
+When a frontend API contract changes, verify:
+
+```text
+typed client interface/implementation
+  -> frontend models and consumers
+  -> API route and request/response contract
+  -> authorization and company context
+  -> validation/error behavior
+  -> dependency registration
+  -> tests
 ```
 
-## ApiException
+A form-only layout or presentation change does not activate this skill unless the API call, model, session, error, or cancellation behavior also changes.
 
-```csharp
-public sealed class ApiException : Exception
-{
-    public string Code { get; }
-    public string? TraceId { get; }
-    public IReadOnlyList<ApiFieldError> Errors { get; }
+## Antipatterns
 
-    public ApiException(string code, string message, string? traceId, IReadOnlyList<ApiFieldError> errors)
-        : base(message)
-    {
-        Code = code;
-        TraceId = traceId;
-        Errors = errors;
-    }
-}
-```
+- `new HttpClient()` in forms or feature clients.
+- Parallel `NuanApiClient`, session, serialization, or exception infrastructure.
+- Inventing `AuthService`, `CompanyService`, or `ApiException` when the repository uses the contracts listed above.
+- Manual JWT or company headers outside the centralized transport.
+- Blocking `.Result` or `.Wait()` on UI requests.
+- Swallowing API failures, fabricating success, or leaving stale data visible after a failed refresh.
+- Direct WinForms access to SQL Server, SAP Business One, SRI, or worker storage.
 
-## NuanApiClient
+## Completion gate
 
-```csharp
-public sealed class NuanApiClient
-{
-    private readonly HttpClient _httpClient;
-    private readonly ApiSession _session;
-    private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
-
-    public NuanApiClient(HttpClient httpClient, ApiSession session)
-    {
-        _httpClient = httpClient;
-        _session = session;
-        _httpClient.Timeout = TimeSpan.FromSeconds(60);
-    }
-
-    public Task<T?> GetAsync<T>(string route, CancellationToken cancellationToken = default)
-        => SendAsync<T>(HttpMethod.Get, route, null, cancellationToken);
-
-    public Task<TResponse?> PostAsync<TRequest, TResponse>(
-        string route,
-        TRequest request,
-        CancellationToken cancellationToken = default)
-        => SendAsync<TResponse>(HttpMethod.Post, route, request, cancellationToken);
-
-    private async Task<T?> SendAsync<T>(
-        HttpMethod method,
-        string route,
-        object? body,
-        CancellationToken cancellationToken)
-    {
-        using var request = new HttpRequestMessage(method, route);
-        PrepareHeaders(request);
-
-        if (body is not null)
-        {
-            var json = JsonSerializer.Serialize(body, _jsonOptions);
-            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-        }
-
-        using var response = await _httpClient.SendAsync(request, cancellationToken);
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
-            throw CreateApiException(content, response.StatusCode);
-
-        if (string.IsNullOrWhiteSpace(content))
-            return default;
-
-        return JsonSerializer.Deserialize<T>(content, _jsonOptions);
-    }
-
-    private void PrepareHeaders(HttpRequestMessage request)
-    {
-        if (_session.IsAuthenticated)
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _session.AccessToken);
-
-        if (_session.HasCompany)
-            request.Headers.TryAddWithoutValidation("X-Company-Code", _session.CompanyCode);
-    }
-}
-```
-
-## AuthService
-
-```csharp
-public sealed class AuthService
-{
-    private readonly NuanApiClient _apiClient;
-    private readonly ApiSession _session;
-
-    public async Task LoginAsync(string userName, string password, CancellationToken cancellationToken)
-    {
-        var response = await _apiClient.PostAsync<LoginRequest, LoginResponse>(
-            "api/auth/login",
-            new LoginRequest(userName, password),
-            cancellationToken);
-
-        _session.SetAuthenticatedUser(response!.AccessToken, response.UserName);
-    }
-}
-```
-
-## Usage From a DevExpress Form
-
-```csharp
-private async void btnGuardar_Click(object sender, EventArgs e)
-{
-    try
-    {
-        SetBusy(true);
-        await _customerService.CreateAsync(BuildRequest(), CancellationToken.None);
-        XtraMessageBox.Show(this, "Cliente guardado correctamente.", "NuanSystem");
-    }
-    catch (ApiException ex)
-    {
-        ApiErrorMessageBox.Show(this, ex);
-    }
-    finally
-    {
-        SetBusy(false);
-    }
-}
-```
-
-The form coordinates UI only. Validation that affects business rules must be enforced by the API.
+- [ ] Actual transport, session, exception, and typed-client contracts were inspected.
+- [ ] No parallel HTTP/session/error infrastructure was introduced.
+- [ ] Authentication, company context, cancellation, and safe errors are preserved.
+- [ ] API and frontend contracts remain aligned.
+- [ ] Dependency registration and affected consumers were verified.
+- [ ] Relevant build/tests and negative paths are reported truthfully.

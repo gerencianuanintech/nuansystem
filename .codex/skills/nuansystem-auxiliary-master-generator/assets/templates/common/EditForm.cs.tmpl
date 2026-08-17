@@ -1,8 +1,8 @@
 using System.ComponentModel;
 using NuanSystem.WinForms.Forms.Common;
-using NuanSystem.WinForms.Services.Definitions.Inventory.{{PLURAL}}.Models;
+using NuanSystem.WinForms.Services.{{FEATURE_NAMESPACE}}.Models;
 
-namespace NuanSystem.WinForms.Forms.Definitions.Inventory.{{PLURAL}};
+namespace NuanSystem.WinForms.Forms.{{FEATURE_NAMESPACE}};
 
 public sealed partial class {{SINGULAR}}EditForm : BaseEditForm
 {
@@ -13,6 +13,10 @@ public sealed partial class {{SINGULAR}}EditForm : BaseEditForm
     public {{SINGULAR}}EditForm({{SINGULAR}}Item item) : this()
     {
 {{EDIT_ASSIGNMENTS}}
+    }
+    public {{SINGULAR}}EditForm({{SINGULAR}}Item item, bool copyMode) : this(item)
+    {
+        if (copyMode) txt{{CODE_FIELD}}.EditValue = null;
     }
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]

@@ -7,7 +7,8 @@ description: Design, implement, review, or diagnose NuanSystem Matriz-Sucursal r
 
 ## Authority and boundary
 
-Follow Constitution > Kernel > Catalogs/Graph > `$nuansystem-framework-discovery` > this skill > source.
+Run `$nuansystem-framework-discovery` and reuse its Constitution, Kernel,
+catalog, and graph record. Then apply this skill and source evidence.
 
 This is internal NuanSystem replication. It does not authenticate to SAP, choose Service Layer/DI API, or replace `$nuansystem-sap-sync-orchestration`.
 

@@ -18,6 +18,10 @@ public sealed class ItemSyncPublishingTests
     private readonly IItemRepository _repository = Substitute.For<IItemRepository>();
     private readonly IItemGroupRepository _groupRepository = Substitute.For<IItemGroupRepository>();
     private readonly IItemFamilyRepository _familyRepository = Substitute.For<IItemFamilyRepository>();
+    private readonly IItemSubgroupRepository _subgroupRepository = Substitute.For<IItemSubgroupRepository>();
+    private readonly IItemOriginRepository _originRepository = Substitute.For<IItemOriginRepository>();
+    private readonly IReplenishmentMethodRepository _replenishmentMethodRepository = Substitute.For<IReplenishmentMethodRepository>();
+    private readonly IStorageConditionRepository _storageConditionRepository = Substitute.For<IStorageConditionRepository>();
     private readonly IItemLocalOutboxWriter _writer = Substitute.For<IItemLocalOutboxWriter>();
     private readonly ImmediateTransactionRunner _transactionRunner = new();
 
@@ -61,6 +65,44 @@ public sealed class ItemSyncPublishingTests
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(error => error.ErrorMessage.Contains("vigencia coherente"));
+    }
+
+    [Fact]
+    public async Task Create_RejectsSubgroupWithoutFamily()
+    {
+        var command = CreateCommand() with
+        {
+            ItemFamilyId = null,
+            MasterData = new ItemMasterData(General: new ItemGeneralData(
+                AlternateCode: null,
+                SupplierSku: null,
+                LongDescription: null,
+                ProductType: null,
+                Origin: null,
+                Line: null,
+                SubGroup: "YOGUR",
+                Model: null,
+                Reference: null,
+                SalesActive: true,
+                PurchaseActive: true,
+                ManageInventory: true,
+                IsService: false,
+                IsKit: false,
+                BatchManaged: false,
+                SerialManaged: false,
+                Perishable: false,
+                ExpirationManaged: false,
+                RequiresScale: false,
+                AllowDiscount: true,
+                AffectsInventory: true))
+        };
+        var handler = CreateCreateHandler();
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().Contain(error => error.Code == "ItemSubgroupRequiresFamily");
+        await _repository.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
     }
 
     [Fact]
@@ -197,13 +239,126 @@ public sealed class ItemSyncPublishingTests
     private CreateItemCommandHandler CreateCreateHandler()
     {
         ConfigureValidClassification();
-        return new(_repository, _groupRepository, _familyRepository, _transactionRunner, _writer);
+        return new(_repository, _groupRepository, _familyRepository, _subgroupRepository, _originRepository, _replenishmentMethodRepository, _storageConditionRepository, _transactionRunner, _writer);
+    }
+
+    [Fact]
+    public async Task Update_PreservesUnchangedHistoricalOrigin_WithoutCatalogLookup()
+    {
+        var item = CreateItem();
+        item.MasterData = MasterDataWithOrigin("Legacy-Origin");
+        _repository.GetByIdAsync(item.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(item);
+        _repository.ExistsByCodeAsync("ART-001", item.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.UpdateAsync(Arg.Any<UpdateItemData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await CreateUpdateHandler().Handle(
+            UpdateCommand(item.Id) with { MasterData = MasterDataWithOrigin("Legacy-Origin") }, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        await _originRepository.DidNotReceiveWithAnyArgs().GetByCodeAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Update_RejectsChangedInactiveOrigin()
+    {
+        var item = CreateItem();
+        item.MasterData = MasterDataWithOrigin("Legacy-Origin");
+        _repository.GetByIdAsync(item.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(item);
+        _originRepository.GetByCodeAsync("Mixed", _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
+            .Returns(new NuanSystem.Application.Features.Definitions.Inventory.ItemOrigins.Dtos.ItemOriginDto
+            { Id = 3, GlobalId = Guid.NewGuid(), Code = "Mixed", Name = "Mixto", IsActive = false });
+
+        var result = await CreateUpdateHandler().Handle(
+            UpdateCommand(item.Id) with { MasterData = MasterDataWithOrigin("Mixed") }, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().Contain(x => x.Code == "ItemOriginInactive");
+        await _repository.DidNotReceiveWithAnyArgs().UpdateAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Update_PreservesUnchangedHistoricalReplenishmentMethod_WithoutCatalogLookup()
+    {
+        var item = CreateItem();
+        item.MasterData = MasterDataWithReplenishmentMethod("LEGACY");
+        _repository.GetByIdAsync(item.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(item);
+        _repository.ExistsByCodeAsync("ART-001", item.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.UpdateAsync(Arg.Any<UpdateItemData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await CreateUpdateHandler().Handle(
+            UpdateCommand(item.Id) with { MasterData = MasterDataWithReplenishmentMethod("LEGACY") }, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        await _replenishmentMethodRepository.DidNotReceiveWithAnyArgs().GetByCodeAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Update_RejectsChangedInactiveReplenishmentMethod()
+    {
+        var item = CreateItem();
+        item.MasterData = MasterDataWithReplenishmentMethod("LEGACY");
+        _repository.GetByIdAsync(item.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(item);
+        _replenishmentMethodRepository.GetByCodeAsync("FABRICAR", _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
+            .Returns(new NuanSystem.Application.Features.Definitions.Inventory.ReplenishmentMethods.Dtos.ReplenishmentMethodDto
+            { Id = 2, GlobalId = Guid.NewGuid(), Code = "FABRICAR", Name = "Fabricar", IsActive = false });
+
+        var result = await CreateUpdateHandler().Handle(
+            UpdateCommand(item.Id) with { MasterData = MasterDataWithReplenishmentMethod("FABRICAR") }, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().Contain(x => x.Code == "ReplenishmentMethodInactive");
+        await _repository.DidNotReceiveWithAnyArgs().UpdateAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Update_PreservesUnchangedHistoricalStorageCondition_WithoutCatalogLookup()
+    {
+        var item=CreateItem();item.MasterData=MasterDataWithStorageCondition("LEGACY");
+        _repository.GetByIdAsync(item.Id,_transactionRunner.Connection,_transactionRunner.Transaction,Arg.Any<CancellationToken>()).Returns(item);
+        _repository.ExistsByCodeAsync("ART-001",item.Id,_transactionRunner.Connection,_transactionRunner.Transaction,Arg.Any<CancellationToken>()).Returns(false);
+        _repository.UpdateAsync(Arg.Any<UpdateItemData>(),_transactionRunner.Connection,_transactionRunner.Transaction,Arg.Any<CancellationToken>()).Returns(true);
+        var result=await CreateUpdateHandler().Handle(UpdateCommand(item.Id) with { MasterData=MasterDataWithStorageCondition("LEGACY") },CancellationToken.None);
+        result.IsSuccess.Should().BeTrue();
+        await _storageConditionRepository.DidNotReceiveWithAnyArgs().GetByCodeAsync(default!,default!,default!,default);
+    }
+
+    [Fact]
+    public async Task Update_RejectsChangedInactiveStorageCondition()
+    {
+        var item=CreateItem();item.MasterData=MasterDataWithStorageCondition("LEGACY");
+        _repository.GetByIdAsync(item.Id,_transactionRunner.Connection,_transactionRunner.Transaction,Arg.Any<CancellationToken>()).Returns(item);
+        _storageConditionRepository.GetByCodeAsync("REFRIGERADO",_transactionRunner.Connection,_transactionRunner.Transaction,Arg.Any<CancellationToken>()).Returns(new NuanSystem.Application.Features.Definitions.Inventory.StorageConditions.Dtos.StorageConditionDto{Id=2,GlobalId=Guid.NewGuid(),Code="REFRIGERADO",Name="Refrigerado",IsActive=false});
+        var result=await CreateUpdateHandler().Handle(UpdateCommand(item.Id) with { MasterData=MasterDataWithStorageCondition("REFRIGERADO") },CancellationToken.None);
+        result.IsSuccess.Should().BeFalse();result.Errors.Should().Contain(x=>x.Code=="StorageConditionInactive");
+        await _repository.DidNotReceiveWithAnyArgs().UpdateAsync(default!,default!,default!,default);
+    }
+
+    [Fact]
+    public async Task Update_AllowsIntentionalClearOfExistingStorageCondition()
+    {
+        var item=CreateItem();item.MasterData=MasterDataWithStorageCondition("LEGACY");
+        _repository.GetByIdAsync(item.Id,_transactionRunner.Connection,_transactionRunner.Transaction,Arg.Any<CancellationToken>()).Returns(item);
+        _repository.ExistsByCodeAsync("ART-001",item.Id,_transactionRunner.Connection,_transactionRunner.Transaction,Arg.Any<CancellationToken>()).Returns(false);
+        _repository.UpdateAsync(Arg.Any<UpdateItemData>(),_transactionRunner.Connection,_transactionRunner.Transaction,Arg.Any<CancellationToken>()).Returns(true);
+        var result=await CreateUpdateHandler().Handle(UpdateCommand(item.Id) with { MasterData=MasterDataWithStorageCondition(null) },CancellationToken.None);
+        result.IsSuccess.Should().BeTrue();
+        await _repository.Received(1).UpdateAsync(Arg.Any<UpdateItemData>(),_transactionRunner.Connection,_transactionRunner.Transaction,Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Update_RejectsStorageConditionWithDifferentCasingEvenIfRepositoryCollationMatches()
+    {
+        var item=CreateItem();item.MasterData=MasterDataWithStorageCondition("LEGACY");
+        _repository.GetByIdAsync(item.Id,_transactionRunner.Connection,_transactionRunner.Transaction,Arg.Any<CancellationToken>()).Returns(item);
+        _storageConditionRepository.GetByCodeAsync("ambiente",_transactionRunner.Connection,_transactionRunner.Transaction,Arg.Any<CancellationToken>()).Returns(new NuanSystem.Application.Features.Definitions.Inventory.StorageConditions.Dtos.StorageConditionDto{Id=1,GlobalId=Guid.NewGuid(),Code="AMBIENTE",Name="Ambiente",IsActive=true});
+        var result=await CreateUpdateHandler().Handle(UpdateCommand(item.Id) with { MasterData=MasterDataWithStorageCondition("ambiente") },CancellationToken.None);
+        result.IsSuccess.Should().BeFalse();result.Errors.Should().Contain(x=>x.Code=="StorageConditionNotFound");
     }
 
     private UpdateItemCommandHandler CreateUpdateHandler()
     {
         ConfigureValidClassification();
-        return new(_repository, _groupRepository, _familyRepository, _transactionRunner, _writer);
+        return new(_repository, _groupRepository, _familyRepository, _subgroupRepository, _originRepository, _replenishmentMethodRepository, _storageConditionRepository, _transactionRunner, _writer);
     }
 
     private DeleteItemCommandHandler CreateDeleteHandler() => new(_repository, _transactionRunner, _writer);
@@ -214,6 +369,8 @@ public sealed class ItemSyncPublishingTests
             .Returns(new NuanSystem.Application.Features.GeneralInventory.ItemGroups.Dtos.ItemGroupDto { Id = 3, Code = "GENERAL", Name = "General", IsActive = true });
         _familyRepository.GetByIdAsync(4, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
             .Returns(new NuanSystem.Application.Features.Definitions.Inventory.ItemFamilies.Dtos.ItemFamilyDto { Id = 4, ItemGroupId = 3, Code = "FAM", Name = "Familia", IsActive = true });
+        _subgroupRepository.ExistsActiveByFamilyAndCodeAsync(4, Arg.Any<string>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
+            .Returns(true);
     }
 
     private static CompanyConnectionInfo Company(bool syncEnabled) =>
@@ -329,6 +486,17 @@ public sealed class ItemSyncPublishingTests
             create.AuditUserId,
             create.AuditUserName);
     }
+
+    private static ItemMasterData MasterDataWithOrigin(string? origin) => new(
+        General: new ItemGeneralData(null, null, null, null, origin, null, null, null, null,
+            true, true, true, false, false, false, false, false, false, false, true, true));
+
+    private static ItemMasterData MasterDataWithReplenishmentMethod(string? method) => new(
+        Inventory: new ItemInventoryData(false, null, null, false, false, false, 0, 0, 0, 0, 0,
+            null, null, method, null, null, null, null, false, false, false, false, null, null));
+
+    private static ItemMasterData MasterDataWithStorageCondition(string? condition) => new(
+        Inventory: new ItemInventoryData(false,null,null,false,false,false,0,0,0,0,0,null,null,null,null,null,null,condition,false,false,false,false,null,null));
 
     private sealed class ImmediateTransactionRunner : ITransactionRunner
     {

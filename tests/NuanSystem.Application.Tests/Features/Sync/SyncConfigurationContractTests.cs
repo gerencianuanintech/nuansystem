@@ -302,7 +302,11 @@ public sealed class SyncConfigurationContractTests
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Currencies).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.ItemGroups).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.ItemFamilies).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.ItemSubgroups).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.ItemLines).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.ItemOrigins).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.ReplenishmentMethods).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.StorageConditions).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.BusinessPartnerPaymentTerms).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Carrier).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative("CustomCatalog").Should().BeFalse();
@@ -323,8 +327,12 @@ public sealed class SyncConfigurationContractTests
             "BusinessPartner",
             "ItemGroups",
             "ItemFamilies",
+            "ItemSubgroups",
             "ItemBrands",
             "ItemLine",
+            "ItemOrigin",
+            "ReplenishmentMethod",
+            "StorageCondition",
             "Item",
             "Warehouse",
             "PriceList",

@@ -12,12 +12,8 @@ public sealed class GeneralInventoryCatalogRepository(ITenantConnectionFactory c
         new Dictionary<string, CatalogProcedures>(StringComparer.OrdinalIgnoreCase)
         {
             ["warehouses"] = Procedures("WAREHOUSES"),
-            ["item-subgroups"] = Procedures("ITEMSUBGROUPS"),
-            ["sales-channels"] = Procedures("SALESCHANNELS"),
             ["warehouse-locations"] = Procedures("WAREHOUSELOCATIONS"),
             ["storage-zones"] = Procedures("STORAGEZONES"),
-            ["storage-conditions"] = Procedures("STORAGECONDITIONS"),
-            ["replenishment-methods"] = Procedures("REPLENISHMENTMETHODS"),
             ["variant-attributes"] = Procedures("VARIANTATTRIBUTES"),
             ["attachment-document-types"] = Procedures("ATTACHMENTDOCUMENTTYPES"),
             ["attachment-categories"] = Procedures("ATTACHMENTCATEGORIES")

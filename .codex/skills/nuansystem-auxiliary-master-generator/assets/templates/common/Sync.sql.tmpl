@@ -17,8 +17,8 @@ BEGIN TRY
   INSERT dbo.SyncEntityConfigurations(CompanyId,EntityName,IsEnabled,Direction,ConflictPolicy,BatchSize,MaxAttempts)
   SELECT company.Id,N'{{ENTITY_CODE}}',0,N'MasterToBranch',N'MasterWins',100,3 FROM dbo.Companies company
   WHERE company.IsMaster=1 AND NOT EXISTS(SELECT 1 FROM dbo.SyncEntityConfigurations c WHERE c.CompanyId=company.Id AND c.EntityName=N'{{ENTITY_CODE}}');
- IF NOT EXISTS(SELECT 1 FROM dbo.MasterSchemaHistory WHERE Version=N'20260813.{{MIGRATION_SYNC}}')
-  INSERT dbo.MasterSchemaHistory(Version,Description) VALUES(N'20260813.{{MIGRATION_SYNC}}',N'Registers {{TITLE}} sync disabled by default');
+ IF NOT EXISTS(SELECT 1 FROM dbo.MasterSchemaHistory WHERE Version=N'{{MIGRATION_VERSION_DATE}}.{{MIGRATION_SYNC}}')
+  INSERT dbo.MasterSchemaHistory(Version,Description) VALUES(N'{{MIGRATION_VERSION_DATE}}.{{MIGRATION_SYNC}}',N'Registers {{TITLE}} sync disabled by default');
  COMMIT;
 END TRY
 BEGIN CATCH

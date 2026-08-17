@@ -1,6 +1,6 @@
 ---
 name: nuansystem-api-error-logging
-description: Implement or review NuanSystem Result, ApiResponse, ApiError, FluentValidation failures, GlobalExceptionMiddleware, audit error logging, SQL/SAP exception classification, TraceIdentifier correlation, and production-safe API messages. Use when changing backend failures, HTTP error mapping, exception middleware, logging, validation responses, audit error records, or frontend error contracts.
+description: "Implement or review NuanSystem backend failure handling: Result/ApiError mapping, FluentValidation responses, GlobalExceptionMiddleware, audit logging, SQL/SAP error classification, TraceIdentifier correlation, and production-safe API/frontend error contracts."
 ---
 
 # NuanSystem API Errors and Logging

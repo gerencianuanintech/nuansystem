@@ -1,11 +1,11 @@
 using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
-using NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Commands;
-using NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Queries;
+using NuanSystem.Application.Features.{{FEATURE_NAMESPACE}}.Commands;
+using NuanSystem.Application.Features.{{FEATURE_NAMESPACE}}.Queries;
 using NuanSystem.Shared.Constants;
 
-namespace NuanSystem.Api.Endpoints.Definitions.Inventory.{{PLURAL}};
+namespace NuanSystem.Api.Endpoints.{{FEATURE_NAMESPACE}};
 
 public static class {{SINGULAR}}Endpoints
 {
@@ -16,7 +16,7 @@ public static class {{SINGULAR}}Endpoints
         group.MapGet("", async (ISender sender, CancellationToken ct) => (await sender.Send(new Get{{PLURAL}}Query(), ct)).ToHttpResult())
             .RequirePermission(PermissionCodes.{{PERMISSION_READ}}).RequireFormOperation(FormKey, "refresh");
         group.MapGet("/lookup", async (ISender sender, CancellationToken ct) => (await sender.Send(new Get{{SINGULAR}}LookupQuery(), ct)).ToHttpResult())
-            .RequirePermission(PermissionCodes.{{PERMISSION_READ}});
+            .RequirePermission(PermissionCodes.{{PERMISSION_LOOKUP}});
         group.MapGet("/{id:int}", async (int id, ISender sender, CancellationToken ct) => (await sender.Send(new Get{{SINGULAR}}ByIdQuery(id), ct)).ToHttpResult())
             .RequirePermission(PermissionCodes.{{PERMISSION_READ}}).RequireFormOperation(FormKey, "consult");
         group.MapGet("/{id:int}/history", async (int id, ISender sender, CancellationToken ct) => (await sender.Send(new Get{{SINGULAR}}HistoryQuery(id), ct)).ToHttpResult())

@@ -1,6 +1,6 @@
 ---
 name: nuansystem-backend-persistence
-description: Create, modify, or review NuanSystem Application repository contracts, Dapper Persistence repositories, stored-procedure calls, tenant connections, mappings, transaction boundaries, cancellation, provider isolation, and dependency registration. Use for repository, SQL contract, Dapper, ITenantConnectionFactory, ITransactionRunner, or Persistence changes.
+description: Create or review NuanSystem Application repository contracts and Dapper Persistence implementations. Use for stored-procedure calls, mappings, tenant connections, transaction boundaries, cancellation, provider isolation, ITenantConnectionFactory, ITransactionRunner, or Persistence DI changes.
 ---
 
 # NuanSystem Backend Persistence

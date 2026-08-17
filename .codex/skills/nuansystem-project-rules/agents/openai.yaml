@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem Project Rules"
+  short_description: "Enruta cambios transversales de NuanSystem"
+  default_prompt: "Use $nuansystem-project-rules para clasificar y enrutar un cambio transversal de NuanSystem."

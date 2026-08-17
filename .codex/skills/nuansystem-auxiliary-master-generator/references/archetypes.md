@@ -1,5 +1,13 @@
 # Auxiliary master archetypes
 
+## Contents
+
+1. [Selection](#selection)
+2. [Basic](#basic)
+3. [Classified](#classified)
+4. [Dependent](#dependent)
+5. [Explicit exclusions](#explicit-exclusions)
+
 ## Selection
 
 ```text
@@ -13,7 +21,9 @@ Accounting, stock, pricing, documents, SAP, or external state
   -> outside MVP; classify and design explicitly
 ```
 
-All archetypes generate a concrete Standard CRUD vertical. They may reuse `BaseGridCrudListForm`, `BaseEditForm`, `NuanActionButton`, `NuanToggleSwitch`, corporate typography, typed API transport, and audit history. They must not produce one generic runtime maintenance form.
+All archetypes generate a concrete Standard CRUD vertical. They reuse `BaseGridCrudListForm`, `BaseEditForm`, the inherited Cancelar/Guardar actions, `NuanToggleSwitch`, corporate typography, typed API transport, and audit history. They must not produce one generic runtime maintenance form.
+
+All three editor variants use the compact 870 px shell approved for ItemLines, ItemSubgroups, and ItemOrigins. The main column owns Código, Nombre, parent/classification, custom fields, and Descripción; the right rail owns Orden and Activo. The dependent parent occupies the first main row, moving Código and Nombre down one cadence. Classified fields are inserted in the main column before Descripción, with a server-managed system toggle on the same right-hand row when applicable. The form height grows only by the required 28 px rows; it must not return to a wide 1200 px surface or a single vertical stack.
 
 Every archetype first emits its complete SQL table proposal and a full-color mockup brief. The table and generated image must be shown and explicitly approved before any preview, diff, or scaffold operation.
 

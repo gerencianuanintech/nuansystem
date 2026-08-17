@@ -7,7 +7,7 @@ description: Configure, extend, or review NuanSystem DevExpress grids, including
 
 ## Authority and discovery
 
-Follow the engineering core and run `$nuansystem-framework-discovery`. Inspect:
+Run `$nuansystem-framework-discovery`, reuse its core record, and inspect:
 
 - `src/Frontend/NuanSystem.WinForms.Forms/Common/BaseGridCrudListForm.cs`
 - `src/Frontend/NuanSystem.WinForms.Forms/Common/BaseGridCrudListForm.Designer.cs`
@@ -81,6 +81,12 @@ For coded fixed catalogs, display the approved readable label and the business v
 
 - Use the same stable `FormKey` as navigation/security.
 - Use stable `GridName` when a form contains multiple grids.
+- For administrative master lists, register every persisted projection column in the grid: business fields, relationship identities, `Id`, `GlobalId`, creation/update/delete audit fields, and logical-deletion state. Keep technical/audit columns hidden by default unless explicitly approved as visible.
+- Do not depend on `PopulateColumns()` to discover the contract. Explicitly add missing columns before customization so “Seleccionar columnas” remains complete when the result set is empty.
+- Verificar la cadena completa `SELECT/procedimiento SQL -> DTO de Application -> modelo del cliente -> GridView.Columns.AddField`. Una columna persistida omitida en cualquiera de esos cuatro puntos se considera un defecto, aunque el listado muestre correctamente las columnas principales.
+- Probar la personalización con cero filas y con datos. El selector debe conservar todas las columnas persistidas autorizadas; las columnas técnicas y de auditoría deben existir pero iniciar ocultas.
+- Mantener una prueba contractual que enumere las columnas persistidas esperadas y falle cuando el DTO, el modelo frontend o la declaración explícita de la grilla omita una de ellas.
+- Exclude computed display-only properties, secrets, tokens, raw integration payloads, and fields absent from the authorized API projection.
 - Preserve saved settings when adding compatible columns.
 - Treat column rename/removal as a compatibility change.
 - Use shared customization paths; do not add feature-local column-setting stores.
@@ -145,6 +151,7 @@ For a grid inside an edit, detail, operational, or document form, render its loc
 - [ ] Correct grid lifecycle/control was selected.
 - [ ] Data, selection, columns, formats, filters, and paging are explicit.
 - [ ] Personalization keys align with `FormKey` and `GridName`.
+- [ ] Todas las columnas persistidas autorizadas recorren SQL, DTO, modelo y `AddField`, y siguen disponibles con una fuente vacía.
 - [ ] Export and sensitive-field behavior are verified.
 - [ ] Permissions, empty/error/busy states, and performance are addressed.
 - [ ] Build, tests, Designer, and representative runtime checks are reported truthfully.

@@ -1,10 +1,15 @@
 using FluentValidation;
 
-namespace NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Commands;
+namespace NuanSystem.Application.Features.{{FEATURE_NAMESPACE}}.Commands;
 
 internal static class {{SINGULAR}}ValidationRules
 {
-    public static void Apply<T>(AbstractValidator<T> validator)
+    public static void Apply(AbstractValidator<Create{{SINGULAR}}Command> validator)
+    {
+{{VALIDATOR_RULES}}
+    }
+
+    public static void Apply(AbstractValidator<Update{{SINGULAR}}Command> validator)
     {
 {{VALIDATOR_RULES}}
     }

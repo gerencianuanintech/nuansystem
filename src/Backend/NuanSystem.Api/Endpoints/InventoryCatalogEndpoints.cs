@@ -8,6 +8,13 @@ using NuanSystem.Api.Endpoints.Definitions.Inventory.ItemBrands;
 using NuanSystem.Api.Endpoints.Definitions.Inventory.UnitMeasures;
 using NuanSystem.Api.Endpoints.Definitions.Inventory.ProductTypes;
 using NuanSystem.Api.Endpoints.Definitions.Inventory.ItemLines;
+using NuanSystem.Api.Endpoints.Definitions.Inventory.ItemSubgroups;
+using NuanSystem.Api.Endpoints.Definitions.Inventory.ItemOrigins;
+using NuanSystem.Api.Endpoints.Definitions.Inventory.ItemCommercialSegments;
+using NuanSystem.Api.Endpoints.Definitions.Inventory.ItemAlertTypes;
+using NuanSystem.Api.Endpoints.Definitions.Inventory.SalesChannels;
+using NuanSystem.Api.Endpoints.Definitions.Inventory.ReplenishmentMethods;
+using NuanSystem.Api.Endpoints.Definitions.Inventory.StorageConditions;
 using NuanSystem.Application.Features.GeneralInventory.Catalogs.Commands;
 using NuanSystem.Application.Features.GeneralInventory.Catalogs.Queries;
 using NuanSystem.Application.Features.GeneralInventory.ItemGroups.Commands;
@@ -31,21 +38,18 @@ public static class InventoryCatalogEndpoints
         app.MapUnitMeasureEndpoints();
         app.MapProductTypeEndpoints();
         app.MapItemLineEndpoints();
+        app.MapItemSubgroupEndpoints();
+        app.MapItemOriginEndpoints();
+        app.MapItemCommercialSegmentEndpoints();
+        app.MapItemAlertTypeEndpoints();
+        app.MapSalesChannelEndpoints();
+        app.MapReplenishmentMethodEndpoints();
+        app.MapStorageConditionEndpoints();
         MapGeneralInventoryCatalog(
             app,
             "warehouses",
             PermissionCodes.GeneralInventoryWarehousesRead,
             PermissionCodes.GeneralInventoryWarehousesManage);
-        MapGeneralInventoryCatalog(
-            app,
-            "item-subgroups",
-            PermissionCodes.GeneralInventoryItemSubgroupsRead,
-            PermissionCodes.GeneralInventoryItemSubgroupsManage);
-        MapGeneralInventoryCatalog(
-            app,
-            "sales-channels",
-            PermissionCodes.GeneralInventorySalesChannelsRead,
-            PermissionCodes.GeneralInventorySalesChannelsManage);
         MapGeneralInventoryCatalog(
             app,
             "warehouse-locations",
@@ -56,16 +60,6 @@ public static class InventoryCatalogEndpoints
             "storage-zones",
             PermissionCodes.GeneralInventoryStorageZonesRead,
             PermissionCodes.GeneralInventoryStorageZonesManage);
-        MapGeneralInventoryCatalog(
-            app,
-            "storage-conditions",
-            PermissionCodes.GeneralInventoryStorageConditionsRead,
-            PermissionCodes.GeneralInventoryStorageConditionsManage);
-        MapGeneralInventoryCatalog(
-            app,
-            "replenishment-methods",
-            PermissionCodes.GeneralInventoryReplenishmentMethodsRead,
-            PermissionCodes.GeneralInventoryReplenishmentMethodsManage);
         MapGeneralInventoryCatalog(
             app,
             "variant-attributes",

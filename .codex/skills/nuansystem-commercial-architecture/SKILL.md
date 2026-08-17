@@ -1,6 +1,6 @@
 ---
 name: nuansystem-commercial-architecture
-description: Guide NuanSystem architecture as a configurable multi-business commercial platform, not a single-giro product. Use when designing or refactoring modules, naming domains, deciding CRUD vs operational use cases, changing Clean Architecture boundaries, modularizing API endpoints, or evaluating whether behavior belongs in Domain, Application, Persistence, Configuration, or frontend.
+description: Guide NuanSystem as a configurable multi-business commercial platform. Use for module/domain design, CRUD-versus-operational classification, Clean Architecture boundaries, API modularization, or deciding whether behavior belongs in Domain, Application, Persistence, Configuration, or frontend.
 ---
 
 # NuanSystem Commercial Architecture

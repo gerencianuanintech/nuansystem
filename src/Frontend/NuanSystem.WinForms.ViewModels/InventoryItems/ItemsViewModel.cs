@@ -7,7 +7,15 @@ using NuanSystem.WinForms.Services.GeneralInventory.ItemFamilies;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemFamilies.Models;
 using NuanSystem.WinForms.Services.Definitions.Inventory.ItemBrands;
 using NuanSystem.WinForms.Services.Definitions.Inventory.ItemLines;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ItemOrigins;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ItemCommercialSegments;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ItemSubgroups;
 using NuanSystem.WinForms.Services.Definitions.Inventory.ProductTypes;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ReplenishmentMethods;
+using NuanSystem.WinForms.Services.Definitions.Inventory.SalesChannels;
+using NuanSystem.WinForms.Services.Definitions.Inventory.ReplenishmentMethods.Models;
+using NuanSystem.WinForms.Services.Definitions.Inventory.StorageConditions;
+using NuanSystem.WinForms.Services.Definitions.Inventory.StorageConditions.Models;
 using NuanSystem.WinForms.Services.Definitions.Inventory.UnitMeasures;
 using DefinitionUnitMeasureLookupItem = NuanSystem.WinForms.Services.Definitions.Inventory.UnitMeasures.Models.UnitMeasureLookupItem;
 using NuanSystem.WinForms.Services.InventoryItems;
@@ -25,12 +33,19 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
     private readonly IItemFamilyClient itemFamilyClient;
     private readonly IItemBrandClient itemBrandClient;
     private readonly IItemLineClient itemLineClient;
+    private readonly IItemOriginClient itemOriginClient;
+    private readonly IItemCommercialSegmentClient itemCommercialSegmentClient;
+    private readonly IItemSubgroupClient itemSubgroupClient;
     private readonly IProductTypeClient productTypeClient;
+    private readonly IReplenishmentMethodClient replenishmentMethodClient;
+    private readonly ISalesChannelClient salesChannelClient;
+    private readonly IStorageConditionClient storageConditionClient;
     private readonly IUnitMeasureClient unitMeasureClient;
     private readonly IGeneralInventoryCatalogClient generalInventoryCatalogClient;
     private readonly IChartOfAccountClient chartOfAccountClient;
     private readonly ISecurityAccessClient securityAccessClient;
     private IReadOnlyDictionary<string, bool> relatedCatalogCreateAccess = new Dictionary<string, bool>();
+    private IReadOnlyDictionary<string, bool> relatedCatalogEditAccess = new Dictionary<string, bool>();
 
     private static readonly string[] RelatedCatalogFormKeys =
     {
@@ -40,12 +55,14 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
         "inventory-item-types",
         "product-types",
         "item-lines",
-        "inventory-item-subgroups",
-        "inventory-sales-channels",
+        "item-origins",
+        "item-commercial-segments",
+        "item-subgroups",
+        "sales-channels",
         "inventory-warehouse-locations",
         "inventory-storage-zones",
-        "inventory-storage-conditions",
-        "inventory-replenishment-methods",
+        "storage-conditions",
+        "replenishment-methods",
         "inventory-variant-attributes",
         "inventory-attachment-document-types",
         "inventory-attachment-categories"
@@ -57,7 +74,13 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
         IItemFamilyClient itemFamilyClient,
         IItemBrandClient itemBrandClient,
         IItemLineClient itemLineClient,
+        IItemOriginClient itemOriginClient,
+        IItemCommercialSegmentClient itemCommercialSegmentClient,
+        IItemSubgroupClient itemSubgroupClient,
         IProductTypeClient productTypeClient,
+        IReplenishmentMethodClient replenishmentMethodClient,
+        ISalesChannelClient salesChannelClient,
+        IStorageConditionClient storageConditionClient,
         IUnitMeasureClient unitMeasureClient,
         IGeneralInventoryCatalogClient generalInventoryCatalogClient,
         IChartOfAccountClient chartOfAccountClient,
@@ -68,7 +91,13 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
         this.itemFamilyClient = itemFamilyClient;
         this.itemBrandClient = itemBrandClient;
         this.itemLineClient = itemLineClient;
+        this.itemOriginClient = itemOriginClient;
+        this.itemCommercialSegmentClient = itemCommercialSegmentClient;
+        this.itemSubgroupClient = itemSubgroupClient;
         this.productTypeClient = productTypeClient;
+        this.replenishmentMethodClient = replenishmentMethodClient;
+        this.salesChannelClient = salesChannelClient;
+        this.storageConditionClient = storageConditionClient;
         this.unitMeasureClient = unitMeasureClient;
         this.generalInventoryCatalogClient = generalInventoryCatalogClient;
         this.chartOfAccountClient = chartOfAccountClient;
@@ -102,12 +131,14 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
         var itemTypesTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.ItemTypes, cancellationToken);
         var productTypesTask = productTypeClient.GetLookupAsync(cancellationToken);
         var itemLinesTask = itemLineClient.GetLookupAsync(cancellationToken);
-        var itemSubgroupsTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.ItemSubgroups, cancellationToken);
-        var salesChannelsTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.SalesChannels, cancellationToken);
+        var itemOriginsTask = itemOriginClient.GetLookupAsync(cancellationToken);
+        var itemCommercialSegmentsTask = itemCommercialSegmentClient.GetLookupAsync(cancellationToken);
+        var itemSubgroupsTask = itemSubgroupClient.GetLookupAsync(null, cancellationToken);
+        var salesChannelsTask = salesChannelClient.GetLookupAsync(cancellationToken);
         var warehouseLocationsTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.WarehouseLocations, cancellationToken);
         var storageZonesTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.StorageZones, cancellationToken);
-        var storageConditionsTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.StorageConditions, cancellationToken);
-        var replenishmentMethodsTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.ReplenishmentMethods, cancellationToken);
+        var storageConditionsTask = storageConditionClient.GetLookupAsync(cancellationToken);
+        var replenishmentMethodsTask = replenishmentMethodClient.GetLookupAsync(cancellationToken);
         var variantAttributesTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.VariantAttributes, cancellationToken);
         var attachmentDocumentTypesTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.AttachmentDocumentTypes, cancellationToken);
         var attachmentCategoriesTask = generalInventoryCatalogClient.GetLookupAsync(GeneralInventoryCatalogRoutes.AttachmentCategories, cancellationToken);
@@ -122,6 +153,8 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
             itemTypesTask,
             productTypesTask,
             itemLinesTask,
+            itemOriginsTask,
+            itemCommercialSegmentsTask,
             itemSubgroupsTask,
             salesChannelsTask,
             warehouseLocationsTask,
@@ -189,12 +222,53 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
                     IsActive = item.IsActive
                 })
                 .ToArray(),
-            ItemSubgroups = ActiveCatalog(await itemSubgroupsTask),
-            SalesChannels = ActiveCatalog(await salesChannelsTask),
+            ItemOrigins = (await itemOriginsTask)
+                .Where(item => item.IsActive)
+                .OrderBy(item => item.SortOrder)
+                .ThenBy(item => item.Code)
+                .ThenBy(item => item.Name)
+                .Select(item => new ItemOriginLookupItem(item.Id, item.Code, item.Name, item.IsActive))
+                .ToArray(),
+            ItemCommercialSegments = (await itemCommercialSegmentsTask)
+                .Where(item => item.IsActive)
+                .OrderBy(item => item.SortOrder)
+                .ThenBy(item => item.Code)
+                .ThenBy(item => item.Name)
+                .ToArray(),
+            ItemSubgroups = (await itemSubgroupsTask)
+                .Where(item => item.IsActive)
+                .OrderBy(item => item.ItemFamilyName)
+                .ThenBy(item => item.SortOrder)
+                .ThenBy(item => item.Code)
+                .Select(item => new ItemSubgroupLookupItem(item.Id, item.ItemFamilyId, item.Code, item.Name))
+                .ToArray(),
+            SalesChannels = (await salesChannelsTask)
+                .Where(item => item.IsActive)
+                .OrderBy(item => item.SortOrder)
+                .ThenBy(item => item.Code)
+                .ThenBy(item => item.Name)
+                .Select(item => new GeneralInventoryCatalogLookupItem
+                {
+                    Id = item.Id,
+                    Code = item.Code,
+                    Name = item.Name,
+                    IsActive = item.IsActive
+                })
+                .ToArray(),
             WarehouseLocations = ActiveCatalog(await warehouseLocationsTask),
             StorageZones = ActiveCatalog(await storageZonesTask),
-            StorageConditions = ActiveCatalog(await storageConditionsTask),
-            ReplenishmentMethods = ActiveCatalog(await replenishmentMethodsTask),
+            StorageConditions = (await storageConditionsTask)
+                .Where(item => item.IsActive)
+                .OrderBy(item => item.SortOrder)
+                .ThenBy(item => item.Code)
+                .ThenBy(item => item.Name)
+                .ToArray(),
+            ReplenishmentMethods = (await replenishmentMethodsTask)
+                .Where(item => item.IsActive)
+                .OrderBy(item => item.SortOrder)
+                .ThenBy(item => item.Code)
+                .ThenBy(item => item.Name)
+                .ToArray(),
             VariantAttributes = ActiveCatalog(await variantAttributesTask),
             AttachmentDocumentTypes = ActiveCatalog(await attachmentDocumentTypesTask),
             AttachmentCategories = ActiveCatalog(await attachmentCategoriesTask)
@@ -218,19 +292,24 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
                 ["item-groups"] = CanCreateItemGroups,
                 ["item-families"] = CanCreateItemFamilies
             };
+            var editAccess = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var formKey in RelatedCatalogFormKeys)
             {
-                access[formKey] = await HasCreateAccessAsync(formKey, cancellationToken);
+                var operations = await GetFormOperationsAsync(formKey, cancellationToken);
+                access[formKey] = operations.Any(IsCreateOperation);
+                editAccess[formKey] = operations.Any(IsEditOperation);
             }
 
             relatedCatalogCreateAccess = access;
+            relatedCatalogEditAccess = editAccess;
         }
         catch
         {
             CanCreateItemGroups = false;
             CanCreateItemFamilies = false;
             relatedCatalogCreateAccess = new Dictionary<string, bool>();
+            relatedCatalogEditAccess = new Dictionary<string, bool>();
         }
     }
 
@@ -251,6 +330,73 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
         await LoadLookupsAsync(cancellationToken);
         return new ItemFamilyLookupItem(itemFamily.Id, itemFamily.ItemGroupId, itemFamily.Code, itemFamily.Name);
     }
+
+    public Task<NuanSystem.WinForms.Services.Definitions.Inventory.ItemOrigins.Models.ItemOriginItem> GetItemOriginByIdAsync(
+        int id,
+        CancellationToken cancellationToken = default) => itemOriginClient.GetByIdAsync(id, cancellationToken);
+
+    public async Task<NuanSystem.WinForms.Services.Definitions.Inventory.ItemOrigins.Models.ItemOriginItem> CreateItemOriginAsync(
+        NuanSystem.WinForms.Services.Definitions.Inventory.ItemOrigins.Models.SaveItemOriginRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var saved = await itemOriginClient.CreateAsync(request, cancellationToken);
+        await LoadLookupsAsync(cancellationToken);
+        return saved;
+    }
+
+    public async Task<NuanSystem.WinForms.Services.Definitions.Inventory.ItemOrigins.Models.ItemOriginItem> UpdateItemOriginAsync(
+        int id,
+        NuanSystem.WinForms.Services.Definitions.Inventory.ItemOrigins.Models.SaveItemOriginRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var saved = await itemOriginClient.UpdateAsync(id, request, cancellationToken);
+        await LoadLookupsAsync(cancellationToken);
+        return saved;
+    }
+
+    public Task<ReplenishmentMethodItem> GetReplenishmentMethodByIdAsync(
+        int id,
+        CancellationToken cancellationToken = default) =>
+        replenishmentMethodClient.GetByIdAsync(id, cancellationToken);
+
+    public async Task<ReplenishmentMethodItem> CreateReplenishmentMethodAsync(
+        SaveReplenishmentMethodRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var saved = await replenishmentMethodClient.CreateAsync(request, cancellationToken);
+        await LoadLookupsAsync(cancellationToken);
+        return saved;
+    }
+
+    public async Task<ReplenishmentMethodItem> UpdateReplenishmentMethodAsync(
+        int id,
+        SaveReplenishmentMethodRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var saved = await replenishmentMethodClient.UpdateAsync(id, request, cancellationToken);
+        await LoadLookupsAsync(cancellationToken);
+        return saved;
+    }
+
+    public Task<StorageConditionItem> GetStorageConditionByIdAsync(int id, CancellationToken cancellationToken = default) =>
+        storageConditionClient.GetByIdAsync(id, cancellationToken);
+
+    public async Task<StorageConditionItem> CreateStorageConditionAsync(SaveStorageConditionRequest request, CancellationToken cancellationToken = default)
+    {
+        var saved = await storageConditionClient.CreateAsync(request, cancellationToken);
+        await LoadLookupsAsync(cancellationToken);
+        return saved;
+    }
+
+    public async Task<StorageConditionItem> UpdateStorageConditionAsync(int id, SaveStorageConditionRequest request, CancellationToken cancellationToken = default)
+    {
+        var saved = await storageConditionClient.UpdateAsync(id, request, cancellationToken);
+        await LoadLookupsAsync(cancellationToken);
+        return saved;
+    }
+
+    public bool CanEditRelatedCatalog(string formKey) =>
+        relatedCatalogEditAccess.TryGetValue(formKey, out var canEdit) && canEdit;
 
     public Task<ItemItem> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
@@ -290,6 +436,28 @@ public sealed class ItemsViewModel : CrudViewModel<ItemItem, SaveItemRequest>
         catch
         {
             return false;
+        }
+    }
+
+    private static bool IsEditOperation(FormOperationAccessItem operation)
+    {
+        return operation.IsAllowed
+            && (MatchesOperation(operation.ActionKey, "edit", "update", "editar", "actualizar", "put")
+                || MatchesOperation(operation.Code, "edit", "update", "editar", "actualizar", "put")
+                || MatchesOperation(operation.Name, "edit", "update", "editar", "actualizar", "put"));
+    }
+
+    private async Task<IReadOnlyCollection<FormOperationAccessItem>> GetFormOperationsAsync(
+        string formKey,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await securityAccessClient.GetFormOperationsAsync(formKey, cancellationToken);
+        }
+        catch
+        {
+            return [];
         }
     }
 

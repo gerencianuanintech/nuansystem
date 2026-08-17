@@ -1,6 +1,6 @@
 ---
 name: nuansystem-security-auth
-description: Implement or review NuanSystem authentication and credential lifecycle: login, JWT creation/validation, permission claims, security stamp revocation, password hashing/change requirements, user state, company access bootstrap, secret protection, HTTPS, and production configuration. Use when changing AuthEndpoints, JwtTokenService, SqlServerAuthService, password flows, authentication middleware, claims, signing keys, or credential storage.
+description: "Implement or review NuanSystem authentication and credential lifecycle. Use for login, JWT and permission claims, security stamps, password flows, user/company access, signing keys, HTTPS, secret protection, AuthEndpoints, JwtTokenService, or SqlServerAuthService."
 ---
 
 # NuanSystem Security Authentication

@@ -1,6 +1,6 @@
 ---
 name: nuansystem-operational-usecase
-description: Design, implement, or review NuanSystem operational backend use cases affecting stock, money, prices, purchasing, cash, documents, workflow, synchronization, or external systems. Use for posting, receiving, transferring, adjusting, paying, approving, canceling, reversing, closing, retrying, or any transaction requiring authoritative state, concurrency, idempotency, audit, and recovery.
+description: Design or review NuanSystem operational use cases affecting stock, money, prices, purchasing, cash, documents, workflow, synchronization, or external systems. Use for transactional actions requiring authoritative state, concurrency, idempotency, audit, retries, reversal, or recovery.
 ---
 
 # NuanSystem Operational Use Case

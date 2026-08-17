@@ -1,6 +1,6 @@
 ---
 name: nuansystem-deployment-production
-description: "Prepare NuanSystem for production deployment: API hosting in IIS or Windows Service, HTTPS, environment-specific appsettings, secrets, Serilog, backups, health checks, Swagger protection, least-privilege SQL users, firewall, SAP connectivity, script versioning, migrations, WinForms publishing, ApiBaseUrl configuration, monitoring, and release checklists."
+description: "Prepare or review NuanSystem production deployment. Use for IIS/Windows Service hosting, HTTPS, environment settings, secrets, logging, backups, health checks, Swagger, SQL least privilege, firewall, migrations, WinForms publishing, ApiBaseUrl, monitoring, and release validation."
 ---
 
 # NuanSystem Deployment Production

@@ -13,12 +13,10 @@ Protect Visual Studio Designer compatibility and keep visual structure editable 
 
 Before editing:
 
-1. Read `.codex/ENGINEERING-CONSTITUTION.md`.
-2. Follow `.codex/ENGINEERING-KERNEL.md`.
-3. Run `nuansystem-framework-discovery`.
-4. Read the frontend entries in `.codex/FRAMEWORK-CATALOG.md`.
-5. Inspect the form's `.cs`, `.Designer.cs`, and `.resx` when present.
-6. Inspect the base form and at least one approved similar form.
+1. Run `$nuansystem-framework-discovery` and reuse its core record.
+2. Read only the relevant Designer/control entries in `.codex/FRAMEWORK-CATALOG.md`.
+3. Inspect the form's `.cs`, `.Designer.cs`, and `.resx` when present.
+4. Inspect the base form and at least one approved similar form.
 
 ## Core boundary
 
@@ -76,6 +74,13 @@ Direct DevExpress controls may be used when they are the established low-level b
 - Keep event wiring consistent with nearby Designer files.
 - Do not split `InitializeComponent` across hidden helpers.
 - For a direct closed `LookUpEdit`, serialize the combo button and `TextEditStyle = TextEditStyles.DisableTextEditor` explicitly; do not rely on design-time defaults.
+
+### Design-time constructors
+
+- Keep a parameterless constructor when Visual Studio Designer requires it.
+- Do not dereference injected clients, ViewModels, `ApiSession`, permission services, or column-setting services from that constructor.
+- If shared setup calls permission wiring, make the wiring return before accessing a null design-time session.
+- Treat successful compilation as insufficient evidence; a constructor that throws with null design-time dependencies still blocks the Designer.
 
 ### Layout
 
@@ -172,6 +177,7 @@ Do not:
 - mutate control hierarchy from async loading;
 - fix one screen by changing a shared control default without consumer review;
 - claim the Designer opens because the project compiles.
+- call permission/session logic unguarded from the parameterless Designer constructor.
 - accept a Designer-generated diff without checking closed-editor behavior, inherited controls, tab order, resources, and established layout cadence.
 
 ## Validation evidence

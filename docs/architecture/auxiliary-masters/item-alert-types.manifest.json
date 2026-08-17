@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "1.2",
+  "archetype": "basic",
+  "entity": {
+    "singular": "ItemAlertType",
+    "plural": "ItemAlertTypes",
+    "title": "Tipos de alerta de artículos",
+    "table": "dbo.ItemAlertTypes",
+    "entityCode": "ItemAlertType"
+  },
+  "placement": {
+    "featurePath": ["Definitions", "Inventory", "ItemAlertTypes"]
+  },
+  "api": {
+    "route": "/api/definitions/inventory/item-alert-types",
+    "formKey": "item-alert-types"
+  },
+  "navigation": {
+    "path": ["Configuration", "Definitions", "Inventory"],
+    "menuOrder": 90,
+    "menuCode": "MENU.DEFINITIONS.INVENTORY.ITEMALERTTYPES"
+  },
+  "permissions": {
+    "read": "GeneralInventoryItemAlertTypesRead",
+    "manage": "GeneralInventoryItemAlertTypesManage",
+    "lookupConsumers": ["ItemsRead"]
+  },
+  "fields": [
+    { "name": "Code", "label": "Código", "type": "string", "nullable": false, "required": true, "unique": true, "stringLength": 50, "role": "code" },
+    { "name": "Name", "label": "Nombre", "type": "string", "nullable": false, "required": true, "unique": false, "stringLength": 150, "role": "name" },
+    { "name": "Description", "label": "Descripción", "type": "string", "nullable": true, "required": false, "unique": false, "stringLength": 500, "role": "description" },
+    { "name": "SortOrder", "label": "Orden", "type": "int", "nullable": false, "required": true, "unique": false, "minimum": 0, "default": 0, "role": "sortOrder" },
+    { "name": "IsActive", "label": "Activo", "type": "bool", "nullable": false, "required": true, "unique": false, "default": true, "role": "active" }
+  ],
+  "ui": {
+    "layout": "single-section",
+    "showInfoLegends": false,
+    "showFooterDivider": false
+  },
+  "designApproval": {
+    "status": "approved",
+    "proposalHash": "595af9ba4da65bbedc4daeaad4ff7f452f6be654b5a8fe1d9073418eeb5630c6",
+    "tableApproved": true,
+    "mockupApproved": true,
+    "mockupReference": "docs/architecture/auxiliary-masters/item-alert-types-mockup.png",
+    "evidence": "El usuario aprobó explícitamente la tabla y el mockup el 2026-08-14: queda aprobado."
+  },
+  "audit": { "enabled": true },
+  "softDelete": { "enabled": true },
+  "synchronization": {
+    "mode": "none",
+    "enabledByDefault": false,
+    "executionOrder": null,
+    "dependencies": []
+  },
+  "migrations": {
+    "tenant": 221,
+    "masterNavigation": 222,
+    "masterSync": null
+  }
+}

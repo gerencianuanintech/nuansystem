@@ -1,6 +1,6 @@
 ---
 name: nuansystem-auxiliary-master-generator
-description: Propose, approve, scaffold, and validate complete NuanSystem auxiliary administrative master verticals from deterministic manifests. Use when creating or planning a repeated Definitions/Inventory maintenance with a mandatory proposed SQL table structure and full-color mockup approval gate, typed backend, SQL, security/navigation, optional Master-Branch sync, typed WinForms client/ViewModel, BaseGridCrudListForm, BaseEditForm Designer layout, history, and tests. Supports basic, classified, and dependent archetypes; never use for stock, money, documents, workflow, SAP execution, SRI, or other operational use cases.
+description: Propose, approve, scaffold, and validate complete NuanSystem auxiliary administrative masters from deterministic manifests, with independent physical/API/menu routes, SQL, security, WinForms, history, columns, and tests. Use for basic, classified, or dependent CRUD catalogs; never for operational, SAP, SRI, or synchronization execution.
 ---
 
 # NuanSystem Auxiliary Master Generator
@@ -32,6 +32,10 @@ Inspect branch, working tree, processes, next migration number, exact symbols, l
 ### 2. Author a proposal manifest
 
 Copy the nearest example from `assets/manifests/`. Read [manifest-schema.md](references/manifest-schema.md) and [validation-rules.md](references/validation-rules.md). Keep entity names, SQL table, API route, FormKey, permissions, menu identity, procedure prefix, and optional sync identity aligned. Never include secrets or real personal data.
+
+Choose `placement.featurePath`, `api.route`, and `navigation.path` independently. The physical path is an exact PascalCase feature path shared by generated layers; the API route is an absolute kebab-case `/api/...` path; navigation controls only the menu. Do not derive one from another.
+
+Use `schemaVersion: 1.3` for new manifests and set `migrations.versionDate` explicitly as `yyyyMMdd`; never derive persisted migration versions from the runtime clock.
 
 Leave `designApproval` absent or pending while preparing a new proposal. Do not reuse an approval from another master.
 
@@ -76,7 +80,15 @@ The generator must refuse existing output and direct writes into production dire
 & .codex/skills/nuansystem-auxiliary-master-generator/scripts/Test-NuanAuxiliaryMaster.ps1 -Manifest <manifest.json> -GeneratedPath <staging-directory>
 ```
 
-Require no unresolved tokens or secrets, deterministic output, contract alignment, explicit Designer layout, 22 px editors with 28 px row cadence, applicable CRUD/history/lookup/security/audit artifacts, safe SQL, and disabled-by-default sync.
+Require no unresolved tokens or secrets, deterministic output, contract alignment, explicit Designer layout, applicable CRUD/history/lookup/security/audit artifacts, and safe SQL. Master navigation must register the twelve canonical CRUD/grid operations in `SecurityFormOperations` and grant the approved default role separately; role grants alone do not make operations visible in Accesos. Reject sync generation until all producer, FullSource, applier, runtime registration, retry, dependency, and test artifacts are complete. Treat the compact editor geometry as a hard gate: 870 px client width; maintenance title only in the native form caption; no repeated in-content title or heading line; first row at Y=26; main column at X=154; right rail for Orden/Activo at X=680/684; standard editors 22 px high; row origins advance exactly 28 px; labels use `editorY + 3`; and Description is a 436x64 memo. Use only inherited Cancelar/Guardar actions at the lower right. Same-row controls share the exact Y coordinate; arbitrary 30/44/56 px gaps fail validation.
+
+Exigir una prueba contractual generada que lea el SQL de navegación y compruebe `SecurityFormOperations`, `SecurityRoleFormOperations` y los doce códigos canónicos. Validar por separado aplicabilidad y concesión: nunca aceptar como completo un maestro que solo inserte permisos del rol. Si el script defectuoso ya fue desplegado, corregir la fuente para instalaciones nuevas y crear una migración forward-only idempotente para los ambientes existentes.
+
+For every generated list, require the column-personalization dialog to offer every persisted table column: declared business fields, relationship identities, `Id`, `GlobalId`, creation/update/delete audit fields, and `IsDeleted`. Keep technical and audit columns hidden by default, but create them explicitly with `GridView.Columns.AddField` so they remain selectable when the data source is empty. Do not expose computed display-only properties as persisted columns.
+
+Exigir que la prueba contractual compare la lista completa de columnas persistidas contra el DTO de Application, el modelo frontend y las columnas explícitas del formulario. Validar el selector con datos y sin filas antes de dar por integrado el mantenimiento.
+
+Require the parameterless list-form constructor to remain Designer-safe: permission wiring must return when `ApiSession` is null. Require tenant delete procedures to preserve the update row count before audit and keep delete plus audit in one owned-or-ambient transaction. Require Master navigation reruns to reactivate existing permissions, forms, menus, role-menu access, applicable operations, and approved grants instead of inserting duplicates around soft-deleted rows.
 
 ### 7. Review and integrate
 
@@ -84,14 +96,27 @@ Use `-Mode Diff` to classify destinations as new, identical, or colliding. Revie
 
 ### 8. Validate the integrated vertical
 
-Execute the generated builds/tests and open the Designer when possible. SQL deployment, renewed-token authorization, runtime sync, SAP/SRI calls, worker activation, commit, push, and merge each require separate authority.
+Execute the generated builds/tests and open the Designer when possible. Before calling the integration complete, run the spacing gate against the final integrated `.Designer.cs`, not only against staging:
+
+```powershell
+& .codex/skills/nuansystem-auxiliary-master-generator/scripts/Test-NuanAuxiliaryMasterDesignerSpacing.ps1 `
+  -Manifest <staging>/manifest.normalized.json `
+  -DesignerPath src/Frontend/.../<Entity>EditForm.Designer.cs
+```
+
+If manual integration groups several controls in one row, give them the same Y. Recalculate every later row from the previous row origin; do not preserve empty vertical space merely because the mockup is taller. SQL deployment, renewed-token authorization, runtime sync, SAP/SRI calls, worker activation, commit, push, and merge each require separate authority.
+
+For every navigable generated maintenance, verify the exact `FormKey` in both routing stages: `Program.CreateGeneralInventoryCatalogForm` must construct the form and `MainForm.CreateModuleForm` must delegate that key to the catalog factory. The generated contract test must fail if either registration or the `ShellViewModel` entry is missing.
 
 ## Invariants
 
 - Preserve an independent vertical per administrable master.
+- Keep physical placement, public API route, and menu navigation as separate manifest decisions.
 - Never scaffold before the user has approved the current table proposal and displayed full-color mockup.
 - Reuse corporate CRUD, API, CQRS, Dapper, tenant, audit, security, Designer, and sync infrastructure.
 - Keep layout explicit in `.Designer.cs`; never generate runtime form builders.
+- Make every persisted master column available to grid personalization even with zero rows; keep technical/audit columns hidden by default.
+- Generate compact fixed-dialog editors following the approved ItemLines/ItemSubgroups/ItemOrigins organization. Do not generate a local primary action, 1200 px maintenance surfaces, tabs, panels, info legends, or footer dividers unless a later explicitly approved schema version requires them.
 - Never adopt replicated rows by matching code.
 - Keep SAP optional and isolated.
 - Never activate sync profiles or workers from scaffolding.
@@ -105,5 +130,6 @@ Execute the generated builds/tests and open the Designer when possible. SQL depl
 - [Discovery record](references/discovery-record.md)
 - `scripts/New-NuanAuxiliaryMaster.ps1`
 - `scripts/Test-NuanAuxiliaryMaster.ps1`
+- `scripts/Test-NuanAuxiliaryMasterDesignerSpacing.ps1`
 - `assets/manifests/`
 - `assets/templates/`

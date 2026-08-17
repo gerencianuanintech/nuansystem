@@ -1,4 +1,4 @@
 interface:
   display_name: "NuanSystem Business Capabilities"
   short_description: "Capacidades configurables por giro"
-  default_prompt: "Define o ajusta parametros y capacidades por empresa/giro en NuanSystem para evitar reglas quemadas y mantener el sistema adaptable a diferentes negocios."
+  default_prompt: "Use $nuansystem-business-capabilities para definir capacidades configurables por empresa o giro sin reglas quemadas."

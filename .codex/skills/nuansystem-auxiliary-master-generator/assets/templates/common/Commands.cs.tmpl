@@ -1,7 +1,7 @@
 using NuanSystem.Application.Abstractions.Messaging;
-using NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Dtos;
+using NuanSystem.Application.Features.{{FEATURE_NAMESPACE}}.Dtos;
 
-namespace NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Commands;
+namespace NuanSystem.Application.Features.{{FEATURE_NAMESPACE}}.Commands;
 
 public sealed record Create{{SINGULAR}}Command({{RECORD_PARAMETERS}}, int? AuditUserId = null, string? AuditUserName = null) : ICommand<{{SINGULAR}}Dto>;
 public sealed record Update{{SINGULAR}}Command(int Id, {{RECORD_PARAMETERS}}, int? AuditUserId = null, string? AuditUserName = null) : ICommand<{{SINGULAR}}Dto>;

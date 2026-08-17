@@ -1,6 +1,6 @@
 ---
 name: nuansystem-enterprise-typography
-description: Deprecated compatibility stub. Do not activate this as an independent NuanSystem frontend skill. Use nuansystem-winforms-devexpress and its internal reference references/enterprise-typography.md instead.
+description: Deprecated NuanSystem typography compatibility redirect. Invoke only when explicitly requested; use nuansystem-winforms-devexpress and its enterprise-typography reference for real frontend work.
 ---
 
 # NuanSystem Enterprise Typography

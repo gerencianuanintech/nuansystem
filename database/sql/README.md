@@ -38,6 +38,29 @@ La compatibilidad futura con MySQL se trabajara desde abstracciones de persisten
 - `202_master_definitions_inventory_item_lines_navigation.sql`: conserva identidades y accesos legacy al mover Lineas de articulos a Configuracion > Definiciones > Inventario con FormKey `item-lines`.
 - `203_master_item_lines_sync_registration.sql`: registra ItemLine sin dependencias funcionales, con configuracion y ownership deshabilitados por defecto.
 - `204_master_product_types_dependency_repair.sql`: retira de forma forward-only la dependencia prematura Item -> ProductType hasta que el payload de articulos publique ProductTypeGlobalId.
+- `205_tenant_item_subgroups_master.sql`: convierte ItemSubgroups en maestro dependiente de ItemFamilies, preserva relaciones historicas verificables, agrega auditoria y Outbox transaccional, y aplica por GlobalId sin adopcion por codigo.
+- `206_master_definitions_inventory_item_subgroups_navigation.sql`: conserva identidades, accesos y denegaciones al mover Subgrupos de articulos a Configuracion > Definiciones > Inventario con FormKey `item-subgroups`.
+- `207_master_item_subgroups_sync_registration.sql`: registra ItemSubgroups despues de ItemFamilies, con configuracion y ownership deshabilitados por defecto.
+- `208_tenant_item_origins_master.sql`: crea ItemOrigins con GlobalId, seeds deterministas `Local`/`Imported`/`Mixed`, preservacion exacta de valores JSON historicos, auditoria, LocalOutbox y aplicacion por GlobalId sin adopcion por codigo.
+- `209_master_definitions_inventory_item_origins_navigation.sql`: registra Origenes de articulos en Configuracion > Definiciones > Inventario con permisos API y operaciones de formulario.
+- `210_master_item_origins_sync_registration.sql`: registra ItemOrigin independiente, sin dependencia Item, con configuracion y ownership deshabilitados por defecto.
+- `211_tenant_replenishment_methods_master.sql`: evoluciona ReplenishmentMethods preservando Id, codigos y JSON historico; agrega GlobalId, auditoria, LocalOutbox y sync sin adopcion por codigo.
+- `212_master_definitions_inventory_replenishment_methods_navigation.sql`: migra formulario/menu legacy a FormKey `replenishment-methods` preservando identidades y accesos.
+- `213_master_replenishment_methods_sync_registration.sql`: registra ReplenishmentMethod independiente y deshabilitado por defecto, sin dependencia Item.
+- `214_tenant_storage_conditions_master.sql`: evoluciona StorageConditions preservando Id, códigos, casing y JSON histórico exacto; agrega GlobalId, auditoría, tombstones y sync sin adopción por código.
+- `215_master_definitions_inventory_storage_conditions_navigation.sql`: migra formulario/menu legacy a FormKey `storage-conditions` preservando identidades y accesos.
+- `216_master_storage_conditions_sync_registration.sql`: registra StorageCondition independiente, sin dependencia Item y deshabilitado por defecto.
+- `217_tenant_item_commercial_segments_master.sql`: crea el maestro tenant de segmentos comerciales de artículos con auditoría, lookup y eliminación lógica.
+- `218_master_definitions_inventory_item_commercial_segments_navigation.sql`: registra formulario, menú, permisos y operaciones aplicables para `item-commercial-segments`.
+- `219_master_item_commercial_segments_form_operations_repair.sql`: reparación forward-only que completa las doce operaciones canónicas visibles en Accesos y su concesión inicial a `ADMIN`.
+- `220_master_item_origins_form_operations_repair.sql`: reparación forward-only que completa las doce operaciones canónicas de Orígenes de artículos visibles en Accesos y su concesión inicial a `ADMIN`.
+- `221_tenant_item_alert_types_master.sql`: crea el maestro tenant de Tipos de alerta de artículos, sus procedimientos CRUD, consulta para selector y auditoría.
+- `222_master_definitions_inventory_item_alert_types_navigation.sql`: registra formulario, menú, permisos y las doce operaciones canónicas de Tipos de alerta de artículos.
+- `223_tenant_item_auxiliary_delete_hardening.sql`: reparación forward-only que hace atómica la eliminación lógica y su auditoría, preservando el resultado real de filas afectadas, para Orígenes, Segmentos comerciales y Tipos de alerta de artículos.
+- `224_master_item_auxiliary_navigation_hardening.sql`: reparación forward-only que reactiva sin duplicar formularios, menús, accesos de menú y operaciones de Orígenes y Segmentos comerciales.
+- `225_master_item_alert_types_unicode_repair.sql`: reparación forward-only que corrige y protege la etiqueta Unicode de Tipos de alerta de artículos en Master.
+- `226_tenant_sales_channels_master.sql`: evoluciona Canales de venta preservando Id, códigos y el consumo actual por código de ItemEdit; agrega GlobalId, orden, auditoría y CRUD independiente sin activar sincronización.
+- `227_master_definitions_inventory_sales_channels_navigation.sql`: migra formulario y menú legacy a `sales-channels`, registra permisos API y las doce operaciones canónicas preservando identidades y accesos.
 | `100_tenant_purchase_reference_catalog_sync.sql` | Tenant | Normaliza impuestos, unidades de medida y listas de precios para sincronizacion previa a ordenes. |
 | `101_tenant_sap_purchase_order_import.sql` | Tenant | Agrega identidad, version SAP y estado de enrutamiento a ordenes de compra. |
 | `112_tenant_sap_payment_terms_sync.sql` | Tenant | Importacion idempotente SAP B1 y aplicacion por GlobalId de condiciones de pago. |

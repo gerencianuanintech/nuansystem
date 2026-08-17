@@ -46,14 +46,6 @@ public sealed partial class ItemEditForm
         BindFixedLookup(lueSalesMinimumPriceList, priceLists);
         lueMainPriceList.EditValue = "PVP";
         lueSalesMinimumPriceList.EditValue = "PVP";
-        BindFixedLookup(lueSalesSegment, new[]
-        {
-            new LookupOption("MassMarket", "Consumo masivo"),
-            new LookupOption("Retail", "Retail"),
-            new LookupOption("Wholesale", "Mayorista"),
-            new LookupOption("Institutional", "Institucional")
-        });
-        lueSalesSegment.EditValue = "MassMarket";
         dtSalesValidFrom.EditValue = DateTime.Today;
 
         luePreferredPurchasePresentation.Properties.DataSource = itemPresentationsTable;

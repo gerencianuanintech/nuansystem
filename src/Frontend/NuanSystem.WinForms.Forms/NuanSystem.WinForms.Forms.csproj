@@ -20,6 +20,36 @@
     <Compile Update="SyncSRI\SriTxtImports\SriTxtImportForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Definitions\Inventory\ItemCommercialSegments\ItemCommercialSegmentsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Definitions\Inventory\ItemCommercialSegments\ItemCommercialSegmentEditForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Definitions\Inventory\ItemCommercialSegments\ItemCommercialSegmentEditForm.Designer.cs">
+      <DependentUpon>ItemCommercialSegmentEditForm.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Update="Definitions\Inventory\ItemCommercialSegments\ItemCommercialSegmentsForm.resx">
+      <DependentUpon>ItemCommercialSegmentsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Definitions\Inventory\ItemCommercialSegments\ItemCommercialSegmentEditForm.resx">
+      <DependentUpon>ItemCommercialSegmentEditForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <Compile Update="Definitions\Inventory\ItemAlertTypes\ItemAlertTypesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Definitions\Inventory\ItemAlertTypes\ItemAlertTypeEditForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Definitions\Inventory\ItemAlertTypes\ItemAlertTypeEditForm.Designer.cs">
+      <DependentUpon>ItemAlertTypeEditForm.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Update="Definitions\Inventory\ItemAlertTypes\ItemAlertTypesForm.resx">
+      <DependentUpon>ItemAlertTypesForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Definitions\Inventory\ItemAlertTypes\ItemAlertTypeEditForm.resx">
+      <DependentUpon>ItemAlertTypeEditForm.cs</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>

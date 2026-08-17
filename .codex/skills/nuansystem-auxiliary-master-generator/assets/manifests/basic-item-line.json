@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.1",
+  "schemaVersion": "1.3",
   "archetype": "basic",
   "entity": {
     "singular": "ItemLine",
@@ -7,6 +7,9 @@
     "title": "Líneas de artículos",
     "table": "dbo.ItemLines",
     "entityCode": "ItemLine"
+  },
+  "placement": {
+    "featurePath": ["Definitions", "Inventory", "ItemLines"]
   },
   "api": {
     "route": "/api/definitions/inventory/item-lines",
@@ -23,11 +26,11 @@
     "lookupConsumers": ["ItemsRead"]
   },
   "fields": [
-    { "name": "Code", "type": "string", "nullable": false, "required": true, "unique": true, "stringLength": 50, "role": "code" },
-    { "name": "Name", "type": "string", "nullable": false, "required": true, "unique": false, "stringLength": 150, "role": "name" },
-    { "name": "Description", "type": "string", "nullable": true, "required": false, "unique": false, "stringLength": 500, "role": "description" },
-    { "name": "SortOrder", "type": "int", "nullable": false, "required": true, "unique": false, "minimum": 0, "default": 0, "role": "sortOrder" },
-    { "name": "IsActive", "type": "bool", "nullable": false, "required": true, "unique": false, "default": true, "role": "active" }
+    { "name": "Code", "label": "Código", "type": "string", "nullable": false, "required": true, "unique": true, "stringLength": 50, "role": "code" },
+    { "name": "Name", "label": "Nombre", "type": "string", "nullable": false, "required": true, "unique": false, "stringLength": 150, "role": "name" },
+    { "name": "Description", "label": "Descripción", "type": "string", "nullable": true, "required": false, "unique": false, "stringLength": 500, "role": "description" },
+    { "name": "SortOrder", "label": "Orden", "type": "int", "nullable": false, "required": true, "unique": false, "minimum": 0, "default": 0, "role": "sortOrder" },
+    { "name": "IsActive", "label": "Activo", "type": "bool", "nullable": false, "required": true, "unique": false, "default": true, "role": "active" }
   ],
   "ui": {
     "layout": "single-section",
@@ -36,7 +39,7 @@
   },
   "designApproval": {
     "status": "approved",
-    "proposalHash": "841d4437c0d8a812ce662479d9fa839d8a886c79e16a86f36e5db39a637cbdc3",
+    "proposalHash": "725cb0ce80801977a6ea683dba6567da403c1ccf704359827b72c87414e41d67",
     "tableApproved": true,
     "mockupApproved": true,
     "mockupReference": "reference-fixture:basic-item-line-full-color",
@@ -45,14 +48,15 @@
   "audit": { "enabled": true },
   "softDelete": { "enabled": true },
   "synchronization": {
-    "mode": "full-source-local-outbox",
+    "mode": "none",
     "enabledByDefault": false,
-    "executionOrder": 209,
+    "executionOrder": null,
     "dependencies": []
   },
   "migrations": {
+    "versionDate": "20260815",
     "tenant": 201,
     "masterNavigation": 202,
-    "masterSync": 203
+    "masterSync": null
   }
 }

@@ -7,7 +7,7 @@ description: Classify, create, modify, or review complete NuanSystem WinForms fo
 
 ## Authority
 
-Follow the engineering core and run `$nuansystem-framework-discovery`. Use `$nuansystem-winforms-controls`, `$nuansystem-winforms-designer`, `$nuansystem-winforms-layout`, and the specialized grid/lookup/navigation skills as applicable.
+Run `$nuansystem-framework-discovery` and reuse its core record. Use `$nuansystem-winforms-controls`, `$nuansystem-winforms-designer`, `$nuansystem-winforms-layout`, and the specialized grid/lookup/navigation skills as applicable.
 
 Use `.codex/PATTERN-CATALOG.md` to select the lifecycle before choosing inheritance.
 

@@ -17,6 +17,12 @@ using NuanSystem.Persistence.Repositories.GeneralInventory;
 using NuanSystem.Persistence.Repositories.GeneralSupplier;
 using NuanSystem.Persistence.Repositories.Definitions.General;
 using NuanSystem.Persistence.Repositories.Definitions.Inventory;
+using NuanSystem.Persistence.Repositories.Definitions.Inventory.ItemOrigins;
+using NuanSystem.Persistence.Repositories.Definitions.Inventory.ItemCommercialSegments;
+using NuanSystem.Persistence.Repositories.Definitions.Inventory.ItemAlertTypes;
+using NuanSystem.Persistence.Repositories.Definitions.Inventory.SalesChannels;
+using NuanSystem.Persistence.Repositories.Definitions.Inventory.ReplenishmentMethods;
+using NuanSystem.Persistence.Repositories.Definitions.Inventory.StorageConditions;
 using NuanSystem.Persistence.Repositories.OperationalCatalogs;
 using NuanSystem.Persistence.Repositories.Purchasing;
 using NuanSystem.Persistence.Repositories.SapSync;
@@ -100,6 +106,13 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IUnitMeasureRepository, UnitMeasureRepository>();
         services.AddScoped<IProductTypeRepository, ProductTypeRepository>();
         services.AddScoped<IItemLineRepository, ItemLineRepository>();
+        services.AddScoped<IItemOriginRepository, ItemOriginRepository>();
+        services.AddScoped<IItemCommercialSegmentRepository, ItemCommercialSegmentRepository>();
+        services.AddScoped<IItemAlertTypeRepository, ItemAlertTypeRepository>();
+        services.AddScoped<ISalesChannelRepository, SalesChannelRepository>();
+        services.AddScoped<IReplenishmentMethodRepository, ReplenishmentMethodRepository>();
+        services.AddScoped<IStorageConditionRepository, StorageConditionRepository>();
+        services.AddScoped<IItemSubgroupRepository, ItemSubgroupRepository>();
         services.AddScoped<IChartOfAccountRepository, ChartOfAccountRepository>();
         services.AddScoped<ISapCompanySettingsRepository, SapCompanySettingsRepository>();
         services.AddScoped<ISapCatalogMappingRepository, SapCatalogMappingRepository>();
@@ -158,6 +171,10 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ISyncFullEntitySource, UnitMeasureFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, ProductTypeFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, ItemLineFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, ItemOriginFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, ReplenishmentMethodFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, StorageConditionFullEntitySource>();
+        services.AddScoped<ISyncFullEntitySource, ItemSubgroupFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, ItemFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, WarehouseFullEntitySource>();
         services.AddScoped<IBusinessPartnerSyncApplyRepository, BusinessPartnerSyncApplyRepository>();
@@ -178,6 +195,10 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IUnitMeasureSyncApplyRepository, UnitMeasureSyncApplyRepository>();
         services.AddScoped<IProductTypeSyncApplyRepository, ProductTypeSyncApplyRepository>();
         services.AddScoped<IItemLineSyncApplyRepository, ItemLineSyncApplyRepository>();
+        services.AddScoped<IItemOriginSyncApplyRepository, ItemOriginSyncApplyRepository>();
+        services.AddScoped<IReplenishmentMethodSyncApplyRepository, ReplenishmentMethodSyncApplyRepository>();
+        services.AddScoped<IStorageConditionSyncApplyRepository, StorageConditionSyncApplyRepository>();
+        services.AddScoped<IItemSubgroupSyncApplyRepository, ItemSubgroupSyncApplyRepository>();
         services.AddScoped<ICarrierSyncApplyRepository, CarrierSyncApplyRepository>();
 
         return services;

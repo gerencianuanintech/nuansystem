@@ -7,6 +7,7 @@ using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraEditors.Repository;
 using DevExpress.XtraTab;
 using NuanSystem.WinForms.Controls.Kpi;
+using NuanSystem.WinForms.Controls.Lookups;
 using NuanSystem.WinForms.Forms.Common;
 
 namespace NuanSystem.WinForms.Forms.InventoryItems;
@@ -662,7 +663,9 @@ partial class ItemEditForm
         lblGlobalMinStock = new LabelControl();
         lblSupplyMethod = new LabelControl();
         spnGlobalMinStock = new SpinEdit();
-        lueReplenishmentMethod = new LookUpEdit();
+        lueReplenishmentMethod = new NuanLookupEdit();
+        lblStorageCondition = new LabelControl();
+        lueStorageCondition = new NuanLookupEdit();
         lblGlobalMaxStock = new LabelControl();
         lblMainWarehouse = new LabelControl();
         spnGlobalMaxStock = new SpinEdit();
@@ -798,7 +801,7 @@ partial class ItemEditForm
         lblProductType = new LabelControl();
         lueProductType = new LookUpEdit();
         lblOrigin = new LabelControl();
-        lueOrigin = new LookUpEdit();
+        lueOrigin = new NuanLookupEdit();
         lblLine = new LabelControl();
         lueLine = new LookUpEdit();
         lblSubGroup = new LabelControl();
@@ -1100,6 +1103,7 @@ partial class ItemEditForm
         ((System.ComponentModel.ISupportInitialize)spnLeadTimeDays.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)spnGlobalMinStock.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)lueReplenishmentMethod.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)lueStorageCondition.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)spnGlobalMaxStock.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)lueSupplyMethod.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)tglBlockedForMovements.Properties).BeginInit();
@@ -7540,6 +7544,8 @@ partial class ItemEditForm
         tabInventory.Controls.Add(lblSupplyMethod);
         tabInventory.Controls.Add(spnGlobalMinStock);
         tabInventory.Controls.Add(lueReplenishmentMethod);
+        tabInventory.Controls.Add(lblStorageCondition);
+        tabInventory.Controls.Add(lueStorageCondition);
         tabInventory.Controls.Add(lblGlobalMaxStock);
         tabInventory.Controls.Add(lblMainWarehouse);
         tabInventory.Controls.Add(spnGlobalMaxStock);
@@ -8003,10 +8009,27 @@ partial class ItemEditForm
         lueReplenishmentMethod.Name = "lueReplenishmentMethod";
         lueReplenishmentMethod.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         lueReplenishmentMethod.Properties.Appearance.Options.UseFont = true;
-        lueReplenishmentMethod.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueReplenishmentMethod.Properties.NullText = "";
         lueReplenishmentMethod.Size = new Size(313, 22);
         lueReplenishmentMethod.TabIndex = 6;
+        //
+        // lblStorageCondition
+        //
+        lblStorageCondition.Location = new Point(927, 50);
+        lblStorageCondition.Name = "lblStorageCondition";
+        lblStorageCondition.Size = new Size(115, 13);
+        lblStorageCondition.TabIndex = 51;
+        lblStorageCondition.Text = "Condición almac.:";
+        //
+        // lueStorageCondition
+        //
+        lueStorageCondition.Location = new Point(1063, 47);
+        lueStorageCondition.Name = "lueStorageCondition";
+        lueStorageCondition.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        lueStorageCondition.Properties.Appearance.Options.UseFont = true;
+        lueStorageCondition.Properties.NullText = "";
+        lueStorageCondition.Size = new Size(323, 22);
+        lueStorageCondition.TabIndex = 52;
         // 
         // lblGlobalMaxStock
         // 
@@ -9551,8 +9574,8 @@ partial class ItemEditForm
         lueOrigin.Name = "lueOrigin";
         lueOrigin.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         lueOrigin.Properties.Appearance.Options.UseFont = true;
-        lueOrigin.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo), new EditorButton(ButtonPredefines.Plus) });
         lueOrigin.Properties.NullText = "";
+        lueOrigin.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
         lueOrigin.Size = new Size(267, 22);
         lueOrigin.TabIndex = 33;
         // 
@@ -10888,6 +10911,7 @@ partial class ItemEditForm
         ((System.ComponentModel.ISupportInitialize)spnLeadTimeDays.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)spnGlobalMinStock.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)lueReplenishmentMethod.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)lueStorageCondition.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)spnGlobalMaxStock.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)lueSupplyMethod.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)tglBlockedForMovements.Properties).EndInit();
@@ -11344,7 +11368,9 @@ partial class ItemEditForm
     private LabelControl lblGlobalMinStock;
     private LabelControl lblSupplyMethod;
     private SpinEdit spnGlobalMinStock;
-    private LookUpEdit lueReplenishmentMethod;
+    private NuanLookupEdit lueReplenishmentMethod;
+    private LabelControl lblStorageCondition;
+    private NuanLookupEdit lueStorageCondition;
     private LabelControl lblGlobalMaxStock;
     private LabelControl lblMainWarehouse;
     private SpinEdit spnGlobalMaxStock;
@@ -11483,7 +11509,7 @@ partial class ItemEditForm
     private LabelControl lblProductType;
     private LookUpEdit lueProductType;
     private LabelControl lblOrigin;
-    private LookUpEdit lueOrigin;
+    private NuanLookupEdit lueOrigin;
     private LabelControl lblLine;
     private LookUpEdit lueLine;
     private LabelControl lblSubGroup;

@@ -7,7 +7,8 @@ description: Design, implement, review, or diagnose NuanSystem SAP Business One 
 
 ## Authority
 
-Follow: Constitution > Kernel > Catalogs and Knowledge Graph > `$nuansystem-framework-discovery` > this skill > repository evidence.
+Run `$nuansystem-framework-discovery` and reuse its Constitution, Kernel,
+catalog, and graph record. Then apply this skill and repository evidence.
 
 Load `$nuansystem-sap-sync-orchestration` for locks, schedules, workers, retries, logs, watermarks, inbox, or outbox. Load `$nuansystem-master-branch-sync` only for NuanSystem Matriz-Sucursal replication; it is not SAP transport.
 

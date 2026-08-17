@@ -7,7 +7,7 @@ description: Design, modify, or review NuanSystem WinForms and DevExpress visual
 
 ## Authority and evidence
 
-Follow the engineering core, run `$nuansystem-framework-discovery`, load `$nuansystem-winforms-designer`, and inspect:
+Run `$nuansystem-framework-discovery`, reuse its core record, load `$nuansystem-winforms-designer`, and inspect:
 
 - `docs/estandar-visual-winforms.md`
 - `docs/FRONTEND-DEVEXPRESS-NOMENCLATURA.md`

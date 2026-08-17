@@ -4,11 +4,18 @@ using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraGrid.Views.Grid;
 using NuanSystem.WinForms.Controls.Kpi;
+using NuanSystem.WinForms.Controls.Lookups;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Services.GeneralInventory.Catalogs.Models;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemFamilies.Models;
 using NuanSystem.WinForms.Services.GeneralInventory.ItemGroups.Models;
 using NuanSystem.WinForms.Services.InventoryItems.Models;
+using ItemOriginItem = NuanSystem.WinForms.Services.Definitions.Inventory.ItemOrigins.Models.ItemOriginItem;
+using ReplenishmentMethodItem = NuanSystem.WinForms.Services.Definitions.Inventory.ReplenishmentMethods.Models.ReplenishmentMethodItem;
+using ReplenishmentMethodLookupItem = NuanSystem.WinForms.Services.Definitions.Inventory.ReplenishmentMethods.Models.ReplenishmentMethodLookupItem;
+using StorageConditionItem = NuanSystem.WinForms.Services.Definitions.Inventory.StorageConditions.Models.StorageConditionItem;
+using StorageConditionLookupItem = NuanSystem.WinForms.Services.Definitions.Inventory.StorageConditions.Models.StorageConditionLookupItem;
+using ItemCommercialSegmentItem = NuanSystem.WinForms.Services.Definitions.Inventory.ItemCommercialSegments.Models.ItemCommercialSegmentItem;
 using NuanSystem.WinForms.ViewModels.InventoryItems;
 
 namespace NuanSystem.WinForms.Forms.InventoryItems;
@@ -20,6 +27,21 @@ public sealed partial class ItemEditForm : BaseEditForm
     private Func<string, bool>? canCreateRelatedCatalog;
     private Func<string, Form?>? relatedCatalogFormFactory;
     private Func<CancellationToken, Task<ItemLookups>>? reloadLookupsAsync;
+    private Func<IWin32Window, Task<ItemOriginItem?>>? createItemOriginAsync;
+    private Func<IWin32Window, int, Task<ItemOriginItem?>>? editItemOriginAsync;
+    private Func<IWin32Window, Task<ReplenishmentMethodItem?>>? createReplenishmentMethodAsync;
+    private Func<IWin32Window, int, Task<ReplenishmentMethodItem?>>? editReplenishmentMethodAsync;
+    private bool canCreateItemOrigins;
+    private bool canEditItemOrigins;
+    private bool managingItemOrigin;
+    private bool canCreateReplenishmentMethods;
+    private bool canEditReplenishmentMethods;
+    private bool managingReplenishmentMethod;
+    private bool canCreateStorageConditions;
+    private bool canEditStorageConditions;
+    private bool managingStorageCondition;
+    private Func<IWin32Window, Task<StorageConditionItem?>>? createStorageConditionAsync;
+    private Func<IWin32Window, int, Task<StorageConditionItem?>>? editStorageConditionAsync;
     private bool dirtyTrackingEnabled;
     private TraceabilityManagement traceabilityManagement = TraceabilityManagement.Batch;
 
@@ -28,9 +50,11 @@ public sealed partial class ItemEditForm : BaseEditForm
     private const string ItemBrandsFormKey = "item-brands";
     private const string ProductTypesFormKey = "product-types";
     private const string ItemLinesFormKey = "item-lines";
-    private const string ItemSubgroupsFormKey = "inventory-item-subgroups";
+    private const string ItemOriginsFormKey = "item-origins";
+    private const string ItemSubgroupsFormKey = "item-subgroups";
     private const string WarehouseLocationsFormKey = "inventory-warehouse-locations";
-    private const string ReplenishmentMethodsFormKey = "inventory-replenishment-methods";
+    private const string ReplenishmentMethodsFormKey = "replenishment-methods";
+    private const string StorageConditionsFormKey = "storage-conditions";
 
     public ItemEditForm()
     {
@@ -58,7 +82,16 @@ public sealed partial class ItemEditForm : BaseEditForm
         Func<SaveItemFamilyRequest, Task<ItemFamilyLookupItem>>? createItemFamilyAsync = null,
         Func<string, bool>? canCreateRelatedCatalog = null,
         Func<string, Form?>? relatedCatalogFormFactory = null,
-        Func<CancellationToken, Task<ItemLookups>>? reloadLookupsAsync = null)
+        Func<CancellationToken, Task<ItemLookups>>? reloadLookupsAsync = null,
+        bool canEditItemOrigins = false,
+        Func<IWin32Window, Task<ItemOriginItem?>>? createItemOriginAsync = null,
+        Func<IWin32Window, int, Task<ItemOriginItem?>>? editItemOriginAsync = null,
+        bool canEditReplenishmentMethods = false,
+        Func<IWin32Window, Task<ReplenishmentMethodItem?>>? createReplenishmentMethodAsync = null,
+        Func<IWin32Window, int, Task<ReplenishmentMethodItem?>>? editReplenishmentMethodAsync = null,
+        bool canEditStorageConditions = false,
+        Func<IWin32Window, Task<StorageConditionItem?>>? createStorageConditionAsync = null,
+        Func<IWin32Window, int, Task<StorageConditionItem?>>? editStorageConditionAsync = null)
         : this()
     {
         this.lookups = lookups;
@@ -66,6 +99,18 @@ public sealed partial class ItemEditForm : BaseEditForm
         this.canCreateRelatedCatalog = canCreateRelatedCatalog;
         this.relatedCatalogFormFactory = relatedCatalogFormFactory;
         this.reloadLookupsAsync = reloadLookupsAsync;
+        canCreateItemOrigins = canCreateRelatedCatalog?.Invoke(ItemOriginsFormKey) ?? false;
+        this.canEditItemOrigins = canEditItemOrigins;
+        this.createItemOriginAsync = createItemOriginAsync;
+        this.editItemOriginAsync = editItemOriginAsync;
+        canCreateReplenishmentMethods = canCreateRelatedCatalog?.Invoke(ReplenishmentMethodsFormKey) ?? false;
+        this.canEditReplenishmentMethods = canEditReplenishmentMethods;
+        this.createReplenishmentMethodAsync = createReplenishmentMethodAsync;
+        this.editReplenishmentMethodAsync = editReplenishmentMethodAsync;
+        canCreateStorageConditions = canCreateRelatedCatalog?.Invoke(StorageConditionsFormKey) ?? false;
+        this.canEditStorageConditions = canEditStorageConditions;
+        this.createStorageConditionAsync = createStorageConditionAsync;
+        this.editStorageConditionAsync = editStorageConditionAsync;
 
         Text = item is null || copyMode
             ? "Maestro de ítems / Artículos - Nuevo"
@@ -105,6 +150,9 @@ public sealed partial class ItemEditForm : BaseEditForm
         LoadAttachmentEditor(gvAttachments.GetFocusedDataRow());
         EnsureSapFieldColumns();
         grdSapFieldMapping.DataSource = sapFieldsTable;
+
+        lueItemFamily.EditValueChanged -= ItemFamilyEditValueChanged;
+        lueItemFamily.EditValueChanged += ItemFamilyEditValueChanged;
 
         btnAddItemPresentation.Click -= AddItemPresentationClick;
         btnAddItemPresentation.Click += AddItemPresentationClick;
@@ -396,6 +444,15 @@ public sealed partial class ItemEditForm : BaseEditForm
 
     private void ConfigureRelatedLookupButtons()
     {
+        lueOrigin.ClearButtonClick -= OriginClearButtonClick;
+        lueOrigin.ClearButtonClick += OriginClearButtonClick;
+        lueOrigin.CreateButtonClick -= OriginCreateButtonClick;
+        lueOrigin.CreateButtonClick += OriginCreateButtonClick;
+        lueOrigin.EditButtonClick -= OriginEditButtonClick;
+        lueOrigin.EditButtonClick += OriginEditButtonClick;
+        lueOrigin.EditValueChanged -= OriginEditValueChanged;
+        lueOrigin.EditValueChanged += OriginEditValueChanged;
+        UpdateOriginLookupButtons();
         RegisterRelatedLookup(lueBrand, ItemBrandsFormKey);
         RegisterRelatedLookup(lueBaseUnit, UnitMeasuresFormKey);
         RegisterRelatedLookup(lueInventoryUnit, UnitMeasuresFormKey);
@@ -406,7 +463,20 @@ public sealed partial class ItemEditForm : BaseEditForm
         RegisterRelatedLookup(lueProductType, ProductTypesFormKey);
         RegisterRelatedLookup(lueLine, ItemLinesFormKey);
         RegisterRelatedLookup(lueSubGroup, ItemSubgroupsFormKey);
-        RegisterRelatedLookup(lueReplenishmentMethod, ReplenishmentMethodsFormKey);
+        lueReplenishmentMethod.ClearButtonClick -= ReplenishmentMethodClearButtonClick;
+        lueReplenishmentMethod.ClearButtonClick += ReplenishmentMethodClearButtonClick;
+        lueReplenishmentMethod.CreateButtonClick -= ReplenishmentMethodCreateButtonClick;
+        lueReplenishmentMethod.CreateButtonClick += ReplenishmentMethodCreateButtonClick;
+        lueReplenishmentMethod.EditButtonClick -= ReplenishmentMethodEditButtonClick;
+        lueReplenishmentMethod.EditButtonClick += ReplenishmentMethodEditButtonClick;
+        lueReplenishmentMethod.EditValueChanged -= ReplenishmentMethodEditValueChanged;
+        lueReplenishmentMethod.EditValueChanged += ReplenishmentMethodEditValueChanged;
+        UpdateReplenishmentMethodLookupButtons();
+        lueStorageCondition.ClearButtonClick += StorageConditionClearButtonClick;
+        lueStorageCondition.CreateButtonClick += StorageConditionCreateButtonClick;
+        lueStorageCondition.EditButtonClick += StorageConditionEditButtonClick;
+        lueStorageCondition.EditValueChanged += StorageConditionEditValueChanged;
+        UpdateStorageConditionLookupButtons();
         RegisterRelatedLookup(slueMainWarehouse, WarehousesFormKey);
         RegisterRelatedLookup(slueDefaultBinLocation, WarehouseLocationsFormKey);
     }
@@ -526,13 +596,6 @@ public sealed partial class ItemEditForm : BaseEditForm
             new LookupOption("Manual", "Manual")
         });
 
-        BindFixedLookup(lueOrigin, new[]
-        {
-            new LookupOption("Local", "Local"),
-            new LookupOption("Imported", "Importado"),
-            new LookupOption("Mixed", "Mixto")
-        });
-
         BindFixedLookup(lueSupplyMethod, new[]
         {
             new LookupOption("Purchase", "Comprar"),
@@ -546,8 +609,11 @@ public sealed partial class ItemEditForm : BaseEditForm
         BindCatalogLookup(lueBrand, source.Brands, nameof(GeneralInventoryCatalogLookupItem.Id));
         BindProductTypeLookup(source.ProductTypes);
         BindItemLineLookup(source.ItemLines);
-        BindCatalogLookup(lueSubGroup, source.ItemSubgroups);
-        BindCatalogLookup(lueReplenishmentMethod, source.ReplenishmentMethods);
+        BindItemOriginLookup(source.ItemOrigins);
+        BindLookup(lueSalesSegment, source.ItemCommercialSegments, nameof(ItemCommercialSegmentItem.DisplayText), nameof(ItemCommercialSegmentItem.Id));
+        BindItemSubgroupLookup(source.ItemSubgroups);
+        BindReplenishmentMethodLookup(source.ReplenishmentMethods);
+        BindStorageConditionLookup(source.StorageConditions);
         BindCatalogLookup(lueSalesChannel, source.SalesChannels);
         BindLookup(lueBaseUnit, source.UnitOfMeasures, "DisplayText", "Id");
         BindLookup(lueInventoryUnit, source.UnitOfMeasures, "DisplayText", "Id");
@@ -588,6 +654,31 @@ public sealed partial class ItemEditForm : BaseEditForm
             valueMember);
     }
 
+    private void ItemFamilyEditValueChanged(object? sender, EventArgs e)
+    {
+        if (lookups is not null) BindItemSubgroupLookup(lookups.ItemSubgroups, preserveCurrent: false);
+    }
+
+    private void BindItemSubgroupLookup(
+        IReadOnlyCollection<ItemSubgroupLookupItem> items,
+        bool preserveCurrent = true)
+    {
+        var currentCode = Convert.ToString(lueSubGroup.EditValue);
+        var familyId = lueItemFamily.EditValue is null ? (int?)null : Convert.ToInt32(lueItemFamily.EditValue);
+        var filtered = items.Where(item => !familyId.HasValue || item.ItemFamilyId == familyId.Value)
+            .OrderBy(item => item.Code).ThenBy(item => item.Name).ToList();
+        if (preserveCurrent && !string.IsNullOrWhiteSpace(currentCode)
+            && filtered.All(item => !string.Equals(item.Code, currentCode, StringComparison.OrdinalIgnoreCase)))
+        {
+            filtered.Add(new ItemSubgroupLookupItem(0, familyId ?? 0, currentCode, $"{currentCode} (valor histórico)"));
+        }
+        BindLookup(lueSubGroup, filtered, nameof(ItemSubgroupLookupItem.DisplayText), nameof(ItemSubgroupLookupItem.Code));
+        if (preserveCurrent) lueSubGroup.EditValue = currentCode;
+        else if (!string.IsNullOrWhiteSpace(currentCode)
+                 && filtered.All(item => !string.Equals(item.Code, currentCode, StringComparison.OrdinalIgnoreCase)))
+            lueSubGroup.EditValue = null;
+    }
+
     private void BindProductTypeLookup(IReadOnlyCollection<GeneralInventoryCatalogLookupItem> items)
     {
         var historicalCode = GetLookupString(lueProductType);
@@ -624,6 +715,248 @@ public sealed partial class ItemEditForm : BaseEditForm
 
         BindCatalogLookup(lueLine, options, keepCurrentWhenEmpty: true);
         if (!string.IsNullOrWhiteSpace(historicalCode)) lueLine.EditValue = historicalCode;
+    }
+
+    private void BindItemOriginLookup(IReadOnlyCollection<ItemOriginLookupItem> items)
+    {
+        var currentCode = GetLookupString(lueOrigin);
+        var options = items.OrderBy(item => item.Code).ThenBy(item => item.Name).ToList();
+        if (!string.IsNullOrWhiteSpace(currentCode)
+            && options.All(item => !string.Equals(item.Code, currentCode, StringComparison.Ordinal)))
+        {
+            options.Add(new ItemOriginLookupItem(0, currentCode, $"{currentCode} (valor histórico)", false));
+        }
+
+        BindLookup(lueOrigin, options, nameof(ItemOriginLookupItem.DisplayText), nameof(ItemOriginLookupItem.Code));
+        lueOrigin.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
+        if (!string.IsNullOrWhiteSpace(currentCode)) lueOrigin.EditValue = currentCode;
+        lueOrigin.RefreshButtons();
+        UpdateOriginLookupButtons();
+    }
+
+    private void OriginClearButtonClick(object? sender, EventArgs e) => UpdateOriginLookupButtons();
+
+    private void OriginEditValueChanged(object? sender, EventArgs e) => UpdateOriginLookupButtons();
+
+    private async void OriginCreateButtonClick(object? sender, EventArgs e)
+    {
+        if (!canCreateItemOrigins || createItemOriginAsync is null || managingItemOrigin || IsReadOnlyMode) return;
+        await ManageItemOriginAsync(() => createItemOriginAsync(this));
+    }
+
+    private async void OriginEditButtonClick(object? sender, EventArgs e)
+    {
+        var selected = SelectedItemOrigin();
+        if (!canEditItemOrigins || selected is null || selected.Id <= 0 || editItemOriginAsync is null
+            || managingItemOrigin || IsReadOnlyMode) return;
+        await ManageItemOriginAsync(() => editItemOriginAsync(this, selected.Id));
+    }
+
+    private async Task ManageItemOriginAsync(Func<Task<ItemOriginItem?>> operation)
+    {
+        managingItemOrigin = true;
+        UpdateOriginLookupButtons();
+        try
+        {
+            var saved = await operation();
+            if (saved is null) return;
+
+            if (reloadLookupsAsync is not null)
+            {
+                lookups = await reloadLookupsAsync(CancellationToken.None);
+                BindLookups(lookups);
+            }
+
+            lueOrigin.EditValue = saved.Code;
+        }
+        catch (Exception exception)
+        {
+            ShowError(exception);
+        }
+        finally
+        {
+            managingItemOrigin = false;
+            UpdateOriginLookupButtons();
+        }
+    }
+
+    private ItemOriginLookupItem? SelectedItemOrigin()
+    {
+        var code = GetLookupString(lueOrigin);
+        return (lueOrigin.Properties.DataSource as IEnumerable<ItemOriginLookupItem>)?
+            .FirstOrDefault(item => string.Equals(item.Code, code, StringComparison.Ordinal));
+    }
+
+    private void UpdateOriginLookupButtons()
+    {
+        var mutable = !managingItemOrigin && !IsReadOnlyMode;
+        lueOrigin.ClearButtonEnabled = mutable;
+        lueOrigin.CreateButtonEnabled = mutable && canCreateItemOrigins && createItemOriginAsync is not null;
+        lueOrigin.EditButtonEnabled = mutable && canEditItemOrigins && editItemOriginAsync is not null
+            && SelectedItemOrigin() is { Id: > 0 };
+    }
+
+    private void BindReplenishmentMethodLookup(IReadOnlyCollection<ReplenishmentMethodLookupItem> items)
+    {
+        var currentCode = GetLookupString(lueReplenishmentMethod);
+        var options = items.OrderBy(item => item.SortOrder).ThenBy(item => item.Code).ThenBy(item => item.Name).ToList();
+        if (!string.IsNullOrWhiteSpace(currentCode)
+            && options.All(item => !string.Equals(item.Code, currentCode, StringComparison.Ordinal)))
+        {
+            options.Add(new ReplenishmentMethodLookupItem
+            {
+                Id = 0,
+                Code = currentCode,
+                Name = $"{currentCode} (valor histórico)",
+                IsActive = false
+            });
+        }
+
+        BindLookup(lueReplenishmentMethod, options, nameof(ReplenishmentMethodLookupItem.DisplayText), nameof(ReplenishmentMethodLookupItem.Code));
+        lueReplenishmentMethod.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
+        if (!string.IsNullOrWhiteSpace(currentCode)) lueReplenishmentMethod.EditValue = currentCode;
+        lueReplenishmentMethod.RefreshButtons();
+        UpdateReplenishmentMethodLookupButtons();
+    }
+
+    private void SetReplenishmentMethodLookupValue(string? code)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            lueReplenishmentMethod.EditValue = null;
+            return;
+        }
+
+        var options = (lueReplenishmentMethod.Properties.DataSource as IEnumerable<ReplenishmentMethodLookupItem>)?.ToList() ?? [];
+        if (options.All(item => !string.Equals(item.Code, code, StringComparison.Ordinal)))
+        {
+            options.Add(new ReplenishmentMethodLookupItem
+            {
+                Id = 0,
+                Code = code,
+                Name = $"{code} (valor histórico)",
+                IsActive = false
+            });
+            BindReplenishmentMethodLookup(options);
+        }
+
+        lueReplenishmentMethod.EditValue = code;
+        UpdateReplenishmentMethodLookupButtons();
+    }
+
+    private void ReplenishmentMethodClearButtonClick(object? sender, EventArgs e) => UpdateReplenishmentMethodLookupButtons();
+    private void ReplenishmentMethodEditValueChanged(object? sender, EventArgs e) => UpdateReplenishmentMethodLookupButtons();
+
+    private async void ReplenishmentMethodCreateButtonClick(object? sender, EventArgs e)
+    {
+        if (!canCreateReplenishmentMethods || createReplenishmentMethodAsync is null
+            || managingReplenishmentMethod || IsReadOnlyMode) return;
+        await ManageReplenishmentMethodAsync(() => createReplenishmentMethodAsync(this));
+    }
+
+    private async void ReplenishmentMethodEditButtonClick(object? sender, EventArgs e)
+    {
+        var selected = SelectedReplenishmentMethod();
+        if (!canEditReplenishmentMethods || selected is null || selected.Id <= 0
+            || editReplenishmentMethodAsync is null || managingReplenishmentMethod || IsReadOnlyMode) return;
+        await ManageReplenishmentMethodAsync(() => editReplenishmentMethodAsync(this, selected.Id));
+    }
+
+    private async Task ManageReplenishmentMethodAsync(Func<Task<ReplenishmentMethodItem?>> operation)
+    {
+        managingReplenishmentMethod = true;
+        UpdateReplenishmentMethodLookupButtons();
+        try
+        {
+            var saved = await operation();
+            if (saved is null) return;
+
+            if (reloadLookupsAsync is not null)
+            {
+                lookups = await reloadLookupsAsync(CancellationToken.None);
+                BindLookups(lookups);
+            }
+
+            lueReplenishmentMethod.EditValue = saved.Code;
+        }
+        catch (Exception exception)
+        {
+            ShowError(exception);
+        }
+        finally
+        {
+            managingReplenishmentMethod = false;
+            UpdateReplenishmentMethodLookupButtons();
+        }
+    }
+
+    private ReplenishmentMethodLookupItem? SelectedReplenishmentMethod()
+    {
+        var code = GetLookupString(lueReplenishmentMethod);
+        return (lueReplenishmentMethod.Properties.DataSource as IEnumerable<ReplenishmentMethodLookupItem>)?
+            .FirstOrDefault(item => string.Equals(item.Code, code, StringComparison.Ordinal));
+    }
+
+    private void UpdateReplenishmentMethodLookupButtons()
+    {
+        var mutable = !managingReplenishmentMethod && !IsReadOnlyMode;
+        lueReplenishmentMethod.ClearButtonEnabled = mutable;
+        lueReplenishmentMethod.CreateButtonEnabled = mutable && canCreateReplenishmentMethods
+            && createReplenishmentMethodAsync is not null;
+        lueReplenishmentMethod.EditButtonEnabled = mutable && canEditReplenishmentMethods
+            && editReplenishmentMethodAsync is not null && SelectedReplenishmentMethod() is { Id: > 0 };
+    }
+
+    private void BindStorageConditionLookup(IReadOnlyCollection<StorageConditionLookupItem> items)
+    {
+        var currentCode = GetLookupString(lueStorageCondition);
+        var options = items.OrderBy(x => x.SortOrder).ThenBy(x => x.Code).ThenBy(x => x.Name).ToList();
+        if (!string.IsNullOrWhiteSpace(currentCode) && options.All(x => !string.Equals(x.Code, currentCode, StringComparison.Ordinal)))
+            options.Add(new StorageConditionLookupItem { Id = 0, Code = currentCode, Name = $"{currentCode} (valor histórico)", IsActive = false });
+        BindLookup(lueStorageCondition, options, nameof(StorageConditionLookupItem.DisplayText), nameof(StorageConditionLookupItem.Code));
+        lueStorageCondition.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
+        if (!string.IsNullOrWhiteSpace(currentCode)) lueStorageCondition.EditValue = currentCode;
+        lueStorageCondition.RefreshButtons(); UpdateStorageConditionLookupButtons();
+    }
+
+    private void SetStorageConditionLookupValue(string? code)
+    {
+        if (string.IsNullOrWhiteSpace(code)) { lueStorageCondition.EditValue = null; return; }
+        var options = (lueStorageCondition.Properties.DataSource as IEnumerable<StorageConditionLookupItem>)?.ToList() ?? [];
+        if (options.All(x => !string.Equals(x.Code, code, StringComparison.Ordinal)))
+        {
+            options.Add(new StorageConditionLookupItem { Id = 0, Code = code, Name = $"{code} (valor histórico)", IsActive = false });
+            BindStorageConditionLookup(options);
+        }
+        lueStorageCondition.EditValue = code; UpdateStorageConditionLookupButtons();
+    }
+
+    private void StorageConditionClearButtonClick(object? sender, EventArgs e) => UpdateStorageConditionLookupButtons();
+    private void StorageConditionEditValueChanged(object? sender, EventArgs e) => UpdateStorageConditionLookupButtons();
+    private async void StorageConditionCreateButtonClick(object? sender, EventArgs e)
+    { if (!canCreateStorageConditions || createStorageConditionAsync is null || managingStorageCondition || IsReadOnlyMode) return; await ManageStorageConditionAsync(() => createStorageConditionAsync(this)); }
+    private async void StorageConditionEditButtonClick(object? sender, EventArgs e)
+    { var selected = SelectedStorageCondition(); if (!canEditStorageConditions || selected is null || selected.Id <= 0 || editStorageConditionAsync is null || managingStorageCondition || IsReadOnlyMode) return; await ManageStorageConditionAsync(() => editStorageConditionAsync(this, selected.Id)); }
+    private async Task ManageStorageConditionAsync(Func<Task<StorageConditionItem?>> operation)
+    {
+        managingStorageCondition = true; UpdateStorageConditionLookupButtons();
+        try
+        {
+            var saved = await operation(); if (saved is null) return;
+            if (reloadLookupsAsync is not null) { lookups = await reloadLookupsAsync(CancellationToken.None); BindLookups(lookups); }
+            lueStorageCondition.EditValue = saved.Code;
+        }
+        catch (Exception exception) { ShowError(exception); }
+        finally { managingStorageCondition = false; UpdateStorageConditionLookupButtons(); }
+    }
+    private StorageConditionLookupItem? SelectedStorageCondition()
+    { var code = GetLookupString(lueStorageCondition); return (lueStorageCondition.Properties.DataSource as IEnumerable<StorageConditionLookupItem>)?.FirstOrDefault(x => string.Equals(x.Code, code, StringComparison.Ordinal)); }
+    private void UpdateStorageConditionLookupButtons()
+    {
+        var mutable = !managingStorageCondition && !IsReadOnlyMode;
+        lueStorageCondition.ClearButtonEnabled = mutable;
+        lueStorageCondition.CreateButtonEnabled = mutable && canCreateStorageConditions && createStorageConditionAsync is not null;
+        lueStorageCondition.EditButtonEnabled = mutable && canEditStorageConditions && editStorageConditionAsync is not null && SelectedStorageCondition() is { Id: > 0 };
     }
 
     private static void BindFixedLookup(LookUpEdit lookup, IReadOnlyCollection<LookupOption> items)
@@ -1565,6 +1898,7 @@ public sealed partial class ItemEditForm : BaseEditForm
                 ReplenishmentMethod = GetLookupString(lueReplenishmentMethod),
                 AbcClassification = GetLookupString(lueAbcClassification),
                 DefaultLocationCode = NullIfWhiteSpace(slueDefaultBinLocation.Text),
+                Condition = GetLookupString(lueStorageCondition),
                 BatchRequired = IsBatchManaged,
                 SerialRequired = IsSerialManaged,
                 AllowTransfers = !tglBlockedForMovements.IsOn,
@@ -1806,6 +2140,7 @@ public sealed partial class ItemEditForm : BaseEditForm
                 ReplenishmentMethod = state.Inventory.ReplenishmentMethod,
                 AbcClassification = state.Inventory.AbcClassification,
                 DefaultLocationCode = state.Inventory.DefaultLocationCode,
+                Condition = state.Inventory.Condition,
                 BatchRequired = state.Inventory.BatchRequired,
                 SerialRequired = state.Inventory.SerialRequired,
                 AllowTransfers = state.Inventory.AllowTransfers,
@@ -2170,9 +2505,10 @@ public sealed partial class ItemEditForm : BaseEditForm
         spnLeadTimeDays.Value = data.LeadTimeDays;
         slueMainWarehouse.EditValue = data.MainWarehouseId;
         SetLookupValue(lueSupplyMethod, data.SupplyMethod);
-        SetLookupValue(lueReplenishmentMethod, data.ReplenishmentMethod);
+        SetReplenishmentMethodLookupValue(data.ReplenishmentMethod);
         SetLookupValue(lueAbcClassification, data.AbcClassification);
         slueDefaultBinLocation.Text = data.DefaultLocationCode ?? string.Empty;
+        SetStorageConditionLookupValue(data.Condition);
         if (data.BatchRequired || data.SerialRequired)
         {
             SetTraceabilityManagement(ResolveTraceabilityManagement(data.BatchRequired, data.SerialRequired));

@@ -1,21 +1,16 @@
 ---
 name: nuansystem-backend-architecture
-description: Orchestrate NuanSystem backend design, implementation, review, and vertical impact across Domain, Application, Persistence, Minimal API, SQL, tenant security, audit, integration, and tests. Use for any non-trivial src/Backend change, new backend feature, CRUD or operational use case, endpoint contract, repository, transaction, authorization, or backend refactor.
+description: Orchestrate non-trivial NuanSystem backend work across Domain, Application, Persistence, API, SQL, security, audit, integrations, and tests. Use for backend features, CRUD or operational use cases, repositories, transactions, authorization, and refactors.
 ---
 
 # NuanSystem Backend Architecture
 
 ## Authority
 
-Follow, in order:
-
-1. `.codex/ENGINEERING-CONSTITUTION.md`
-2. `.codex/ENGINEERING-KERNEL.md`
-3. `.codex/PATTERN-CATALOG.md`
-4. `.codex/KNOWLEDGE-GRAPH.md`
-5. `$nuansystem-framework-discovery`
-6. This orchestrator and applicable backend skills
-7. Repository-backed reference implementation
+Run `$nuansystem-framework-discovery` first and reuse its engineering-core
+record. Do not reload the complete core or catalogs from this orchestrator.
+Then apply this orchestrator, only the affected backend specialists, and a
+repository-backed reference implementation.
 
 Never let a reference redefine explicit domain ownership.
 

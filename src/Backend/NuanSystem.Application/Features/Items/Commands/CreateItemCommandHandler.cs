@@ -12,6 +12,10 @@ public sealed class CreateItemCommandHandler(
     IItemRepository itemRepository,
     IItemGroupRepository itemGroupRepository,
     IItemFamilyRepository itemFamilyRepository,
+    IItemSubgroupRepository itemSubgroupRepository,
+    IItemOriginRepository itemOriginRepository,
+    IReplenishmentMethodRepository replenishmentMethodRepository,
+    IStorageConditionRepository storageConditionRepository,
     ITransactionRunner transactionRunner,
     IItemLocalOutboxWriter localOutboxWriter)
     : ICommandHandler<CreateItemCommand, ItemDto>
@@ -65,6 +69,8 @@ public sealed class CreateItemCommandHandler(
                     request.ItemFamilyId,
                     itemGroupRepository,
                     itemFamilyRepository,
+                    itemSubgroupRepository,
+                    data.MasterData?.General?.SubGroup,
                     connection,
                     transaction,
                     token);
@@ -74,6 +80,22 @@ public sealed class CreateItemCommandHandler(
                         "La clasificación del artículo no es válida.",
                         [classificationError]);
                 }
+
+                var originError = await ItemOriginValidator.ValidateAssignmentAsync(
+                    data.MasterData?.General?.Origin, null, itemOriginRepository, connection, transaction, token);
+                if (originError is not null)
+                    return Result<ItemDto>.Failure("El origen del artículo no es válido.", [originError]);
+
+                var replenishmentMethodError = await ItemReplenishmentMethodValidator.ValidateAssignmentAsync(
+                    data.MasterData?.Inventory?.ReplenishmentMethod, null, replenishmentMethodRepository,
+                    connection, transaction, token);
+                if (replenishmentMethodError is not null)
+                    return Result<ItemDto>.Failure("El método de reposición del artículo no es válido.", [replenishmentMethodError]);
+
+                var storageConditionError = await ItemStorageConditionValidator.ValidateAssignmentAsync(
+                    data.MasterData?.Inventory?.Condition, null, storageConditionRepository, connection, transaction, token);
+                if (storageConditionError is not null)
+                    return Result<ItemDto>.Failure("La condición de almacenamiento del artículo no es válida.", [storageConditionError]);
 
                 if (await itemRepository.ExistsByCodeAsync(code, null, connection, transaction, token))
                 {

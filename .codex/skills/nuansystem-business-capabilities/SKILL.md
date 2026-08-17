@@ -1,6 +1,6 @@
 ---
 name: nuansystem-business-capabilities
-description: Design or modify NuanSystem company capabilities, business-type presets, configurable rules, configuration settings, feature flags, and per-company behavior for a multi-business commercial system. Use when a rule may vary by giro, such as lots, expiration dates, serials, variants, negative stock, warehouses, units, barcodes, sale by weight, cash, credit, pricing, tax, or integrations.
+description: Design NuanSystem company capabilities, business presets, feature flags, and configurable per-company behavior. Use when rules vary by giro, including lots, expiration, serials, variants, stock policy, warehouses, units, barcodes, weight sales, cash, credit, pricing, tax, or integrations.
 ---
 
 # NuanSystem Business Capabilities

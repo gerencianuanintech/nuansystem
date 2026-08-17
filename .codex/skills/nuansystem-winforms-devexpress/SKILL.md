@@ -13,16 +13,10 @@ Do not copy specialized rules back into this file.
 
 ## Mandatory authority
 
-Read and obey:
-
-1. `.codex/ENGINEERING-CONSTITUTION.md`
-2. `.codex/ENGINEERING-KERNEL.md`
-3. `.codex/FRAMEWORK-CATALOG.md`
-4. `.codex/PATTERN-CATALOG.md`
-5. `.codex/KNOWLEDGE-GRAPH.md`
-6. `$nuansystem-framework-discovery`
-7. Relevant frontend skills below
-8. `.codex/REVIEW-CHECKLIST.md`
+Run `$nuansystem-framework-discovery` and reuse its engineering-core record.
+Load only the frontend catalog/pattern sections and specialized skills required
+by the affected-layer map. After implementation, execute only applicable gates
+from `.codex/REVIEW-CHECKLIST.md`; do not reload the full core here.
 
 ## Orchestration workflow
 

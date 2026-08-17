@@ -80,6 +80,10 @@ try
             services.AddScoped<ISyncEntityEventApplier, ItemFamilySyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, ItemBrandSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, ItemLineSyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, ItemOriginSyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, ReplenishmentMethodSyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, StorageConditionSyncEventApplier>();
+            services.AddScoped<ISyncEntityEventApplier, ItemSubgroupSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, ItemSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, WarehouseSyncEventApplier>();
             services.AddScoped<ISyncEntityEventApplier, CarrierSyncEventApplier>();

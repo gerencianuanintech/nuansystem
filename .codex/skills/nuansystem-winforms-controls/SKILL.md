@@ -1,13 +1,14 @@
 ---
 name: nuansystem-winforms-controls
-description: Select, configure, reuse, extend, or review NuanSystem corporate WinForms and DevExpress controls. Use when adding buttons, lookups, grids, KPI cards, shared editors, base forms, visual helpers, or proposing a new reusable frontend control under src/Frontend.
+description: Select, extend, or review shared NuanSystem WinForms and DevExpress controls. Use only when the task changes a corporate control, base form, visual helper, or reusable control contract; ordinary form layout, grid configuration, and lookup binding belong to their narrower skills.
 ---
 
 # NuanSystem WinForms Controls
 
 ## Authority
 
-Read `.codex/ENGINEERING-CONSTITUTION.md`, follow `.codex/ENGINEERING-KERNEL.md`, run `$nuansystem-framework-discovery`, and inspect the frontend entries in `.codex/FRAMEWORK-CATALOG.md` before changing controls.
+Run `$nuansystem-framework-discovery`, reuse its core record, and inspect only
+the frontend catalog entries relevant to the control being changed.
 
 Use `$nuansystem-winforms-designer` for `.Designer.cs`, `$nuansystem-winforms-layout` for geometry, `$nuansystem-winforms-grids` for grid behavior, and `$nuansystem-winforms-lookups` for selector behavior.
 
@@ -93,7 +94,7 @@ Do not create factories, managers, wrappers, or helpers merely to rename DevExpr
 - `src/Frontend/NuanSystem.WinForms.Forms/Common/BaseEditForm.Designer.cs` demonstrates `NuanActionButton` in the shared edit lifecycle.
 - `src/Frontend/NuanSystem.WinForms.Forms/Common/BaseGridCrudListForm.Designer.cs` demonstrates internal ownership of `NuanDataGridControl`.
 - `src/Frontend/NuanSystem.WinForms.Forms/Sync/SyncMonitorForm.Designer.cs` demonstrates KPI, grid, and action controls in a monitor.
-- `src/Frontend/NuanSystem.WinForms.Forms/GeneralInventory/ItemGroups/ItemGroupEditForm.Designer.cs` demonstrates `NuanLookupEdit`.
+- `src/Frontend/NuanSystem.WinForms.Forms/Definitions/Inventory/ItemGroups/ItemGroupEditForm.Designer.cs` demonstrates `NuanLookupEdit`.
 - `src/Frontend/NuanSystem.WinForms.Forms/Carriers/CarrierEditForm.Designer.cs` demonstrates a direct closed `LookUpEdit` for the fixed SRI identification-type codes.
 
 ## Antipatterns

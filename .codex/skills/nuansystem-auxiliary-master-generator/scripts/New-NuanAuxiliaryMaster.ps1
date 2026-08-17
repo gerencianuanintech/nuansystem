@@ -12,6 +12,10 @@ param(
     [string]$OutputPath
 )
 
+[Console]::InputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $Utf8Strict = [System.Text.UTF8Encoding]::new($false, $true)
@@ -76,6 +80,13 @@ function Convert-ToSqlName([string]$Table) {
     return ($Table -replace '^dbo\.', '')
 }
 
+function Convert-ToPermissionCode([string]$Member) {
+    if ($Member -match '^GeneralInventory(?<resource>[A-Za-z0-9]+)(?<action>Read|Manage)$') {
+        return "GENERALINVENTORY.$($Matches.resource.ToUpperInvariant()).$($Matches.action.ToUpperInvariant())"
+    }
+    Stop-Generation "El permiso '$Member' no sigue la convención GeneralInventory<Resource>Read|Manage requerida por el generador."
+}
+
 function Get-CSharpType($Field) {
     $type = ([string](Get-RequiredProperty $Field 'type' "fields[$($Field.name)]")).ToLowerInvariant()
     $nullable = [bool](Get-OptionalProperty $Field 'nullable' $false)
@@ -130,7 +141,7 @@ function Get-TrackedFiles([string]$Root, [string]$Needle) {
     return ,@($lines | Where-Object { $_ })
 }
 
-function Get-MigrationState([string]$Root, $Migrations) {
+function Get-MigrationState([string]$Root, $Migrations, [string]$SynchronizationMode) {
     $numbers = @(Get-ChildItem -LiteralPath (Join-Path $Root 'database/sql') -File -Filter '*.sql' |
         Where-Object { $_.BaseName -match '^(?<number>\d{3})_' } |
         ForEach-Object { [int]$Matches.number })
@@ -144,6 +155,10 @@ function Get-MigrationState([string]$Root, $Migrations) {
     $offset = 1
     $explicitNumbers = @{}
     foreach ($key in @('tenant', 'masterNavigation', 'masterSync')) {
+        if ($key -eq 'masterSync' -and $SynchronizationMode -eq 'none') {
+            if ($null -ne $requested[$key]) { Stop-Generation 'migrations.masterSync debe ser null cuando synchronization.mode = none.' }
+            continue
+        }
         if ($null -eq $requested[$key]) {
             $requested[$key] = $maximum + $offset
             $offset++
@@ -153,8 +168,9 @@ function Get-MigrationState([string]$Root, $Migrations) {
         }
         if ($null -ne $requested[$key]) { $explicitNumbers[[int]$requested[$key]] = $true }
     }
-    if (@($requested.Values | Select-Object -Unique).Count -ne 3) {
-        Stop-Generation 'tenant, masterNavigation y masterSync deben usar números distintos.'
+    $expectedMigrationCount = if ($SynchronizationMode -eq 'none') { 2 } else { 3 }
+    if (@($requested.Values | Where-Object { $null -ne $_ } | Select-Object -Unique).Count -ne $expectedMigrationCount) {
+        Stop-Generation 'Las migraciones aplicables deben usar números distintos.'
     }
     return [pscustomobject]@{ maximum = $maximum; assigned = [pscustomobject]$requested; collisions = @($collisions) }
 }
@@ -229,6 +245,12 @@ function New-DesignProposal($Model) {
     foreach ($field in @($Model.fields | Where-Object { [bool](Get-OptionalProperty $_ 'unique' $false) })) {
         $constraints.Add("UQ: $([string]$field.name), incluidos tombstones")
     }
+    foreach ($field in @($Model.fields | Where-Object { ([string]$_.type) -eq 'string' -and [bool](Get-OptionalProperty $_ 'required' $false) })) {
+        $constraints.Add("CHECK: $([string]$field.name) no vacío después de Trim")
+    }
+    foreach ($field in @($Model.fields | Where-Object { $null -ne (Get-OptionalProperty $_ 'minimum' $null) })) {
+        $constraints.Add("CHECK: $([string]$field.name) >= $([string](Get-OptionalProperty $field 'minimum' 0))")
+    }
     if ($null -ne $Model.dependency) {
         $scope = @((Get-OptionalProperty $Model.dependency 'uniquenessScope' @()) | ForEach-Object { [string]$_ })
         if ($scope.Count -gt 0) { $constraints.Add('UQ compuesta: ' + ($scope -join ', ')) }
@@ -239,18 +261,34 @@ function New-DesignProposal($Model) {
         $constraints.Add("CHECK: $([string]$Model.classification.field) en {$($codes -join ', ')}")
     }
 
-    $fieldLabels = @($Model.fields | ForEach-Object { [string]$_.name }) -join ', '
+    $fieldLabels = @($Model.fields | ForEach-Object { [string](Get-OptionalProperty $_ 'label' $_.name) }) -join ', '
     $layout = [string](Get-OptionalProperty $Model.ui 'layout' 'single-section')
-    $brief = "Mockup full color de escritorio WinForms DevExpress para NuanSystem. Maestro '$($Model.title)', arquetipo '$($Model.archetype)', layout '$layout', fondo blanco, verde corporativo #00B894, tipografía Segoe UI, títulos con línea lateral, etiquetas a la izquierda, editores de 22 px y ritmo vertical de 28 px. Mostrar exactamente estos campos: $fieldLabels. Sin inventar campos, pestañas, paneles, leyendas ni divisores no declarados. Incluir botones corporativos Cancelar y Guardar."
+    $brief = "Mockup full color de escritorio WinForms DevExpress para NuanSystem. Maestro '$($Model.title)', arquetipo '$($Model.archetype)', layout '$layout'. Editor compacto de 870 px de ancho, fondo blanco, verde corporativo #00B894 y tipografía Segoe UI 9 pt. Mostrar '$($Model.title)' únicamente en la barra nativa del formulario; no dibujar título, encabezado ni línea de sección dentro del contenido. La primera fila comienza a 26 px del borde superior del área cliente. Organizar Código, Nombre, dependencia/clasificación y Descripción en la columna principal; ubicar Orden y Activo en la columna lateral derecha, compartiendo fila cuando corresponda. Editores de 22 px, ritmo vertical exacto de 28 px (6 px visibles entre editores consecutivos) y descripción de 64 px. Mostrar exactamente estos campos: $fieldLabels. Sin inventar campos, pestañas, paneles, cajas, leyendas, divisores de pie ni botones locales. Usar únicamente los botones heredados Cancelar y Guardar, alineados abajo a la derecha."
 
     $canonicalParts = [System.Collections.Generic.List[string]]::new()
-    foreach ($part in @('proposalVersion=1.0', "archetype=$($Model.archetype)", "singular=$($Model.singular)", "title=$($Model.title)", "table=$($Model.table)")) {
+    foreach ($part in @('proposalVersion=1.4', "schemaVersion=$($Model.schemaVersion)", "archetype=$($Model.archetype)", "singular=$($Model.singular)", "plural=$($Model.plural)", "title=$($Model.title)", "table=$($Model.table)", "entityCode=$($Model.entityCode)", "featurePath=$($Model.featurePathText)", "apiRoute=$($Model.route)", "formKey=$($Model.formKey)", "menuCode=$($Model.menuCode)", "menuOrder=$($Model.menuOrder)", "permissionRead=$($Model.permissionRead)", "permissionManage=$($Model.permissionManage)")) {
         $canonicalParts.Add($part)
     }
-    foreach ($column in $columns) {
-        $canonicalParts.Add("column=$($column.name)|$($column.sqlType)|$($column.nullable)|$($column.default)|$($column.purpose)")
+    foreach ($consumer in @($Model.lookupConsumers | Sort-Object)) { $canonicalParts.Add("lookupConsumer=$consumer") }
+    foreach ($field in @($Model.fields)) {
+        foreach ($propertyName in @('name','label','type','nullable','required','unique','stringLength','minimum','default','role')) {
+            $canonicalParts.Add("field.$([string]$field.name).$propertyName=$([string](Get-OptionalProperty $field $propertyName ''))")
+        }
     }
-    foreach ($constraint in $constraints) { $canonicalParts.Add("constraint=$constraint") }
+    foreach ($column in $columns) {
+        $canonicalParts.Add("column=$($column.name)|$($column.sqlType)|$($column.nullable)|$($column.default)")
+    }
+    $canonicalParts.Add('constraint=pk|Id')
+    $canonicalParts.Add('constraint=unique|GlobalId|includeDeleted=true')
+    foreach ($field in @($Model.fields | Where-Object { [bool](Get-OptionalProperty $_ 'unique' $false) })) {
+        $canonicalParts.Add("constraint=unique|$([string]$field.name)|includeDeleted=true")
+    }
+    foreach ($field in @($Model.fields | Where-Object { ([string]$_.type) -eq 'string' -and [bool](Get-OptionalProperty $_ 'required' $false) })) {
+        $canonicalParts.Add("constraint=notBlankTrimmed|$([string]$field.name)")
+    }
+    foreach ($field in @($Model.fields | Where-Object { $null -ne (Get-OptionalProperty $_ 'minimum' $null) })) {
+        $canonicalParts.Add("constraint=minimum|$([string]$field.name)|$([string](Get-OptionalProperty $field 'minimum' 0))")
+    }
     if ($null -ne $Model.classification) {
         $canonicalParts.Add("classification.field=$([string]$Model.classification.field)")
         $canonicalParts.Add("classification.label=$([string](Get-OptionalProperty $Model.classification 'label' ''))")
@@ -266,11 +304,18 @@ function New-DesignProposal($Model) {
     foreach ($property in @($Model.ui.PSObject.Properties | Sort-Object Name)) { $canonicalParts.Add("ui.$($property.Name)=$([string]$property.Value)") }
     $canonicalParts.Add("auditEnabled=$([bool](Get-OptionalProperty $Model.audit 'enabled' $true))")
     $canonicalParts.Add("softDeleteEnabled=$([bool]$Model.softDelete)")
-    $canonicalParts.Add("mockupBrief=$brief")
+    $canonicalParts.Add("sync.mode=$([string](Get-OptionalProperty $Model.synchronization 'mode' 'none'))")
+    $canonicalParts.Add("sync.enabledByDefault=$([bool](Get-OptionalProperty $Model.synchronization 'enabledByDefault' $false))")
+    $canonicalParts.Add("sync.executionOrder=$([string](Get-OptionalProperty $Model.synchronization 'executionOrder' ''))")
+    foreach ($dependencyCode in @((Get-OptionalProperty $Model.synchronization 'dependencies' @()) | Sort-Object)) { $canonicalParts.Add("sync.dependency=$dependencyCode") }
+    foreach ($migrationName in @('tenant','masterNavigation','masterSync')) { $canonicalParts.Add("migration.$migrationName=$([string](Get-OptionalProperty $Model.migrations $migrationName ''))") }
+    $canonicalParts.Add("migration.versionDate=$($Model.migrationVersionDate)")
     $canonical = $canonicalParts -join "`n"
     return [pscustomobject][ordered]@{
         proposalHash = Get-Sha256 $canonical
         table = $Model.table
+        featurePath = $Model.featurePathText
+        apiRoute = $Model.route
         columns = @($columns)
         constraints = @($constraints)
         mockupBrief = $brief
@@ -299,8 +344,9 @@ function Get-ValidationRule($Field) {
     $name = [string]$Field.name
     $rules = @("validator.RuleFor(x => x.$name)")
     $chain = @()
-    if ([bool](Get-OptionalProperty $Field 'required' $false)) { $chain += 'NotEmpty()' }
-    if (([string]$Field.type).Equals('string', [StringComparison]::OrdinalIgnoreCase)) {
+    $fieldType = [string]$Field.type
+    if ([bool](Get-OptionalProperty $Field 'required' $false) -and ($fieldType -eq 'string' -or $fieldType -eq 'guid')) { $chain += 'NotEmpty()' }
+    if ($fieldType.Equals('string', [StringComparison]::OrdinalIgnoreCase)) {
         $length = Get-OptionalProperty $Field 'stringLength' $null
         if ($null -ne $length) { $chain += "MaximumLength($length)" }
     }
@@ -310,10 +356,60 @@ function Get-ValidationRule($Field) {
     return "        $($rules[0]).$($chain -join '.').WithName(`"$name`");"
 }
 
+function Get-CompactDesignerGeometry($Model) {
+    $fields = @($Model.fields)
+    $geometry = @{}
+    $leftRows = [System.Collections.Generic.List[object]]::new()
+    $parentField = if ($Model.archetype -eq 'dependent') { [string]$Model.dependency.field } else { '' }
+    $classificationField = if ($Model.archetype -eq 'classified') { [string]$Model.classification.field } else { '' }
+
+    if ($parentField) { $leftRows.Add(($fields | Where-Object name -eq $parentField | Select-Object -First 1)) }
+    foreach ($role in @('code', 'name')) { $leftRows.Add((Get-FieldByRole $fields $role)) }
+    foreach ($field in $fields) {
+        $role = [string](Get-OptionalProperty $field 'role' '')
+        if ($field.name -in @($parentField, $classificationField) -or $role -in @('code','name','description','sortOrder','active','isActive','system')) { continue }
+        $leftRows.Add($field)
+    }
+    if ($classificationField) { $leftRows.Add(($fields | Where-Object name -eq $classificationField | Select-Object -First 1)) }
+    $leftRows.Add((Get-FieldByRole $fields 'description'))
+
+    for ($index = 0; $index -lt $leftRows.Count; $index++) {
+        $field = $leftRows[$index]
+        if ($null -eq $field) { continue }
+        $role = [string](Get-OptionalProperty $field 'role' '')
+        $geometry[[string]$field.name] = [pscustomobject]@{
+            LabelX = 32; EditorX = 154; Y = 26 + (28 * $index)
+            Width = if ($role -eq 'code') { 180 } else { 436 }
+        }
+    }
+    $sort = Get-FieldByRole $fields 'sortOrder'
+    $active = Get-FieldByRole $fields 'active'
+    $geometry[[string]$sort.name] = [pscustomobject]@{ LabelX = 632; EditorX = 680; Y = 26; Width = 150 }
+    $geometry[[string]$active.name] = [pscustomobject]@{ LabelX = 632; EditorX = 684; Y = 54; Width = 120 }
+    $system = @($fields | Where-Object { ([string](Get-OptionalProperty $_ 'role' '')) -eq 'system' } | Select-Object -First 1)
+    if ($system.Count -eq 1) {
+        $systemY = if ($classificationField) { $geometry[$classificationField].Y } else { 82 }
+        $geometry[[string]$system[0].name] = [pscustomobject]@{ LabelX = 632; EditorX = 684; Y = $systemY; Width = 120 }
+    }
+
+    $ordered = @($fields | Sort-Object @{ Expression = { $geometry[[string]$_.name].Y } }, @{ Expression = { $geometry[[string]$_.name].EditorX } })
+    for ($index = 0; $index -lt $ordered.Count; $index++) { $geometry[[string]$ordered[$index].name] | Add-Member TabIndex $index }
+    $description = Get-FieldByRole $fields 'description'
+    $contentBottom = $geometry[[string]$description.name].Y + 64
+    return [pscustomobject]@{ Fields = $geometry; ActionY = $contentBottom + 10; FormHeight = $contentBottom + 56; FormMinHeight = $contentBottom + 95 }
+}
+
 function New-TokenMap($Model) {
     $fields = @($Model.fields)
     $fieldNames = @($fields | ForEach-Object { $_.name }) -join ', '
     $requestArguments = @($fields | ForEach-Object { "request.$($_.name)" }) -join ', '
+    $normalizedRequestArguments = @($fields | ForEach-Object {
+        $role = [string](Get-OptionalProperty $_ 'role' '')
+        if ($role -eq 'code') { 'code' }
+        elseif (([string]$_.type) -eq 'string' -and [bool](Get-OptionalProperty $_ 'nullable' $false)) { "NormalizeOptional(request.$($_.name))" }
+        elseif (([string]$_.type) -eq 'string') { "request.$($_.name).Trim()" }
+        else { "request.$($_.name)" }
+    }) -join ', '
     $itemArguments = @($fields | ForEach-Object { "item.$($_.name)" }) -join ', '
     $codeField = Get-FieldByRole $fields 'code'
     $nameField = Get-FieldByRole $fields 'name'
@@ -340,15 +436,41 @@ function New-TokenMap($Model) {
     $validatorLines = @($fields | ForEach-Object { Get-ValidationRule $_ } | Where-Object { $_ }) -join "`n"
     $sqlColumns = @($fields | ForEach-Object {
         $nullable = if ([bool](Get-OptionalProperty $_ 'nullable' $false)) { 'NULL' } else { 'NOT NULL' }
-        $default = Get-OptionalProperty $_ 'default' $null
-        $defaultSql = if ($null -eq $default) { '' } elseif ($default -is [bool]) { if ($default) { ' CONSTRAINT DF_' + $Model.tableName + '_' + $_.name + ' DEFAULT(1)' } else { ' CONSTRAINT DF_' + $Model.tableName + '_' + $_.name + ' DEFAULT(0)' } } else { '' }
+        $default = Get-SqlDefault $_
+        $defaultSql = if ($null -eq $default) { '' } else { ' CONSTRAINT DF_' + $Model.tableName + '_' + $_.name + " DEFAULT($default)" }
         "        [$($_.name)] $(Get-SqlType $_) $nullable$defaultSql"
     }) -join ",`n"
-    $gridColumns = @($fields | Where-Object { $_.role -notin @('description', 'parentGlobalId') } | ForEach-Object {
+    $sqlUniqueIndexes = @(
+        "IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID(N'$($Model.table)') AND name=N'UQ_$($Model.tableName)_GlobalId')`n CREATE UNIQUE INDEX UQ_$($Model.tableName)_GlobalId ON $($Model.table)([GlobalId]);"
+        $fields | Where-Object { [bool](Get-OptionalProperty $_ 'unique' $false) } | ForEach-Object {
+            "IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID(N'$($Model.table)') AND name=N'UQ_$($Model.tableName)_$($_.name)')`n CREATE UNIQUE INDEX UQ_$($Model.tableName)_$($_.name) ON $($Model.table)([$($_.name)]);"
+        }
+    ) -join "`n"
+    $sqlCheckConstraints = @(
+        $fields | Where-Object { ([string]$_.type) -eq 'string' -and [bool](Get-OptionalProperty $_ 'required' $false) } | ForEach-Object {
+            "IF NOT EXISTS(SELECT 1 FROM sys.check_constraints WHERE parent_object_id=OBJECT_ID(N'$($Model.table)') AND name=N'CK_$($Model.tableName)_$($_.name)_NotBlank')`n ALTER TABLE $($Model.table) ADD CONSTRAINT CK_$($Model.tableName)_$($_.name)_NotBlank CHECK(NULLIF(LTRIM(RTRIM([$($_.name)])),N'') IS NOT NULL);"
+        }
+        $fields | Where-Object { $null -ne (Get-OptionalProperty $_ 'minimum' $null) } | ForEach-Object {
+            $minimum = [string](Get-OptionalProperty $_ 'minimum' 0)
+            "IF NOT EXISTS(SELECT 1 FROM sys.check_constraints WHERE parent_object_id=OBJECT_ID(N'$($Model.table)') AND name=N'CK_$($Model.tableName)_$($_.name)')`n ALTER TABLE $($Model.table) ADD CONSTRAINT CK_$($Model.tableName)_$($_.name) CHECK([$($_.name)] >= $minimum);"
+        }
+    ) -join "`n"
+    $gridColumns = @($fields | Where-Object { $_.role -ne 'parentGlobalId' } | ForEach-Object {
         $caption = [string](Get-OptionalProperty $_ 'label' $_.name)
         $alignment = if ($_.type -in @('int','long','decimal')) { ', DevExpress.Utils.HorzAlignment.Far' } else { '' }
-        "        Column(nameof($($Model.singular)Item.$($_.name)), `"$caption`", $([array]::IndexOf($fields, $_) + 1), 140$alignment);"
+        $width = if ($_.role -eq 'description') { 420 } elseif ($_.type -eq 'bool') { 80 } elseif ($_.type -in @('int','long','decimal')) { 80 } elseif ($_.role -eq 'name') { 260 } else { 130 }
+        "        Column(nameof($($Model.singular)Item.$($_.name)), `"$caption`", $([array]::IndexOf($fields, $_) + 1), $width$alignment);"
     }) -join "`n"
+    $gridHiddenColumns = @($fields | Where-Object { $_.role -eq 'parentGlobalId' } | ForEach-Object {
+        $caption = [string](Get-OptionalProperty $_ 'label' $_.name)
+        "        HiddenColumn(nameof($($Model.singular)Item.$($_.name)), `"$caption`", 240);"
+    }) -join "`n"
+    $persistedColumnNames = @(
+        @('Id', 'GlobalId')
+        @($fields | ForEach-Object { [string]$_.name })
+        @('CreatedByUserId','CreatedByUserName','CreatedAt','UpdatedByUserId','UpdatedByUserName','UpdatedAt','IsDeleted','DeletedByUserId','DeletedByUserName','DeletedAt')
+    ) | Select-Object -Unique
+    $persistedColumnNameLiterals = @($persistedColumnNames | ForEach-Object { '"' + $_ + '"' }) -join ', '
     $classificationBlock = ''
     if ($Model.archetype -eq 'classified') {
         $values = @($Model.classification.allowedValues | ForEach-Object { "        new(`"$($_.code)`", `"$($_.label)`")" }) -join ",`n"
@@ -377,8 +499,7 @@ $values
     $buildArguments = [System.Collections.Generic.List[string]]::new()
     $emptyArguments = [System.Collections.Generic.List[string]]::new()
     $validationLines = [System.Collections.Generic.List[string]]::new()
-    $y = 60
-    $tabIndex = 0
+    $compact = Get-CompactDesignerGeometry $Model
     foreach ($field in $fields) {
         $fieldName = [string]$field.name
         $role = [string](Get-OptionalProperty $field 'role' '')
@@ -389,7 +510,7 @@ $values
         elseif ($Model.archetype -eq 'dependent' -and $Model.dependency.field -eq $fieldName) { $controlName = "lue$fieldName"; $controlType = 'NuanLookupEdit' }
         elseif ($Model.archetype -eq 'classified' -and $Model.classification.field -eq $fieldName) { $controlName = "lue$fieldName"; $controlType = 'LookUpEdit' }
         elseif ($role -eq 'sortOrder' -or $field.type -in @('int','long','decimal')) { $controlName = "spn$fieldName"; $controlType = 'SpinEdit' }
-        elseif ($role -eq 'isActive' -or $field.type -eq 'bool') { $controlName = "tgl$fieldName"; $controlType = 'NuanToggleSwitch' }
+        elseif ($role -in @('active','isActive') -or $field.type -eq 'bool') { $controlName = "tgl$fieldName"; $controlType = 'NuanToggleSwitch' }
         $labelName = "lbl$fieldName"
         $designerDeclarations.Add("    private LabelControl $labelName;")
         $designerDeclarations.Add("    private $controlType $controlName;")
@@ -397,16 +518,19 @@ $values
         $designerCreates.Add("        $controlName = new $controlType();")
         $designerBegin.Add("        ((System.ComponentModel.ISupportInitialize)$controlName.Properties).BeginInit();")
         $height = if ($controlType -eq 'MemoEdit') { 64 } else { if ($controlType -eq 'NuanToggleSwitch') { 20 } else { 22 } }
-        $width = if ($controlType -eq 'MemoEdit') { 940 } else { 320 }
+        $fieldGeometry = $compact.Fields[$fieldName]
+        $y = [int]$fieldGeometry.Y
+        $width = [int]$fieldGeometry.Width
+        $tabIndex = [int]$fieldGeometry.TabIndex
         $designerLayout.Add(@"
         $labelName.Appearance.Font = new Font("Segoe UI", 9F);
         $labelName.Appearance.ForeColor = BrandResources.Text;
         $labelName.Appearance.Options.UseFont = true;
         $labelName.Appearance.Options.UseForeColor = true;
-        $labelName.Location = new Point(32, $($y + 3));
+        $labelName.Location = new Point($($fieldGeometry.LabelX), $($y + 3));
         $labelName.Name = "$labelName";
         $labelName.Text = "$label`:";
-        $controlName.Location = new Point(180, $y);
+        $controlName.Location = new Point($($fieldGeometry.EditorX), $y);
         $controlName.Name = "$controlName";
         $controlName.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         $controlName.Properties.Appearance.Options.UseFont = true;
@@ -460,8 +584,6 @@ $values
         if ([bool](Get-OptionalProperty $field 'required' $false) -and $field.type -eq 'string') {
             $validationLines.Add("        valid &= Validator.RequireText($controlName, `"Ingrese $($label.ToLowerInvariant()).`");")
         }
-        $y += if ($controlType -eq 'MemoEdit') { 76 } else { 28 }
-        $tabIndex++
     }
     return [ordered]@{
         SINGULAR = $Model.singular
@@ -469,20 +591,29 @@ $values
         TITLE = $Model.title
         FORM_KEY = $Model.formKey
         API_ROUTE = $Model.route
+        FEATURE_NAMESPACE = $Model.featureNamespace
+        FEATURE_PATH_SEGMENTS = (@($Model.featurePath | ForEach-Object { '"' + $_ + '"' }) -join ', ')
+        REPOSITORY_NAMESPACE = $Model.repositoryNamespace
         TABLE = $Model.table
         TABLE_NAME = $Model.tableName
         ENTITY_CODE = $Model.entityCode
         PERMISSION_READ = $Model.permissionRead
         PERMISSION_MANAGE = $Model.permissionManage
+        PERMISSION_READ_VALUE = Convert-ToPermissionCode $Model.permissionRead
+        PERMISSION_MANAGE_VALUE = Convert-ToPermissionCode $Model.permissionManage
+        PERMISSION_LOOKUP = if (@($Model.lookupConsumers).Count -gt 0) { [string]$Model.lookupConsumers[0] } else { $Model.permissionRead }
         MENU_CODE = $Model.menuCode
         MENU_ORDER = [string]$Model.menuOrder
         MIGRATION_TENANT = ('{0:D3}' -f [int]$Model.migrations.tenant)
         MIGRATION_NAVIGATION = ('{0:D3}' -f [int]$Model.migrations.masterNavigation)
         MIGRATION_SYNC = ('{0:D3}' -f [int]$Model.migrations.masterSync)
+        MIGRATION_VERSION_DATE = $Model.migrationVersionDate
+        SQL_SLUG = Convert-ToSnake $Model.plural
         DTO_PROPERTIES = $dtoProperties
         RECORD_PARAMETERS = $recordParameters
         FIELD_NAMES = $fieldNames
         REQUEST_ARGUMENTS = $requestArguments
+        NORMALIZED_REQUEST_ARGUMENTS = $normalizedRequestArguments
         ITEM_ARGUMENTS = $itemArguments
         CODE_FIELD = $codeField.name
         NAME_FIELD = $nameField.name
@@ -497,7 +628,11 @@ $values
         SQL_AUDIT_CHANGED_VALUES = $sqlAuditChangedValues
         VALIDATOR_RULES = $validatorLines
         SQL_COLUMNS = $sqlColumns
+        SQL_UNIQUE_INDEXES = $sqlUniqueIndexes
+        SQL_CHECK_CONSTRAINTS = $sqlCheckConstraints
         GRID_COLUMNS = $gridColumns
+        GRID_HIDDEN_COLUMNS = $gridHiddenColumns
+        PERSISTED_COLUMN_NAMES = $persistedColumnNameLiterals
         CLASSIFICATION_BLOCK = $classificationBlock
         DEPENDENCY_BLOCK = $dependencyBlock
         DESIGNER_DECLARATIONS = ($designerDeclarations -join "`n")
@@ -510,7 +645,9 @@ $values
         BUILD_REQUEST_ARGUMENTS = ($buildArguments -join ",`n")
         EMPTY_REQUEST_ARGUMENTS = ($emptyArguments -join ', ')
         FORM_VALIDATION = ($validationLines -join "`n")
-        FORM_HEIGHT = [string]([Math]::Max(360, $y + 100))
+        ACTION_Y = [string]$compact.ActionY
+        FORM_HEIGHT = [string]$compact.FormHeight
+        FORM_MIN_HEIGHT = [string]$compact.FormMinHeight
         ARCHETYPE = $Model.archetype
         SYNC_ORDER = [string](Get-OptionalProperty $Model.synchronization 'executionOrder' 900)
     }
@@ -538,13 +675,14 @@ try { $raw = $manifestText | ConvertFrom-Json }
 catch { Stop-Generation "El manifiesto no es JSON válido. $($_.Exception.Message)" }
 
 $schemaVersion = [string](Get-RequiredProperty $raw 'schemaVersion' 'root')
-if ($schemaVersion -ne '1.1') { Stop-Generation "schemaVersion '$schemaVersion' no está soportado; use 1.1." }
+if ($schemaVersion -notin @('1.1', '1.2', '1.3')) { Stop-Generation "schemaVersion '$schemaVersion' no está soportado; use 1.3 para manifiestos nuevos o 1.1/1.2 para compatibilidad." }
 $archetype = ([string](Get-RequiredProperty $raw 'archetype' 'root')).ToLowerInvariant()
 if ($archetype -notin @('basic', 'classified', 'dependent')) { Stop-Generation "Arquetipo no soportado: '$archetype'." }
 $entity = Get-RequiredProperty $raw 'entity' 'root'
 $api = Get-RequiredProperty $raw 'api' 'root'
 $navigation = Get-RequiredProperty $raw 'navigation' 'root'
 $permissions = Get-RequiredProperty $raw 'permissions' 'root'
+$placement = Get-OptionalProperty $raw 'placement' $null
 $fields = @(Get-RequiredProperty $raw 'fields' 'root')
 if ($fields.Count -eq 0) { Stop-Generation 'fields debe contener al menos un campo.' }
 
@@ -554,7 +692,6 @@ $title = [string](Get-RequiredProperty $entity 'title' 'entity')
 $table = [string](Get-RequiredProperty $entity 'table' 'entity')
 $entityCode = [string](Get-RequiredProperty $entity 'entityCode' 'entity')
 $route = [string](Get-RequiredProperty $api 'route' 'api')
-if (-not $route.StartsWith('/')) { $route = '/' + $route }
 $formKey = [string](Get-RequiredProperty $api 'formKey' 'api')
 $permissionRead = [string](Get-RequiredProperty $permissions 'read' 'permissions')
 $permissionManage = [string](Get-RequiredProperty $permissions 'manage' 'permissions')
@@ -565,11 +702,41 @@ Assert-Matches $singular '^[A-Z][A-Za-z0-9]*$' 'entity.singular'
 Assert-Matches $plural '^[A-Z][A-Za-z0-9]*$' 'entity.plural'
 Assert-Matches $entityCode '^[A-Z][A-Za-z0-9]*$' 'entity.entityCode'
 Assert-Matches $formKey '^[a-z0-9]+(?:-[a-z0-9]+)*$' 'api.formKey'
-Assert-Matches $route '^/api/definitions/inventory/[a-z0-9]+(?:-[a-z0-9]+)*$' 'api.route'
+Assert-Matches $route '^/api/[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)*$' 'api.route'
+if (($route -split '/')[-1] -cne $formKey) { Stop-Generation 'api.formKey debe coincidir con el último segmento de api.route.' }
 Assert-Matches $table '^(dbo\.)[A-Za-z][A-Za-z0-9_]*$' 'entity.table'
 Assert-Matches $permissionRead '^(?:[A-Z0-9]+(?:\.[A-Z0-9]+)+|[A-Z][A-Za-z0-9]+)$' 'permissions.read'
 Assert-Matches $permissionManage '^(?:[A-Z0-9]+(?:\.[A-Z0-9]+)+|[A-Z][A-Za-z0-9]+)$' 'permissions.manage'
 if ($menuOrder -lt 0) { Stop-Generation 'navigation.menuOrder no puede ser negativo.' }
+
+if ($schemaVersion -in @('1.2','1.3') -and $null -eq $placement) {
+    Stop-Generation "schemaVersion $schemaVersion requiere placement.featurePath."
+}
+if ($schemaVersion -eq '1.1' -and $null -ne $placement) {
+    Stop-Generation 'schemaVersion 1.1 no admite placement; use 1.3 para configurar la ubicación física.'
+}
+if ($null -ne $placement) {
+    $featurePathValue = Get-RequiredProperty $placement 'featurePath' 'placement'
+    if ($featurePathValue -isnot [System.Array]) { Stop-Generation 'placement.featurePath debe ser un arreglo JSON de segmentos.' }
+    $featurePath = @($featurePathValue)
+    if ($featurePath.Count -eq 0) { Stop-Generation 'placement.featurePath debe contener al menos un segmento.' }
+    foreach ($segment in $featurePath) {
+        Assert-Matches ([string]$segment) '^[A-Z][A-Za-z0-9]*$' 'placement.featurePath[]'
+    }
+    if ([string]$featurePath[-1] -cne $plural) {
+        Stop-Generation 'El último segmento de placement.featurePath debe coincidir con entity.plural.'
+    }
+    $repositoryPath = $featurePath
+}
+else {
+    # Compatibilidad 1.1: conserva exactamente la distribución histórica del generador.
+    $featurePath = @('Definitions', 'Inventory', $plural)
+    $repositoryPath = @('Definitions', 'Inventory')
+}
+$featurePathText = $featurePath -join '/'
+$featureNamespace = $featurePath -join '.'
+$repositoryPathText = $repositoryPath -join '/'
+$repositoryNamespace = $repositoryPath -join '.'
 
 $fieldNames = @{}
 foreach ($field in $fields) {
@@ -578,6 +745,8 @@ foreach ($field in $fields) {
     if ($fieldNames.ContainsKey($name.ToLowerInvariant())) { Stop-Generation "Campo duplicado: '$name'." }
     $fieldNames[$name.ToLowerInvariant()] = $true
     [void](Get-CSharpType $field)
+    $label = [string](Get-OptionalProperty $field 'label' '')
+    if ([string]::IsNullOrWhiteSpace($label)) { Stop-Generation "fields.$name.label es obligatorio para evitar nombres técnicos en la UI." }
 }
 foreach ($role in @('code', 'name', 'description', 'sortOrder', 'active')) { [void](Get-FieldByRole $fields $role $true) }
 
@@ -596,21 +765,52 @@ if ($archetype -eq 'dependent') {
     if (-not $fieldNames.ContainsKey($dependencyField.ToLowerInvariant())) { Stop-Generation 'dependency.field no existe en fields.' }
     [void](Get-RequiredProperty $dependency 'parentEntity' 'dependency')
     [void](Get-RequiredProperty $dependency 'parentPlural' 'dependency')
-    [void](Get-RequiredProperty $dependency 'lookupRoute' 'dependency')
+    $lookupRoute = [string](Get-RequiredProperty $dependency 'lookupRoute' 'dependency')
+    Assert-Matches $lookupRoute '^/api/[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)*$' 'dependency.lookupRoute'
 }
 
-$migrationState = Get-MigrationState $root (Get-OptionalProperty $raw 'migrations' ([pscustomobject]@{}))
+$synchronization = Get-OptionalProperty $raw 'synchronization' ([pscustomobject]@{ mode = 'none'; enabledByDefault = $false; dependencies = @() })
+$synchronizationMode = ([string](Get-OptionalProperty $synchronization 'mode' 'none')).ToLowerInvariant()
+if ($synchronizationMode -notin @('none','full-source-local-outbox')) { Stop-Generation "synchronization.mode '$synchronizationMode' no está soportado." }
+if ($synchronizationMode -eq 'full-source-local-outbox') { Stop-Generation "synchronization.mode 'full-source-local-outbox' está reservado hasta que el generador produzca y valide productor transaccional, FullSource, applier y registros de runtime completos. Use 'none' y diseñe la sincronización con nuansystem-master-branch-sync." }
+if ([bool](Get-OptionalProperty $synchronization 'enabledByDefault' $false)) { Stop-Generation 'synchronization.enabledByDefault debe ser false.' }
+if ($synchronizationMode -eq 'none') {
+    if ($null -ne (Get-OptionalProperty $synchronization 'executionOrder' $null)) { Stop-Generation 'synchronization.executionOrder debe ser null cuando mode = none.' }
+    if (@(Get-OptionalProperty $synchronization 'dependencies' @()).Count -ne 0) { Stop-Generation 'synchronization.dependencies debe estar vacío cuando mode = none.' }
+}
+$migrationInput = Get-OptionalProperty $raw 'migrations' ([pscustomobject]@{})
+$migrationVersionDate = [string](Get-OptionalProperty $migrationInput 'versionDate' '')
+if ($schemaVersion -eq '1.3') {
+    Assert-Matches $migrationVersionDate '^20[0-9]{6}$' 'migrations.versionDate'
+}
+elseif ([string]::IsNullOrWhiteSpace($migrationVersionDate)) {
+    # Compatibilidad determinista con manifiestos históricos 1.1/1.2.
+    $migrationVersionDate = '20260813'
+}
+else {
+    Assert-Matches $migrationVersionDate '^20[0-9]{6}$' 'migrations.versionDate'
+}
+$migrationState = Get-MigrationState $root $migrationInput $synchronizationMode
+$normalizedMigrations = [pscustomobject][ordered]@{
+    versionDate = $migrationVersionDate
+    tenant = $migrationState.assigned.tenant
+    masterNavigation = $migrationState.assigned.masterNavigation
+    masterSync = $migrationState.assigned.masterSync
+}
 $softDeleteValue = Get-OptionalProperty $raw 'softDelete' $true
 if ($softDeleteValue -isnot [bool]) { $softDeleteValue = [bool](Get-OptionalProperty $softDeleteValue 'enabled' $true) }
 $model = [pscustomobject][ordered]@{
-    schemaVersion = '1.1'; archetype = $archetype; singular = $singular; plural = $plural; title = $title
+    schemaVersion = $schemaVersion; archetype = $archetype; singular = $singular; plural = $plural; title = $title
     table = $table; tableName = Convert-ToSqlName $table; entityCode = $entityCode; route = $route; formKey = $formKey
-    permissionRead = $permissionRead; permissionManage = $permissionManage; menuCode = $menuCode; menuOrder = $menuOrder
+    featurePath = $featurePath; featurePathText = $featurePathText; featureNamespace = $featureNamespace
+    repositoryPath = $repositoryPath; repositoryPathText = $repositoryPathText; repositoryNamespace = $repositoryNamespace
+    permissionRead = $permissionRead; permissionManage = $permissionManage; lookupConsumers = @(Get-OptionalProperty $permissions 'lookupConsumers' @()); menuCode = $menuCode; menuOrder = $menuOrder
     fields = $fields; classification = $classification; dependency = $dependency
     ui = Get-OptionalProperty $raw 'ui' ([pscustomobject]@{}); audit = Get-OptionalProperty $raw 'audit' ([pscustomobject]@{ enabled = $true })
     softDelete = $softDeleteValue
-    synchronization = Get-OptionalProperty $raw 'synchronization' ([pscustomobject]@{ mode = 'none'; enabledByDefault = $false })
-    migrations = $migrationState.assigned
+    synchronization = $synchronization
+    migrationVersionDate = $migrationVersionDate
+    migrations = $normalizedMigrations
 }
 $designProposal = New-DesignProposal $model
 $designApprovalStatus = Get-DesignApprovalStatus $raw $designProposal.proposalHash
@@ -618,25 +818,29 @@ $designApprovalStatus = Get-DesignApprovalStatus $raw $designProposal.proposalHa
 $safeSlug = Convert-ToKebab $plural
 $sqlSlug = Convert-ToSnake $plural
 $targets = [ordered]@{
-    'Dtos.cs.tmpl' = "src/Backend/NuanSystem.Application/Features/Definitions/Inventory/$plural/Dtos/${singular}Dtos.cs"
-    'Commands.cs.tmpl' = "src/Backend/NuanSystem.Application/Features/Definitions/Inventory/$plural/Commands/${singular}Commands.cs"
-    'CommandHandlers.cs.tmpl' = "src/Backend/NuanSystem.Application/Features/Definitions/Inventory/$plural/Commands/${singular}CommandHandlers.cs"
-    'Validators.cs.tmpl' = "src/Backend/NuanSystem.Application/Features/Definitions/Inventory/$plural/Commands/${singular}CommandValidators.cs"
-    'Queries.cs.tmpl' = "src/Backend/NuanSystem.Application/Features/Definitions/Inventory/$plural/Queries/${singular}Queries.cs"
-    'QueryHandlers.cs.tmpl' = "src/Backend/NuanSystem.Application/Features/Definitions/Inventory/$plural/Queries/${singular}QueryHandlers.cs"
+    'Dtos.cs.tmpl' = "src/Backend/NuanSystem.Application/Features/$featurePathText/Dtos/${singular}Dtos.cs"
+    'Commands.cs.tmpl' = "src/Backend/NuanSystem.Application/Features/$featurePathText/Commands/${singular}Commands.cs"
+    'CommandHandlers.cs.tmpl' = "src/Backend/NuanSystem.Application/Features/$featurePathText/Commands/${singular}CommandHandlers.cs"
+    'Validators.cs.tmpl' = "src/Backend/NuanSystem.Application/Features/$featurePathText/Commands/${singular}CommandValidators.cs"
+    'Queries.cs.tmpl' = "src/Backend/NuanSystem.Application/Features/$featurePathText/Queries/${singular}Queries.cs"
+    'QueryHandlers.cs.tmpl' = "src/Backend/NuanSystem.Application/Features/$featurePathText/Queries/${singular}QueryHandlers.cs"
     'RepositoryContract.cs.tmpl' = "src/Backend/NuanSystem.Application/Abstractions/Data/I${singular}Repository.cs"
-    'Endpoints.cs.tmpl' = "src/Backend/NuanSystem.Api/Endpoints/Definitions/Inventory/$plural/${singular}Endpoints.cs"
-    'Repository.cs.tmpl' = "src/Backend/NuanSystem.Persistence/Repositories/Definitions/Inventory/${singular}Repository.cs"
-    'FrontendModels.cs.tmpl' = "src/Frontend/NuanSystem.WinForms.Services/Definitions/Inventory/$plural/Models/${singular}Models.cs"
-    'FrontendClient.cs.tmpl' = "src/Frontend/NuanSystem.WinForms.Services/Definitions/Inventory/$plural/${singular}Client.cs"
-    'ViewModel.cs.tmpl' = "src/Frontend/NuanSystem.WinForms.ViewModels/Definitions/Inventory/$plural/${plural}ViewModel.cs"
-    'ListForm.cs.tmpl' = "src/Frontend/NuanSystem.WinForms.Forms/Definitions/Inventory/$plural/${plural}Form.cs"
-    'EditForm.cs.tmpl' = "src/Frontend/NuanSystem.WinForms.Forms/Definitions/Inventory/$plural/${singular}EditForm.cs"
-    'EditForm.Designer.cs.tmpl' = "src/Frontend/NuanSystem.WinForms.Forms/Definitions/Inventory/$plural/${singular}EditForm.Designer.cs"
+    'Endpoints.cs.tmpl' = "src/Backend/NuanSystem.Api/Endpoints/$featurePathText/${singular}Endpoints.cs"
+    'Repository.cs.tmpl' = "src/Backend/NuanSystem.Persistence/Repositories/$repositoryPathText/${singular}Repository.cs"
+    'FrontendModels.cs.tmpl' = "src/Frontend/NuanSystem.WinForms.Services/$featurePathText/Models/${singular}Models.cs"
+    'FrontendClient.cs.tmpl' = "src/Frontend/NuanSystem.WinForms.Services/$featurePathText/${singular}Client.cs"
+    'ViewModel.cs.tmpl' = "src/Frontend/NuanSystem.WinForms.ViewModels/$featurePathText/${plural}ViewModel.cs"
+    'ListForm.cs.tmpl' = "src/Frontend/NuanSystem.WinForms.Forms/$featurePathText/${plural}Form.cs"
+    'ListForm.resx.tmpl' = "src/Frontend/NuanSystem.WinForms.Forms/$featurePathText/${plural}Form.resx"
+    'EditForm.cs.tmpl' = "src/Frontend/NuanSystem.WinForms.Forms/$featurePathText/${singular}EditForm.cs"
+    'EditForm.Designer.cs.tmpl' = "src/Frontend/NuanSystem.WinForms.Forms/$featurePathText/${singular}EditForm.Designer.cs"
+    'EditForm.resx.tmpl' = "src/Frontend/NuanSystem.WinForms.Forms/$featurePathText/${singular}EditForm.resx"
     'Tenant.sql.tmpl' = "database/sql/$('{0:D3}' -f [int]$model.migrations.tenant)_tenant_${sqlSlug}_master.sql"
     'Navigation.sql.tmpl' = "database/sql/$('{0:D3}' -f [int]$model.migrations.masterNavigation)_master_definitions_inventory_${sqlSlug}_navigation.sql"
-    'Sync.sql.tmpl' = "database/sql/$('{0:D3}' -f [int]$model.migrations.masterSync)_master_${sqlSlug}_sync_registration.sql"
-    'ContractTests.cs.tmpl' = "tests/NuanSystem.Application.Tests/Features/Definitions/Inventory/$plural/${singular}GeneratedContractTests.cs"
+    'ContractTests.cs.tmpl' = "tests/NuanSystem.Application.Tests/Features/$featurePathText/${singular}GeneratedContractTests.cs"
+}
+if ($synchronizationMode -eq 'full-source-local-outbox') {
+    $targets['Sync.sql.tmpl'] = "database/sql/$('{0:D3}' -f [int]$model.migrations.masterSync)_master_${sqlSlug}_sync_registration.sql"
 }
 
 $collisions = [System.Collections.Generic.List[object]]::new()
@@ -669,7 +873,8 @@ $filePlan = @($targets.GetEnumerator() | ForEach-Object {
 })
 $collisionArray = @($collisions.ToArray())
 $plan = [pscustomobject][ordered]@{
-    schemaVersion = '1.1'; mode = $Mode; archetype = $archetype; entity = $singular; formKey = $formKey; route = $route
+    schemaVersion = $schemaVersion; mode = $Mode; archetype = $archetype; entity = $singular; formKey = $formKey; route = $route
+    featurePath = $featurePathText
     designProposalHash = $designProposal.proposalHash; designApproved = $designApprovalStatus.approved; designApprovalReason = $designApprovalStatus.reason
     migrationMaximumObserved = $migrationState.maximum; migrations = $model.migrations
     collisionCount = $collisionArray.Count; collisions = $collisionArray; files = $filePlan
@@ -677,7 +882,7 @@ $plan = [pscustomobject][ordered]@{
 }
 
 if ($Mode -eq 'Validate') {
-    [pscustomobject][ordered]@{ valid = $true; archetype = $archetype; entity = $singular; collisionCount = $collisionArray.Count; migrations = $model.migrations; designProposalHash = $designProposal.proposalHash; designApproved = $designApprovalStatus.approved } |
+    [pscustomobject][ordered]@{ valid = $true; schemaVersion = $schemaVersion; archetype = $archetype; entity = $singular; featurePath = $featurePathText; route = $route; collisionCount = $collisionArray.Count; migrations = $model.migrations; designProposalHash = $designProposal.proposalHash; designApproved = $designApprovalStatus.approved } |
         ConvertTo-Json -Depth 10
     return
 }
@@ -718,6 +923,9 @@ foreach ($entry in $targets.GetEnumerator()) {
     $templatePath = Join-Path $templateRoot $entry.Key
     if (-not (Test-Path -LiteralPath $templatePath)) { Stop-Generation "Falta la plantilla '$templatePath'." }
     $content = Expand-Template ([System.IO.File]::ReadAllText($templatePath, $Utf8Strict)) $tokens $entry.Key
+    if ($entry.Key -in @('Tenant.sql.tmpl', 'Dtos.cs.tmpl') -and $synchronizationMode -eq 'none') {
+        $content = [regex]::Replace($content, '(?s)/\* BEGIN OPTIONAL MASTER-BRANCH SYNC \*/.*?/\* END OPTIONAL MASTER-BRANCH SYNC \*/\s*', '')
+    }
     $destination = Join-Path $filesRoot $entry.Value
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $destination) | Out-Null
     [System.IO.File]::WriteAllText($destination, $content, [System.Text.UTF8Encoding]::new($false))
@@ -726,6 +934,7 @@ foreach ($entry in $targets.GetEnumerator()) {
 $normalized = [pscustomobject][ordered]@{
     schemaVersion = $model.schemaVersion; archetype = $model.archetype
     entity = [pscustomobject][ordered]@{ singular = $singular; plural = $plural; title = $title; table = $table; entityCode = $entityCode }
+    placement = [pscustomobject][ordered]@{ featurePath = $featurePath }
     api = [pscustomobject][ordered]@{ route = $route; formKey = $formKey }
     navigation = $navigation; permissions = $permissions; fields = $fields
     classification = $classification; dependency = $dependency; ui = $model.ui; designApproval = (Get-RequiredProperty $raw 'designApproval' 'root'); audit = $model.audit
@@ -739,6 +948,7 @@ $checklist = @"
 - [ ] Revalidar los números de migración contra `database/sql` antes de copiar archivos.
 - [ ] Revisar SQL, tenancy, auditoría, borrado lógico y sincronización; no ejecutar scripts desde este paquete.
 - [ ] Registrar repositorio, endpoints, clientes, ViewModels, formularios, navegación, permisos y FormKey.
+- [ ] Registrar los formularios como SubType=Form y anidar .Designer.cs/.resx mediante DependentUpon en el proyecto WinForms cuando Visual Studio no infiera la convención.
 - [ ] Revisar el Designer en Visual Studio, incluido ritmo vertical de 28 px y controles corporativos.
 - [ ] Ejecutar pruebas dirigidas y builds después de integrar en una rama limpia.
 - [ ] Solicitar autorización separada para despliegue SQL, workers, SAP, commit o push.

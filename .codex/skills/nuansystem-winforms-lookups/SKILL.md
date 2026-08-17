@@ -1,13 +1,13 @@
 ---
 name: nuansystem-winforms-lookups
-description: Implement, modify, or review NuanSystem lookup and selector controls, including NuanLookupEdit, LookUpEdit, SearchLookUpEdit, GridLookUpEdit, lookup binding, code/name display, dependent filters, clear/create actions, related-record creation, permissions, refresh, and selection. Use whenever a form selects data from another catalog or table.
+description: Implement or review NuanSystem lookup and selector behavior, including binding, stable values, dependent filters, related creation, permissions, refresh, and selection. Use only when a task adds or changes a lookup contract or selector lifecycle; do not load it merely because an unchanged form contains a lookup.
 ---
 
 # NuanSystem WinForms Lookups
 
 ## Authority and discovery
 
-Follow the engineering core and run `$nuansystem-framework-discovery`. Inspect:
+Run `$nuansystem-framework-discovery`, reuse its core record, and inspect:
 
 - `src/Frontend/NuanSystem.WinForms.Controls/Lookups/NuanLookupEdit.cs`
 - `.codex/skills/nuansystem-winforms-devexpress/references/lookup-controls.md`
@@ -110,7 +110,7 @@ Do not filter only by display text or mutable labels.
 
 ## Representative evidence
 
-- `GeneralInventory/ItemGroups/ItemGroupEditForm.Designer.cs`.
+- `Definitions/Inventory/ItemGroups/ItemGroupEditForm.Designer.cs`.
 - `Security/Users/UserEditForm.Designer.cs`.
 - `Sync/Configuration/SyncProfileBranchDialog.Designer.cs`.
 - `Sync/Configuration/SyncProfileEntityDialog.Designer.cs`.

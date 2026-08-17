@@ -1,34 +1,74 @@
+using NuanSystem.Shared.Constants;
+using NuanSystem.WinForms.Forms.Audit;
 using NuanSystem.WinForms.Forms.Common;
-using NuanSystem.WinForms.Services.Definitions.Inventory.{{PLURAL}}.Models;
+using NuanSystem.WinForms.Services.Audit.Models;
+using NuanSystem.WinForms.Services.{{FEATURE_NAMESPACE}}.Models;
 using NuanSystem.WinForms.Services.GridColumnSettings;
 using NuanSystem.WinForms.Services.Session;
-using NuanSystem.WinForms.ViewModels.Definitions.Inventory.{{PLURAL}};
+using NuanSystem.WinForms.ViewModels.{{FEATURE_NAMESPACE}};
 
-namespace NuanSystem.WinForms.Forms.Definitions.Inventory.{{PLURAL}};
+namespace NuanSystem.WinForms.Forms.{{FEATURE_NAMESPACE}};
 
 public sealed class {{PLURAL}}Form : BaseGridCrudListForm
 {
     public const string FormKey = "{{FORM_KEY}}";
     private readonly {{PLURAL}}ViewModel viewModel;
     private readonly ApiSession session;
-    public {{PLURAL}}Form() { viewModel = null!; session = null!; ConfigureWindow(); }
+    public {{PLURAL}}Form() { viewModel = null!; session = null!; ConfigureWindow(); WirePermissions(); }
     public {{PLURAL}}Form({{PLURAL}}ViewModel viewModel, ApiSession session, IGridColumnSettingsClient columnSettingsClient)
-    { this.viewModel = viewModel; this.session = session; ConfigureWindow(); ConfigureColumnPersonalization(columnSettingsClient, FormKey); }
+    { this.viewModel = viewModel; this.session = session; ConfigureWindow(); ConfigureColumnPersonalization(columnSettingsClient, FormKey); WirePermissions(); }
     protected override async Task LoadDataAsync()
     { if (viewModel is null) return; await RunWithBusyStateAsync(async () => { await viewModel.LoadAsync(); SetGridData(viewModel.Items); await ApplyColumnSettingsAsync(); }); }
     protected override async Task CreateAsync()
     { using var form = new {{SINGULAR}}EditForm(); if (form.ShowDialog(this) != DialogResult.OK) return; await viewModel.CreateAsync(form.Request); await LoadDataAsync(); }
     protected override async Task EditAsync()
     { if (SelectedGridItem<{{SINGULAR}}Item>() is not { } selected) return; var item = await viewModel.GetByIdAsync(selected.Id); using var form = new {{SINGULAR}}EditForm(item); if (form.ShowDialog(this) != DialogResult.OK) return; await viewModel.UpdateAsync(item.Id, form.Request); await LoadDataAsync(); }
+    protected override async Task CopyAsync()
+    { if (SelectedGridItem<{{SINGULAR}}Item>() is not { } selected) return; var item = await viewModel.GetByIdAsync(selected.Id); using var form = new {{SINGULAR}}EditForm(item, true); if (form.ShowDialog(this) != DialogResult.OK) return; await viewModel.CreateAsync(form.Request); await LoadDataAsync(); }
     protected override async Task DeleteAsync()
     { if (SelectedGridItem<{{SINGULAR}}Item>() is not { } item || !Confirm($"¿Eliminar {item.{{CODE_FIELD}}}?") ) return; await viewModel.DeleteAsync(item.Id); await LoadDataAsync(); }
+    protected override Task HistoryAsync()
+    {
+        if (SelectedGridItem<{{SINGULAR}}Item>() is not { } item) return Task.CompletedTask;
+        using var form = new RecordHistoryForm("Historial de {{TITLE}}", $"{item.{{CODE_FIELD}}} - {item.{{NAME_FIELD}}}", async ct =>
+        {
+            var changes = await viewModel.GetHistoryAsync(item.Id, ct);
+            return changes.Select(change => new SecurityChangeItem(0, "{{SINGULAR}}", item.Id.ToString(), change.Action, change.FieldName, change.OldValue, change.NewValue, change.UserId, change.UserName, "API", change.CreatedAt)).ToList();
+        });
+        form.ShowDialog(this);
+        return Task.CompletedTask;
+    }
     protected override void ConfigureGridColumns()
     {
         base.ConfigureGridColumns();
         foreach (DevExpress.XtraGrid.Columns.GridColumn column in GridView.Columns) column.Visible = false;
 {{GRID_COLUMNS}}
+{{GRID_HIDDEN_COLUMNS}}
+        HiddenColumn(nameof({{SINGULAR}}Item.Id), "Id", 70);
+        HiddenColumn(nameof({{SINGULAR}}Item.GlobalId), "Id global", 240);
+        HiddenColumn(nameof({{SINGULAR}}Item.CreatedByUserId), "Id usuario creación", 120);
+        HiddenColumn(nameof({{SINGULAR}}Item.CreatedByUserName), "Usuario creación", 160);
+        HiddenColumn(nameof({{SINGULAR}}Item.CreatedAt), "Fecha creación", 145, "dd/MM/yyyy HH:mm");
+        HiddenColumn(nameof({{SINGULAR}}Item.UpdatedByUserId), "Id usuario modificación", 135);
+        HiddenColumn(nameof({{SINGULAR}}Item.UpdatedByUserName), "Usuario modificación", 170);
+        HiddenColumn(nameof({{SINGULAR}}Item.UpdatedAt), "Fecha modificación", 145, "dd/MM/yyyy HH:mm");
+        HiddenColumn(nameof({{SINGULAR}}Item.IsDeleted), "Eliminado", 85);
+        HiddenColumn(nameof({{SINGULAR}}Item.DeletedByUserId), "Id usuario eliminación", 130);
+        HiddenColumn(nameof({{SINGULAR}}Item.DeletedByUserName), "Usuario eliminación", 165);
+        HiddenColumn(nameof({{SINGULAR}}Item.DeletedAt), "Fecha eliminación", 145, "dd/MM/yyyy HH:mm");
     }
     private void Column(string field, string caption, int index, int width, DevExpress.Utils.HorzAlignment? alignment = null)
-    { if (GridView.Columns[field] is not { } column) return; column.Caption = caption; column.Visible = true; column.VisibleIndex = index; column.Width = width; column.OptionsColumn.AllowEdit = false; if (alignment.HasValue) column.AppearanceCell.TextOptions.HAlignment = alignment.Value; }
+    { var column = GridView.Columns[field] ?? GridView.Columns.AddField(field); column.Caption = caption; column.Visible = true; column.VisibleIndex = index; column.Width = width; column.OptionsColumn.AllowEdit = false; if (alignment.HasValue) column.AppearanceCell.TextOptions.HAlignment = alignment.Value; }
+    private void HiddenColumn(string field, string caption, int width, string? displayFormat = null)
+    { var column = GridView.Columns[field] ?? GridView.Columns.AddField(field); column.Caption = caption; column.Visible = false; column.Width = width; column.OptionsColumn.AllowEdit = false; if (!string.IsNullOrWhiteSpace(displayFormat)) { column.DisplayFormat.FormatType = DevExpress.Utils.FormatType.DateTime; column.DisplayFormat.FormatString = displayFormat; } }
     private void ConfigureWindow() { ClientSize = new Size(1100, 620); MinimumSize = new Size(900, 520); Name = nameof({{PLURAL}}Form); Text = "{{TITLE}}"; }
+    private void WirePermissions()
+    {
+        if (session is null) return;
+        ConfigureCrudPermissions(session, new CrudOperationPermissions(
+            PermissionCodes.{{PERMISSION_READ}},
+            PermissionCodes.{{PERMISSION_MANAGE}},
+            PermissionCodes.{{PERMISSION_MANAGE}},
+            PermissionCodes.{{PERMISSION_MANAGE}}));
+    }
 }

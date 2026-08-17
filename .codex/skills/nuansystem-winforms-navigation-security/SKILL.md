@@ -7,7 +7,7 @@ description: Add, modify, or review NuanSystem WinForms navigation and security 
 
 ## Authority and discovery
 
-Follow the engineering core and run `$nuansystem-framework-discovery`. Inspect:
+Run `$nuansystem-framework-discovery`, reuse its core record, and inspect:
 
 - `.codex/skills/nuansystem-winforms-devexpress/references/menu-integration.md`
 - `src/Frontend/NuanSystem.WinForms.Services/Session/ApiSession.cs`
@@ -52,6 +52,8 @@ Infer naming/order from the nearest module when safe. Stop for product decisions
 - Reuse established operation names/codes when semantics match.
 - Map standard read/create/update/delete through `CrudOperationPermissions` when the feature follows that model.
 - Include refresh, consult, copy, history, customize columns, export, post, cancel, approve, or other operations only when the screen actually exposes them.
+- Registrar por separado los dos niveles obligatorios: `SecurityFormOperations` define qué operaciones son aplicables y visibles para el formulario; `SecurityRoleFormOperations` define cuáles de esas operaciones puede ejecutar cada rol. Una concesión al rol nunca sustituye el registro de aplicabilidad.
+- Para un maestro CRUD estándar, registrar las doce operaciones canónicas: actualizar, consultar, crear, modificar, eliminar, copiar, historial, personalizar columnas y exportar a Excel, PDF, JSON y XML. Si la pantalla no soporta alguna, documentar y probar explícitamente la excepción.
 - Disable/hide UI actions based on loaded access, but keep backend enforcement.
 - Related lookup creation checks the related maintenance's create permission, not only the parent form permission.
 - Consult/read-only mode disables all mutation paths.
@@ -79,10 +81,13 @@ Use it for current authenticated user, active company, access token exposure to 
 - Seed every permission code required by endpoint policies in `Permissions`; registering a policy constant in code does not create the database permission or add it to JWT claims.
 - Add approved default-role mappings in `RolePermissions` separately from `SecurityRoleFormOperations`; menu/form access cannot satisfy an endpoint permission policy.
 - Insert/update `SecurityForms`, `SecurityMenus`, operations, and role mappings using established keys and guards.
+- Resolve forms, menus, and role-menu mappings by stable keys even when they are soft-deleted; reactivate the existing physical row before considering an insert so unique constraints remain rerunnable.
+- Comprobar que el script de instalación limpia inserte o reactive primero las operaciones en `SecurityFormOperations` y después conceda únicamente los roles aprobados en `SecurityRoleFormOperations`.
 - Keep menu codes in the established `MENU.{PARENT}.{ITEM}` family.
 - Do not silently grant default roles beyond the approved policy.
 - Preserve existing IDs/relationships on re-execution.
 - If an incomplete script already ran in an environment, correct the source script for clean installations and add a later idempotent repair script for deployed installations.
+- Después de desplegar, verificar en la base real el conteo de operaciones aplicables y concedidas. Para un maestro CRUD canónico deben existir 12 aplicables; el formulario de Accesos debe devolverlas aunque todavía no estén concedidas a un rol no administrativo.
 - After granting a new API permission, require a new login/token before runtime validation; an existing JWT does not acquire newly inserted claims.
 
 ## Multi-company boundary
@@ -122,6 +127,7 @@ Standard CRUD permissions fit?
 
 - [ ] One stable `FormKey` is used end-to-end.
 - [ ] Form/menu/operations/role mappings are complete and idempotent.
+- [ ] `SecurityFormOperations` y `SecurityRoleFormOperations` fueron validados por separado; no se aceptan permisos de rol sin operaciones aplicables.
 - [ ] Endpoint permission codes exist in `Permissions`, approved roles have `RolePermissions`, and runtime testing uses a freshly issued token.
 - [ ] DI and shell navigation resolve the screen.
 - [ ] UI permissions and backend authorization align.

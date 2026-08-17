@@ -56,6 +56,30 @@ public sealed record CrudOperationPermissions(
         PermissionCodes.GeneralInventoryItemFamiliesManage,
         PermissionCodes.GeneralInventoryItemFamiliesManage);
 
+    public static CrudOperationPermissions ItemSubgroups { get; } = new(
+        PermissionCodes.GeneralInventoryItemSubgroupsRead,
+        PermissionCodes.GeneralInventoryItemSubgroupsManage,
+        PermissionCodes.GeneralInventoryItemSubgroupsManage,
+        PermissionCodes.GeneralInventoryItemSubgroupsManage);
+
+    public static CrudOperationPermissions ItemOrigins { get; } = new(
+        PermissionCodes.GeneralInventoryItemOriginsRead,
+        PermissionCodes.GeneralInventoryItemOriginsManage,
+        PermissionCodes.GeneralInventoryItemOriginsManage,
+        PermissionCodes.GeneralInventoryItemOriginsManage);
+
+    public static CrudOperationPermissions ReplenishmentMethods { get; } = new(
+        PermissionCodes.GeneralInventoryReplenishmentMethodsRead,
+        PermissionCodes.GeneralInventoryReplenishmentMethodsManage,
+        PermissionCodes.GeneralInventoryReplenishmentMethodsManage,
+        PermissionCodes.GeneralInventoryReplenishmentMethodsManage);
+
+    public static CrudOperationPermissions StorageConditions { get; } = new(
+        PermissionCodes.GeneralInventoryStorageConditionsRead,
+        PermissionCodes.GeneralInventoryStorageConditionsManage,
+        PermissionCodes.GeneralInventoryStorageConditionsManage,
+        PermissionCodes.GeneralInventoryStorageConditionsManage);
+
     public static CrudOperationPermissions ItemBrands { get; } = new(
         PermissionCodes.GeneralInventoryItemBrandsRead,
         PermissionCodes.GeneralInventoryItemBrandsManage,

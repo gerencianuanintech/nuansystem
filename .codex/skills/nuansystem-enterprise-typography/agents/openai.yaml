@@ -1,0 +1,6 @@
+interface:
+  display_name: "NuanSystem Typography (Deprecated)"
+  short_description: "Redirects typography to the frontend skill"
+  default_prompt: "Use $nuansystem-enterprise-typography only to redirect this request to the current WinForms typography reference."
+policy:
+  allow_implicit_invocation: false

@@ -1,6 +1,6 @@
 ---
 name: nuansystem-sql-standards
-description: Create, review, or evolve NuanSystem SQL Server scripts, Master and tenant objects, stored-procedure/Dapper contracts, audit and logical deletion, constraints, indexes, idempotent deployment order, CRUD procedures, operational transactions, and security seeds. Use for any database/sql script, procedure name, repository SQL contract, schema change, permission seed, audit history, migration, or SQL execution plan.
+description: Create or review NuanSystem SQL Server migrations, Master/tenant objects, stored-procedure and Dapper contracts, audit, logical deletion, constraints, indexes, transactions, and security seeds. Use for database/sql changes, procedure contracts, permissions, history, deployment order, or execution plans.
 ---
 
 # NuanSystem SQL Server Standards
@@ -62,6 +62,8 @@ Every repository call must use `CommandType.StoredProcedure`, parameterized `Com
 
 Maintenance tables use the documented create/update/delete audit columns and normally logical deletion. Detailed history belongs to the approved domain audit table and must be written in the same local SQL transaction as the change.
 
+For logical delete procedures, capture `@@ROWCOUNT` immediately after the target `UPDATE`, write audit only when the captured value is positive, and return that captured value after audit. When the procedure can run without an ambient Application transaction, own a transaction so delete and audit commit or roll back together; never return the row count of the later audit insert.
+
 The validated independent-master sequence is:
 
 - `106_tenant_catalog_audit_foundation.sql` creates `AuditCatalogChanges`;
@@ -76,6 +78,8 @@ Fresh installations receive the hardened definitions from `107`/`108`; existing 
 ## Idempotency and forward evolution
 
 Use `IF OBJECT_ID`, `COL_LENGTH`, `IF NOT EXISTS`, and `CREATE OR ALTER PROCEDURE` as applicable. Idempotency means rerunning the script reaches the intended state without duplicates or data loss.
+
+For Master security/navigation seeds, idempotency includes recovery from soft deletion: resolve stable form/menu keys even when deleted, reactivate the existing row and role-menu mapping, then insert only when no physical row exists. Do not filter a uniqueness lookup to active rows and then attempt a duplicate insert.
 
 Once a script may have been executed:
 

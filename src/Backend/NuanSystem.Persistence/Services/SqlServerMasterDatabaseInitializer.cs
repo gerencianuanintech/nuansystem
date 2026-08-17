@@ -1123,6 +1123,63 @@ END;
         {
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
         }
+
+        scriptPath = FindDatabaseScriptPath("206_master_definitions_inventory_item_subgroups_navigation.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("207_master_item_subgroups_sync_registration.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("209_master_definitions_inventory_item_origins_navigation.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("210_master_item_origins_sync_registration.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        scriptPath = FindDatabaseScriptPath("212_master_definitions_inventory_replenishment_methods_navigation.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("213_master_replenishment_methods_sync_registration.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("215_master_definitions_inventory_storage_conditions_navigation.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("216_master_storage_conditions_sync_registration.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("218_master_definitions_inventory_item_commercial_segments_navigation.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("219_master_item_commercial_segments_form_operations_repair.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("220_master_item_origins_form_operations_repair.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("222_master_definitions_inventory_item_alert_types_navigation.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("224_master_item_auxiliary_navigation_hardening.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("225_master_item_alert_types_unicode_repair.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("227_master_definitions_inventory_sales_channels_navigation.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
     }
 
     private static async Task ExecuteScriptFileAsync(

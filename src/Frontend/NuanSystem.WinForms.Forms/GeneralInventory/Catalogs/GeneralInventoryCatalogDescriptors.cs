@@ -24,24 +24,6 @@ public static class GeneralInventoryCatalogDescriptors
         "Nombre de tipo",
         Permissions(PermissionCodes.GeneralInventoryItemTypesRead, PermissionCodes.GeneralInventoryItemTypesManage));
 
-    public static GeneralInventoryCatalogDescriptor ItemSubgroups { get; } = new(
-        GeneralInventoryCatalogRoutes.ItemSubgroups,
-        "inventory-item-subgroups",
-        "Subgrupos de articulos",
-        "subgrupo de articulo",
-        "Codigo de subgrupo",
-        "Nombre de subgrupo",
-        Permissions(PermissionCodes.GeneralInventoryItemSubgroupsRead, PermissionCodes.GeneralInventoryItemSubgroupsManage));
-
-    public static GeneralInventoryCatalogDescriptor SalesChannels { get; } = new(
-        GeneralInventoryCatalogRoutes.SalesChannels,
-        "inventory-sales-channels",
-        "Canales de venta",
-        "canal de venta",
-        "Codigo de canal",
-        "Nombre de canal",
-        Permissions(PermissionCodes.GeneralInventorySalesChannelsRead, PermissionCodes.GeneralInventorySalesChannelsManage));
-
     public static GeneralInventoryCatalogDescriptor WarehouseLocations { get; } = new(
         GeneralInventoryCatalogRoutes.WarehouseLocations,
         "inventory-warehouse-locations",
@@ -59,24 +41,6 @@ public static class GeneralInventoryCatalogDescriptors
         "Codigo de zona",
         "Nombre de zona",
         Permissions(PermissionCodes.GeneralInventoryStorageZonesRead, PermissionCodes.GeneralInventoryStorageZonesManage));
-
-    public static GeneralInventoryCatalogDescriptor StorageConditions { get; } = new(
-        GeneralInventoryCatalogRoutes.StorageConditions,
-        "inventory-storage-conditions",
-        "Condiciones de almacenamiento",
-        "condicion de almacenamiento",
-        "Codigo de condicion",
-        "Nombre de condicion",
-        Permissions(PermissionCodes.GeneralInventoryStorageConditionsRead, PermissionCodes.GeneralInventoryStorageConditionsManage));
-
-    public static GeneralInventoryCatalogDescriptor ReplenishmentMethods { get; } = new(
-        GeneralInventoryCatalogRoutes.ReplenishmentMethods,
-        "inventory-replenishment-methods",
-        "Metodos de reposicion",
-        "metodo de reposicion",
-        "Codigo de metodo",
-        "Nombre de metodo",
-        Permissions(PermissionCodes.GeneralInventoryReplenishmentMethodsRead, PermissionCodes.GeneralInventoryReplenishmentMethodsManage));
 
     public static GeneralInventoryCatalogDescriptor VariantAttributes { get; } = new(
         GeneralInventoryCatalogRoutes.VariantAttributes,

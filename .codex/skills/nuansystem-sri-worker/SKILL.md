@@ -7,7 +7,8 @@ description: Design, implement, or review the dedicated NuanSystem background wo
 
 ## Authority and current state
 
-Obey: Constitution > Kernel > catalogs/knowledge graph > framework discovery and operational-use-case skills > this skill > implementation.
+Run framework discovery and reuse its engineering-core record. Then apply the
+operational-use-case skill, this worker skill, and implementation evidence.
 
 Read `references/worker-contracts.md`. For the approved first pilot, also read `../../../docs/architecture/SRI-CONSULT-DOWNLOAD-PILOT-CONTRACT.md`. For service deployment, health or version changes, read `../../../docs/architecture/SRI-ITERATION-6-OPERATIONS-BLUEPRINT.md` and `../../../docs/operations/SRI-WORKER-OPERATIONS.md`. Existing workers remain lifecycle references only and must not be relabeled or extended across their ownership boundaries.
 

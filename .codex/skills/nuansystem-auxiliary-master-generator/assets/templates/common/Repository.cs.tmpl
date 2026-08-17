@@ -1,9 +1,9 @@
 using System.Data;
 using Dapper;
 using NuanSystem.Application.Abstractions.Data;
-using NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Dtos;
+using NuanSystem.Application.Features.{{FEATURE_NAMESPACE}}.Dtos;
 
-namespace NuanSystem.Persistence.Repositories.Definitions.Inventory;
+namespace NuanSystem.Persistence.Repositories.{{REPOSITORY_NAMESPACE}};
 
 public sealed class {{SINGULAR}}Repository(ITenantConnectionFactory connectionFactory) : I{{SINGULAR}}Repository
 {

@@ -13,17 +13,23 @@ This skill discovers and selects evidence. It does not authorize implementation 
 
 ## Authority
 
-Read and obey, in order:
+Framework Discovery owns engineering-core loading for the active logical task.
+Do not make each orchestrator or specialist reload the same documents.
 
-1. `.codex/ENGINEERING-CONSTITUTION.md`
-2. `.codex/ENGINEERING-KERNEL.md`
-3. `.codex/FRAMEWORK-CATALOG.md`
-4. `.codex/PATTERN-CATALOG.md`
-5. `.codex/KNOWLEDGE-GRAPH.md`
-6. Applicable specialized skills
-7. Closest approved implementation
+1. Read `.codex/ENGINEERING-CONSTITUTION.md` and `.codex/ENGINEERING-KERNEL.md`
+   once when they are not already represented in the active Discovery Record.
+2. Search `.codex/FRAMEWORK-CATALOG.md`, `.codex/PATTERN-CATALOG.md`, and
+   `.codex/KNOWLEDGE-GRAPH.md` by relevant component, lifecycle, domain, and
+   consumer headings. Read the matched sections completely. Read an entire
+   catalog only for shared-framework or transversal architecture changes.
+3. Read applicable specialized skills and the closest approved implementation.
+4. After implementation, read and execute only the applicable gates from
+   `.codex/REVIEW-CHECKLIST.md`.
 
-Use `.codex/REVIEW-CHECKLIST.md` after implementation.
+Reuse the Discovery Record while the request, affected layers, branch, and
+relevant repository state remain unchanged. Extend it when scope grows; rebuild
+it only when those assumptions become stale. A new user turn alone does not
+invalidate repository evidence that remains present in the active context.
 
 ## Trigger rules
 
@@ -66,7 +72,7 @@ Preserve user-approved ownership and independence decisions. Discovery may chall
 Before source search:
 
 1. Read repository-level instructions.
-2. Read the engineering core documents above.
+2. Apply the core-reading budget above and record the sections inspected.
 3. Identify applicable skills.
 4. Confirm branch/worktree state and unrelated changes.
 5. If the task names a remote branch or requires its latest state, fetch that ref when permitted and compare `HEAD` with the refreshed remote-tracking commit. A local `origin/*` ref is cached evidence and does not prove live remote freshness.

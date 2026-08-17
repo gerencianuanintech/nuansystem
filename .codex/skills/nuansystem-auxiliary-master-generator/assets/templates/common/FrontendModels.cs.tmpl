@@ -1,10 +1,21 @@
-namespace NuanSystem.WinForms.Services.Definitions.Inventory.{{PLURAL}}.Models;
+namespace NuanSystem.WinForms.Services.{{FEATURE_NAMESPACE}}.Models;
 
 public sealed class {{SINGULAR}}Item
 {
     public int Id { get; set; }
     public Guid GlobalId { get; set; }
 {{DTO_PROPERTIES}}
+    public int? CreatedByUserId { get; set; }
+    public string? CreatedByUserName { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public int? UpdatedByUserId { get; set; }
+    public string? UpdatedByUserName { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public bool IsDeleted { get; set; }
+    public int? DeletedByUserId { get; set; }
+    public string? DeletedByUserName { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public string DisplayText => $"{{{CODE_FIELD}}} - {{{NAME_FIELD}}}";
 }
 public sealed record Save{{SINGULAR}}Request({{RECORD_PARAMETERS}});
 public sealed class {{SINGULAR}}AuditChange
@@ -13,5 +24,7 @@ public sealed class {{SINGULAR}}AuditChange
     public string FieldName { get; set; } = string.Empty;
     public string? OldValue { get; set; }
     public string? NewValue { get; set; }
+    public int? UserId { get; set; }
+    public string? UserName { get; set; }
     public DateTime CreatedAt { get; set; }
 }

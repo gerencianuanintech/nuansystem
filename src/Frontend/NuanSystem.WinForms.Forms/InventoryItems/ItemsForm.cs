@@ -1,5 +1,8 @@
 using NuanSystem.WinForms.Forms.Audit;
 using NuanSystem.WinForms.Forms.Common;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ItemOrigins;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.ReplenishmentMethods;
+using NuanSystem.WinForms.Forms.Definitions.Inventory.StorageConditions;
 using NuanSystem.WinForms.Services.Audit;
 using NuanSystem.WinForms.Services.GridColumnSettings;
 using NuanSystem.WinForms.Services.InventoryItems.Models;
@@ -184,7 +187,73 @@ public sealed partial class ItemsForm : BaseGridCrudListForm
             request => viewModel.CreateItemFamilyAsync(request),
             viewModel.CanCreateRelatedCatalog,
             relatedCatalogFormFactory,
-            cancellationToken => viewModel.ReloadLookupsForEditAsync(cancellationToken));
+            cancellationToken => viewModel.ReloadLookupsForEditAsync(cancellationToken),
+            viewModel.CanEditRelatedCatalog(ItemOriginsForm.FormKey),
+            CreateItemOriginAsync,
+            EditItemOriginAsync,
+            viewModel.CanEditRelatedCatalog(ReplenishmentMethodsForm.FormKey),
+            CreateReplenishmentMethodAsync,
+            EditReplenishmentMethodAsync,
+            viewModel.CanEditRelatedCatalog(StorageConditionsForm.FormKey),
+            CreateStorageConditionAsync,
+            EditStorageConditionAsync);
+    }
+
+    private async Task<NuanSystem.WinForms.Services.Definitions.Inventory.ItemOrigins.Models.ItemOriginItem?> CreateItemOriginAsync(IWin32Window owner)
+    {
+        using var form = new ItemOriginEditForm();
+        if (form.ShowDialog(owner) != DialogResult.OK) return null;
+        var saved = await viewModel.CreateItemOriginAsync(form.Request);
+        ShowSuccess("Origen de artículos creado correctamente.");
+        return saved;
+    }
+
+    private async Task<NuanSystem.WinForms.Services.Definitions.Inventory.ItemOrigins.Models.ItemOriginItem?> EditItemOriginAsync(IWin32Window owner, int id)
+    {
+        var item = await viewModel.GetItemOriginByIdAsync(id);
+        using var form = new ItemOriginEditForm(item);
+        if (form.ShowDialog(owner) != DialogResult.OK) return null;
+        var saved = await viewModel.UpdateItemOriginAsync(id, form.Request);
+        ShowSuccess("Origen de artículos actualizado correctamente.");
+        return saved;
+    }
+
+    private async Task<NuanSystem.WinForms.Services.Definitions.Inventory.ReplenishmentMethods.Models.ReplenishmentMethodItem?> CreateReplenishmentMethodAsync(IWin32Window owner)
+    {
+        using var form = new ReplenishmentMethodEditForm();
+        if (form.ShowDialog(owner) != DialogResult.OK) return null;
+        var saved = await viewModel.CreateReplenishmentMethodAsync(form.Request);
+        ShowSuccess("Método de reposición creado correctamente.");
+        return saved;
+    }
+
+    private async Task<NuanSystem.WinForms.Services.Definitions.Inventory.ReplenishmentMethods.Models.ReplenishmentMethodItem?> EditReplenishmentMethodAsync(IWin32Window owner, int id)
+    {
+        var item = await viewModel.GetReplenishmentMethodByIdAsync(id);
+        using var form = new ReplenishmentMethodEditForm(item);
+        if (form.ShowDialog(owner) != DialogResult.OK) return null;
+        var saved = await viewModel.UpdateReplenishmentMethodAsync(id, form.Request);
+        ShowSuccess("Método de reposición actualizado correctamente.");
+        return saved;
+    }
+
+    private async Task<NuanSystem.WinForms.Services.Definitions.Inventory.StorageConditions.Models.StorageConditionItem?> CreateStorageConditionAsync(IWin32Window owner)
+    {
+        using var form = new StorageConditionEditForm();
+        if (form.ShowDialog(owner) != DialogResult.OK) return null;
+        var saved = await viewModel.CreateStorageConditionAsync(form.Request);
+        ShowSuccess("Condición de almacenamiento creada correctamente.");
+        return saved;
+    }
+
+    private async Task<NuanSystem.WinForms.Services.Definitions.Inventory.StorageConditions.Models.StorageConditionItem?> EditStorageConditionAsync(IWin32Window owner, int id)
+    {
+        var item = await viewModel.GetStorageConditionByIdAsync(id);
+        using var form = new StorageConditionEditForm(item);
+        if (form.ShowDialog(owner) != DialogResult.OK) return null;
+        var saved = await viewModel.UpdateStorageConditionAsync(id, form.Request);
+        ShowSuccess("Condición de almacenamiento actualizada correctamente.");
+        return saved;
     }
 
     private void ConfigureColumn(string fieldName, string caption, int visibleIndex, int width)

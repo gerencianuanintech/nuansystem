@@ -1,6 +1,6 @@
 ---
 name: nuansystem-backend-crud
-description: Build, modify, or review complete NuanSystem administrative CRUD backend verticals with independent domain ownership, Application commands/queries/DTOs, validators, repository contracts, Dapper Persistence, SQL procedures, Minimal API endpoints, permissions, tenant scope, audit, lookups, tests, and sync impact. Use for maintained masters/configuration; switch to nuansystem-operational-usecase for stock, money, pricing, cash, documents, workflow, sync, or external-state operations.
+description: Build or review complete NuanSystem administrative CRUD backend verticals across Application, Persistence, SQL, API, permissions, tenant scope, audit, lookups, and tests. Use for maintained masters and configuration; use the operational skill for stock, money, documents, workflow, synchronization, or external state.
 ---
 
 # NuanSystem Backend CRUD

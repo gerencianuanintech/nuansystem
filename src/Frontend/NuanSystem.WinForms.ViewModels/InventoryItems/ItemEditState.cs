@@ -123,6 +123,7 @@ public sealed class ItemInventoryState
     public string? ReplenishmentMethod { get; set; }
     public string? AbcClassification { get; set; }
     public string? DefaultLocationCode { get; set; }
+    public string? Condition { get; set; }
     public bool BatchRequired { get; set; }
     public bool SerialRequired { get; set; }
     public bool AllowTransfers { get; set; }

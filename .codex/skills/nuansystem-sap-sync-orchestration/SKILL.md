@@ -7,7 +7,8 @@ description: Design, implement, review, or diagnose NuanSystem SAP synchronizati
 
 ## Authority and boundary
 
-Follow Constitution > Kernel > Catalogs/Graph > `$nuansystem-framework-discovery` > `$nuansystem-sap-business-one` > this skill > source.
+Run `$nuansystem-framework-discovery` and reuse its core record. Then apply
+`$nuansystem-sap-business-one`, this orchestration skill, and source evidence.
 
 This governs SAP synchronization. `Application/Features/Sync`, `SyncOutbox`, profiles, branch targets, and `MasterBranchSyncWorker` belong to `$nuansystem-master-branch-sync`.
 

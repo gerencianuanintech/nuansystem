@@ -5,6 +5,7 @@ SET XACT_ABORT ON;
 GO
 IF DB_NAME() = N'NuanSystem_Master' THROW 51{{MIGRATION_TENANT}}, 'Migration {{MIGRATION_TENANT}} must run only in tenant databases.', 1;
 IF OBJECT_ID(N'dbo.SchemaHistory', N'U') IS NULL THROW 51{{MIGRATION_TENANT}}, 'SchemaHistory is required.', 1;
+IF OBJECT_ID(N'dbo.AuditCatalogChanges', N'U') IS NULL THROW 51{{MIGRATION_TENANT}}, 'AuditCatalogChanges is required.', 1;
 GO
 BEGIN TRY
  BEGIN TRANSACTION;
@@ -14,15 +15,22 @@ BEGIN TRY
         [Id] int IDENTITY(1,1) NOT NULL CONSTRAINT PK_{{TABLE_NAME}} PRIMARY KEY,
         [GlobalId] uniqueidentifier NOT NULL CONSTRAINT DF_{{TABLE_NAME}}_GlobalId DEFAULT(NEWSEQUENTIALID()),
 {{SQL_COLUMNS}},
-        [IsDeleted] bit NOT NULL CONSTRAINT DF_{{TABLE_NAME}}_IsDeleted DEFAULT(0),
+        [CreatedByUserId] int NULL,
+        [CreatedByUserName] nvarchar(120) NULL,
         [CreatedAt] datetime2(0) NOT NULL CONSTRAINT DF_{{TABLE_NAME}}_CreatedAt DEFAULT(SYSUTCDATETIME()),
+        [UpdatedByUserId] int NULL,
+        [UpdatedByUserName] nvarchar(120) NULL,
         [UpdatedAt] datetime2(0) NULL,
+        [IsDeleted] bit NOT NULL CONSTRAINT DF_{{TABLE_NAME}}_IsDeleted DEFAULT(0),
+        [DeletedByUserId] int NULL,
+        [DeletedByUserName] nvarchar(120) NULL,
         [DeletedAt] datetime2(0) NULL
   );
-  CREATE UNIQUE INDEX UX_{{TABLE_NAME}}_GlobalId ON {{TABLE}}(GlobalId);
  END;
- IF NOT EXISTS(SELECT 1 FROM dbo.SchemaHistory WHERE Version=N'20260813.{{MIGRATION_TENANT}}')
-  INSERT dbo.SchemaHistory(Version,Description) VALUES(N'20260813.{{MIGRATION_TENANT}}',N'Creates {{TITLE}} auxiliary master');
+{{SQL_UNIQUE_INDEXES}}
+{{SQL_CHECK_CONSTRAINTS}}
+ IF NOT EXISTS(SELECT 1 FROM dbo.SchemaHistory WHERE Version=N'{{MIGRATION_VERSION_DATE}}.{{MIGRATION_TENANT}}')
+  INSERT dbo.SchemaHistory(Version,Description) VALUES(N'{{MIGRATION_VERSION_DATE}}.{{MIGRATION_TENANT}}',N'Creates {{TITLE}} auxiliary master');
  COMMIT;
 END TRY
 BEGIN CATCH
@@ -79,8 +87,8 @@ BEGIN
   IF @OwnTransaction=1 BEGIN TRANSACTION;
   IF EXISTS(SELECT 1 FROM {{TABLE}} WITH(UPDLOCK,HOLDLOCK) WHERE {{CODE_FIELD}}=@{{CODE_FIELD}} OR GlobalId=@GlobalId)
   BEGIN IF @OwnTransaction=1 COMMIT; SELECT -1; RETURN; END;
-  INSERT {{TABLE}}(GlobalId,{{SQL_INSERT_COLUMNS}},IsDeleted,CreatedAt)
-  VALUES(@GlobalId,{{SQL_INSERT_VALUES}},0,SYSUTCDATETIME());
+  INSERT {{TABLE}}(GlobalId,{{SQL_INSERT_COLUMNS}},CreatedByUserId,CreatedByUserName,IsDeleted,CreatedAt)
+  VALUES(@GlobalId,{{SQL_INSERT_VALUES}},@CreatedByUserId,@CreatedByUserName,0,SYSUTCDATETIME());
   DECLARE @Id int=CONVERT(int,SCOPE_IDENTITY());
   INSERT dbo.AuditCatalogChanges(EntityName,RecordId,[Action],FieldName,OldValue,NewValue,UserId,UserName)
   SELECT N'{{ENTITY_CODE}}',CONVERT(nvarchar(80),@Id),N'INSERT',FieldName,NULL,NewValue,@CreatedByUserId,@CreatedByUserName
@@ -106,7 +114,7 @@ BEGIN
   IF @Old{{CODE_FIELD}} IS NULL BEGIN IF @OwnTransaction=1 COMMIT; SELECT 0; RETURN; END;
   IF EXISTS(SELECT 1 FROM {{TABLE}} WITH(UPDLOCK,HOLDLOCK) WHERE {{CODE_FIELD}}=@{{CODE_FIELD}} AND Id<>@Id AND IsDeleted=0)
   BEGIN IF @OwnTransaction=1 COMMIT; SELECT -1; RETURN; END;
-  UPDATE {{TABLE}} SET {{SQL_UPDATE_SET}},UpdatedAt=SYSUTCDATETIME() WHERE Id=@Id AND IsDeleted=0;
+  UPDATE {{TABLE}} SET {{SQL_UPDATE_SET}},UpdatedByUserId=@UpdatedByUserId,UpdatedByUserName=@UpdatedByUserName,UpdatedAt=SYSUTCDATETIME() WHERE Id=@Id AND IsDeleted=0;
   INSERT dbo.AuditCatalogChanges(EntityName,RecordId,[Action],FieldName,OldValue,NewValue,UserId,UserName)
   SELECT N'{{ENTITY_CODE}}',CONVERT(nvarchar(80),@Id),N'UPDATE',FieldName,OldValue,NewValue,@UpdatedByUserId,@UpdatedByUserName
   FROM(VALUES {{SQL_AUDIT_CHANGED_VALUES}})v(FieldName,OldValue,NewValue)
@@ -123,14 +131,24 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_DELETE_GENERAL_INVENTORY_{{PLURAL}}_ELIMINAR
 AS
 BEGIN
  SET NOCOUNT ON; SET XACT_ABORT ON;
- UPDATE {{TABLE}} SET {{ACTIVE_FIELD}}=0,IsDeleted=1,DeletedAt=SYSUTCDATETIME() WHERE Id=@Id AND IsDeleted=0;
- IF @@ROWCOUNT>0
-  INSERT dbo.AuditCatalogChanges(EntityName,RecordId,[Action],FieldName,OldValue,NewValue,UserId,UserName)
-  VALUES(N'{{ENTITY_CODE}}',CONVERT(nvarchar(80),@Id),N'DELETE',N'IsDeleted',N'0',N'1',@DeletedByUserId,@DeletedByUserName);
- SELECT @@ROWCOUNT;
+ BEGIN TRY
+  DECLARE @OwnTransaction bit=CASE WHEN @@TRANCOUNT=0 THEN 1 ELSE 0 END;
+  IF @OwnTransaction=1 BEGIN TRANSACTION;
+  UPDATE {{TABLE}} SET {{ACTIVE_FIELD}}=0,IsDeleted=1,DeletedByUserId=@DeletedByUserId,DeletedByUserName=@DeletedByUserName,DeletedAt=SYSUTCDATETIME() WHERE Id=@Id AND IsDeleted=0;
+  DECLARE @Affected int=@@ROWCOUNT;
+  IF @Affected>0
+   INSERT dbo.AuditCatalogChanges(EntityName,RecordId,[Action],FieldName,OldValue,NewValue,UserId,UserName)
+   VALUES(N'{{ENTITY_CODE}}',CONVERT(nvarchar(80),@Id),N'DELETE',N'IsDeleted',N'0',N'1',@DeletedByUserId,@DeletedByUserName);
+  IF @OwnTransaction=1 COMMIT;
+  SELECT @Affected;
+ END TRY BEGIN CATCH
+  IF @OwnTransaction=1 AND XACT_STATE()<>0 ROLLBACK;
+  THROW;
+ END CATCH;
 END;
 GO
 
+/* BEGIN OPTIONAL MASTER-BRANCH SYNC */
 /* Sync contracts are generated disabled-by-default and require integration review. */
 CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_{{ENTITY_CODE}}_SYNC_FULL
 AS BEGIN SET NOCOUNT ON; SELECT * FROM {{TABLE}} WHERE IsDeleted=0 ORDER BY Id; END;
@@ -143,15 +161,16 @@ BEGIN
  DECLARE @Id int=(SELECT Id FROM {{TABLE}} WITH(UPDLOCK,HOLDLOCK) WHERE GlobalId=@GlobalId);
  IF @Id IS NULL
  BEGIN
-  INSERT {{TABLE}}(GlobalId,{{SQL_INSERT_COLUMNS}},IsDeleted,CreatedAt,UpdatedAt)
-  VALUES(@GlobalId,{{SQL_INSERT_VALUES}},@IsDeleted,COALESCE(@UpdatedAt,SYSUTCDATETIME()),@UpdatedAt);
+  INSERT {{TABLE}}(GlobalId,{{SQL_INSERT_COLUMNS}},CreatedByUserName,CreatedAt,UpdatedByUserName,UpdatedAt,IsDeleted,DeletedByUserName,DeletedAt)
+  VALUES(@GlobalId,{{SQL_INSERT_VALUES}},N'MasterBranchSyncWorker',COALESCE(@UpdatedAt,SYSUTCDATETIME()),N'MasterBranchSyncWorker',@UpdatedAt,@IsDeleted,CASE WHEN @IsDeleted=1 THEN N'MasterBranchSyncWorker' END,CASE WHEN @IsDeleted=1 THEN COALESCE(@UpdatedAt,SYSUTCDATETIME()) END);
   SET @Id=CONVERT(int,SCOPE_IDENTITY());
  END
  ELSE
-  UPDATE {{TABLE}} SET {{SQL_UPDATE_SET}},IsDeleted=@IsDeleted,UpdatedAt=COALESCE(@UpdatedAt,SYSUTCDATETIME()) WHERE Id=@Id;
+  UPDATE {{TABLE}} SET {{SQL_UPDATE_SET}},IsDeleted=@IsDeleted,UpdatedByUserName=N'MasterBranchSyncWorker',UpdatedAt=COALESCE(@UpdatedAt,SYSUTCDATETIME()),DeletedByUserName=CASE WHEN @IsDeleted=1 THEN N'MasterBranchSyncWorker' END,DeletedAt=CASE WHEN @IsDeleted=1 THEN COALESCE(@UpdatedAt,SYSUTCDATETIME()) END WHERE Id=@Id;
  INSERT dbo.AuditCatalogChanges(EntityName,RecordId,[Action],FieldName,OldValue,NewValue,UserName,[Source])
  VALUES(N'{{ENTITY_CODE}}',CONVERT(nvarchar(80),@Id),N'SYNC',N'GlobalId',NULL,CONVERT(nvarchar(max),@GlobalId),N'MasterBranchSyncWorker',N'MasterBranchSyncWorker');
  SELECT 1 ResultCode,@Id ItemId;
 END;
 GO
 /* Application publishes LocalOutbox in the same tenant transaction. */
+/* END OPTIONAL MASTER-BRANCH SYNC */

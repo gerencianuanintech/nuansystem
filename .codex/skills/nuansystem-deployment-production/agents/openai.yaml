@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem Production Deployment"
+  short_description: "Prepara despliegues seguros de producción"
+  default_prompt: "Use $nuansystem-deployment-production para revisar y preparar un despliegue seguro de NuanSystem."

@@ -1,10 +1,10 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Common.Models;
-using NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Dtos;
+using NuanSystem.Application.Features.{{FEATURE_NAMESPACE}}.Dtos;
 using NuanSystem.Shared.Responses;
 
-namespace NuanSystem.Application.Features.Definitions.Inventory.{{PLURAL}}.Commands;
+namespace NuanSystem.Application.Features.{{FEATURE_NAMESPACE}}.Commands;
 
 public sealed class Create{{SINGULAR}}CommandHandler(I{{SINGULAR}}Repository repository, ITransactionRunner transactionRunner)
     : ICommandHandler<Create{{SINGULAR}}Command, {{SINGULAR}}Dto>
@@ -12,14 +12,18 @@ public sealed class Create{{SINGULAR}}CommandHandler(I{{SINGULAR}}Repository rep
     public Task<Result<{{SINGULAR}}Dto>> Handle(Create{{SINGULAR}}Command request, CancellationToken ct) =>
         transactionRunner.ExecuteInTenantTransactionAsync(async (connection, transaction, token) =>
         {
-            var code = request.{{CODE_FIELD}}.Trim().ToUpperInvariant();
+            var code = request.{{CODE_FIELD}}.Trim();
             if (await repository.ExistsByCodeAsync(code, null, connection, transaction, token))
                 return Result<{{SINGULAR}}Dto>.Failure("El código ya existe.", [new ApiError("{{SINGULAR}}CodeAlreadyExists", "El código ya existe.", nameof(request.{{CODE_FIELD}}))]);
-            var data = new Create{{SINGULAR}}Data(Guid.NewGuid(), {{REQUEST_ARGUMENTS}}, request.AuditUserId, request.AuditUserName);
+            var data = new Create{{SINGULAR}}Data(Guid.NewGuid(), {{NORMALIZED_REQUEST_ARGUMENTS}}, request.AuditUserId, NormalizeOptional(request.AuditUserName));
             var id = await repository.CreateAsync(data, connection, transaction, token);
+            if (id == -1)
+                return Result<{{SINGULAR}}Dto>.Failure("El código ya existe.", [new ApiError("{{SINGULAR}}CodeAlreadyExists", "El código ya existe.", nameof(request.{{CODE_FIELD}}))]);
             var item = id > 0 ? await repository.GetByIdAsync(id, connection, transaction, token) : null;
             return item is null ? Result<{{SINGULAR}}Dto>.Failure("No se pudo crear {{TITLE}}.") : Result<{{SINGULAR}}Dto>.Success(item);
         }, ct);
+
+    private static string? NormalizeOptional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
 
 public sealed class Update{{SINGULAR}}CommandHandler(I{{SINGULAR}}Repository repository, ITransactionRunner transactionRunner)
@@ -29,12 +33,19 @@ public sealed class Update{{SINGULAR}}CommandHandler(I{{SINGULAR}}Repository rep
         transactionRunner.ExecuteInTenantTransactionAsync(async (connection, transaction, token) =>
         {
             if (await repository.GetByIdAsync(request.Id, connection, transaction, token) is null)
-                return Result<{{SINGULAR}}Dto>.Failure("Registro no encontrado.");
-            var data = new Update{{SINGULAR}}Data(request.Id, {{REQUEST_ARGUMENTS}}, request.AuditUserId, request.AuditUserName);
+                return Result<{{SINGULAR}}Dto>.Failure("Registro no encontrado.", [new ApiError("{{SINGULAR}}NotFound", "Registro no encontrado.", nameof(request.Id))]);
+            var code = request.{{CODE_FIELD}}.Trim();
+            if (await repository.ExistsByCodeAsync(code, request.Id, connection, transaction, token))
+                return Result<{{SINGULAR}}Dto>.Failure("El código ya existe.", [new ApiError("{{SINGULAR}}CodeAlreadyExists", "El código ya existe.", nameof(request.{{CODE_FIELD}}))]);
+            var data = new Update{{SINGULAR}}Data(request.Id, {{NORMALIZED_REQUEST_ARGUMENTS}}, request.AuditUserId, NormalizeOptional(request.AuditUserName));
             var changed = await repository.UpdateAsync(data, connection, transaction, token);
+            if (changed == -1)
+                return Result<{{SINGULAR}}Dto>.Failure("El código ya existe.", [new ApiError("{{SINGULAR}}CodeAlreadyExists", "El código ya existe.", nameof(request.{{CODE_FIELD}}))]);
             var item = changed > 0 ? await repository.GetByIdAsync(request.Id, connection, transaction, token) : null;
             return item is null ? Result<{{SINGULAR}}Dto>.Failure("No se pudo actualizar {{TITLE}}.") : Result<{{SINGULAR}}Dto>.Success(item);
         }, ct);
+
+    private static string? NormalizeOptional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
 
 public sealed class Delete{{SINGULAR}}CommandHandler(I{{SINGULAR}}Repository repository, ITransactionRunner transactionRunner)
@@ -43,7 +54,9 @@ public sealed class Delete{{SINGULAR}}CommandHandler(I{{SINGULAR}}Repository rep
     public Task<Result<bool>> Handle(Delete{{SINGULAR}}Command request, CancellationToken ct) =>
         transactionRunner.ExecuteInTenantTransactionAsync(async (connection, transaction, token) =>
         {
-            var changed = await repository.DeleteAsync(request.Id, request.AuditUserId, request.AuditUserName, connection, transaction, token);
-            return changed > 0 ? Result<bool>.Success(true) : Result<bool>.Failure("No se pudo eliminar {{TITLE}}.");
+            if (await repository.GetByIdAsync(request.Id, connection, transaction, token) is null)
+                return Result<bool>.Failure("Registro no encontrado.", [new ApiError("{{SINGULAR}}NotFound", "Registro no encontrado.", nameof(request.Id))]);
+            var changed = await repository.DeleteAsync(request.Id, request.AuditUserId, string.IsNullOrWhiteSpace(request.AuditUserName) ? null : request.AuditUserName.Trim(), connection, transaction, token);
+            return changed > 0 ? Result<bool>.Success(true) : Result<bool>.Failure("No se pudo eliminar {{TITLE}}.", [new ApiError("{{SINGULAR}}DeleteFailed", "No se pudo eliminar {{TITLE}}.", nameof(request.Id))]);
         }, ct);
 }

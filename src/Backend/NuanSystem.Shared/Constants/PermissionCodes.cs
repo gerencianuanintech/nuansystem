@@ -100,6 +100,12 @@ public static class PermissionCodes
     public const string GeneralInventoryItemLinesManage = "GENERALINVENTORY.ITEMLINES.MANAGE";
     public const string GeneralInventoryItemSubgroupsRead = "GENERALINVENTORY.ITEMSUBGROUPS.READ";
     public const string GeneralInventoryItemSubgroupsManage = "GENERALINVENTORY.ITEMSUBGROUPS.MANAGE";
+    public const string GeneralInventoryItemOriginsRead = "GENERALINVENTORY.ITEMORIGINS.READ";
+    public const string GeneralInventoryItemOriginsManage = "GENERALINVENTORY.ITEMORIGINS.MANAGE";
+    public const string GeneralInventoryItemCommercialSegmentsRead = "GENERALINVENTORY.ITEMCOMMERCIALSEGMENTS.READ";
+    public const string GeneralInventoryItemCommercialSegmentsManage = "GENERALINVENTORY.ITEMCOMMERCIALSEGMENTS.MANAGE";
+    public const string GeneralInventoryItemAlertTypesRead = "GENERALINVENTORY.ITEMALERTTYPES.READ";
+    public const string GeneralInventoryItemAlertTypesManage = "GENERALINVENTORY.ITEMALERTTYPES.MANAGE";
     public const string GeneralInventorySalesChannelsRead = "GENERALINVENTORY.SALESCHANNELS.READ";
     public const string GeneralInventorySalesChannelsManage = "GENERALINVENTORY.SALESCHANNELS.MANAGE";
     public const string GeneralInventoryWarehouseLocationsRead = "GENERALINVENTORY.WAREHOUSELOCATIONS.READ";
@@ -289,6 +295,12 @@ public static class PermissionCodes
         GeneralInventoryItemLinesManage,
         GeneralInventoryItemSubgroupsRead,
         GeneralInventoryItemSubgroupsManage,
+        GeneralInventoryItemOriginsRead,
+        GeneralInventoryItemOriginsManage,
+        GeneralInventoryItemCommercialSegmentsRead,
+        GeneralInventoryItemCommercialSegmentsManage,
+        GeneralInventoryItemAlertTypesRead,
+        GeneralInventoryItemAlertTypesManage,
         GeneralInventorySalesChannelsRead,
         GeneralInventorySalesChannelsManage,
         GeneralInventoryWarehouseLocationsRead,

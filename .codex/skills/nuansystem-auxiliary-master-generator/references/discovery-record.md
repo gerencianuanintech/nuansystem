@@ -1,5 +1,10 @@
 # Discovery Record
 
+## Contents
+
+1. [Discovery evidence and decisions](#discovery-record)
+2. [Affected-layer map](#affected-layer-map)
+
 Outcome:
 - Create a project-local skill that deterministically scaffolds independently administrable NuanSystem auxiliary masters into staging for review.
 

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.1",
+  "schemaVersion": "1.3",
   "archetype": "dependent",
   "entity": {
     "singular": "ItemFamily",
@@ -7,6 +7,9 @@
     "title": "Familias de artículos",
     "table": "dbo.ItemFamilies",
     "entityCode": "ItemFamilies"
+  },
+  "placement": {
+    "featurePath": ["Definitions", "Inventory", "ItemFamilies"]
   },
   "api": {
     "route": "/api/definitions/inventory/item-families",
@@ -23,12 +26,12 @@
     "lookupConsumers": ["ItemsRead"]
   },
   "fields": [
-    { "name": "ItemGroupId", "type": "int", "nullable": false, "required": true, "unique": false, "minimum": 1, "role": "parentId" },
-    { "name": "Code", "type": "string", "nullable": false, "required": true, "unique": false, "stringLength": 50, "role": "code" },
-    { "name": "Name", "type": "string", "nullable": false, "required": true, "unique": false, "stringLength": 150, "role": "name" },
-    { "name": "Description", "type": "string", "nullable": true, "required": false, "unique": false, "stringLength": 500, "role": "description" },
-    { "name": "SortOrder", "type": "int", "nullable": false, "required": true, "unique": false, "minimum": 0, "default": 0, "role": "sortOrder" },
-    { "name": "IsActive", "type": "bool", "nullable": false, "required": true, "unique": false, "default": true, "role": "active" }
+    { "name": "ItemGroupId", "label": "Grupo de artículos", "type": "int", "nullable": false, "required": true, "unique": false, "minimum": 1, "role": "parentId" },
+    { "name": "Code", "label": "Código", "type": "string", "nullable": false, "required": true, "unique": false, "stringLength": 50, "role": "code" },
+    { "name": "Name", "label": "Nombre", "type": "string", "nullable": false, "required": true, "unique": false, "stringLength": 150, "role": "name" },
+    { "name": "Description", "label": "Descripción", "type": "string", "nullable": true, "required": false, "unique": false, "stringLength": 500, "role": "description" },
+    { "name": "SortOrder", "label": "Orden", "type": "int", "nullable": false, "required": true, "unique": false, "minimum": 0, "default": 0, "role": "sortOrder" },
+    { "name": "IsActive", "label": "Activo", "type": "bool", "nullable": false, "required": true, "unique": false, "default": true, "role": "active" }
   ],
   "dependency": {
     "field": "ItemGroupId",
@@ -50,7 +53,7 @@
   },
   "designApproval": {
     "status": "approved",
-    "proposalHash": "5b8f57dab72a220694518aa78707d2e290cc520ec0080ef7955fc1a75813ab58",
+    "proposalHash": "b1e7b7a22fb878712c0c8d6aca81c2632ec4196ec9ac4b8b7d128d8d673ecaa3",
     "tableApproved": true,
     "mockupApproved": true,
     "mockupReference": "reference-fixture:dependent-item-family-full-color",
@@ -59,14 +62,15 @@
   "audit": { "enabled": true },
   "softDelete": { "enabled": true },
   "synchronization": {
-    "mode": "full-source-local-outbox",
+    "mode": "none",
     "enabledByDefault": false,
-    "executionOrder": 207,
-    "dependencies": ["ItemGroups"]
+    "executionOrder": null,
+    "dependencies": []
   },
   "migrations": {
+    "versionDate": "20260815",
     "tenant": 188,
     "masterNavigation": 189,
-    "masterSync": 128
+    "masterSync": null
   }
 }

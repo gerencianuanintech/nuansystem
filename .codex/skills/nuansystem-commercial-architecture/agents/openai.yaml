@@ -1,4 +1,4 @@
 interface:
   display_name: "NuanSystem Commercial Architecture"
   short_description: "Arquitectura comercial multi-giro"
-  default_prompt: "Evalua o implementa cambios arquitectonicos en NuanSystem manteniendo enfoque comercial multi-giro, modulos por capacidad, clean architecture y reglas configurables por empresa."
+  default_prompt: "Use $nuansystem-commercial-architecture para evaluar un cambio comercial multi-giro y sus límites arquitectónicos."

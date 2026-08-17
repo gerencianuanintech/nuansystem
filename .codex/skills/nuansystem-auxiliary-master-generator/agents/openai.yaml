@@ -2,4 +2,4 @@ interface:
   display_name: "NuanSystem Auxiliary Master Generator"
   short_description: "Genera mantenimientos auxiliares seguros"
   brand_color: "#00B894"
-  default_prompt: "Use $nuansystem-auxiliary-master-generator to first present the proposed SQL table structure and a full-color mockup, wait for my explicit approval, and only then scaffold the NuanSystem auxiliary master from the approved manifest."
+  default_prompt: "Use $nuansystem-auxiliary-master-generator to create a schema 1.3 manifest with independent physical/API paths and an explicit migration date, present the SQL table and full-color compact mockup, wait for approval, and only then scaffold the auxiliary master."

@@ -11,6 +11,8 @@ internal static class ItemClassificationValidator
         int? itemFamilyId,
         IItemGroupRepository itemGroupRepository,
         IItemFamilyRepository itemFamilyRepository,
+        IItemSubgroupRepository itemSubgroupRepository,
+        string? itemSubgroupCode,
         IDbConnection connection,
         IDbTransaction transaction,
         CancellationToken cancellationToken)
@@ -44,6 +46,14 @@ internal static class ItemClassificationValidator
             }
         }
 
+        if (!itemFamilyId.HasValue && !string.IsNullOrWhiteSpace(itemSubgroupCode))
+        {
+            return new ApiError(
+                "ItemSubgroupRequiresFamily",
+                "Debe seleccionar la familia a la que pertenece el subgrupo.",
+                "ItemFamilyId");
+        }
+
         if (!itemFamilyId.HasValue)
         {
             return null;
@@ -67,11 +77,19 @@ internal static class ItemClassificationValidator
                 "ItemFamilyId");
         }
 
-        return family.ItemGroupId == itemGroupId
-            ? null
-            : new ApiError(
+        if (family.ItemGroupId != itemGroupId)
+        {
+            return new ApiError(
                 "ItemFamilyGroupMismatch",
                 "La familia seleccionada no pertenece al grupo indicado.",
                 "ItemFamilyId");
+        }
+
+        if (string.IsNullOrWhiteSpace(itemSubgroupCode)) return null;
+        var subgroupExists = await itemSubgroupRepository.ExistsActiveByFamilyAndCodeAsync(
+            itemFamilyId.Value, itemSubgroupCode.Trim(), connection, transaction, cancellationToken);
+        return !subgroupExists
+            ? new ApiError("ItemSubgroupFamilyMismatch", "El subgrupo indicado no pertenece a la familia seleccionada o está inactivo.", "MasterData.General.SubGroup")
+            : null;
     }
 }

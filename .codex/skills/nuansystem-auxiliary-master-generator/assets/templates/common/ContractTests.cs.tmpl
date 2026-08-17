@@ -1,15 +1,101 @@
 using FluentAssertions;
+using NuanSystem.Shared.Constants;
 
-namespace NuanSystem.Application.Tests.Features.Definitions.Inventory.{{PLURAL}};
+namespace NuanSystem.Application.Tests.Features.{{FEATURE_NAMESPACE}};
 
 public sealed class {{SINGULAR}}GeneratedContractTests
 {
     [Fact]
     public void Identity_IsCanonical()
     {
-        "{{API_ROUTE}}".Should().StartWith("/api/definitions/inventory/");
+        "{{API_ROUTE}}".Should().MatchRegex("^/api/[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)*$");
         "{{FORM_KEY}}".Should().Be("{{FORM_KEY}}");
         "{{PERMISSION_READ}}".Should().NotBeNullOrWhiteSpace();
         "{{PERMISSION_MANAGE}}".Should().NotBeNullOrWhiteSpace();
+        PermissionCodes.{{PERMISSION_READ}}.Should().Be("{{PERMISSION_READ_VALUE}}");
+        PermissionCodes.{{PERMISSION_MANAGE}}.Should().Be("{{PERMISSION_MANAGE_VALUE}}");
+    }
+
+    [Fact]
+    public void Navigation_IsRegisteredEndToEnd()
+    {
+        var program = ReadWorkspaceFile("src", "Frontend", "NuanSystem.WinForms", "Program.cs");
+        var mainForm = ReadWorkspaceFile("src", "Frontend", "NuanSystem.WinForms.Forms", "Shell", "MainForm.cs");
+        var shellViewModel = ReadWorkspaceFile("src", "Frontend", "NuanSystem.WinForms.ViewModels", "Shell", "ShellViewModel.cs");
+
+        program.Should().Contain("\"{{FORM_KEY}}\" => Create{{PLURAL}}Form()");
+        mainForm.Should().Contain("\"{{FORM_KEY}}\" => generalInventoryCatalogFormFactory(module.Key)");
+        shellViewModel.Should().Contain("\"{{FORM_KEY}}\"");
+    }
+
+    [Fact]
+    public void NavigationSql_RegistersApplicableOperationsSeparatelyFromRoleGrants()
+    {
+        var root = FindWorkspaceRoot();
+        var navigationSqlPath = Directory.GetFiles(
+            Path.Combine(root, "database", "sql"),
+            "{{MIGRATION_NAVIGATION}}_master_*_navigation.sql").Single();
+        var navigationSql = File.ReadAllText(navigationSqlPath);
+
+        navigationSql.Should().Contain("dbo.SecurityFormOperations");
+        navigationSql.Should().Contain("dbo.SecurityRoleFormOperations");
+        foreach (var operation in CanonicalOperations)
+        {
+            navigationSql.Should().Contain(operation);
+        }
+    }
+
+    [Fact]
+    public void GeneratedContracts_PreserveSqlResultsAndDesignerSafety()
+    {
+        var tenantSql = ReadWorkspaceFile("database", "sql", "{{MIGRATION_TENANT}}_tenant_{{SQL_SLUG}}_master.sql");
+        var navigationSql = ReadWorkspaceFile("database", "sql", "{{MIGRATION_NAVIGATION}}_master_definitions_inventory_{{SQL_SLUG}}_navigation.sql");
+        var listForm = ReadWorkspaceFile(
+            "src", "Frontend", "NuanSystem.WinForms.Forms", {{FEATURE_PATH_SEGMENTS}},
+            "{{PLURAL}}Form.cs");
+
+        tenantSql.Should().Contain("{{MIGRATION_VERSION_DATE}}.{{MIGRATION_TENANT}}");
+        navigationSql.Should().Contain("{{MIGRATION_VERSION_DATE}}.{{MIGRATION_NAVIGATION}}");
+        tenantSql.Should().Contain("DECLARE @Affected int=@@ROWCOUNT;");
+        tenantSql.Should().Contain("SELECT @Affected;");
+        navigationSql.Should().Contain("UPDATE dbo.SecurityRoleMenus SET IsAllowed=1,IsDeleted=0");
+        listForm.Should().Contain("if (session is null) return;");
+    }
+
+    [Fact]
+    public void List_OffersEveryPersistedColumnEvenWhenItHasNoRows()
+    {
+        var listForm = ReadWorkspaceFile(
+            "src", "Frontend", "NuanSystem.WinForms.Forms", {{FEATURE_PATH_SEGMENTS}},
+            "{{PLURAL}}Form.cs");
+
+        listForm.Should().Contain("GridView.Columns.AddField(field)");
+        foreach (var field in PersistedFields)
+        {
+            listForm.Should().Contain($"nameof({{SINGULAR}}Item.{field})");
+        }
+    }
+
+    private static readonly string[] PersistedFields = [{{PERSISTED_COLUMN_NAMES}}];
+    private static readonly string[] CanonicalOperations =
+    [
+        "ACTION.REFRESH", "ACTION.CONSULT", "ACTION.CREATE", "ACTION.UPDATE",
+        "ACTION.DELETE", "ACTION.COPY", "ACTION.HISTORY", "ACTION.CUSTOMIZE_COLUMNS",
+        "ACTION.EXPORT_EXCEL", "ACTION.EXPORT_PDF", "ACTION.EXPORT_JSON", "ACTION.EXPORT_XML"
+    ];
+
+    private static string ReadWorkspaceFile(params string[] segments) =>
+        File.ReadAllText(Path.Combine(FindWorkspaceRoot(), Path.Combine(segments)));
+
+    private static string FindWorkspaceRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "NuanSystem.sln")))
+        {
+            directory = directory.Parent;
+        }
+
+        return directory?.FullName
+            ?? throw new DirectoryNotFoundException("No se encontró la raíz del repositorio.");
     }
 }

@@ -14,15 +14,16 @@
 
 Use one JSON manifest as the source of truth for a generated auxiliary-master vertical. Keep the manifest declarative: describe domain identity, fields, authorization, navigation, UI shape, audit, soft deletion, synchronization, and migration reservations. Do not embed C#, SQL, PowerShell, credentials, connection strings, or executable expressions.
 
-The current schema version is `1.1`.
+The current schema version is `1.3`. Versions `1.1` and `1.2` remain accepted for deterministic backward compatibility.
 
 ## Root contract
 
 | Property | Type | Required | Contract |
 |---|---:|---:|---|
-| `schemaVersion` | string | yes | Must be `1.1`. |
+| `schemaVersion` | string | yes | `1.3` for new manifests; legacy `1.1`/`1.2` remain supported. |
 | `archetype` | string | yes | `basic`, `classified`, or `dependent`. |
 | `entity` | object | yes | Concrete entity and table identity. |
+| `placement` | object | yes in 1.2/1.3 | Exact physical feature placement, independent from API and navigation. |
 | `api` | object | yes | Canonical route and `FormKey`. |
 | `navigation` | object | yes | Corporate menu location and order. |
 | `permissions` | object | yes | Backend read/manage permissions and lookup consumers. |
@@ -36,7 +37,7 @@ The current schema version is `1.1`.
 | `synchronization` | object | yes | Matriz-Sucursal generation intent. |
 | `migrations` | object | yes | Reserved migration numbers or `null`. |
 
-Reject unknown root properties in version `1.1`. Extend the schema deliberately rather than silently accepting misspellings.
+Reject unknown root properties. Extend the schema deliberately rather than silently accepting misspellings.
 
 ## Sections
 
@@ -54,14 +55,26 @@ Reject unknown root properties in version `1.1`. Extend the schema deliberately 
 
 | Property | Type | Contract |
 |---|---:|---|
-| `route` | string | Absolute canonical route under `/api/definitions/inventory/`, without trailing slash. |
+| `route` | string | Absolute canonical kebab-case route below `/api`, without trailing slash; for example `/api/definitions/item-commercial-segments`. |
 | `formKey` | string | Stable kebab-case key used by API authorization and WinForms. |
+
+The `formKey` must equal the final route segment. The route does not determine physical folders or menu placement.
+
+### `placement`
+
+| Property | Type | Contract |
+|---|---:|---|
+| `featurePath` | string[] | Exact PascalCase path shared by Application features, API endpoints, Persistence repositories, frontend services/ViewModels/forms, and tests. Its final segment must equal `entity.plural`. |
+
+Example: `['Definitions', 'Inventory', 'ItemCommercialSegments']`. This produces namespaces ending in `Definitions.Inventory.ItemCommercialSegments` while `api.route` may independently be `/api/definitions/item-commercial-segments`. Each segment must be a safe C# identifier; separators, drive names, `.` and `..` are forbidden.
+
+Legacy manifests with `schemaVersion: 1.1` and no `placement` retain their historical layout: feature artifacts under `Definitions/Inventory/<Plural>` and repositories under `Definitions/Inventory`. New manifests must use version `1.3` and declare `placement.featurePath`.
 
 ### `navigation`
 
 | Property | Type | Contract |
 |---|---:|---|
-| `path` | string[] | Must be `['Configuration', 'Definitions', 'Inventory']` in version `1.0`. |
+| `path` | string[] | Must be `['Configuration', 'Definitions', 'Inventory']` for the current `1.3` generator contract. |
 | `menuOrder` | integer | Positive order within Inventory definitions. |
 | `menuCode` | string | Stable uppercase dotted code beginning `MENU.DEFINITIONS.INVENTORY.`. |
 
@@ -114,6 +127,8 @@ Use `NuanLookupEdit` for a create/edit-capable dependency. Resolve Matriz-Sucurs
 
 The layout remains explicit in each concrete `.Designer.cs`. This setting selects a template; it does not create a generic user-facing maintenance form.
 
+All version 1.1, 1.2, and 1.3 layouts inherit the compact corporate geometry established by the approved `CarrierEditForm`: `ClientSize.Width = 870`, the maintenance title appears only in the native form caption through `Form.Text`, main labels/editors use X=32/154, and the right rail uses X=632 and X=680/684. No title or section line is repeated inside the content. Código and Nombre stay in the main column; Orden shares the first row on the right; Activo shares the second available row on the right; parent/classification rows remain in the main column; Descripción is the final 436x64 memo. The first row is Y=26, distinct rows use a 28 px cadence, and labels sit at editor Y+3. Only inherited Cancelar/Guardar buttons are permitted at the lower right. These values are validated in staging and after integration; they are not optional hints or separately configurable in the manifest.
+
 ### `designApproval`
 
 | Property | Type | Contract |
@@ -135,7 +150,7 @@ Both objects contain one Boolean property, `enabled`. Version `1.1` requires bot
 
 | Property | Type | Contract |
 |---|---:|---|
-| `mode` | string | `none` or `full-source-local-outbox`. |
+| `mode` | string | Use `none`. `full-source-local-outbox` is reserved and fails closed until complete runtime generation is implemented. |
 | `enabledByDefault` | boolean | Must always be `false`. |
 | `executionOrder` | integer/null | Positive when synchronized; otherwise `null`. |
 | `dependencies` | string[] | Stable parent entity codes that must apply first. |
@@ -146,11 +161,12 @@ Synchronization describes code generation only. It never authorizes SQL deployme
 
 | Property | Type | Contract |
 |---|---:|---|
+| `versionDate` | string | Required in 1.3. Exact `yyyyMMdd` prefix stored in `SchemaHistory`/`MasterSchemaHistory`; it makes SQL output deterministic and must match the intended migration date. |
 | `tenant` | integer/null | Tenant table/CRUD/sync-contract migration. |
 | `masterNavigation` | integer/null | Master form/menu/operation migration. |
 | `masterSync` | integer/null | Master entity/profile registration migration. |
 
-Use positive integers or `null`; never use textual placeholders such as `NNN`. A generator must recheck collisions immediately before producing filenames. It must not execute the migrations.
+Use positive integers or `null`; never use textual placeholders such as `NNN`. Use schema 1.3 and set `versionDate` explicitly instead of deriving it from the computer clock. A generator must recheck collisions immediately before producing filenames. It must not execute the migrations.
 
 ## Field contract
 
@@ -168,7 +184,7 @@ Each ordered `fields` entry has:
 | `default` | scalar/null | optional | Deterministic default compatible with the field type. |
 | `role` | string | yes | `code`, `name`, `description`, `sortOrder`, `active`, `system`, `classification`, `parentId`, or `custom`. |
 
-Version `1.1` requires exactly one field for each base role: `code`, `name`, `description`, `sortOrder`, and `active`. The `description` field remains optional/nullable. Role `system` is server-managed and read-only in the editor. Role `classification` is mandatory only for the classified archetype. Role `parentId` is mandatory only for the dependent archetype.
+Versions `1.1`, `1.2`, and `1.3` require exactly one field for each base role: `code`, `name`, `description`, `sortOrder`, and `active`. The `description` field remains optional/nullable. Role `system` is server-managed and read-only in the editor. Role `classification` is mandatory only for the classified archetype. Role `parentId` is mandatory only for the dependent archetype.
 
 Do not include SAP or external-integration fields in the MVP manifest. They require an explicit integration design and a future schema extension; no archetype infers them.
 

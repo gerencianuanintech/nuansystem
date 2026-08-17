@@ -1,0 +1,4 @@
+interface:
+  display_name: "NuanSystem Framework Discovery"
+  short_description: "Descubre patrones y componentes existentes"
+  default_prompt: "Use $nuansystem-framework-discovery para encontrar patrones y componentes existentes antes de diseñar el cambio."

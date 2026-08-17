@@ -42,8 +42,12 @@ public static class SyncMasterBranchEntityCodes
     public const string BusinessPartner = "BusinessPartner";
     public const string ItemGroups = "ItemGroups";
     public const string ItemFamilies = "ItemFamilies";
+    public const string ItemSubgroups = "ItemSubgroups";
     public const string ItemBrands = "ItemBrands";
     public const string ItemLines = "ItemLine";
+    public const string ItemOrigins = "ItemOrigin";
+    public const string ReplenishmentMethods = "ReplenishmentMethod";
+    public const string StorageConditions = "StorageCondition";
     public const string Item = "Item";
     public const string Warehouse = "Warehouse";
     public const string Carrier = "Carrier";
@@ -66,8 +70,12 @@ public static class SyncMasterBranchEntityCodes
         new(BusinessPartner, BusinessPartner, "Socios de negocio", true, true, true, true, true, true, "Productor BusinessPartnerSyncPublisher y aplicador BusinessPartnerSyncApplyRepository existentes; alcance limitado, no BusinessPartners completos.", 200),
         new(ItemGroups, ItemGroups, "Grupos de articulos", true, true, true, true, true, true, "Catalogo maestro con LocalOutbox transaccional, fuente Full y conflicto terminal sin adopcion por codigo.", 205),
         new(ItemFamilies, ItemFamilies, "Familias de articulos", true, true, true, true, true, true, "Catalogo maestro dependiente de ItemGroups con LocalOutbox transaccional, fuente Full y aplicador sin adopcion por codigo.", 207, Dependencies: [ItemGroups]),
+        new(ItemSubgroups, ItemSubgroups, "Subgrupos de articulos", true, true, true, true, true, true, "Catalogo maestro dependiente de ItemFamilies con LocalOutbox transaccional, fuente Full y aplicador sin adopcion por codigo.", 209, DefaultKeyField: "GlobalId", Dependencies: [ItemFamilies]),
         new(ItemBrands, ItemBrands, "Marcas de articulos", true, true, true, true, true, true, "Catalogo maestro con LocalOutbox transaccional, fuente Full y aplicador por GlobalId que preserva referencias externas locales.", 208),
         new(ItemLines, ItemLines, "Lineas de articulos", true, true, true, true, true, true, "Catalogo maestro independiente con LocalOutbox transaccional, fuente Full y aplicador por GlobalId sin adopcion por codigo.", 209, DefaultKeyField: "GlobalId"),
+        new(ItemOrigins, ItemOrigins, "Origenes de articulos", true, true, true, true, true, true, "Catalogo maestro independiente con LocalOutbox transaccional, fuente Full y aplicador por GlobalId sin adopcion por codigo.", 209, DefaultKeyField: "GlobalId"),
+        new(ReplenishmentMethods, ReplenishmentMethods, "Metodos de reposicion", true, true, true, true, true, true, "Catalogo maestro independiente con LocalOutbox transaccional, fuente Full y aplicador por GlobalId sin adopcion por codigo.", 209, DefaultKeyField: "GlobalId"),
+        new(StorageConditions, StorageConditions, "Condiciones de almacenamiento", true, true, true, true, true, true, "Catalogo maestro independiente con LocalOutbox transaccional, fuente Full y aplicador por GlobalId sin adopcion por codigo.", 209, DefaultKeyField: "GlobalId"),
         new(Item, Item, "Articulos", true, true, true, true, true, true, "LocalOutbox transaccional y payload v2 con dependencias resueltas exclusivamente por GlobalId; ProductType queda fuera de las dependencias hasta incorporarse al payload; sin stock, costos ni precios.", 210, Dependencies: [ItemGroups, ItemFamilies, UnitOfMeasures]),
         new(Warehouse, Warehouse, "Almacenes", true, true, true, true, true, true, "Contrato corporativo minimo con LocalOutbox transaccional, preservacion de campos locales y conflicto terminal sin adopcion.", 220),
         new(PriceLists, PriceLists, "Listas de precios", true, true, true, true, true, true, "Catalogo comercial con fuente Full y aplicador idempotente por GlobalId.", 230, Dependencies: [Currencies]),

@@ -32,11 +32,11 @@ partial class ItemLineEditForm
         // 
         // btnCancelar
         // 
-        btnCancelar.Location = new Point(974, 224);
+        btnCancelar.Location = new Point(628, 190);
         // 
         // btnGuardar
         // 
-        btnGuardar.Location = new Point(1080, 224);
+        btnGuardar.Location = new Point(734, 190);
         // 
         // lblGeneralTitle
         // 
@@ -57,7 +57,7 @@ partial class ItemLineEditForm
         lineGeneralTitle.AutoSizeMode = LabelAutoSizeMode.None;
         lineGeneralTitle.Location = new Point(218, 34);
         lineGeneralTitle.Name = "lineGeneralTitle";
-        lineGeneralTitle.Size = new Size(950, 1);
+        lineGeneralTitle.Size = new Size(620, 1);
         lineGeneralTitle.TabIndex = 21;
         // 
         // lblCode
@@ -74,7 +74,7 @@ partial class ItemLineEditForm
         // 
         // txtCode
         // 
-        txtCode.Location = new Point(150, 60);
+        txtCode.Location = new Point(154, 60);
         txtCode.Name = "txtCode";
         txtCode.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         txtCode.Properties.Appearance.Options.UseFont = true;
@@ -89,7 +89,7 @@ partial class ItemLineEditForm
         lblName.Appearance.ForeColor = BrandResources.Text;
         lblName.Appearance.Options.UseFont = true;
         lblName.Appearance.Options.UseForeColor = true;
-        lblName.Location = new Point(360, 63);
+        lblName.Location = new Point(32, 91);
         lblName.Name = "lblName";
         lblName.Size = new Size(47, 15);
         lblName.TabIndex = 23;
@@ -97,14 +97,14 @@ partial class ItemLineEditForm
         // 
         // txtName
         // 
-        txtName.Location = new Point(455, 60);
+        txtName.Location = new Point(154, 88);
         txtName.Name = "txtName";
         txtName.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         txtName.Properties.Appearance.Options.UseFont = true;
         txtName.Properties.AutoHeight = false;
         txtName.Properties.MaxLength = 150;
-        txtName.Size = new Size(455, 22);
-        txtName.TabIndex = 1;
+        txtName.Size = new Size(436, 22);
+        txtName.TabIndex = 2;
         // 
         // lblSortOrder
         // 
@@ -112,7 +112,7 @@ partial class ItemLineEditForm
         lblSortOrder.Appearance.ForeColor = BrandResources.Text;
         lblSortOrder.Appearance.Options.UseFont = true;
         lblSortOrder.Appearance.Options.UseForeColor = true;
-        lblSortOrder.Location = new Point(940, 63);
+        lblSortOrder.Location = new Point(632, 63);
         lblSortOrder.Name = "lblSortOrder";
         lblSortOrder.Size = new Size(40, 15);
         lblSortOrder.TabIndex = 24;
@@ -121,7 +121,7 @@ partial class ItemLineEditForm
         // spnSortOrder
         // 
         spnSortOrder.EditValue = new decimal(new int[] { 0, 0, 0, 0 });
-        spnSortOrder.Location = new Point(1018, 60);
+        spnSortOrder.Location = new Point(680, 60);
         spnSortOrder.Name = "spnSortOrder";
         spnSortOrder.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         spnSortOrder.Properties.Appearance.Options.UseFont = true;
@@ -133,7 +133,7 @@ partial class ItemLineEditForm
         spnSortOrder.Properties.MaskSettings.Set("mask", "d");
         spnSortOrder.Properties.MaxValue = new decimal(new int[] { 9999, 0, 0, 0 });
         spnSortOrder.Size = new Size(150, 22);
-        spnSortOrder.TabIndex = 2;
+        spnSortOrder.TabIndex = 1;
         // 
         // lblDescription
         // 
@@ -141,7 +141,7 @@ partial class ItemLineEditForm
         lblDescription.Appearance.ForeColor = BrandResources.Text;
         lblDescription.Appearance.Options.UseFont = true;
         lblDescription.Appearance.Options.UseForeColor = true;
-        lblDescription.Location = new Point(32, 91);
+        lblDescription.Location = new Point(32, 119);
         lblDescription.Name = "lblDescription";
         lblDescription.Size = new Size(65, 15);
         lblDescription.TabIndex = 25;
@@ -149,13 +149,13 @@ partial class ItemLineEditForm
         // 
         // memDescription
         // 
-        memDescription.Location = new Point(150, 88);
+        memDescription.Location = new Point(154, 116);
         memDescription.Name = "memDescription";
         memDescription.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         memDescription.Properties.Appearance.Options.UseFont = true;
         memDescription.Properties.MaxLength = 500;
-        memDescription.Size = new Size(760, 80);
-        memDescription.TabIndex = 3;
+        memDescription.Size = new Size(436, 64);
+        memDescription.TabIndex = 4;
         // 
         // lblIsActive
         // 
@@ -163,7 +163,7 @@ partial class ItemLineEditForm
         lblIsActive.Appearance.ForeColor = BrandResources.Text;
         lblIsActive.Appearance.Options.UseFont = true;
         lblIsActive.Appearance.Options.UseForeColor = true;
-        lblIsActive.Location = new Point(940, 91);
+        lblIsActive.Location = new Point(632, 91);
         lblIsActive.Name = "lblIsActive";
         lblIsActive.Size = new Size(40, 15);
         lblIsActive.TabIndex = 26;
@@ -173,15 +173,15 @@ partial class ItemLineEditForm
         // 
         chkIsActive.ActiveColor = BrandResources.Primary;
         chkIsActive.InactiveColor = BrandResources.Border;
-        chkIsActive.Location = new Point(1018, 89);
+        chkIsActive.Location = new Point(684, 88);
         chkIsActive.Name = "chkIsActive";
         chkIsActive.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         chkIsActive.Properties.Appearance.Options.UseFont = true;
         chkIsActive.Properties.OffText = "No";
         chkIsActive.Properties.OnText = "Sí";
-        chkIsActive.Size = new Size(70, 20);
+        chkIsActive.Size = new Size(120, 20);
         chkIsActive.StateTextColor = BrandResources.Text;
-        chkIsActive.TabIndex = 4;
+        chkIsActive.TabIndex = 3;
         // 
         // ItemLineEditForm
         // 
@@ -189,7 +189,7 @@ partial class ItemLineEditForm
         Appearance.Options.UseBackColor = true;
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(1200, 280);
+        ClientSize = new Size(870, 236);
         Controls.Add(lblGeneralTitle);
         Controls.Add(lineGeneralTitle);
         Controls.Add(lblCode);
@@ -206,7 +206,7 @@ partial class ItemLineEditForm
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        MinimumSize = new Size(1216, 319);
+        MinimumSize = new Size(886, 275);
         Name = "ItemLineEditForm";
         StartPosition = FormStartPosition.CenterParent;
         Text = "Línea de artículos";

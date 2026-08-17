@@ -90,6 +90,14 @@ public sealed class SqlServerTenantDatabaseInitializer(
                       ,"196_tenant_unit_of_measures_incremental_sync.sql"
                       ,"198_tenant_product_types_master.sql"
                       ,"201_tenant_item_lines_master.sql"
+                       ,"205_tenant_item_subgroups_master.sql"
+                       ,"208_tenant_item_origins_master.sql"
+                       ,"211_tenant_replenishment_methods_master.sql"
+                       ,"214_tenant_storage_conditions_master.sql"
+                       ,"217_tenant_item_commercial_segments_master.sql"
+                       ,"221_tenant_item_alert_types_master.sql"
+                       ,"223_tenant_item_auxiliary_delete_hardening.sql"
+                       ,"226_tenant_sales_channels_master.sql"
                    })
         {
             var scriptPath = FindDatabaseScriptPath(fileName);
