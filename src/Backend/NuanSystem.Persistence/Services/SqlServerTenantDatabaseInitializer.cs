@@ -98,6 +98,8 @@ public sealed class SqlServerTenantDatabaseInitializer(
                        ,"221_tenant_item_alert_types_master.sql"
                        ,"223_tenant_item_auxiliary_delete_hardening.sql"
                        ,"226_tenant_sales_channels_master.sql"
+                       ,"228_tenant_business_partner_bidirectional_foundation.sql"
+                       ,"230_tenant_business_partner_bidirectional_operations.sql"
                    })
         {
             var scriptPath = FindDatabaseScriptPath(fileName);

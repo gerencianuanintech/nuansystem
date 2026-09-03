@@ -61,6 +61,9 @@ La compatibilidad futura con MySQL se trabajara desde abstracciones de persisten
 - `225_master_item_alert_types_unicode_repair.sql`: reparación forward-only que corrige y protege la etiqueta Unicode de Tipos de alerta de artículos en Master.
 - `226_tenant_sales_channels_master.sql`: evoluciona Canales de venta preservando Id, códigos y el consumo actual por código de ItemEdit; agrega GlobalId, orden, auditoría y CRUD independiente sin activar sincronización.
 - `227_master_definitions_inventory_sales_channels_navigation.sql`: migra formulario y menú legacy a `sales-channels`, registra permisos API y las doce operaciones canónicas preservando identidades y accesos.
+- `manual/check_business_partner_bidirectional_readiness.sql`: diagnóstico de solo lectura para identidades, roles legados, códigos SAP, hijos y eventos pendientes de BusinessPartner antes de migrar cada tenant.
+- `228_tenant_business_partner_bidirectional_foundation.sql`: agrega identidad normalizada por rol, versiones, estado local, identidad global de hijos, destino/causalidad de LocalOutbox y conflictos auditables, sin activar capacidades.
+- `230_tenant_business_partner_bidirectional_operations.sql`: agrega contratos tenant transaccionales para aceptar, rechazar, conciliar, aplicar canónicos/resultados y resolver conflictos sin generar bucles de LocalOutbox.
 | `100_tenant_purchase_reference_catalog_sync.sql` | Tenant | Normaliza impuestos, unidades de medida y listas de precios para sincronizacion previa a ordenes. |
 | `101_tenant_sap_purchase_order_import.sql` | Tenant | Agrega identidad, version SAP y estado de enrutamiento a ordenes de compra. |
 | `112_tenant_sap_payment_terms_sync.sql` | Tenant | Importacion idempotente SAP B1 y aplicacion por GlobalId de condiciones de pago. |
