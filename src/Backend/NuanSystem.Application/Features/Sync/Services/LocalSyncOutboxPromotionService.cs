@@ -13,7 +13,8 @@ public sealed class LocalSyncOutboxPromotionService(
         string workerInstance,
         CancellationToken cancellationToken = default)
     {
-        if (RequiresExplicitTarget(syncEvent.EntityName) && syncEvent.TargetCompanyId is not > 0)
+        var requiresExplicitTarget = RequiresExplicitTarget(syncEvent.EntityName);
+        if (requiresExplicitTarget && syncEvent.TargetCompanyId is not > 0)
         {
             return Deferred("El evento direccional requiere un destino explicito.");
         }
@@ -27,12 +28,13 @@ public sealed class LocalSyncOutboxPromotionService(
                 TargetCompanyId: syncEvent.TargetCompanyId),
             cancellationToken);
 
-        if (!routing.ShouldDistribute || routing.Targets.Count == 0)
+        if (requiresExplicitTarget && (!routing.ShouldDistribute || routing.Targets.Count == 0))
         {
             return Deferred(routing.Reason ?? "No existe una ruta activa para el destino solicitado.");
         }
 
-        if (syncEvent.TargetCompanyId is int targetCompanyId
+        if (requiresExplicitTarget
+            && syncEvent.TargetCompanyId is int targetCompanyId
             && (routing.Targets.Count != 1 || routing.Targets.Single().BranchCompanyId != targetCompanyId))
         {
             return Deferred("La ruta resuelta no coincide de forma unica con el destino solicitado.");

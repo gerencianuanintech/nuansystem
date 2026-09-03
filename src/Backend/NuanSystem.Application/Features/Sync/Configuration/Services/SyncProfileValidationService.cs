@@ -481,14 +481,33 @@ public sealed class SyncProfileValidationService(
         SaveSyncProfileRequest request,
         List<SyncValidationMessageDto> errors)
     {
-        if (!string.Equals(request.Direction, "BranchToMaster", StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
+        var masterToBranch = string.Equals(request.Direction, "MasterToBranch", StringComparison.OrdinalIgnoreCase);
+        var branchToMaster = string.Equals(request.Direction, "BranchToMaster", StringComparison.OrdinalIgnoreCase);
 
         foreach (var entity in request.Entities.Where(entity => entity.IsActive))
         {
-            if (!string.Equals(entity.EntityCode, SyncMasterBranchEntityCodes.BusinessPartnerProposal, StringComparison.OrdinalIgnoreCase))
+            var isProposal = string.Equals(
+                entity.EntityCode,
+                SyncMasterBranchEntityCodes.BusinessPartnerProposal,
+                StringComparison.OrdinalIgnoreCase);
+            var isProposalResult = string.Equals(
+                entity.EntityCode,
+                SyncMasterBranchEntityCodes.BusinessPartnerProposalResult,
+                StringComparison.OrdinalIgnoreCase);
+            if ((isProposal && !branchToMaster) || (isProposalResult && !masterToBranch))
+            {
+                errors.Add(Message(
+                    "SyncEntityDirectionNotSupported",
+                    nameof(entity.EntityCode),
+                    $"La entidad {entity.EntityCode} no esta permitida en la direccion {request.Direction}."));
+            }
+
+            if (!branchToMaster)
+            {
+                continue;
+            }
+
+            if (!isProposal)
             {
                 errors.Add(Message(
                     "SyncBranchToMasterEntityNotSupported",

@@ -264,6 +264,24 @@ public sealed class SyncProfileValidationServiceTests
     }
 
     [Fact]
+    public async Task ValidateAsync_AcceptsInactiveMasterToBranchProposalResultDraft()
+    {
+        var service = CreateService(policyEnabled: true);
+        var request = ValidRequest() with
+        {
+            IsActive = false,
+            Entities = [Entity("BusinessPartnerProposalResult", 10, [2]) with { AllowDeactivate = false }]
+        };
+
+        var result = await service.ValidateAsync(request, null, userId: 1);
+
+        result.IsValid.Should().BeTrue();
+        result.Errors.Should().BeEmpty();
+        result.Warnings.Should().Contain(error => error.Code == "SyncEntityDefinitionInactive");
+        result.Warnings.Should().Contain(error => error.Code == "SyncEntityDraftOnly");
+    }
+
+    [Fact]
     public async Task ValidateAsync_ActivationFailsClosedUntilProposalApplierExists()
     {
         var service = CreateService(policyEnabled: true);
@@ -342,6 +360,34 @@ public sealed class SyncProfileValidationServiceTests
             userId: 1);
 
         result.Errors.Should().Contain(error => error.Code == "SyncBranchToMasterManualScheduleOnly");
+    }
+
+    [Theory]
+    [InlineData("BusinessPartnerProposal", "MasterToBranch", true)]
+    [InlineData("BusinessPartnerProposal", "MasterToBranch", false)]
+    [InlineData("BusinessPartnerProposalResult", "BranchToMaster", true)]
+    [InlineData("BusinessPartnerProposalResult", "BranchToMaster", false)]
+    public async Task ValidateAsync_RejectsDirectionalBusinessPartnerEntityInWrongDirection_ForActiveAndDraftProfiles(
+        string entityCode,
+        string direction,
+        bool isActive)
+    {
+        var service = CreateService(policyEnabled: true);
+        var request = direction == "BranchToMaster"
+            ? BranchToMasterRequest()
+            : ValidRequest();
+        request = request with
+        {
+            IsActive = isActive,
+            Entities = [Entity(entityCode, 10, [2]) with { AllowDeactivate = false }]
+        };
+
+        var result = await service.ValidateAsync(request, null, userId: 1);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(error =>
+            error.Code == "SyncEntityDirectionNotSupported"
+            && error.Field == nameof(SaveSyncProfileEntityRequest.EntityCode));
     }
 
     public static TheoryData<SaveSyncProfileRequest, string> InvalidRequests()

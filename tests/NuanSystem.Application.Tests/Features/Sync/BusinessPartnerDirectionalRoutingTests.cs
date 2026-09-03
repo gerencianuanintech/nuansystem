@@ -142,6 +142,32 @@ public sealed class BusinessPartnerDirectionalRoutingTests
     }
 
     [Fact]
+    public async Task Promotion_NonDirectedEventWithoutTargets_UsesEstablishedRepositoryPath()
+    {
+        var routing = Substitute.For<ISyncRoutingService>();
+        var repository = Substitute.For<ISyncOutboxPromotionRepository>();
+        routing.ResolveTargetsAsync(Arg.Any<SyncRoutingContext>(), Arg.Any<CancellationToken>())
+            .Returns(new SyncRoutingEvaluationResult(false, [], "No matching distribution"));
+        SyncOutboxPromotionData? captured = null;
+        repository.PromoteAsync(
+                Arg.Do<SyncOutboxPromotionData>(data => captured = data),
+                Arg.Any<CancellationToken>())
+            .Returns(new SyncOutboxPromotionResult(SyncOutboxPromotionStatus.Created, 88, "established path"));
+        var service = new LocalSyncOutboxPromotionService(routing, repository);
+
+        var result = await service.PromoteAsync(
+            LocalEvent(targetCompanyId: null, entityName: "Warehouse"),
+            "relay-1");
+
+        result.Status.Should().Be(SyncOutboxPromotionStatus.Created);
+        result.OutboxId.Should().Be(88);
+        captured.Should().NotBeNull();
+        captured!.Event.EntityName.Should().Be("Warehouse");
+        captured.Targets.Should().BeEmpty();
+        captured.Decisions.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Promotion_ActiveDirectedRoute_PreservesEventAndCausationIdentity()
     {
         var routing = Substitute.For<ISyncRoutingService>();
@@ -167,14 +193,18 @@ public sealed class BusinessPartnerDirectionalRoutingTests
         captured.Targets.Should().ContainSingle(item => item.BranchCompanyId == 10);
     }
 
-    [Fact]
-    public async Task Promotion_DirectionalEventWithoutExplicitTarget_FailsClosed()
+    [Theory]
+    [InlineData("BusinessPartnerProposal")]
+    [InlineData("BusinessPartnerProposalResult")]
+    public async Task Promotion_DirectionalEventWithoutExplicitTarget_FailsClosed(string entityName)
     {
         var routing = Substitute.For<ISyncRoutingService>();
         var repository = Substitute.For<ISyncOutboxPromotionRepository>();
         var service = new LocalSyncOutboxPromotionService(routing, repository);
 
-        var result = await service.PromoteAsync(LocalEvent(targetCompanyId: null), "relay-1");
+        var result = await service.PromoteAsync(
+            LocalEvent(targetCompanyId: null, entityName),
+            "relay-1");
 
         result.Status.Should().Be(SyncOutboxPromotionStatus.Deferred);
         await routing.DidNotReceiveWithAnyArgs().ResolveTargetsAsync(default!, default);
@@ -242,13 +272,15 @@ public sealed class BusinessPartnerDirectionalRoutingTests
         IsActive = true
     };
 
-    private static LocalSyncOutboxDto LocalEvent(int? targetCompanyId) => new()
+    private static LocalSyncOutboxDto LocalEvent(
+        int? targetCompanyId,
+        string entityName = "BusinessPartnerProposal") => new()
     {
         Id = 8,
         EventId = Guid.Parse("22222222-2222-2222-2222-222222222222"),
         CompanyId = 21,
         TargetCompanyId = targetCompanyId,
-        EntityName = "BusinessPartnerProposal",
+        EntityName = entityName,
         EntityGlobalId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
         EntityCode = "BP-11111111111111111111111111111111",
         Operation = SyncOperation.Created,
