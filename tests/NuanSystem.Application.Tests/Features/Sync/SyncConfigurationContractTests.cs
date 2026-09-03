@@ -662,6 +662,55 @@ public sealed class SyncConfigurationContractTests
         script.Should().NotContain("EntityOwnershipConfigurations");
     }
 
+    [Fact]
+    public void BusinessPartnerBidirectionalGovernance_ExtendsProfileDirectionsWithoutActivatingRoutes()
+    {
+        var script = ReadDatabaseScript("229_master_business_partner_bidirectional_governance.sql");
+
+        script.Should().Contain("CHECK (Direction IN (N'MasterToBranch',N'BranchToMaster'))")
+            .And.Contain("CK_SyncProfiles_ConflictStrategy CHECK (ConflictStrategy IN (N'MasterWins',N'CentralReview'))")
+            .And.Contain("Direction=N'BranchToMaster' AND ConflictStrategy=N'CentralReview' AND ExecutionMode=N'Incremental'")
+            .And.Contain("@Direction NOT IN (N'MasterToBranch',N'BranchToMaster')")
+            .And.Contain("SP_NA_POST_SYNCPROFILECREAR")
+            .And.Contain("SP_NA_PUT_SYNCPROFILEACTUALIZAR")
+            .And.Contain("SP_NA_PATCH_SYNCPROFILEACTIVAR")
+            .And.Contain("BusinessPartnerSapCodePolicies")
+            .And.NotContain("N'BUSINESS-PARTNER-BIDIRECTIONAL'")
+            .And.NotContain("SET IsActive=1 WHERE Id");
+    }
+
+    [Fact]
+    public void BusinessPartnerBidirectionalRouting_ClosesProposalAndResultTopology()
+    {
+        var script = ReadDatabaseScript("229_master_business_partner_bidirectional_governance.sql");
+        var procedure = ExtractProcedure(script, "SP_NA_GET_SYNCROUTINGTARGETS");
+
+        procedure.Should().ContainAll(
+                "@TargetCompanyId int=NULL",
+                "profile.Direction=N'BranchToMaster'",
+                "profile.ConflictStrategy=N'CentralReview'",
+                "sourceCompany.ParentCompanyId=profile.CompanyId",
+                "profileBranch.BranchCompanyId=@SourceCompanyId",
+                "profile.CompanyId AS BranchCompanyId",
+                "@NormalizedEntityCode=N'BusinessPartnerProposal'",
+                "profile.Direction=N'MasterToBranch'",
+                "branchCompany.ParentCompanyId=profile.CompanyId",
+                "branchCompany.Id=@TargetCompanyId",
+                "@NormalizedEntityCode=N'BusinessPartnerProposalResult'",
+                "@TargetCompanyId IS NOT NULL")
+            .And.NotContain("profile.Direction=N'BranchToMaster' OR profile.Direction=N'MasterToBranch'");
+    }
+
+    private static string ExtractProcedure(string sql, string name)
+    {
+        var marker = $"CREATE OR ALTER PROCEDURE dbo.{name}";
+        var start = sql.IndexOf(marker, StringComparison.Ordinal);
+        start.Should().BeGreaterThanOrEqualTo(0);
+        var end = sql.IndexOf("\nGO", start, StringComparison.Ordinal);
+        end.Should().BeGreaterThan(start);
+        return sql[start..end];
+    }
+
     private static string ReadDatabaseScript(string scriptName)
     {
         return ReadSourceFile("database", "sql", scriptName);

@@ -360,12 +360,117 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
         }
     }
 
+    [Fact]
+    public void MasterGovernance_RegistersDirectionsPolicyAndClosedRouting()
+    {
+        var sql = Read("database", "sql", "229_master_business_partner_bidirectional_governance.sql");
+
+        sql.Should().Contain("BusinessPartnerSapCodePolicies")
+            .And.Contain("BranchToMaster")
+            .And.Contain("BusinessPartnerProposal")
+            .And.Contain("BusinessPartnerProposalResult")
+            .And.Contain("TargetCompanyId")
+            .And.Contain("ParentCompanyId")
+            .And.Contain("SYNC.BUSINESS_PARTNER_CONFLICTS.VIEW")
+            .And.Contain("SYNC.BUSINESS_PARTNER_CONFLICTS.RESOLVE");
+    }
+
+    [Fact]
+    public void MasterPolicy_IsDisabledByDefaultCentralOnlyAuditedAndSecretFree()
+    {
+        var sql = Read("database", "sql", "229_master_business_partner_bidirectional_governance.sql");
+        var get = MasterProcedure("SP_NA_GET_BUSINESSPARTNERSAPCODEPOLICY_BUSCARPOREMPRESAID");
+        var upsert = MasterProcedure("SP_NA_PUT_BUSINESSPARTNERSAPCODEPOLICY_GUARDAR");
+
+        sql.Should().ContainAll(
+            "CompanyId int NOT NULL CONSTRAINT PK_BusinessPartnerSapCodePolicies PRIMARY KEY",
+            "IsEnabled bit NOT NULL CONSTRAINT DF_BusinessPartnerSapCodePolicies_IsEnabled DEFAULT (0)",
+            "PrefixMode varchar(20) NOT NULL",
+            "PassportIdentificationTypeCode nvarchar(30) NOT NULL",
+            "RowVersion rowversion NOT NULL",
+            "CK_BusinessPartnerSapCodePolicies_PrefixMode CHECK (PrefixMode IN ('NationalForeign','RoleOnly'))");
+        get.Should().ContainAll(
+                "policy.CompanyId", "policy.IsEnabled", "policy.PrefixMode",
+                "policy.PassportIdentificationTypeCode", "policy.UpdatedAt", "policy.RowVersion",
+                "company.IsActive=1", "company.IsMaster=1", "company.IsDeleted=0")
+            .And.NotContain("Password")
+            .And.NotContain("Secret")
+            .And.NotContain("ConnectionString")
+            .And.NotContain("Token");
+        upsert.Should().ContainAll(
+            "@ExpectedRowVersion varbinary(8)=NULL", "WITH (UPDLOCK,HOLDLOCK)",
+            "company.IsActive=1", "company.IsMaster=1", "company.IsDeleted=0",
+            "THROW 52229", "AuditSyncConfigurationChanges", "BEGIN TRANSACTION", "ROLLBACK TRANSACTION");
+    }
+
+    [Fact]
+    public void MasterGovernance_AddsCausationAndDoesNotActivateProfilesFlagsOrDestinations()
+    {
+        var sql = Read("database", "sql", "229_master_business_partner_bidirectional_governance.sql");
+
+        sql.Should().Contain("ALTER TABLE dbo.SyncOutbox ADD CausationEventId uniqueidentifier NULL")
+            .And.Contain("N'BusinessPartnerProposal', N'Propuestas de socios de negocio'")
+            .And.Contain("N'BusinessPartnerProposalResult', N'Resultados de propuestas de socios de negocio'")
+            .And.Contain("DefaultModifiedAtField,IsSystem,IsActive")
+            .And.Contain("NULL,1,0,N'Sistema'")
+            .And.NotContain("N'BUSINESS-PARTNER-BIDIRECTIONAL'")
+            .And.NotContain("SET IsActive=1 WHERE Id")
+            .And.NotContain("INSERT dbo.SyncEntityConfigurations")
+            .And.NotContain("INSERT INTO dbo.SyncEntityConfigurations")
+            .And.NotContain("INSERT dbo.SyncOutboxTargets")
+            .And.NotContain("INSERT INTO dbo.SyncOutboxTargets")
+            .And.NotContain("SapCompanySettings")
+            .And.NotContain("SapSyncOutbox")
+            .And.NotContain("SriDocument")
+            .And.NotContain("ServiceLayer");
+    }
+
+    [Fact]
+    public void MasterGovernance_SeedsConflictPermissionsOnlyForAdminAndIsRegisteredAfter227()
+    {
+        var sql = Read("database", "sql", "229_master_business_partner_bidirectional_governance.sql");
+        var initializer = Read(
+            "src", "Backend", "NuanSystem.Persistence", "Services",
+            "SqlServerMasterDatabaseInitializer.cs");
+        var readme = Read("database", "sql", "README.md");
+
+        sql.Should().ContainAll(
+                "N'SYNC.BUSINESS_PARTNER_CONFLICTS.VIEW'",
+                "N'SYNC.BUSINESS_PARTNER_CONFLICTS.RESOLVE'",
+                "FROM dbo.Roles WHERE Code=N'ADMIN' AND IsDeleted=0",
+                "INSERT dbo.RolePermissions(RoleId,PermissionId)")
+            .And.NotContain("CROSS JOIN dbo.Roles");
+
+        initializer.IndexOf(
+                "229_master_business_partner_bidirectional_governance.sql",
+                StringComparison.Ordinal)
+            .Should().BeGreaterThan(initializer.IndexOf(
+                "227_master_definitions_inventory_sales_channels_navigation.sql",
+                StringComparison.Ordinal));
+        readme.IndexOf("228_tenant_business_partner_bidirectional_foundation.sql", StringComparison.Ordinal)
+            .Should().BeLessThan(readme.IndexOf("229_master_business_partner_bidirectional_governance.sql", StringComparison.Ordinal));
+        readme.IndexOf("229_master_business_partner_bidirectional_governance.sql", StringComparison.Ordinal)
+            .Should().BeLessThan(readme.IndexOf("230_tenant_business_partner_bidirectional_operations.sql", StringComparison.Ordinal));
+    }
+
     private static string Read(params string[] parts) =>
         File.ReadAllText(Path.Combine([Root(), .. parts]));
 
     private static string Procedure(string name)
     {
         var sql = Read("database", "sql", "230_tenant_business_partner_bidirectional_operations.sql");
+        var match = Regex.Match(
+            sql,
+            $@"CREATE OR ALTER PROCEDURE dbo\.{Regex.Escape(name)}\b[\s\S]*?\r?\nGO\b",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        match.Success.Should().BeTrue($"procedure {name} must exist as its own SQL batch");
+        return match.Value;
+    }
+
+    private static string MasterProcedure(string name)
+    {
+        var sql = Read("database", "sql", "229_master_business_partner_bidirectional_governance.sql");
         var match = Regex.Match(
             sql,
             $@"CREATE OR ALTER PROCEDURE dbo\.{Regex.Escape(name)}\b[\s\S]*?\r?\nGO\b",
