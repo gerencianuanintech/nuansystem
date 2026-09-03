@@ -1,8 +1,10 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Features.BusinessPartners.Policies;
 using NuanSystem.Shared.Sync;
 using NuanSystem.Shared.Responses;
 
@@ -11,13 +13,20 @@ namespace NuanSystem.Application.Features.BusinessPartners.Commands;
 public sealed class UpdateBusinessPartnerCommandHandler(
     IBusinessPartnerRepository repository,
     ITransactionRunner transactionRunner,
-    IBusinessPartnerLocalOutboxWriter localOutboxWriter)
+    IBusinessPartnerLocalOutboxWriter localOutboxWriter,
+    ICompanyContext companyContext)
     : ICommandHandler<UpdateBusinessPartnerCommand, BusinessPartnerDto>
 {
     public async Task<Result<BusinessPartnerDto>> Handle(UpdateBusinessPartnerCommand request, CancellationToken cancellationToken)
     {
-        var code = request.Code.Trim().ToUpperInvariant();
-        var identificationNumber = request.IdentificationNumber.Trim();
+        if (!TryDecodeRowVersion(request.ExpectedRowVersion, out var expectedRowVersion))
+        {
+            return Failure("BP_ROW_VERSION_INVALID", "ExpectedRowVersion debe ser un rowversion base64 valido.", nameof(request.ExpectedRowVersion));
+        }
+
+        var company = companyContext.CurrentCompany;
+        var isBranch = BusinessPartnerWritePolicy.IsSynchronizedBranch(company);
+        var isCentral = BusinessPartnerWritePolicy.IsSynchronizedCentral(company);
 
         return await transactionRunner.ExecuteInTenantTransactionAsync(
             async (connection, transaction, token) =>
@@ -30,26 +39,35 @@ public sealed class UpdateBusinessPartnerCommandHandler(
                         [new ApiError("BusinessPartnerNotFound", "Tercero comercial no encontrado.", nameof(request.Id))]);
                 }
 
-                if (await repository.ExistsByCodeAsync(code, request.Id, connection, transaction, token))
+                if (BusinessPartnerWritePolicy.RequiresLegacyReview(current.MasterSyncStatus))
                 {
-                    return Result<BusinessPartnerDto>.Failure(
-                        "Ya existe un tercero comercial con el codigo indicado.",
-                        [new ApiError("BusinessPartnerCodeAlreadyExists", "El codigo ya existe.", nameof(request.Code))]);
+                    return Failure("BP_LEGACY_REVIEW_REQUIRED", "El tercero debe salir de LegacyReview antes de editarse.", nameof(current.MasterSyncStatus));
                 }
 
-                if (await repository.ExistsByIdentificationAsync(
-                        request.IdentificationTypeId, identificationNumber, request.Id, connection, transaction, token))
+                if (isBranch && BusinessPartnerWritePolicy.IsProposalInFlight(current.MasterSyncStatus))
                 {
-                    return Result<BusinessPartnerDto>.Failure(
-                        "Ya existe un tercero comercial con la identificacion indicada.",
-                        [new ApiError("BusinessPartnerIdentificationAlreadyExists", "La identificacion ya existe.", nameof(request.IdentificationNumber))]);
+                    return Failure("BP_MASTER_PROPOSAL_IN_FLIGHT", "Ya existe una propuesta pendiente o en conflicto.", nameof(current.MasterSyncStatus));
+                }
+
+                var canonicalVersion = isCentral ? current.CanonicalVersion + 1 : current.CanonicalVersion;
+                var masterSyncStatus = isBranch ? "PendingMaster" : "Accepted";
+                var updateData = ToUpdateData(request, current, expectedRowVersion, canonicalVersion, masterSyncStatus);
+                if (isBranch)
+                {
+                    var protectedPaths = BusinessPartnerWritePolicy.GetChangedProtectedPaths(current, updateData);
+                    if (protectedPaths.Count > 0)
+                    {
+                        return Result<BusinessPartnerDto>.Failure(
+                            "La sucursal no puede modificar campos gobernados por la central.",
+                            protectedPaths.Select(path => new ApiError("BP_PROTECTED_FIELD", "El campo es administrado por la central.", path)).ToArray());
+                    }
                 }
 
                 var updated = await repository.UpdateAsync(
-                    ToUpdateData(request, code, identificationNumber), connection, transaction, token);
+                    updateData, connection, transaction, token);
                 if (!updated)
                 {
-                    return Result<BusinessPartnerDto>.Failure("No se pudo actualizar el tercero comercial.");
+                    return Failure("BP_CONCURRENCY_CONFLICT", "El tercero fue modificado por otro proceso. Recargue e intente nuevamente.", nameof(request.ExpectedRowVersion));
                 }
 
                 var partner = await repository.GetByIdAsync(request.Id, connection, transaction, token)
@@ -61,16 +79,20 @@ public sealed class UpdateBusinessPartnerCommandHandler(
             cancellationToken);
     }
 
-    private static UpdateBusinessPartnerData ToUpdateData(UpdateBusinessPartnerCommand request, string code, string identificationNumber)
+    internal static UpdateBusinessPartnerData ToUpdateData(
+        UpdateBusinessPartnerCommand request,
+        BusinessPartnerDto current,
+        byte[] expectedRowVersion,
+        long canonicalVersion,
+        string masterSyncStatus)
     {
         var createData = CreateBusinessPartnerCommandHandler.ToCreateData(
             new CreateBusinessPartnerCommand(
-                request.Code,
                 request.Name,
                 request.CommercialName,
-                request.PartnerType,
-                request.IdentificationTypeId,
-                request.IdentificationNumber,
+                current.PartnerType,
+                current.IdentificationTypeId,
+                current.IdentificationNumber,
                 request.SupplierGroupId,
                 request.SupplierClassId,
                 request.EconomicActivityId,
@@ -151,18 +173,6 @@ public sealed class UpdateBusinessPartnerCommandHandler(
                 request.DeliveryToleranceDays,
                 request.RequiresPurchaseOrder,
                 request.CreditStatus,
-                request.SapCardCode,
-                request.SapCardType,
-                request.SapSyncStatus,
-                request.SapLastSyncAt,
-                request.SapLastError,
-                request.SapEnabled,
-                request.SapMode,
-                request.SapCompanyCode,
-                request.SapRetryCount,
-                request.SyncAsSupplier,
-                request.AllowManualSapRetry,
-                request.RequiresApprovalBeforeSapSync,
                 request.Addresses,
                 request.Contacts,
                 request.BankAccounts,
@@ -172,17 +182,27 @@ public sealed class UpdateBusinessPartnerCommandHandler(
                 request.Attachments,
                 request.AuditUserId,
                 request.AuditUserName),
-            code,
-            identificationNumber);
+            current.GlobalId,
+            current.Code,
+            current.PartnerType,
+            current.IdentificationNumber,
+            current.NormalizedIdentificationNumber,
+            canonicalVersion,
+            masterSyncStatus,
+            current.SapCardCode);
 
         return new UpdateBusinessPartnerData(
             request.Id,
+            expectedRowVersion,
             createData.Code,
             createData.Name,
             createData.CommercialName,
             createData.PartnerType,
             createData.IdentificationTypeId,
             createData.IdentificationNumber,
+            createData.NormalizedIdentificationNumber,
+            canonicalVersion,
+            masterSyncStatus,
             createData.SupplierGroupId,
             createData.SupplierClassId,
             createData.EconomicActivityId,
@@ -285,4 +305,23 @@ public sealed class UpdateBusinessPartnerCommandHandler(
             request.AuditUserId,
             CreateBusinessPartnerCommandHandler.TrimOrNull(request.AuditUserName));
     }
+
+    private static bool TryDecodeRowVersion(string? value, out byte[] rowVersion)
+    {
+        try
+        {
+            rowVersion = string.IsNullOrWhiteSpace(value) ? [] : Convert.FromBase64String(value);
+            return rowVersion.Length == 8;
+        }
+        catch (FormatException)
+        {
+            rowVersion = [];
+            return false;
+        }
+    }
+
+    private static Result<BusinessPartnerDto> Failure(string code, string message, string field) =>
+        Result<BusinessPartnerDto>.Failure(
+            "No fue posible actualizar el tercero comercial.",
+            [new ApiError(code, message, field)]);
 }

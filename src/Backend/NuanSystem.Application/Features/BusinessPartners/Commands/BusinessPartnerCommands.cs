@@ -4,7 +4,6 @@ using NuanSystem.Application.Features.BusinessPartners.Dtos;
 namespace NuanSystem.Application.Features.BusinessPartners.Commands;
 
 public sealed record CreateBusinessPartnerCommand(
-    string Code,
     string Name,
     string? CommercialName,
     string PartnerType,
@@ -90,18 +89,6 @@ public sealed record CreateBusinessPartnerCommand(
     int DeliveryToleranceDays,
     bool RequiresPurchaseOrder,
     string? CreditStatus,
-    string? SapCardCode,
-    string? SapCardType,
-    string? SapSyncStatus,
-    DateTime? SapLastSyncAt,
-    string? SapLastError,
-    bool SapEnabled,
-    string? SapMode,
-    string? SapCompanyCode,
-    int SapRetryCount,
-    bool SyncAsSupplier,
-    bool AllowManualSapRetry,
-    bool RequiresApprovalBeforeSapSync,
     IReadOnlyCollection<SaveBusinessPartnerAddressData>? Addresses,
     IReadOnlyCollection<SaveBusinessPartnerContactData>? Contacts,
     IReadOnlyCollection<SaveBusinessPartnerBankAccountData>? BankAccounts,
@@ -114,12 +101,9 @@ public sealed record CreateBusinessPartnerCommand(
 
 public sealed record UpdateBusinessPartnerCommand(
     int Id,
-    string Code,
+    string ExpectedRowVersion,
     string Name,
     string? CommercialName,
-    string PartnerType,
-    int IdentificationTypeId,
-    string IdentificationNumber,
     int? SupplierGroupId,
     int? SupplierClassId,
     int? EconomicActivityId,
@@ -200,18 +184,6 @@ public sealed record UpdateBusinessPartnerCommand(
     int DeliveryToleranceDays,
     bool RequiresPurchaseOrder,
     string? CreditStatus,
-    string? SapCardCode,
-    string? SapCardType,
-    string? SapSyncStatus,
-    DateTime? SapLastSyncAt,
-    string? SapLastError,
-    bool SapEnabled,
-    string? SapMode,
-    string? SapCompanyCode,
-    int SapRetryCount,
-    bool SyncAsSupplier,
-    bool AllowManualSapRetry,
-    bool RequiresApprovalBeforeSapSync,
     IReadOnlyCollection<SaveBusinessPartnerAddressData>? Addresses,
     IReadOnlyCollection<SaveBusinessPartnerContactData>? Contacts,
     IReadOnlyCollection<SaveBusinessPartnerBankAccountData>? BankAccounts,
@@ -222,4 +194,8 @@ public sealed record UpdateBusinessPartnerCommand(
     int? AuditUserId = null,
     string? AuditUserName = null) : ICommand<BusinessPartnerDto>;
 
-public sealed record DeleteBusinessPartnerCommand(int Id, int? AuditUserId = null, string? AuditUserName = null) : ICommand<bool>;
+public sealed record DeleteBusinessPartnerCommand(
+    int Id,
+    string ExpectedRowVersion,
+    int? AuditUserId = null,
+    string? AuditUserName = null) : ICommand<bool>;

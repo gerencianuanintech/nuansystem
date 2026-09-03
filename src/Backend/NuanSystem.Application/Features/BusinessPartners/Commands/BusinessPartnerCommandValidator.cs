@@ -1,5 +1,6 @@
 using FluentValidation;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Features.BusinessPartners.Policies;
 
 namespace NuanSystem.Application.Features.BusinessPartners.Commands;
 
@@ -7,7 +8,7 @@ public sealed class CreateBusinessPartnerCommandValidator : AbstractValidator<Cr
 {
     public CreateBusinessPartnerCommandValidator()
     {
-        Include(new BusinessPartnerCommandRules<CreateBusinessPartnerCommand>());
+        Include(new BusinessPartnerCommandRules<CreateBusinessPartnerCommand>(validateIdentity: true));
     }
 }
 
@@ -16,7 +17,25 @@ public sealed class UpdateBusinessPartnerCommandValidator : AbstractValidator<Up
     public UpdateBusinessPartnerCommandValidator()
     {
         RuleFor(command => command.Id).GreaterThan(0);
-        Include(new BusinessPartnerCommandRules<UpdateBusinessPartnerCommand>());
+        RuleFor(command => command.ExpectedRowVersion)
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+            .Must(IsEightByteBase64)
+            .WithMessage("ExpectedRowVersion debe ser un rowversion base64 valido.")
+            .WithErrorCode("BP_ROW_VERSION_INVALID");
+        Include(new BusinessPartnerCommandRules<UpdateBusinessPartnerCommand>(validateIdentity: false));
+    }
+
+    private static bool IsEightByteBase64(string value)
+    {
+        try
+        {
+            return Convert.FromBase64String(value).Length == 8;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 }
 
@@ -25,23 +44,50 @@ public sealed class DeleteBusinessPartnerCommandValidator : AbstractValidator<De
     public DeleteBusinessPartnerCommandValidator()
     {
         RuleFor(command => command.Id).GreaterThan(0);
+        RuleFor(command => command.ExpectedRowVersion)
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+            .Must(IsEightByteBase64)
+            .WithMessage("ExpectedRowVersion debe ser un rowversion base64 valido.")
+            .WithErrorCode("BP_ROW_VERSION_INVALID");
+    }
+
+    private static bool IsEightByteBase64(string value)
+    {
+        try
+        {
+            return Convert.FromBase64String(value).Length == 8;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 }
 
 internal sealed class BusinessPartnerCommandRules<T> : AbstractValidator<T>
 {
-    private static readonly string[] PartnerTypes = ["Customer", "Supplier", "Both"];
+    private static readonly string[] PartnerTypes = ["Customer", "Supplier"];
     private static readonly string[] AddressTypes = ["Main", "Billing", "Shipping", "Other"];
-    private static readonly string[] SapStatuses = ["Pending", "Synced", "Error"];
 
-    public BusinessPartnerCommandRules()
+    public BusinessPartnerCommandRules(bool validateIdentity)
     {
-        RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.Code))).NotEmpty().MaximumLength(50);
         RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.Name))).NotEmpty().MaximumLength(200);
         RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.CommercialName))).MaximumLength(200);
-        RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.PartnerType))).NotEmpty().Must(PartnerTypes.Contains);
-        RuleFor(command => GetInt(command, nameof(CreateBusinessPartnerCommand.IdentificationTypeId))).GreaterThan(0);
-        RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.IdentificationNumber))).NotEmpty().MaximumLength(50);
+        When(_ => validateIdentity, () =>
+        {
+            RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.PartnerType)))
+                .NotEmpty().Must(PartnerTypes.Contains)
+                .WithErrorCode("BP_ROLE_INVALID");
+            RuleFor(command => GetInt(command, nameof(CreateBusinessPartnerCommand.IdentificationTypeId))).GreaterThan(0);
+            RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.IdentificationNumber)))
+                .Cascade(CascadeMode.Stop)
+                .NotEmpty()
+                .MaximumLength(50)
+                .Must(value => BusinessPartnerIdentityPolicy.NormalizeIdentification(value ?? string.Empty).Length > 0)
+                .WithMessage("La identificacion debe contener letras o numeros.")
+                .WithErrorCode("BP_IDENTIFICATION_INVALID");
+        });
         RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.Email))).EmailAddress().MaximumLength(256).When(command => !string.IsNullOrWhiteSpace(GetString(command, nameof(CreateBusinessPartnerCommand.Email))));
         RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.Phone))).MaximumLength(50);
         RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.Website))).MaximumLength(200);
@@ -66,15 +112,6 @@ internal sealed class BusinessPartnerCommandRules<T> : AbstractValidator<T>
         RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.PurchaseSupplierType))).MaximumLength(80);
         RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.PreferredWarehouseCode))).MaximumLength(50);
         RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.CreditStatus))).MaximumLength(30);
-        RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.SapCardCode))).MaximumLength(50);
-        RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.SapCardType))).MaximumLength(1);
-        RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.SapSyncStatus))).Must(value => string.IsNullOrWhiteSpace(value) || SapStatuses.Contains(value));
-        RuleFor(command => GetString(command, nameof(CreateBusinessPartnerCommand.SapCardType)))
-            .Must((command, value) => !string.Equals(GetString(command, nameof(CreateBusinessPartnerCommand.PartnerType)), "Supplier", StringComparison.OrdinalIgnoreCase)
-                || string.IsNullOrWhiteSpace(value)
-                || string.Equals(value, "S", StringComparison.OrdinalIgnoreCase))
-            .WithMessage("SAP CardType debe ser S para proveedores.");
-
         RuleFor(command => GetAddresses(command))
             .Must(items => items.Count(item => item.IsPrimary && item.IsActive) <= 1)
             .WithMessage("Solo puede existir una direccion principal activa.")
