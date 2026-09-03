@@ -12,3 +12,4 @@ artifacts/
 .verify-build/
 packages/
 **/appsettings.Local.json
+.worktrees/
