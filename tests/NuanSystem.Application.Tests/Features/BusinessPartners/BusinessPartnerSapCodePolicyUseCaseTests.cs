@@ -217,6 +217,11 @@ public sealed class BusinessPartnerSapCodePolicyUseCaseTests
 
     [Theory]
     [InlineData("Unknown", "PASSPORT", null, "BP_SAP_CODE_POLICY_PREFIX_MODE_INVALID")]
+    [InlineData("0", "PASSPORT", null, "BP_SAP_CODE_POLICY_PREFIX_MODE_INVALID")]
+    [InlineData("1", "PASSPORT", null, "BP_SAP_CODE_POLICY_PREFIX_MODE_INVALID")]
+    [InlineData(" 0 ", "PASSPORT", null, "BP_SAP_CODE_POLICY_PREFIX_MODE_INVALID")]
+    [InlineData(" 1 ", "PASSPORT", null, "BP_SAP_CODE_POLICY_PREFIX_MODE_INVALID")]
+    [InlineData("99", "PASSPORT", null, "BP_SAP_CODE_POLICY_PREFIX_MODE_INVALID")]
     [InlineData("RoleOnly", "", null, "BP_SAP_CODE_POLICY_PASSPORT_CODE_REQUIRED")]
     [InlineData("RoleOnly", "1234567890123456789012345678901", null, "BP_SAP_CODE_POLICY_PASSPORT_CODE_MAX_LENGTH")]
     [InlineData("RoleOnly", "PASSPORT", "not-base64", "BP_SAP_CODE_POLICY_ROW_VERSION_INVALID")]
@@ -234,6 +239,30 @@ public sealed class BusinessPartnerSapCodePolicyUseCaseTests
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(error => error.ErrorCode == expectedErrorCode);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("1")]
+    [InlineData(" 0 ")]
+    [InlineData(" 1 ")]
+    [InlineData("99")]
+    public async Task Update_RejectsNumericPrefixModesWithStableBusinessCode(string prefixMode)
+    {
+        companyContext.HasActiveCompany.Returns(true);
+        companyContext.CurrentCompany.Returns(MasterCompany(10));
+        var handler = new UpdateBusinessPartnerSapCodePolicyCommandHandler(companyContext, repository);
+
+        var result = await handler.Handle(
+            new UpdateBusinessPartnerSapCodePolicyCommand(
+                true, prefixMode, "PASSPORT", null, 81, "tester"),
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error =>
+            error.Code == "BP_SAP_CODE_POLICY_PREFIX_MODE_INVALID"
+            && error.Field == "PrefixMode");
+        await repository.DidNotReceiveWithAnyArgs().GetByCompanyIdAsync(default, default);
     }
 
     [Theory]

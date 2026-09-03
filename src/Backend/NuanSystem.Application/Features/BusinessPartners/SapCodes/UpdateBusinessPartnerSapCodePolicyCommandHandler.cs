@@ -27,7 +27,7 @@ public sealed class UpdateBusinessPartnerSapCodePolicyCommandHandler(
             return GetBusinessPartnerSapCodePolicyQueryHandler.MasterRequired();
         }
 
-        if (!TryParsePrefixMode(request.PrefixMode, out var prefixMode))
+        if (!BusinessPartnerSapPrefixModeAllowlist.TryParse(request.PrefixMode, out var prefixMode))
         {
             return Invalid(
                 "BP_SAP_CODE_POLICY_PREFIX_MODE_INVALID",
@@ -72,12 +72,6 @@ public sealed class UpdateBusinessPartnerSapCodePolicyCommandHandler(
             GetBusinessPartnerSapCodePolicyQueryHandler.Map(company.CompanyId, saved),
             "Politica central de codigos SAP actualizada correctamente.");
     }
-
-    private static bool TryParsePrefixMode(
-        string value,
-        out BusinessPartnerSapPrefixMode prefixMode) =>
-        Enum.TryParse(value.Trim(), ignoreCase: false, out prefixMode)
-        && Enum.IsDefined(prefixMode);
 
     private static bool TryDecodeRowVersion(string? value, out byte[]? rowVersion)
     {

@@ -12,7 +12,7 @@ public sealed class UpdateBusinessPartnerSapCodePolicyCommandValidator
             .Cascade(CascadeMode.Stop)
             .NotEmpty()
             .WithErrorCode("BP_SAP_CODE_POLICY_PREFIX_MODE_REQUIRED")
-            .Must(IsSupportedPrefixMode)
+            .Must(value => BusinessPartnerSapPrefixModeAllowlist.TryParse(value, out _))
             .WithMessage("El modo de prefijo debe ser NationalForeign o RoleOnly.")
             .WithErrorCode("BP_SAP_CODE_POLICY_PREFIX_MODE_INVALID");
 
@@ -28,10 +28,6 @@ public sealed class UpdateBusinessPartnerSapCodePolicyCommandValidator
             .WithMessage("ExpectedRowVersion debe ser un valor base64 valido.")
             .WithErrorCode("BP_SAP_CODE_POLICY_ROW_VERSION_INVALID");
     }
-
-    private static bool IsSupportedPrefixMode(string value) =>
-        Enum.TryParse<BusinessPartnerSapPrefixMode>(value.Trim(), ignoreCase: false, out var mode)
-        && Enum.IsDefined(mode);
 
     private static bool IsOptionalBase64(string? value)
     {
@@ -52,6 +48,27 @@ public sealed class UpdateBusinessPartnerSapCodePolicyCommandValidator
         catch (FormatException)
         {
             return false;
+        }
+    }
+}
+
+internal static class BusinessPartnerSapPrefixModeAllowlist
+{
+    public static bool TryParse(
+        string? value,
+        out BusinessPartnerSapPrefixMode prefixMode)
+    {
+        switch (value?.Trim())
+        {
+            case nameof(BusinessPartnerSapPrefixMode.NationalForeign):
+                prefixMode = BusinessPartnerSapPrefixMode.NationalForeign;
+                return true;
+            case nameof(BusinessPartnerSapPrefixMode.RoleOnly):
+                prefixMode = BusinessPartnerSapPrefixMode.RoleOnly;
+                return true;
+            default:
+                prefixMode = default;
+                return false;
         }
     }
 }

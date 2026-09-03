@@ -1,6 +1,9 @@
 using System.Security.Claims;
+using System.Data;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using Dapper;
 using FluentAssertions;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -159,6 +162,59 @@ public sealed class BusinessPartnerSapCodePolicyApiContractTests
             .Should().ContainSingle()
             .Which.GetParameters().Select(parameter => parameter.ParameterType)
             .Should().Equal(typeof(NuanSystem.Application.Abstractions.Data.IMasterConnectionFactory));
+    }
+
+    [Theory]
+    [InlineData(false, "NationalForeign", "PASSPORT", 81, "reader-user")]
+    [InlineData(true, "RoleOnly", "PASS", 82, "writer-user")]
+    public void Persistence_GetAndSaveProjectionMaterializesAllEightSql229Columns(
+        bool isEnabled,
+        string prefixMode,
+        string passportCode,
+        int updatedByUserId,
+        string updatedByUserName)
+    {
+        var rowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+        var table = new DataTable();
+        table.Columns.Add("CompanyId", typeof(int));
+        table.Columns.Add("IsEnabled", typeof(bool));
+        table.Columns.Add("PrefixMode", typeof(string));
+        table.Columns.Add("PassportIdentificationTypeCode", typeof(string));
+        table.Columns.Add("UpdatedByUserId", typeof(int));
+        table.Columns.Add("UpdatedByUserName", typeof(string));
+        table.Columns.Add("UpdatedAt", typeof(DateTime));
+        table.Columns.Add("RowVersion", typeof(byte[]));
+        table.Rows.Add(
+            10,
+            isEnabled,
+            prefixMode,
+            passportCode,
+            updatedByUserId,
+            updatedByUserName,
+            new DateTime(2026, 9, 3, 12, 0, 0, DateTimeKind.Utc),
+            rowVersion);
+        using var reader = table.CreateDataReader();
+        reader.Read().Should().BeTrue();
+        var projectionType = typeof(BusinessPartnerSapCodePolicyRepository)
+            .GetNestedType("PolicyRow", BindingFlags.NonPublic);
+
+        projectionType.Should().NotBeNull(
+            "SQL 229 returns audit columns in addition to the five-field Application record");
+        var materializer = SqlMapper.GetTypeDeserializer(projectionType!, reader);
+        var projection = materializer(reader);
+        var toRecord = projectionType!.GetMethod(
+            "ToRecord",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        toRecord.Should().NotBeNull();
+
+        var record = toRecord!.Invoke(projection, null)
+            .Should().BeOfType<BusinessPartnerSapCodePolicyRecord>().Subject;
+        record.Should().Be(new BusinessPartnerSapCodePolicyRecord(
+            10,
+            isEnabled,
+            prefixMode,
+            passportCode,
+            rowVersion));
     }
 
     private static IReadOnlyCollection<RouteEndpoint> BuildEndpoints(ISender sender)

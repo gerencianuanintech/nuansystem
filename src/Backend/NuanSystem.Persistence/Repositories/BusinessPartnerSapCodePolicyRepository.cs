@@ -20,12 +20,13 @@ public sealed class BusinessPartnerSapCodePolicyRepository(IMasterConnectionFact
         CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        return await connection.QuerySingleOrDefaultAsync<BusinessPartnerSapCodePolicyRecord>(
+        var row = await connection.QuerySingleOrDefaultAsync<PolicyRow>(
             new CommandDefinition(
                 GetByCompanyIdProcedure,
                 new { CompanyId = companyId },
                 commandType: CommandType.StoredProcedure,
                 cancellationToken: cancellationToken));
+        return row?.ToRecord();
     }
 
     public async Task<BusinessPartnerSapCodePolicyWriteResult> SaveAsync(
@@ -35,7 +36,7 @@ public sealed class BusinessPartnerSapCodePolicyRepository(IMasterConnectionFact
         using var connection = connectionFactory.CreateConnection();
         try
         {
-            var saved = await connection.QuerySingleAsync<BusinessPartnerSapCodePolicyRecord>(
+            var saved = await connection.QuerySingleAsync<PolicyRow>(
                 new CommandDefinition(
                     SaveProcedure,
                     new
@@ -52,7 +53,7 @@ public sealed class BusinessPartnerSapCodePolicyRepository(IMasterConnectionFact
                     cancellationToken: cancellationToken));
             return new BusinessPartnerSapCodePolicyWriteResult(
                 BusinessPartnerSapCodePolicyWriteOutcome.Saved,
-                saved);
+                saved.ToRecord());
         }
         catch (SqlException exception) when (exception.Number == ConcurrencyConflictSqlErrorNumber)
         {
@@ -60,5 +61,24 @@ public sealed class BusinessPartnerSapCodePolicyRepository(IMasterConnectionFact
                 BusinessPartnerSapCodePolicyWriteOutcome.ConcurrencyConflict,
                 null);
         }
+    }
+
+    private sealed record PolicyRow(
+        int CompanyId,
+        bool IsEnabled,
+        string PrefixMode,
+        string PassportIdentificationTypeCode,
+        int? UpdatedByUserId,
+        string? UpdatedByUserName,
+        DateTime UpdatedAt,
+        byte[] RowVersion)
+    {
+        public BusinessPartnerSapCodePolicyRecord ToRecord() =>
+            new(
+                CompanyId,
+                IsEnabled,
+                PrefixMode,
+                PassportIdentificationTypeCode,
+                RowVersion);
     }
 }
