@@ -394,11 +394,11 @@ DECLARE @ExpectedBaseChecks table
 );
 INSERT @ExpectedBaseChecks(ParentObjectId,ConstraintName,ExpectedDefinition)
 VALUES
-    (OBJECT_ID(N'dbo.BusinessPartners'),N'CK_BusinessPartners_PartnerType',N'partnertypeinn''customer'',n''supplier'',n''both'''),
-    (OBJECT_ID(N'dbo.BusinessPartners'),N'CK_BusinessPartners_MasterSyncStatus',N'mastersyncstatusin''pendingmaster'',''accepted'',''rejected'',''conflict'',''legacyreview'''),
-    (OBJECT_ID(N'dbo.BusinessPartners'),N'CK_BusinessPartners_CanonicalVersion',N'canonicalversion>=0'),
-    (OBJECT_ID(N'dbo.BusinessPartners'),N'CK_BusinessPartners_NormalizedIdentificationNumber',N'nullifnormalizedidentificationnumber,n''''isnotnull'),
-    (OBJECT_ID(N'dbo.BusinessPartnerSapMapping'),N'CK_BusinessPartnerSapMapping_SapCardCodeLength',N'sapcardcodeisnullorlensapcardcode<=15');
+    (OBJECT_ID(N'dbo.BusinessPartners'),N'CK_BusinessPartners_PartnerType',N'(partnertypein(n''customer'',n''supplier'',n''both''))'),
+    (OBJECT_ID(N'dbo.BusinessPartners'),N'CK_BusinessPartners_MasterSyncStatus',N'(mastersyncstatusin(''pendingmaster'',''accepted'',''rejected'',''conflict'',''legacyreview''))'),
+    (OBJECT_ID(N'dbo.BusinessPartners'),N'CK_BusinessPartners_CanonicalVersion',N'(canonicalversion>=(0))'),
+    (OBJECT_ID(N'dbo.BusinessPartners'),N'CK_BusinessPartners_NormalizedIdentificationNumber',N'(nullif(normalizedidentificationnumber,n'''')isnotnull)'),
+    (OBJECT_ID(N'dbo.BusinessPartnerSapMapping'),N'CK_BusinessPartnerSapMapping_SapCardCodeLength',N'(sapcardcodeisnullorlen(sapcardcode)<=(15))');
 
 IF EXISTS
 (
@@ -409,7 +409,7 @@ IF EXISTS
        AND checkItem.name=required.ConstraintName
     CROSS APPLY
     (
-        VALUES (LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(checkItem.definition COLLATE Latin1_General_100_BIN2,N'[',N''),N']',N''),N'(',N''),N')',N''),N' ',N''),NCHAR(9),N''),NCHAR(13),N''),NCHAR(10),N'')))
+        VALUES (LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(checkItem.definition COLLATE Latin1_General_100_BIN2,N'[',N''),N']',N''),N' ',N''),NCHAR(9),N''),NCHAR(13),N''),NCHAR(10),N'')))
     ) AS normalized(NormalizedDefinition)
     WHERE checkItem.object_id IS NULL OR checkItem.is_disabled=1 OR checkItem.is_not_trusted=1
        OR normalized.NormalizedDefinition<>required.ExpectedDefinition
@@ -833,14 +833,14 @@ DECLARE @ExpectedConflictChecks table
 );
 INSERT @ExpectedConflictChecks(ConstraintName,ExpectedDefinition)
 VALUES
-    (N'CK_BusinessPartnerSyncConflicts_Versions',N'basecanonicalversion>=0andcurrentcanonicalversion>=0'),
-    (N'CK_BusinessPartnerSyncConflicts_Status',N'statusin''open'',''resolved'''),
-    (N'CK_BusinessPartnerSyncConflicts_Resolution',N'resolutionisnullorresolutionin''acceptbranch'',''keepcentral'''),
-    (N'CK_BusinessPartnerSyncConflicts_ResolutionState',N'status=''open''andresolutionisnullandresolvedatisnullorstatus=''resolved''andresolutionisnotnullandnulliflrtrimresolutionreason,n''''isnotnullandresolvedatisnotnull'),
-    (N'CK_BusinessPartnerSyncConflicts_BaseSnapshotJson',N'basesnapshotjsonisnullorisjsonbasesnapshotjson=1'),
-    (N'CK_BusinessPartnerSyncConflicts_ProposedSnapshotJson',N'isjsonproposedsnapshotjson=1'),
-    (N'CK_BusinessPartnerSyncConflicts_CanonicalSnapshotJson',N'isjsoncanonicalsnapshotjson=1'),
-    (N'CK_BusinessPartnerSyncConflicts_ConflictFieldsJson',N'isjsonconflictfieldsjson=1');
+    (N'CK_BusinessPartnerSyncConflicts_Versions',N'(basecanonicalversion>=(0)andcurrentcanonicalversion>=(0))'),
+    (N'CK_BusinessPartnerSyncConflicts_Status',N'(statusin(''open'',''resolved''))'),
+    (N'CK_BusinessPartnerSyncConflicts_Resolution',N'(resolutionisnullorresolutionin(''acceptbranch'',''keepcentral''))'),
+    (N'CK_BusinessPartnerSyncConflicts_ResolutionState',N'((status=''open''andresolutionisnullandresolvedatisnull)or(status=''resolved''andresolutionisnotnullandnullif(ltrim(rtrim(resolutionreason)),n'''')isnotnullandresolvedatisnotnull))'),
+    (N'CK_BusinessPartnerSyncConflicts_BaseSnapshotJson',N'(basesnapshotjsonisnullorisjson(basesnapshotjson)=(1))'),
+    (N'CK_BusinessPartnerSyncConflicts_ProposedSnapshotJson',N'(isjson(proposedsnapshotjson)=(1))'),
+    (N'CK_BusinessPartnerSyncConflicts_CanonicalSnapshotJson',N'(isjson(canonicalsnapshotjson)=(1))'),
+    (N'CK_BusinessPartnerSyncConflicts_ConflictFieldsJson',N'(isjson(conflictfieldsjson)=(1))');
 
 IF EXISTS
 (
@@ -851,7 +851,7 @@ IF EXISTS
        AND checkItem.name=required.ConstraintName
     CROSS APPLY
     (
-        VALUES (LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(checkItem.definition COLLATE Latin1_General_100_BIN2,N'[',N''),N']',N''),N'(',N''),N')',N''),N' ',N''),NCHAR(9),N''),NCHAR(13),N''),NCHAR(10),N'')))
+        VALUES (LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(checkItem.definition COLLATE Latin1_General_100_BIN2,N'[',N''),N']',N''),N' ',N''),NCHAR(9),N''),NCHAR(13),N''),NCHAR(10),N'')))
     ) AS normalized(NormalizedDefinition)
     WHERE checkItem.object_id IS NULL OR checkItem.is_disabled=1 OR checkItem.is_not_trusted=1
        OR normalized.NormalizedDefinition<>required.ExpectedDefinition

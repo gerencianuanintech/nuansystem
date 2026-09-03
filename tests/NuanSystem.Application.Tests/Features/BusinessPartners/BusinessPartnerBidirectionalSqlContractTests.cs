@@ -321,6 +321,27 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
     }
 
     [Fact]
+    public void Foundation_CheckDefinitionNormalizationPreservesBooleanGrouping()
+    {
+        var sql = Read("database", "sql", "228_tenant_business_partner_bidirectional_foundation.sql");
+        var baseCheckGuard = sql[
+            sql.IndexOf("DECLARE @ExpectedBaseChecks", StringComparison.Ordinal)..
+            sql.IndexOf("DECLARE @ExpectedBaseDefaults", StringComparison.Ordinal)];
+        var conflictCheckGuard = sql[
+            sql.IndexOf("DECLARE @ExpectedConflictChecks", StringComparison.Ordinal)..
+            sql.IndexOf("BusinessPartnerSyncConflicts constraints have an incompatible shape.", StringComparison.Ordinal)];
+
+        baseCheckGuard.Should().NotContain("N'(',N''")
+            .And.NotContain("N')',N''");
+        conflictCheckGuard.Should().NotContain("N'(',N''")
+            .And.NotContain("N')',N''")
+            .And.Contain(
+                "(N'CK_BusinessPartnerSyncConflicts_ResolutionState',N'((status=''open''andresolutionisnullandresolvedatisnull)or(status=''resolved''andresolutionisnotnullandnullif(ltrim(rtrim(resolutionreason)),n'''')isnotnullandresolvedatisnotnull))')")
+            .And.NotContain(
+                "N'((status=''open''andresolutionisnullandresolvedatisnull)or(status=''resolved''))andresolutionisnotnullandnullif(ltrim(rtrim(resolutionreason)),n'''')isnotnullandresolvedatisnotnull'");
+    }
+
+    [Fact]
     public void SapCardCodeInputs_AreWideAndValidatedBeforeCanonicalPersistence()
     {
         string[] procedures =
