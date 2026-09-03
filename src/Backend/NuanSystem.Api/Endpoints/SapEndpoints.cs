@@ -10,6 +10,7 @@ using NuanSystem.Application.Features.SapSync.Provinces.Queries;
 using NuanSystem.Application.Features.SapSync.Cities.Commands;
 using NuanSystem.Application.Features.SapSync.Cities.Configuration;
 using NuanSystem.Application.Features.SapSync.Cities.Queries;
+using NuanSystem.Application.Features.BusinessPartners.SapCodes;
 using NuanSystem.Application.Features.Sync.Commands;
 using NuanSystem.Shared.Constants;
 
@@ -28,6 +29,33 @@ public static class SapEndpoints
             return result.ToHttpResult();
         })
         .RequirePermission(PermissionCodes.SapRead);
+
+        app.MapGet("/api/sap/settings/business-partner-codes", async (
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await sender.Send(
+                new GetBusinessPartnerSapCodePolicyQuery(),
+                cancellationToken);
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.SapRead);
+
+        app.MapPut("/api/sap/settings/business-partner-codes", async (
+            UpdateBusinessPartnerSapCodePolicyCommand command,
+            ClaimsPrincipal user,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var auditUser = user.GetAuditUser();
+            var result = await sender.Send(command with
+            {
+                AuditUserId = auditUser.UserId,
+                AuditUserName = auditUser.UserName
+            }, cancellationToken);
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.SapManage);
 
         app.MapGet("/api/sap/settings/service-layer", async (
             ISender sender,
