@@ -33,7 +33,7 @@ BEGIN
         (
             SELECT REPLACE(
                 TRANSLATE(
-                    UPPER(LTRIM(RTRIM(bp.IdentificationNumber))),
+                    UPPER(LTRIM(RTRIM(bp.IdentificationNumber)) COLLATE Latin1_General_100_BIN2),
                     N''.-'' + NCHAR(9) + NCHAR(10) + NCHAR(11) + NCHAR(12) + NCHAR(13)
                         + NCHAR(32) + NCHAR(133) + NCHAR(160) + NCHAR(5760)
                         + NCHAR(8192) + NCHAR(8193) + NCHAR(8194) + NCHAR(8195)
@@ -46,17 +46,30 @@ BEGIN
         WHERE bp.IsDeleted = 0 AND bp.IsActive = 1
         GROUP BY bp.PartnerType, bp.IdentificationTypeId, normalized.NormalizedIdentificationNumber
         HAVING COUNT_BIG(1) > 1
-        ORDER BY bp.PartnerType, bp.IdentificationTypeId, normalized.NormalizedIdentificationNumber;
+        ORDER BY bp.PartnerType, bp.IdentificationTypeId, normalized.NormalizedIdentificationNumber;');
 
-        SELECT N''LegacyBothBusinessPartner'' AS Finding,
-               bp.Id,
-               bp.GlobalId,
-               bp.Code,
-               (SELECT COUNT_BIG(1) FROM dbo.BusinessPartnerAddresses AS addressItem WHERE addressItem.BusinessPartnerId = bp.Id) AS AddressCount,
-               (SELECT COUNT_BIG(1) FROM dbo.BusinessPartnerContacts AS contactItem WHERE contactItem.BusinessPartnerId = bp.Id) AS ContactCount
-        FROM dbo.BusinessPartners AS bp
-        WHERE bp.PartnerType = N''Both''
-        ORDER BY bp.Id;');
+    IF COL_LENGTH(N'dbo.BusinessPartners', N'GlobalId') IS NULL
+        EXEC(N'
+            SELECT N''LegacyBothBusinessPartner'' AS Finding,
+                   bp.Id,
+                   CAST(NULL AS uniqueidentifier) AS GlobalId,
+                   bp.Code,
+                   (SELECT COUNT_BIG(1) FROM dbo.BusinessPartnerAddresses AS addressItem WHERE addressItem.BusinessPartnerId = bp.Id) AS AddressCount,
+                   (SELECT COUNT_BIG(1) FROM dbo.BusinessPartnerContacts AS contactItem WHERE contactItem.BusinessPartnerId = bp.Id) AS ContactCount
+            FROM dbo.BusinessPartners AS bp
+            WHERE bp.PartnerType = N''Both''
+            ORDER BY bp.Id;');
+    ELSE
+        EXEC(N'
+            SELECT N''LegacyBothBusinessPartner'' AS Finding,
+                   bp.Id,
+                   bp.GlobalId,
+                   bp.Code,
+                   (SELECT COUNT_BIG(1) FROM dbo.BusinessPartnerAddresses AS addressItem WHERE addressItem.BusinessPartnerId = bp.Id) AS AddressCount,
+                   (SELECT COUNT_BIG(1) FROM dbo.BusinessPartnerContacts AS contactItem WHERE contactItem.BusinessPartnerId = bp.Id) AS ContactCount
+            FROM dbo.BusinessPartners AS bp
+            WHERE bp.PartnerType = N''Both''
+            ORDER BY bp.Id;');
 END;
 
 IF OBJECT_ID(N'dbo.BusinessPartnerSapMapping', N'U') IS NOT NULL

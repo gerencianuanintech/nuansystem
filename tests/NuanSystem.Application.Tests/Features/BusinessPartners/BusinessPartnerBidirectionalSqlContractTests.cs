@@ -91,7 +91,7 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
             .And.Contain("BusinessPartnerSyncConflicts")
             .And.Contain("@CanonicalVersion")
             .And.Contain("CanonicalVersion = @CanonicalVersion")
-            .And.Contain("CanonicalVersion > @CanonicalVersion")
+            .And.Contain("@CurrentVersion > @CanonicalVersion")
             .And.Contain("Version = N'20260903.230'")
             .And.NotContain("NuanSystem_Master")
             .And.NotContain("SapSyncOutbox")
@@ -118,8 +118,178 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
         operations.Should().BeGreaterThan(foundation);
     }
 
+    [Fact]
+    public void ProposalResultApply_UsesLockedHigherEqualAndLowerVersionOutcomes()
+    {
+        var procedure = Procedure("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_RESULT_APPLY");
+
+        procedure.Should().Contain("FROM dbo.BusinessPartners WITH (UPDLOCK,HOLDLOCK)")
+            .And.Contain("@CurrentVersion > @CanonicalVersion")
+            .And.Contain("@CurrentVersion = @CanonicalVersion")
+            .And.Contain("@CurrentVersion < @CanonicalVersion")
+            .And.Contain("SELECT 3 AS ResultCode")
+            .And.NotContain("CanonicalVersion=CASE");
+    }
+
+    [Fact]
+    public void ConflictResolver_RequiresConflictTokenAndRejectsAStaleLivePartner()
+    {
+        var procedure = Procedure("SP_NA_POST_BUSINESSPARTNER_SYNCCONFLICT_RESOLVER");
+
+        procedure.Should().Contain("IF @ExpectedRowVersion IS NULL")
+            .And.Contain("FROM dbo.BusinessPartners WITH (UPDLOCK,HOLDLOCK)")
+            .And.Contain("@LiveCanonicalVersion <> @CurrentVersion")
+            .And.Contain("@LiveBusinessPartnerRowVersion<>@PresentedBusinessPartnerRowVersion")
+            .And.Contain("SELECT 4 AS ResultCode")
+            .And.Contain("@CanonicalVersion=@LiveCanonicalVersion+1")
+            .And.NotContain("@CanonicalVersion=@CurrentVersion+1");
+    }
+
+    [Fact]
+    public void EventEnvelopeGuards_DeadLetterCollisionsAndPreserveIdenticalReplays()
+    {
+        var inboxGuard = Procedure("SP_NA_POST_BUSINESSPARTNER_SYNCINBOX_ENSURE");
+        var outboxGuard = Procedure("SP_NA_POST_BUSINESSPARTNER_LOCALOUTBOX_ENSURE");
+
+        inboxGuard.Should().ContainAll(
+            "SourceCompanyId", "EntityName", "EntityGlobalId", "Operation", "PayloadJson",
+            "COLLATE Latin1_General_100_BIN2", "Status=N'DeadLetter'", "@EnvelopeResult=4");
+        outboxGuard.Should().ContainAll(
+            "CompanyId", "TargetCompanyId", "CausationEventId", "EntityName", "EntityGlobalId",
+            "EntityCode", "Operation", "PayloadJson", "COLLATE Latin1_General_100_BIN2",
+            "Status=N'DeadLetter'", "@EnvelopeResult=4");
+
+        string[] inboxProcedures =
+        [
+            "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_ACCEPT",
+            "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_CONFLICT",
+            "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_REJECT",
+            "SP_NA_POST_BUSINESSPARTNER_CANONICAL_APPLY",
+            "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_RESULT_APPLY"
+        ];
+        foreach (var name in inboxProcedures)
+            Procedure(name).Should().Contain("EXEC dbo.SP_NA_POST_BUSINESSPARTNER_SYNCINBOX_ENSURE")
+                .And.Contain("SELECT 4 AS ResultCode");
+
+        string[] outboxProcedures =
+        [
+            "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_ACCEPT",
+            "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_CONFLICT",
+            "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_REJECT",
+            "SP_NA_POST_BUSINESSPARTNER_SYNCCONFLICT_RESOLVER"
+        ];
+        foreach (var name in outboxProcedures)
+            Procedure(name).Should().Contain("EXEC dbo.SP_NA_POST_BUSINESSPARTNER_LOCALOUTBOX_ENSURE")
+                .And.Contain("SELECT 4 AS ResultCode");
+    }
+
+    [Fact]
+    public void CanonicalUpsert_ProtectsImmutableIdentityLegacyReviewAndConfirmedSapCode()
+    {
+        var procedure = Procedure("SP_NA_POST_BUSINESSPARTNER_CANONICAL_UPSERT");
+
+        procedure.Should().ContainAll(
+            "@ExistingCode", "@ExistingPartnerType", "@ExistingIdentificationTypeId",
+            "@ExistingNormalizedIdentificationNumber", "@ExistingMasterSyncStatus",
+            "@ExistingSapCardCode", "N'Both'", "'LegacyReview'",
+            "Immutable BusinessPartner identity conflict", "Confirmed SapCardCode conflict")
+            .And.Contain("IF NULLIF(LTRIM(RTRIM(@ExistingSapCardCode)),N'') IS NULL")
+            .And.NotContain("SET SapCardCode = @SapCardCode\n        WHERE BusinessPartnerId");
+    }
+
+    [Fact]
+    public void Foundation_UsesExplicitBinaryNormalizedCollationAndUnicodeVectors()
+    {
+        var sql = Read("database", "sql", "228_tenant_business_partner_bidirectional_foundation.sql");
+        var readiness = Read("database", "sql", "manual", "check_business_partner_bidirectional_readiness.sql");
+
+        sql.Should().Contain("NormalizedIdentificationNumber nvarchar(50) COLLATE Latin1_General_100_BIN2")
+            .And.Contain("UPPER(LTRIM(RTRIM(IdentificationNumber)) COLLATE Latin1_General_100_BIN2)")
+            .And.Contain("NCHAR(233)")
+            .And.Contain("NCHAR(201)")
+            .And.Contain("NCHAR(304)")
+            .And.Contain("CK_BusinessPartners_CanonicalVersion CHECK (CanonicalVersion >= 0)");
+        readiness.Should().Contain("COLLATE Latin1_General_100_BIN2");
+    }
+
+    [Fact]
+    public void CanonicalQueries_EnumerateStableColumnsWithoutWildcardProjection()
+    {
+        var canonical = Procedure("SP_NA_GET_BUSINESSPARTNER_CANONICAL_FORUPDATE");
+        var conflict = Procedure("SP_NA_GET_BUSINESSPARTNER_SYNCCONFLICT_BUSCARPORID");
+
+        canonical.Should().ContainAll(
+            "bp.Id AS Id", "bp.GlobalId AS GlobalId", "bp.RowVersion AS RowVersion",
+            "addressItem.Id AS Id", "addressItem.GlobalId AS GlobalId",
+            "contactItem.Id AS Id", "contactItem.GlobalId AS GlobalId")
+            .And.NotContain("bp.*")
+            .And.NotContain("addressItem.*")
+            .And.NotContain("contactItem.*");
+        conflict.Should().ContainAll(
+            "conflict.Id AS Id", "conflict.BaseSnapshotJson AS BaseSnapshotJson",
+            "conflict.RowVersion AS RowVersion", "bp.Code AS Code", "bp.Name AS Name")
+            .And.NotContain("conflict.*");
+    }
+
+    [Fact]
+    public void ReadinessReport_UsesTypedNullForMissingLegacyGlobalIdProjection()
+    {
+        var sql = Read("database", "sql", "manual", "check_business_partner_bidirectional_readiness.sql");
+
+        sql.Should().Contain("CAST(NULL AS uniqueidentifier) AS GlobalId")
+            .And.Contain("IF COL_LENGTH(N'dbo.BusinessPartners', N'GlobalId') IS NULL");
+    }
+
+    [Fact]
+    public void Foundation_ValidatesColumnConstraintTableAndExactIndexShapes()
+    {
+        var sql = Read("database", "sql", "228_tenant_business_partner_bidirectional_foundation.sql");
+
+        sql.Should().ContainAll(
+            "system_type_id", "max_length", "is_nullable", "collation_name",
+            "key_ordinal", "filter_definition", "is_unique", "is_not_trusted",
+            "BusinessPartnerSyncConflicts has an incompatible shape",
+            "UX_BusinessPartners_Identification_Active has an incompatible shape",
+            "UX_BusinessPartners_SapCardCode_Active has an incompatible shape",
+            "UX_BusinessPartnerAddresses_GlobalId has an incompatible shape",
+            "UX_BusinessPartnerContacts_GlobalId has an incompatible shape")
+            .And.Contain("THROW 52028")
+            .And.NotContain("CanonicalVersion > 0");
+    }
+
+    [Fact]
+    public void SapCardCodeInputs_AreWideAndValidatedBeforeCanonicalPersistence()
+    {
+        string[] procedures =
+        [
+            "SP_NA_POST_BUSINESSPARTNER_CANONICAL_UPSERT",
+            "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_ACCEPT",
+            "SP_NA_POST_BUSINESSPARTNER_CANONICAL_APPLY",
+            "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_RESULT_APPLY"
+        ];
+
+        foreach (var name in procedures)
+        {
+            var procedure = Procedure(name);
+            procedure.Should().Contain("@SapCardCode nvarchar(50)")
+                .And.Contain("DATALENGTH(@SapCardCode) > 30");
+        }
+    }
+
     private static string Read(params string[] parts) =>
         File.ReadAllText(Path.Combine([Root(), .. parts]));
+
+    private static string Procedure(string name)
+    {
+        var sql = Read("database", "sql", "230_tenant_business_partner_bidirectional_operations.sql");
+        var match = Regex.Match(
+            sql,
+            $@"CREATE OR ALTER PROCEDURE dbo\.{Regex.Escape(name)}\b[\s\S]*?\r?\nGO\b",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        match.Success.Should().BeTrue($"procedure {name} must exist as its own SQL batch");
+        return match.Value;
+    }
 
     private static string Root()
     {
