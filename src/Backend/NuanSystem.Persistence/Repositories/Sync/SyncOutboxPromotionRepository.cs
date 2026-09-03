@@ -21,7 +21,7 @@ public sealed class SyncOutboxPromotionRepository(IMasterConnectionFactory conne
         {
             var existing = await connection.QuerySingleOrDefaultAsync<ExistingOutbox>(new CommandDefinition(
                 """
-SELECT Id,CompanyId,EntityName,EntityGlobalId,Operation,PayloadJson
+SELECT Id,CompanyId,CausationEventId,EntityName,EntityGlobalId,Operation,PayloadJson
 FROM dbo.SyncOutbox WITH (UPDLOCK,HOLDLOCK)
 WHERE EventId=@EventId;
 """,
@@ -31,7 +31,19 @@ WHERE EventId=@EventId;
 
             if (existing is not null)
             {
+                var existingTargets = (await connection.QueryAsync<int>(new CommandDefinition(
+                    "SELECT BranchCompanyId FROM dbo.SyncOutboxTargets WHERE OutboxId=@OutboxId ORDER BY BranchCompanyId;",
+                    new { OutboxId = existing.Id },
+                    transaction,
+                    cancellationToken: cancellationToken))).ToArray();
+                var requestedTargets = data.Targets
+                    .Select(target => target.BranchCompanyId)
+                    .Distinct()
+                    .OrderBy(companyId => companyId)
+                    .ToArray();
                 var matches = existing.CompanyId == data.Event.CompanyId
+                    && existing.CausationEventId == data.Event.CausationEventId
+                    && existingTargets.SequenceEqual(requestedTargets)
                     && existing.EntityGlobalId == data.Event.EntityGlobalId
                     && string.Equals(existing.EntityName, data.Event.EntityName, StringComparison.Ordinal)
                     && string.Equals(existing.Operation, data.Event.Operation.ToString(), StringComparison.Ordinal)
@@ -46,10 +58,10 @@ WHERE EventId=@EventId;
             var outboxId = await connection.ExecuteScalarAsync<long>(new CommandDefinition(
                 """
 INSERT dbo.SyncOutbox
-    (EventId,CompanyId,EntityName,EntityGlobalId,EntityCode,Operation,PayloadJson,
+    (EventId,CompanyId,CausationEventId,EntityName,EntityGlobalId,EntityCode,Operation,PayloadJson,
      SourceSystem,SourceReference,MaxAttempts)
 VALUES
-    (@EventId,@CompanyId,@EntityName,@EntityGlobalId,@EntityCode,@Operation,@PayloadJson,
+    (@EventId,@CompanyId,@CausationEventId,@EntityName,@EntityGlobalId,@EntityCode,@Operation,@PayloadJson,
      N'LocalOutbox',@SourceReference,@MaxAttempts);
 SELECT CAST(SCOPE_IDENTITY() AS bigint);
 """,
@@ -57,6 +69,7 @@ SELECT CAST(SCOPE_IDENTITY() AS bigint);
                 {
                     data.Event.EventId,
                     data.Event.CompanyId,
+                    data.Event.CausationEventId,
                     data.Event.EntityName,
                     data.Event.EntityGlobalId,
                     data.Event.EntityCode,
@@ -136,6 +149,7 @@ VALUES
     private sealed record ExistingOutbox(
         long Id,
         int CompanyId,
+        Guid? CausationEventId,
         string EntityName,
         Guid EntityGlobalId,
         string Operation,

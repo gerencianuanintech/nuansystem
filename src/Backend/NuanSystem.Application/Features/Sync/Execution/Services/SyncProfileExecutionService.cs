@@ -45,6 +45,14 @@ public sealed class SyncProfileExecutionService(
             return Failure<CreateSyncProfileExecutionResultDto>("SyncProfileInactive", "El perfil debe estar activo para ejecutarse.", nameof(syncProfileId));
         }
 
+        if (string.Equals(profile.Direction, "BranchToMaster", StringComparison.OrdinalIgnoreCase))
+        {
+            return Failure<CreateSyncProfileExecutionResultDto>(
+                "SYNC_BRANCH_TO_MASTER_INCREMENTAL_ONLY",
+                "BranchToMaster solo autoriza el enrutamiento incremental del relay y no admite ejecucion administrativa.",
+                nameof(profile.Direction));
+        }
+
         if (!string.Equals(profile.Direction, "MasterToBranch", StringComparison.OrdinalIgnoreCase))
         {
             return Failure<CreateSyncProfileExecutionResultDto>("SyncDirectionNotSupported", "Solo se ejecuta MasterToBranch.", nameof(profile.Direction));

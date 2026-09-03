@@ -7,7 +7,8 @@ public sealed record SyncRoutingContext(
     string? TargetBranchCode = null,
     bool RequireTargetBranchMatch = false,
     Guid? EntityGlobalId = null,
-    string? PayloadJson = null);
+    string? PayloadJson = null,
+    int? TargetCompanyId = null);
 
 public sealed record SyncRoutingTargetDto(
     int SyncProfileId,

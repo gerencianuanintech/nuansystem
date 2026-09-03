@@ -325,6 +325,8 @@ public sealed class SyncConfigurationContractTests
             "Zones",
             "SupplyMethods",
             "BusinessPartner",
+            "BusinessPartnerProposal",
+            "BusinessPartnerProposalResult",
             "ItemGroups",
             "ItemFamilies",
             "ItemSubgroups",
@@ -347,8 +349,14 @@ public sealed class SyncConfigurationContractTests
             .OnlyContain(item => item.HasProducer && item.HasApplier && item.SupportsInsert && item.SupportsUpdate && item.SupportsDeactivate);
         SyncMasterBranchEntityCodes.InitialCatalog
             .Where(item => !item.IsOperative)
+            .Where(item => item.EntityCode is not SyncMasterBranchEntityCodes.BusinessPartnerProposal
+                and not SyncMasterBranchEntityCodes.BusinessPartnerProposalResult)
             .Should()
             .OnlyContain(item => !item.HasProducer && !item.HasApplier);
+        SyncMasterBranchEntityCodes.Find(SyncMasterBranchEntityCodes.BusinessPartnerProposal).Should().Match<SyncMasterBranchEntityCatalogItem>(
+            item => item.HasProducer && !item.HasApplier && !item.SupportsInsert && !item.SupportsUpdate && !item.SupportsDeactivate);
+        SyncMasterBranchEntityCodes.Find(SyncMasterBranchEntityCodes.BusinessPartnerProposalResult).Should().Match<SyncMasterBranchEntityCatalogItem>(
+            item => !item.HasProducer && !item.HasApplier && !item.SupportsInsert && !item.SupportsUpdate && !item.SupportsDeactivate);
     }
 
     [Fact]

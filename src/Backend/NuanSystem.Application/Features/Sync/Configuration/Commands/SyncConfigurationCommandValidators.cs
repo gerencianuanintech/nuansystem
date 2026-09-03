@@ -11,6 +11,9 @@ public sealed class CreateSyncProfileCommandValidator : AbstractValidator<Create
         RuleFor(command => command.Request.Name).NotEmpty().MaximumLength(150);
         RuleFor(command => command.Request.Description).MaximumLength(500);
         RuleFor(command => command.Request.CompanyId).GreaterThan(0);
+        RuleFor(command => command.Request.Direction).NotEmpty().MaximumLength(30);
+        RuleFor(command => command.Request.ExecutionMode).NotEmpty().MaximumLength(30);
+        RuleFor(command => command.Request.ConflictStrategy).NotEmpty().MaximumLength(30);
     }
 }
 
@@ -24,6 +27,9 @@ public sealed class UpdateSyncProfileCommandValidator : AbstractValidator<Update
         RuleFor(command => command.Request.Name).NotEmpty().MaximumLength(150);
         RuleFor(command => command.Request.Description).MaximumLength(500);
         RuleFor(command => command.Request.CompanyId).GreaterThan(0);
+        RuleFor(command => command.Request.Direction).NotEmpty().MaximumLength(30);
+        RuleFor(command => command.Request.ExecutionMode).NotEmpty().MaximumLength(30);
+        RuleFor(command => command.Request.ConflictStrategy).NotEmpty().MaximumLength(30);
     }
 }
 

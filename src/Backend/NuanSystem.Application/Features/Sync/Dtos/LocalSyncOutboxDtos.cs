@@ -10,7 +10,9 @@ public sealed record CreateLocalSyncOutboxData(
     string? EntityCode,
     SyncOperation Operation,
     string PayloadJson,
-    int MaxAttempts = 3);
+    int MaxAttempts = 3,
+    int? TargetCompanyId = null,
+    Guid? CausationEventId = null);
 
 public sealed class LocalSyncOutboxDto
 {
@@ -36,7 +38,9 @@ public sealed class LocalSyncOutboxDto
         DateTime? lockExpiresAt,
         DateTime createdAt,
         DateTime? processedAt,
-        string? lastErrorMessage)
+        string? lastErrorMessage,
+        int? targetCompanyId = null,
+        Guid? causationEventId = null)
     {
         Id = id;
         EventId = eventId;
@@ -56,6 +60,8 @@ public sealed class LocalSyncOutboxDto
         CreatedAt = createdAt;
         ProcessedAt = processedAt;
         LastErrorMessage = lastErrorMessage;
+        TargetCompanyId = targetCompanyId;
+        CausationEventId = causationEventId;
     }
 
     public long Id { get; set; }
@@ -76,6 +82,8 @@ public sealed class LocalSyncOutboxDto
     public DateTime CreatedAt { get; set; }
     public DateTime? ProcessedAt { get; set; }
     public string? LastErrorMessage { get; set; }
+    public int? TargetCompanyId { get; set; }
+    public Guid? CausationEventId { get; set; }
 }
 
 public sealed record LocalSyncOutboxCompanyDto(int CompanyId, string CompanyCode);
@@ -90,7 +98,8 @@ public enum SyncOutboxPromotionStatus
 {
     Created = 1,
     Existing = 2,
-    Conflict = 3
+    Conflict = 3,
+    Deferred = 4
 }
 
 public sealed record SyncOutboxPromotionResult(

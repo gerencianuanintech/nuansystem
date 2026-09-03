@@ -68,7 +68,16 @@ public sealed class DeleteBusinessPartnerCommandHandler(
                 current.MasterSyncStatus = "Accepted";
                 current.IsActive = false;
                 await localOutboxWriter.EnqueueAsync(
-                    current, SyncOperation.Deleted, connection, transaction, token);
+                    new BusinessPartnerOutboxWriteRequest(
+                        current,
+                        Base: null,
+                        SyncOperation.Deleted,
+                        request.AuditUserId,
+                        CreateBusinessPartnerCommandHandler.TrimOrNull(request.AuditUserName),
+                        CausationEventId: null),
+                    connection,
+                    transaction,
+                    token);
                 return Result<bool>.Success(true, "Tercero comercial eliminado correctamente.");
             },
             cancellationToken);

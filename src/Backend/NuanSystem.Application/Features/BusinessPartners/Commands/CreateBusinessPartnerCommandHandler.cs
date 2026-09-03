@@ -41,6 +41,11 @@ public sealed class CreateBusinessPartnerCommandHandler(
 
         var isBranch = BusinessPartnerWritePolicy.IsSynchronizedBranch(company);
         var isCentral = BusinessPartnerWritePolicy.IsSynchronizedCentral(company);
+        if (isBranch && company?.ParentCompanyId is not > 0)
+        {
+            return Failure("BP_BRANCH_PARENT_REQUIRED", "La sucursal sincronizada requiere una empresa central padre.", "ParentCompanyId");
+        }
+
         if (isBranch)
         {
             var protectedPaths = BusinessPartnerWritePolicy.GetNonDefaultProtectedPaths(request);
@@ -128,7 +133,16 @@ public sealed class CreateBusinessPartnerCommandHandler(
                     ?? throw new InvalidOperationException("El tercero comercial fue creado pero no pudo consultarse.");
 
                 await localOutboxWriter.EnqueueAsync(
-                    partner, SyncOperation.Created, connection, transaction, token);
+                    new BusinessPartnerOutboxWriteRequest(
+                        partner,
+                        Base: null,
+                        SyncOperation.Created,
+                        request.AuditUserId,
+                        CreateBusinessPartnerCommandHandler.TrimOrNull(request.AuditUserName),
+                        CausationEventId: null),
+                    connection,
+                    transaction,
+                    token);
                 return Result<BusinessPartnerDto>.Success(partner, "Tercero comercial creado correctamente.");
                 },
                 cancellationToken);

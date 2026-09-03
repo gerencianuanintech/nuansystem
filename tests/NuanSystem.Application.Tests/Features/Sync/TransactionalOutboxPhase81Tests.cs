@@ -203,15 +203,14 @@ public sealed class TransactionalOutboxPhase81Tests
     }
 
     [Fact]
-    public void RelayDiscoversOnlyEnabledMasterCompanies()
+    public void RelayDiscoversAllEnabledSynchronizedCompanies()
     {
         var source = Read(
             "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync",
             "LocalSyncOutboxRepository.cs");
 
-        source.Should().Contain("IsMaster=1")
-            .And.Contain("SyncEnabled=1")
-            .And.NotContain("IsMaster=0 AND SyncEnabled=1");
+        source.Should().Contain("IsActive=1 AND IsDeleted=0 AND SyncEnabled=1")
+            .And.NotContain("IsMaster=1");
     }
 
     [Fact]

@@ -28,6 +28,10 @@ public sealed class UpdateBusinessPartnerCommandHandler(
         var company = companyContext.CurrentCompany;
         var isBranch = BusinessPartnerWritePolicy.IsSynchronizedBranch(company);
         var isCentral = BusinessPartnerWritePolicy.IsSynchronizedCentral(company);
+        if (isBranch && company?.ParentCompanyId is not > 0)
+        {
+            return Failure("BP_BRANCH_PARENT_REQUIRED", "La sucursal sincronizada requiere una empresa central padre.", "ParentCompanyId");
+        }
 
         try
         {
@@ -103,7 +107,16 @@ public sealed class UpdateBusinessPartnerCommandHandler(
                 var partner = await repository.GetByIdAsync(request.Id, connection, transaction, token)
                     ?? throw new InvalidOperationException("El tercero comercial fue actualizado pero no pudo consultarse.");
                 await localOutboxWriter.EnqueueAsync(
-                    partner, SyncOperation.Updated, connection, transaction, token);
+                    new BusinessPartnerOutboxWriteRequest(
+                        partner,
+                        current,
+                        SyncOperation.Updated,
+                        request.AuditUserId,
+                        CreateBusinessPartnerCommandHandler.TrimOrNull(request.AuditUserName),
+                        CausationEventId: null),
+                    connection,
+                    transaction,
+                    token);
                 return Result<BusinessPartnerDto>.Success(partner, "Tercero comercial actualizado correctamente.");
                 },
                 cancellationToken);

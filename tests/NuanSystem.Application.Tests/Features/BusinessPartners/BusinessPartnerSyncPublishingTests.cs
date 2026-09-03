@@ -39,15 +39,21 @@ public sealed class BusinessPartnerSyncPublishingTests
 
         result.IsSuccess.Should().BeTrue();
         await _writer.Received(1).EnqueueAsync(
-            partner, SyncOperation.Created, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+            Arg.Is<BusinessPartnerOutboxWriteRequest>(write =>
+                write.Current == partner && write.Base == null && write.Operation == SyncOperation.Created
+                && write.OriginUserId == 7 && write.OriginUserName == "admin" && write.CausationEventId == null),
+            _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
         _transactionRunner.Committed.Should().BeTrue();
     }
 
     [Fact]
     public async Task Update_WritesLocalOutboxInsideTheSameTransaction()
     {
+        var current = CreatePartner(name: "Cliente Antes");
         var partner = CreatePartner(name: "Cliente Actualizado");
-        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+        partner.GlobalId = current.GlobalId;
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
+            .Returns(current, partner);
         _repository.UpdateAsync(Arg.Any<UpdateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(1);
         var handler = CreateUpdateHandler();
 
@@ -55,7 +61,10 @@ public sealed class BusinessPartnerSyncPublishingTests
 
         result.IsSuccess.Should().BeTrue();
         await _writer.Received(1).EnqueueAsync(
-            partner, SyncOperation.Updated, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+            Arg.Is<BusinessPartnerOutboxWriteRequest>(write =>
+                write.Current == partner && write.Base == current && write.Current != write.Base
+                && write.Operation == SyncOperation.Updated && write.CausationEventId == null),
+            _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -70,7 +79,10 @@ public sealed class BusinessPartnerSyncPublishingTests
 
         result.IsSuccess.Should().BeTrue();
         await _writer.Received(1).EnqueueAsync(
-            partner, SyncOperation.Deleted, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+            Arg.Is<BusinessPartnerOutboxWriteRequest>(write =>
+                write.Current == partner && write.Base == null && write.Operation == SyncOperation.Deleted
+                && write.OriginUserId == 7 && write.OriginUserName == "admin"),
+            _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -81,7 +93,7 @@ public sealed class BusinessPartnerSyncPublishingTests
         _repository.ExistsByIdentificationAsync("Customer", 1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
         _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner.Id);
         _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
-        _writer.EnqueueAsync(Arg.Any<BusinessPartnerDto>(), Arg.Any<SyncOperation>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>(), Arg.Any<CancellationToken>())
+        _writer.EnqueueAsync(Arg.Any<BusinessPartnerOutboxWriteRequest>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>(), Arg.Any<CancellationToken>())
             .Returns<Task<Guid?>>(_ => throw new InvalidOperationException("Controlled outbox failure"));
         var handler = CreateCreateHandler();
 
@@ -216,6 +228,18 @@ public sealed class BusinessPartnerSyncPublishingTests
         result.IsSuccess.Should().BeFalse();
         result.Errors.Should().ContainSingle(error => error.Code == "BP_PROTECTED_FIELD" && error.Field == "BankAccounts");
         await _repository.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Create_BranchWithoutParentReturnsStableErrorBeforePersistence()
+    {
+        var result = await CreateCreateHandler(BranchCompany(parentCompanyId: null))
+            .Handle(BranchCreateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_BRANCH_PARENT_REQUIRED");
+        await _repository.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
+        await _writer.DidNotReceiveWithAnyArgs().EnqueueAsync(default!, default!, default!, default);
     }
 
     [Fact]
@@ -496,7 +520,8 @@ public sealed class BusinessPartnerSyncPublishingTests
         var writer = new BusinessPartnerLocalOutboxWriter(companyContext, new SyncEventPayloadFactory(), localOutbox);
 
         var eventId = await writer.EnqueueAsync(
-            partner, SyncOperation.Created, _transactionRunner.Connection, _transactionRunner.Transaction);
+            new BusinessPartnerOutboxWriteRequest(partner, null, SyncOperation.Created, 7, "admin", null),
+            _transactionRunner.Connection, _transactionRunner.Transaction);
 
         eventId.Should().BeNull();
         await localOutbox.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
@@ -520,16 +545,19 @@ public sealed class BusinessPartnerSyncPublishingTests
         var writer = new BusinessPartnerLocalOutboxWriter(companyContext, new SyncEventPayloadFactory(), localOutbox);
 
         var eventId = await writer.EnqueueAsync(
-            partner, SyncOperation.Created, _transactionRunner.Connection, _transactionRunner.Transaction);
+            new BusinessPartnerOutboxWriteRequest(partner, null, SyncOperation.Created, 7, "admin", null),
+            _transactionRunner.Connection, _transactionRunner.Transaction);
 
         eventId.Should().NotBeNull().And.NotBe(Guid.Empty);
         captured.Should().NotBeNull();
         captured!.EventId.Should().Be(eventId!.Value);
         captured.EntityGlobalId.Should().Be(partner.GlobalId);
         captured.EntityName.Should().Be("BusinessPartner");
+        captured.TargetCompanyId.Should().BeNull();
+        captured.CausationEventId.Should().BeNull();
         captured.PayloadJson.Should().Contain("\"operation\":\"Created\"")
-            .And.NotContain("SapCardCode")
-            .And.NotContain("S0001");
+            .And.Contain("\"schemaVersion\":2")
+            .And.Contain("\"sapCardCode\":\"S0001\"");
     }
 
     private CreateBusinessPartnerCommandHandler CreateCreateHandler(CompanyConnectionInfo? company = null)
@@ -565,7 +593,7 @@ public sealed class BusinessPartnerSyncPublishingTests
             IsMaster: true,
             SyncEnabled: syncEnabled);
 
-    private static CompanyConnectionInfo BranchCompany() =>
+    private static CompanyConnectionInfo BranchCompany(int? parentCompanyId = 10) =>
         new(
             CompanyId: 20,
             CompanyCode: "BRANCH",
@@ -575,7 +603,7 @@ public sealed class BusinessPartnerSyncPublishingTests
             SapIntegrationMode: SapIntegrationMode.None,
             OperationMode: CompanyOperationMode.Standalone,
             IsMaster: false,
-            ParentCompanyId: 10,
+            ParentCompanyId: parentCompanyId,
             BranchCode: "B20",
             SyncEnabled: true);
 
@@ -590,6 +618,7 @@ public sealed class BusinessPartnerSyncPublishingTests
             CommercialName = "Cliente Comercial",
             PartnerType = "Customer",
             IdentificationTypeId = 1,
+            IdentificationTypeCode = "RUC",
             IdentificationNumber = "0999999999001",
             NormalizedIdentificationNumber = "0999999999001",
             CanonicalVersion = 0,

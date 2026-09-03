@@ -89,6 +89,62 @@ public sealed class LocalSyncOutboxRelayEntityScopeTests
     }
 
     [Fact]
+    public async Task ProcessOnceAsync_DeferredPromotion_SchedulesRetryWithoutMarkingPromoted()
+    {
+        var repository = Substitute.For<ILocalSyncOutboxRepository>();
+        var promotion = Substitute.For<ILocalSyncOutboxPromotionService>();
+        var item = new LocalSyncOutboxDto
+        {
+            Id = 15,
+            EventId = Guid.NewGuid(),
+            CompanyId = 3002,
+            EntityName = "BusinessPartnerProposal",
+            EntityGlobalId = Guid.NewGuid(),
+            Operation = NuanSystem.Shared.Sync.SyncOperation.Updated,
+            PayloadJson = "{}",
+            MaxAttempts = 3,
+            TargetCompanyId = 1
+        };
+        repository.GetRelayCompaniesAsync(Arg.Any<CancellationToken>())
+            .Returns([new LocalSyncOutboxCompanyDto(3002, "BR1")]);
+        repository.ClaimAsync(
+                3002, Arg.Any<string>(), Arg.Any<int>(), Arg.Any<TimeSpan>(),
+                Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
+            .Returns([item]);
+        promotion.PromoteAsync(item, Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new SyncOutboxPromotionResult(SyncOutboxPromotionStatus.Deferred, null, "No active route"));
+        var relay = CreateRelay(
+            new MasterBranchSyncWorkerOptions
+            {
+                Enabled = true,
+                EnabledEntityAppliers = ["BusinessPartnerProposal"],
+                LocalOutboxRelay = new LocalOutboxRelayOptions { Enabled = true }
+            },
+            repository,
+            promotion);
+
+        var processed = await relay.ProcessOnceAsync();
+
+        processed.Should().Be(1);
+        await repository.Received(1).MarkRetryAsync(
+            3002, 15, Arg.Any<string>(), "No active route", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
+        await repository.DidNotReceiveWithAnyArgs().MarkPromotedAsync(default, default, default!, default);
+    }
+
+    [Fact]
+    public void Repository_RelayDiscoveryIncludesActiveSyncBranches()
+    {
+        var source = Read(
+            "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync", "LocalSyncOutboxRepository.cs");
+        var start = source.IndexOf("public async Task<IReadOnlyCollection<LocalSyncOutboxCompanyDto>> GetRelayCompaniesAsync", StringComparison.Ordinal);
+        var end = source.IndexOf("public async Task<int> ReleaseExpiredLeasesAsync", start, StringComparison.Ordinal);
+        var method = source[start..end];
+
+        method.Should().Contain("IsActive=1 AND IsDeleted=0 AND SyncEnabled=1")
+            .And.NotContain("IsMaster=1");
+    }
+
+    [Fact]
     public void Migration164_ScopesClaimAndLeaseReleaseAndFailsClosed()
     {
         var sql = Read("database", "sql", "164_tenant_local_outbox_entity_scope.sql");
@@ -118,14 +174,15 @@ public sealed class LocalSyncOutboxRelayEntityScopeTests
 
     private static LocalSyncOutboxRelay CreateRelay(
         MasterBranchSyncWorkerOptions current,
-        ILocalSyncOutboxRepository repository)
+        ILocalSyncOutboxRepository repository,
+        ILocalSyncOutboxPromotionService? promotionService = null)
     {
         var options = Substitute.For<IOptionsMonitor<MasterBranchSyncWorkerOptions>>();
         options.CurrentValue.Returns(current);
         return new LocalSyncOutboxRelay(
             options,
             repository,
-            Substitute.For<ILocalSyncOutboxPromotionService>(),
+            promotionService ?? Substitute.For<ILocalSyncOutboxPromotionService>(),
             Substitute.For<ILogger<LocalSyncOutboxRelay>>());
     }
 
