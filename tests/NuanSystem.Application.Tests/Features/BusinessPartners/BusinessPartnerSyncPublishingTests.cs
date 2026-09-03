@@ -8,6 +8,7 @@ using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.BusinessPartners.Commands;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Features.BusinessPartners.Exceptions;
 using NuanSystem.Application.Features.BusinessPartners.Policies;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Application.Features.Sync.Services;
@@ -166,6 +167,25 @@ public sealed class BusinessPartnerSyncPublishingTests
         await _repository.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
     }
 
+    [Theory]
+    [InlineData("SupplierGroupId")]
+    [InlineData("PaymentTermId")]
+    public async Task Create_BranchRejectsExplicitZeroForProtectedNullableNumeric(string protectedField)
+    {
+        var command = protectedField switch
+        {
+            "SupplierGroupId" => BranchCreateCommand() with { SupplierGroupId = 0 },
+            "PaymentTermId" => BranchCreateCommand() with { PaymentTermId = 0 },
+            _ => throw new ArgumentOutOfRangeException(nameof(protectedField))
+        };
+
+        var result = await CreateCreateHandler(BranchCompany()).Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_PROTECTED_FIELD" && error.Field == protectedField);
+        await _repository.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
+    }
+
     [Fact]
     public async Task Create_BranchRejectsProtectedCollectionBeforePersistence()
     {
@@ -247,7 +267,7 @@ public sealed class BusinessPartnerSyncPublishingTests
     [InlineData(-1, "BP_IDENTIFICATION_ALREADY_EXISTS")]
     [InlineData(-2, "BusinessPartnerCodeAlreadyExists")]
     [InlineData(-3, "BP_SAP_CARD_CODE_ALREADY_EXISTS")]
-    public async Task Create_MapsOnlyAuthoritativeConcurrentNamedUniqueCollisions(int persistenceResult, string expectedCode)
+    public async Task Create_MapsStoredProcedurePrecheckResults(int persistenceResult, string expectedCode)
     {
         _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(persistenceResult);
 
@@ -255,6 +275,29 @@ public sealed class BusinessPartnerSyncPublishingTests
 
         result.IsSuccess.Should().BeFalse();
         result.Errors.Should().ContainSingle(error => error.Code == expectedCode);
+    }
+
+    [Theory]
+    [InlineData(BusinessPartnerUniqueConflictKind.Identification, "BP_IDENTIFICATION_ALREADY_EXISTS")]
+    [InlineData(BusinessPartnerUniqueConflictKind.Code, "BusinessPartnerCodeAlreadyExists")]
+    [InlineData(BusinessPartnerUniqueConflictKind.SapCardCode, "BP_SAP_CARD_CODE_ALREADY_EXISTS")]
+    public async Task Create_MapsUniqueRaceOnlyAfterTransactionRollback(
+        BusinessPartnerUniqueConflictKind conflictKind,
+        string expectedCode)
+    {
+        _repository.CreateAsync(
+                Arg.Any<CreateBusinessPartnerData>(),
+                _transactionRunner.Connection,
+                _transactionRunner.Transaction,
+                Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ => throw new BusinessPartnerUniqueConflictException(conflictKind));
+
+        var result = await CreateCreateHandler().Handle(CreateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == expectedCode);
+        _transactionRunner.RolledBack.Should().BeTrue();
+        _transactionRunner.Committed.Should().BeFalse();
     }
 
     [Fact]
@@ -329,7 +372,7 @@ public sealed class BusinessPartnerSyncPublishingTests
     }
 
     [Fact]
-    public async Task Update_MapsAuthoritativeReactivationRaceToIdentificationConflict()
+    public async Task Update_MapsStoredProcedureReactivationPrecheckResult()
     {
         var partner = CreatePartner();
         partner.IsActive = false;
@@ -342,6 +385,29 @@ public sealed class BusinessPartnerSyncPublishingTests
 
         result.IsSuccess.Should().BeFalse();
         result.Errors.Should().ContainSingle(error => error.Code == "BP_IDENTIFICATION_ALREADY_EXISTS");
+    }
+
+    [Fact]
+    public async Task Update_MapsUniqueRaceOnlyAfterTransactionRollback()
+    {
+        var partner = CreatePartner();
+        partner.IsActive = false;
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+        _repository.UpdateAsync(
+                Arg.Any<UpdateBusinessPartnerData>(),
+                _transactionRunner.Connection,
+                _transactionRunner.Transaction,
+                Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ => throw new BusinessPartnerUniqueConflictException(BusinessPartnerUniqueConflictKind.Identification));
+
+        var result = await CreateUpdateHandler().Handle(
+            UpdateCommand(partner.Id) with { IsActive = true },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_IDENTIFICATION_ALREADY_EXISTS");
+        _transactionRunner.RolledBack.Should().BeTrue();
+        _transactionRunner.Committed.Should().BeFalse();
     }
 
     [Theory]

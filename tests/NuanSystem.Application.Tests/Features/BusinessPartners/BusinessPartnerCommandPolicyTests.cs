@@ -1,6 +1,8 @@
 using FluentAssertions;
 using NuanSystem.Application.Features.BusinessPartners.Commands;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Features.BusinessPartners.Exceptions;
+using NuanSystem.Persistence.Repositories;
 
 namespace NuanSystem.Application.Tests.Features.BusinessPartners;
 
@@ -44,6 +46,8 @@ public sealed class BusinessPartnerCommandPolicyTests
         typeof(BusinessPartnerContactDto).GetProperty("ContactTypeCode").Should().NotBeNull();
         typeof(BusinessPartnerContactDto).GetProperty("ContactChannelCode").Should().NotBeNull();
         typeof(BusinessPartnerLookupsDto).GetProperty("EditPolicy").Should().NotBeNull();
+        typeof(BusinessPartnerUniqueConflictException).Assembly.GetReferencedAssemblies()
+            .Should().NotContain(reference => reference.Name == "Microsoft.Data.SqlClient");
     }
 
     [Fact]
@@ -137,29 +141,59 @@ public sealed class BusinessPartnerCommandPolicyTests
                 "WITH (UPDLOCK,HOLDLOCK,INDEX(UX_BusinessPartners_Identification_Active))",
                 "WITH (UPDLOCK,HOLDLOCK,INDEX(UX_BusinessPartners_Code_Active))",
                 "WITH (UPDLOCK,HOLDLOCK,INDEX(UX_BusinessPartners_SapCardCode_Active))",
-                "ERROR_NUMBER()",
-                "ERROR_MESSAGE()",
-                "@ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_Identification_Active%'",
-                "@ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_Code_Active%'",
-                "@ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_SapCardCode_Active%'",
                 "SELECT CAST(-1 AS int)",
                 "SELECT CAST(-2 AS int)",
                 "SELECT CAST(-3 AS int)")
             .And.Contain("THROW;");
+        CatchBlock(create).Should().ContainAll(
+                "IF @StartedTransaction=1 AND XACT_STATE()<>0 ROLLBACK TRANSACTION",
+                "ELSE IF @StartedTransaction=0 AND XACT_STATE()=1 ROLLBACK TRANSACTION BPCreate230",
+                "THROW;")
+            .And.NotContain("ERROR_NUMBER()")
+            .And.NotContain("ERROR_MESSAGE()")
+            .And.NotContain("SELECT CAST(-");
 
         var update = Procedure(sql, "SP_NA_PUT_BUSINESSPARTNERS_ACTUALIZAR");
         update.Should().ContainAll(
                 "@CurrentIsActive=0 AND @IsActive=1 AND EXISTS",
                 "WITH (UPDLOCK,HOLDLOCK,INDEX(UX_BusinessPartners_Identification_Active))",
-                "ERROR_NUMBER()",
-                "ERROR_MESSAGE()",
-                "@ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_Identification_Active%'",
                 "SELECT CAST(-1 AS int)")
             .And.Contain("THROW;");
+        CatchBlock(update).Should().ContainAll(
+                "IF @StartedTransaction=1 AND XACT_STATE()<>0 ROLLBACK TRANSACTION",
+                "ELSE IF @StartedTransaction=0 AND XACT_STATE()=1 ROLLBACK TRANSACTION BPUpdate230",
+                "THROW;")
+            .And.NotContain("ERROR_NUMBER()")
+            .And.NotContain("ERROR_MESSAGE()")
+            .And.NotContain("SELECT CAST(-");
 
         var repository = Read("src", "Backend", "NuanSystem.Persistence", "Repositories", "BusinessPartnerRepository.cs");
         repository.Should().Contain("ExecuteScalarAsync<int>")
             .And.Contain("Task<int> UpdateAsync");
+    }
+
+    [Theory]
+    [InlineData(2601, "Cannot insert duplicate key row with unique index 'UX_BusinessPartners_Identification_Active'.", BusinessPartnerUniqueConflictKind.Identification)]
+    [InlineData(2627, "Violation of UNIQUE KEY constraint 'UX_BusinessPartners_Code_Active'.", BusinessPartnerUniqueConflictKind.Code)]
+    [InlineData(2601, "Cannot insert duplicate key row with unique index 'UX_BusinessPartners_SapCardCode_Active'.", BusinessPartnerUniqueConflictKind.SapCardCode)]
+    public void Persistence_ClassifiesOnlyExactBusinessPartnerUniqueIndexes(
+        int errorNumber,
+        string message,
+        BusinessPartnerUniqueConflictKind expectedKind)
+    {
+        var classified = BusinessPartnerRepository.TryClassifyUniqueConflict(errorNumber, message, out var actualKind);
+
+        classified.Should().BeTrue();
+        actualKind.Should().Be(expectedKind);
+    }
+
+    [Theory]
+    [InlineData(547, "Violation of UNIQUE KEY constraint 'UX_BusinessPartners_Code_Active'.")]
+    [InlineData(2601, "Cannot insert duplicate key row with unique index 'UX_BusinessPartners_Code_Active_Copy'.")]
+    [InlineData(2627, "Violation of UNIQUE KEY constraint 'UX_OtherEntity_Code_Active'.")]
+    public void Persistence_DoesNotClassifyUnrelatedOrSimilarlyNamedSqlErrors(int errorNumber, string message)
+    {
+        BusinessPartnerRepository.TryClassifyUniqueConflict(errorNumber, message, out _).Should().BeFalse();
     }
 
     [Fact]
@@ -178,6 +212,13 @@ public sealed class BusinessPartnerCommandPolicyTests
         var end = sql.IndexOf("\nGO", start, StringComparison.Ordinal);
         end.Should().BeGreaterThan(start);
         return sql[start..end];
+    }
+
+    private static string CatchBlock(string procedure)
+    {
+        var start = procedure.LastIndexOf("BEGIN CATCH", StringComparison.Ordinal);
+        start.Should().BeGreaterThanOrEqualTo(0);
+        return procedure[start..];
     }
 
     private static string Read(params string[] segments)

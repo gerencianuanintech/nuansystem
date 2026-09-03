@@ -1827,25 +1827,8 @@ BEGIN
         SELECT @Id;
     END TRY
     BEGIN CATCH
-        DECLARE @ErrorNumber int=ERROR_NUMBER(),@ErrorMessage nvarchar(4000)=ERROR_MESSAGE();
-        IF XACT_STATE()=-1 ROLLBACK TRANSACTION;
-        ELSE IF @StartedTransaction=1 ROLLBACK TRANSACTION;
-        ELSE IF XACT_STATE()=1 ROLLBACK TRANSACTION BPCreate230;
-        IF @ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_Identification_Active%'
-        BEGIN
-            SELECT CAST(-1 AS int);
-            RETURN;
-        END;
-        IF @ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_Code_Active%'
-        BEGIN
-            SELECT CAST(-2 AS int);
-            RETURN;
-        END;
-        IF @ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_SapCardCode_Active%'
-        BEGIN
-            SELECT CAST(-3 AS int);
-            RETURN;
-        END;
+        IF @StartedTransaction=1 AND XACT_STATE()<>0 ROLLBACK TRANSACTION;
+        ELSE IF @StartedTransaction=0 AND XACT_STATE()=1 ROLLBACK TRANSACTION BPCreate230;
         THROW;
     END CATCH;
 END;
@@ -2089,15 +2072,8 @@ BEGIN
         SELECT COALESCE((SELECT TOP(1) AffectedRows FROM @LegacyResult),0);
     END TRY
     BEGIN CATCH
-        DECLARE @ErrorNumber int=ERROR_NUMBER(),@ErrorMessage nvarchar(4000)=ERROR_MESSAGE();
-        IF XACT_STATE()=-1 ROLLBACK TRANSACTION;
-        ELSE IF @StartedTransaction=1 ROLLBACK TRANSACTION;
-        ELSE IF XACT_STATE()=1 ROLLBACK TRANSACTION BPUpdate230;
-        IF @ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_Identification_Active%'
-        BEGIN
-            SELECT CAST(-1 AS int);
-            RETURN;
-        END;
+        IF @StartedTransaction=1 AND XACT_STATE()<>0 ROLLBACK TRANSACTION;
+        ELSE IF @StartedTransaction=0 AND XACT_STATE()=1 ROLLBACK TRANSACTION BPUpdate230;
         THROW;
     END CATCH;
 END;

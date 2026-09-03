@@ -1,8 +1,10 @@
 using System.Data;
 using System.Text.Json;
 using Dapper;
+using Microsoft.Data.SqlClient;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Features.BusinessPartners.Exceptions;
 
 namespace NuanSystem.Persistence.Repositories;
 
@@ -134,8 +136,7 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
         IDbConnection connection,
         IDbTransaction? transaction,
         CancellationToken cancellationToken) =>
-        connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(CreateProcedure, ToParameters(partner), transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        ExecuteMutationAsync(CreateProcedure, ToParameters(partner), connection, transaction, cancellationToken);
 
     public async Task<bool> ExistsByCodeAsync(string code, int? excludingId = null, CancellationToken cancellationToken = default)
     {
@@ -232,8 +233,63 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
         IDbConnection connection,
         IDbTransaction? transaction,
         CancellationToken cancellationToken)
-        => connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(UpdateProcedure, ToParameters(partner), transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        => ExecuteMutationAsync(UpdateProcedure, ToParameters(partner), connection, transaction, cancellationToken);
+
+    private static async Task<int> ExecuteMutationAsync(
+        string procedure,
+        object parameters,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await connection.ExecuteScalarAsync<int>(
+                new CommandDefinition(procedure, parameters, transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        }
+        catch (SqlException exception) when (
+            TryClassifyUniqueConflict(exception.Number, exception.Message, out var conflictKind))
+        {
+            throw new BusinessPartnerUniqueConflictException(conflictKind, exception);
+        }
+    }
+
+    internal static bool TryClassifyUniqueConflict(
+        int errorNumber,
+        string message,
+        out BusinessPartnerUniqueConflictKind conflictKind)
+    {
+        conflictKind = default;
+        if (errorNumber is not (2601 or 2627))
+        {
+            return false;
+        }
+
+        if (ContainsExactIndexName(message, "UX_BusinessPartners_Identification_Active"))
+        {
+            conflictKind = BusinessPartnerUniqueConflictKind.Identification;
+            return true;
+        }
+
+        if (ContainsExactIndexName(message, "UX_BusinessPartners_Code_Active"))
+        {
+            conflictKind = BusinessPartnerUniqueConflictKind.Code;
+            return true;
+        }
+
+        if (ContainsExactIndexName(message, "UX_BusinessPartners_SapCardCode_Active"))
+        {
+            conflictKind = BusinessPartnerUniqueConflictKind.SapCardCode;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool ContainsExactIndexName(string message, string indexName) =>
+        message.Contains($"'{indexName}'", StringComparison.Ordinal)
+        || message.Contains($"\"{indexName}\"", StringComparison.Ordinal)
+        || message.Contains($"[{indexName}]", StringComparison.Ordinal);
 
     public async Task<BusinessPartnerSapImportResultData> ImportSupplierFromSapAsync(
         BusinessPartnerSapImportData supplier,

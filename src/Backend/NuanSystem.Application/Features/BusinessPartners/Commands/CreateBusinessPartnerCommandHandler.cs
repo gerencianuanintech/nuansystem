@@ -5,6 +5,7 @@ using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Features.BusinessPartners.Exceptions;
 using NuanSystem.Application.Features.BusinessPartners.Policies;
 using NuanSystem.Application.Features.BusinessPartners.SapCodes;
 using NuanSystem.Shared.Sync;
@@ -57,9 +58,11 @@ public sealed class CreateBusinessPartnerCommandHandler(
             ? await sapCodePolicyRepository.GetByCompanyIdAsync(company.CompanyId, cancellationToken)
             : null;
 
-        return await transactionRunner.ExecuteInTenantTransactionAsync(
-            async (connection, transaction, token) =>
-            {
+        try
+        {
+            return await transactionRunner.ExecuteInTenantTransactionAsync(
+                async (connection, transaction, token) =>
+                {
                 if (await repository.ExistsByCodeAsync(code, null, connection, transaction, token))
                 {
                     return Result<BusinessPartnerDto>.Failure(
@@ -127,8 +130,13 @@ public sealed class CreateBusinessPartnerCommandHandler(
                 await localOutboxWriter.EnqueueAsync(
                     partner, SyncOperation.Created, connection, transaction, token);
                 return Result<BusinessPartnerDto>.Success(partner, "Tercero comercial creado correctamente.");
-            },
-            cancellationToken);
+                },
+                cancellationToken);
+        }
+        catch (BusinessPartnerUniqueConflictException exception)
+        {
+            return UniqueConflictFailure(exception.Kind);
+        }
     }
 
     internal static CreateBusinessPartnerData ToCreateData(
@@ -408,4 +416,16 @@ public sealed class CreateBusinessPartnerCommandHandler(
         Result<BusinessPartnerDto>.Failure(
             "No fue posible guardar el tercero comercial.",
             [new ApiError(code, message, field)]);
+
+    private static Result<BusinessPartnerDto> UniqueConflictFailure(BusinessPartnerUniqueConflictKind conflictKind) =>
+        conflictKind switch
+        {
+            BusinessPartnerUniqueConflictKind.Identification =>
+                Failure("BP_IDENTIFICATION_ALREADY_EXISTS", "La identificacion ya existe para el mismo rol.", "IdentificationNumber"),
+            BusinessPartnerUniqueConflictKind.Code =>
+                Failure("BusinessPartnerCodeAlreadyExists", "El codigo interno ya existe.", "Code"),
+            BusinessPartnerUniqueConflictKind.SapCardCode =>
+                Failure("BP_SAP_CARD_CODE_ALREADY_EXISTS", "El codigo SAP ya esta asignado a otro tercero.", "SapCardCode"),
+            _ => throw new ArgumentOutOfRangeException(nameof(conflictKind), conflictKind, null)
+        };
 }

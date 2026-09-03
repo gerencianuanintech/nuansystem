@@ -48,7 +48,7 @@ public static class BusinessPartnerWritePolicy
         proposed.GetType()
             .GetProperties()
             .Where(property => !BranchCreateAllowedInputFields.Contains(property.Name))
-            .Where(property => HasUserValue(property.GetValue(proposed)))
+            .Where(property => HasUserValue(property.PropertyType, property.GetValue(proposed)))
             .Select(property => property.Name)
             .ToArray();
 
@@ -166,19 +166,27 @@ public static class BusinessPartnerWritePolicy
     private static bool AttachmentsEqual(IReadOnlyCollection<BusinessPartnerAttachmentDto> current, IReadOnlyCollection<SaveBusinessPartnerAttachmentData> proposed) =>
         current.Select(x => new SaveBusinessPartnerAttachmentData(x.AttachmentType, x.FileName, x.Description, x.ReferencePath, x.FileSize, x.IsActive)).SequenceEqual(proposed);
 
-    private static bool HasUserValue(object? value) => value switch
+    private static bool HasUserValue(Type propertyType, object? value)
     {
-        null => false,
-        string text => !string.IsNullOrWhiteSpace(text),
-        bool flag => flag,
-        byte number => number != 0,
-        short number => number != 0,
-        int number => number != 0,
-        long number => number != 0,
-        float number => number != 0,
-        double number => number != 0,
-        decimal number => number != 0,
-        IEnumerable values => values.Cast<object?>().Any(),
-        _ => true
-    };
+        if (value is not null && Nullable.GetUnderlyingType(propertyType) is not null)
+        {
+            return true;
+        }
+
+        return value switch
+        {
+            null => false,
+            string text => !string.IsNullOrWhiteSpace(text),
+            bool flag => flag,
+            byte number => number != 0,
+            short number => number != 0,
+            int number => number != 0,
+            long number => number != 0,
+            float number => number != 0,
+            double number => number != 0,
+            decimal number => number != 0,
+            IEnumerable values => values.Cast<object?>().Any(),
+            _ => true
+        };
+    }
 }
