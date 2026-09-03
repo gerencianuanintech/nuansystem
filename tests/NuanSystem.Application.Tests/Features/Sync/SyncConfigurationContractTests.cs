@@ -701,6 +701,113 @@ public sealed class SyncConfigurationContractTests
             .And.NotContain("profile.Direction=N'BranchToMaster' OR profile.Direction=N'MasterToBranch'");
     }
 
+    [Fact]
+    public void BusinessPartnerBidirectionalRouting_PreservesThe093RepositoryAndDistributionContract()
+    {
+        var script = ReadDatabaseScript("229_master_business_partner_bidirectional_governance.sql");
+        var procedure = ExtractProcedure(script, "SP_NA_GET_SYNCROUTINGTARGETS");
+        var repository = ReadSourceFile(
+            "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync", "SyncRoutingRepository.cs");
+
+        procedure.Should().ContainAll(
+            "@RequireTargetBranchMatch bit=0,",
+            "@EntityGlobalId uniqueidentifier=NULL,",
+            "@TargetCompanyId int=NULL",
+            "profile.Id AS SyncProfileId",
+            "entity.Id AS SyncProfileEntityId",
+            "profile.Code AS SyncProfileCode",
+            "AS SourceCompanyId",
+            "AS BranchCompanyId",
+            "entity.EntityCode",
+            "AS BatchSize",
+            "AS MaxRetries",
+            "profile.RetryDelaySeconds",
+            "profile.TimeoutMinutes",
+            "entity.AllowInsert",
+            "entity.AllowUpdate",
+            "entity.AllowDeactivate",
+            "entity.ContinueOnError",
+            "matrix.Id AS SyncProfileEntityBranchId",
+            "matrix.DistributionMode",
+            "matrix.OnNoMatch",
+            "matrix.RuleExpressionJson",
+            "matrix.RuleVersion",
+            "FROM dbo.SyncDistributionSelections selection",
+            "selection.SyncProfileEntityBranchId=matrix.Id",
+            "selection.EntityGlobalId=@EntityGlobalId",
+            "selection.IsDeleted=0",
+            "THEN 1 ELSE 0 END) AS IsSelected");
+
+        procedure.IndexOf("@EntityGlobalId uniqueidentifier=NULL", StringComparison.Ordinal)
+            .Should().BeLessThan(procedure.IndexOf("@TargetCompanyId int=NULL", StringComparison.Ordinal));
+        procedure.Should().NotContain("matrix.DistributionMode=N'All'")
+            .And.NotContain("matrix.DistributionMode IN (N'All'");
+        repository.Should().ContainAll(
+            "context.RequireTargetBranchMatch",
+            "context.EntityGlobalId");
+    }
+
+    [Fact]
+    public void BusinessPartnerProposalActivation_IsGuardedAtomicallyInsideCreatePutAndPatch()
+    {
+        var script = ReadDatabaseScript("229_master_business_partner_bidirectional_governance.sql");
+        var create = ExtractProcedure(script, "SP_NA_POST_SYNCPROFILECREAR");
+        var update = ExtractProcedure(script, "SP_NA_PUT_SYNCPROFILEACTUALIZAR");
+        var activate = ExtractProcedure(script, "SP_NA_PATCH_SYNCPROFILEACTIVAR");
+
+        create.Should().ContainAll(
+            "BEGIN TRANSACTION",
+            "OPENJSON(ISNULL(@EntitiesJson,N'[]'))",
+            "EntityCode=N'BusinessPartnerProposal'",
+            "IsActive=1",
+            "company.IsMaster=1",
+            "company.IsActive=1",
+            "company.IsDeleted=0",
+            "AND NOT EXISTS",
+            "policy.CompanyId=@CompanyId",
+            "policy.IsEnabled=1",
+            "WITH (UPDLOCK,HOLDLOCK)",
+            "THROW 52233");
+        update.Should().ContainAll(
+            "BEGIN TRANSACTION",
+            "EntityCode=N'BusinessPartnerProposal'",
+            "IsActive=1",
+            "company.IsMaster=1",
+            "company.IsActive=1",
+            "company.IsDeleted=0",
+            "AND NOT EXISTS",
+            "policy.CompanyId=@CompanyId",
+            "policy.IsEnabled=1",
+            "WITH (UPDLOCK,HOLDLOCK)",
+            "THROW 52233");
+        activate.Should().ContainAll(
+            "BEGIN TRANSACTION",
+            "profile.Id=@Id",
+            "entity.EntityCode=N'BusinessPartnerProposal'",
+            "entity.IsActive=1",
+            "company.Id=profile.CompanyId",
+            "company.IsMaster=1",
+            "company.IsActive=1",
+            "company.IsDeleted=0",
+            "AND NOT EXISTS",
+            "policy.CompanyId=profile.CompanyId",
+            "policy.IsEnabled=1",
+            "WITH (UPDLOCK,HOLDLOCK)",
+            "COMMIT TRANSACTION",
+            "ROLLBACK TRANSACTION",
+            "THROW 52233");
+
+        create.IndexOf("THROW 52233", StringComparison.Ordinal)
+            .Should().BeLessThan(create.IndexOf("INSERT INTO dbo.SyncProfiles", StringComparison.Ordinal));
+        update.IndexOf("THROW 52233", StringComparison.Ordinal)
+            .Should().BeLessThan(update.IndexOf("UPDATE dbo.SyncProfiles", StringComparison.Ordinal));
+        activate.IndexOf("THROW 52233", StringComparison.Ordinal)
+            .Should().BeLessThan(activate.IndexOf("UPDATE dbo.SyncProfiles", StringComparison.Ordinal));
+        create.Should().Contain("SELECT @ProfileId;");
+        update.Should().ContainAll("IF @SuppressResult=0 SELECT 0;", "IF @SuppressResult=0 SELECT 1;");
+        activate.Should().Contain("SELECT @Affected;");
+    }
+
     private static string ExtractProcedure(string sql, string name)
     {
         var marker = $"CREATE OR ALTER PROCEDURE dbo.{name}";

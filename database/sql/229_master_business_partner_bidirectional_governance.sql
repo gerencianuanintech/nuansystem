@@ -1,7 +1,7 @@
 /*
     BusinessPartner bidirectional governance - Master database.
 
-    Prerequisites: 064, 069, 080, 092, 094 and 227.
+    Prerequisites: 064, 069, 080, 092, 093, 094 and 227.
     Adds policy, correlation, closed directions and permissions without
     activating profiles, routes, entity configurations, workers, SAP or SRI.
 */
@@ -25,6 +25,8 @@ IF OBJECT_ID(N'dbo.SyncProfileEntities',N'U') IS NULL
     THROW 52229, 'SyncProfileEntities is required before migration 229.', 1;
 IF OBJECT_ID(N'dbo.SyncProfileEntityBranches',N'U') IS NULL
     THROW 52229, 'SyncProfileEntityBranches is required before migration 229.', 1;
+IF OBJECT_ID(N'dbo.SyncDistributionSelections',N'U') IS NULL
+    THROW 52229, 'SyncDistributionSelections is required before migration 229.', 1;
 IF OBJECT_ID(N'dbo.SyncEntityDefinitions',N'U') IS NULL
     THROW 52229, 'SyncEntityDefinitions is required before migration 229.', 1;
 IF OBJECT_ID(N'dbo.AuditSyncConfigurationChanges',N'U') IS NULL
@@ -394,6 +396,28 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
+        IF @IsActive=1
+           AND EXISTS
+           (
+               SELECT 1
+               FROM OPENJSON(ISNULL(@EntitiesJson,N'[]'))
+               WITH (EntityCode nvarchar(80) '$.entityCode',IsActive bit '$.isActive') entity
+               WHERE entity.EntityCode=N'BusinessPartnerProposal' AND entity.IsActive=1
+           )
+           AND NOT EXISTS
+           (
+               SELECT 1
+               FROM dbo.Companies company WITH (UPDLOCK,HOLDLOCK)
+               INNER JOIN dbo.BusinessPartnerSapCodePolicies policy WITH (UPDLOCK,HOLDLOCK)
+                 ON policy.CompanyId=@CompanyId
+                AND policy.IsEnabled=1
+               WHERE company.Id=@CompanyId
+                 AND company.IsMaster=1
+                 AND company.IsActive=1
+                 AND company.IsDeleted=0
+           )
+            THROW 52233, 'An enabled central SAP code policy is required for BusinessPartner proposals.', 1;
+
         INSERT INTO dbo.SyncProfiles
         (
             CompanyId,Code,Name,Description,Direction,ExecutionMode,ConflictStrategy,
@@ -428,6 +452,351 @@ BEGIN
 END;
 GO
 
+CREATE OR ALTER PROCEDURE dbo.SP_NA_PUT_SYNCPROFILEACTUALIZAR
+    @Id int,
+    @CompanyId int,
+    @Code nvarchar(50),
+    @Name nvarchar(150),
+    @Description nvarchar(500)=NULL,
+    @Direction nvarchar(30),
+    @ExecutionMode nvarchar(20),
+    @ConflictStrategy nvarchar(30),
+    @BatchSize int,
+    @MaxRetries int,
+    @RetryDelaySeconds int,
+    @TimeoutMinutes int,
+    @IsActive bit,
+    @AuditUserId int=NULL,
+    @AuditUserName nvarchar(120)=NULL,
+    @BranchesJson nvarchar(max)=N'[]',
+    @EntitiesJson nvarchar(max)=N'[]',
+    @EntityBranchesJson nvarchar(max)=N'[]',
+    @ScheduleJson nvarchar(max)=NULL,
+    @SuppressResult bit=0
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM dbo.SyncProfiles WHERE Id=@Id AND IsDeleted=0)
+    BEGIN
+        IF @SuppressResult=0 SELECT 0;
+        RETURN;
+    END;
+
+    DECLARE @Branches table
+    (
+        BranchCompanyId int NOT NULL PRIMARY KEY,
+        BatchSize int NULL,
+        MaxRetries int NULL,
+        IsActive bit NOT NULL
+    );
+    DECLARE @Entities table
+    (
+        EntityCode nvarchar(80) NOT NULL PRIMARY KEY,
+        EntityName nvarchar(120) NOT NULL,
+        ExecutionOrder int NOT NULL,
+        SyncMode nvarchar(20) NOT NULL,
+        KeyField nvarchar(100) NULL,
+        ModifiedAtField nvarchar(100) NULL,
+        VersionField nvarchar(100) NULL,
+        ActiveField nvarchar(100) NULL,
+        AllowInsert bit NOT NULL,
+        AllowUpdate bit NOT NULL,
+        AllowDeactivate bit NOT NULL,
+        ContinueOnError bit NOT NULL,
+        BatchSize int NULL,
+        IsActive bit NOT NULL
+    );
+    DECLARE @Matrix table
+    (
+        EntityCode nvarchar(80) NOT NULL,
+        BranchCompanyId int NOT NULL,
+        IsEnabled bit NOT NULL,
+        BatchSize int NULL,
+        PRIMARY KEY (EntityCode,BranchCompanyId)
+    );
+
+    INSERT @Branches(BranchCompanyId,BatchSize,MaxRetries,IsActive)
+    SELECT BranchCompanyId,BatchSize,MaxRetries,IsActive
+    FROM OPENJSON(ISNULL(@BranchesJson,N'[]'))
+    WITH
+    (
+        BranchCompanyId int '$.branchCompanyId',
+        BatchSize int '$.batchSize',
+        MaxRetries int '$.maxRetries',
+        IsActive bit '$.isActive'
+    );
+
+    INSERT @Entities
+    SELECT EntityCode,EntityName,ExecutionOrder,SyncMode,KeyField,ModifiedAtField,
+           VersionField,ActiveField,AllowInsert,AllowUpdate,AllowDeactivate,
+           ContinueOnError,BatchSize,IsActive
+    FROM OPENJSON(ISNULL(@EntitiesJson,N'[]'))
+    WITH
+    (
+        EntityCode nvarchar(80) '$.entityCode',
+        EntityName nvarchar(120) '$.entityName',
+        ExecutionOrder int '$.executionOrder',
+        SyncMode nvarchar(20) '$.syncMode',
+        KeyField nvarchar(100) '$.keyField',
+        ModifiedAtField nvarchar(100) '$.modifiedAtField',
+        VersionField nvarchar(100) '$.versionField',
+        ActiveField nvarchar(100) '$.activeField',
+        AllowInsert bit '$.allowInsert',
+        AllowUpdate bit '$.allowUpdate',
+        AllowDeactivate bit '$.allowDeactivate',
+        ContinueOnError bit '$.continueOnError',
+        BatchSize int '$.batchSize',
+        IsActive bit '$.isActive'
+    );
+
+    INSERT @Matrix(EntityCode,BranchCompanyId,IsEnabled,BatchSize)
+    SELECT EntityCode,BranchCompanyId,IsEnabled,BatchSize
+    FROM OPENJSON(ISNULL(@EntityBranchesJson,N'[]'))
+    WITH
+    (
+        EntityCode nvarchar(80) '$.entityCode',
+        BranchCompanyId int '$.branchCompanyId',
+        IsEnabled bit '$.isEnabled',
+        BatchSize int '$.batchSize'
+    );
+
+    IF EXISTS
+    (
+        SELECT 1 FROM @Branches branch
+        WHERE NOT EXISTS
+        (
+            SELECT 1 FROM dbo.Companies company
+            WHERE company.Id=branch.BranchCompanyId
+              AND company.ParentCompanyId=@CompanyId
+              AND company.IsMaster=0
+              AND company.SyncEnabled=1
+              AND company.IsDeleted=0
+        )
+    )
+        THROW 51003, 'Una sucursal no pertenece a la empresa maestra o no tiene sincronizacion habilitada.', 1;
+    IF EXISTS
+    (
+        SELECT 1
+        FROM @Entities entity
+        WHERE NOT EXISTS
+        (
+            SELECT 1 FROM dbo.SyncEntityDefinitions definition
+            WHERE definition.Code=entity.EntityCode
+              AND definition.IsDeleted=0
+              AND (definition.IsActive=1 OR entity.IsActive=0)
+        )
+    )
+        THROW 51004, 'Una entidad no existe en el catalogo o esta inactiva.', 1;
+    IF EXISTS
+    (
+        SELECT 1 FROM @Matrix matrix
+        WHERE NOT EXISTS (SELECT 1 FROM @Entities entity WHERE entity.EntityCode=matrix.EntityCode)
+           OR NOT EXISTS (SELECT 1 FROM @Branches branch WHERE branch.BranchCompanyId=matrix.BranchCompanyId)
+    )
+        THROW 51005, 'La matriz entidad-sucursal referencia una entidad o sucursal no incluida en el perfil.', 1;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF @IsActive=1
+           AND EXISTS
+           (
+               SELECT 1 FROM @Entities entity
+               WHERE entity.EntityCode=N'BusinessPartnerProposal' AND entity.IsActive=1
+           )
+           AND NOT EXISTS
+           (
+               SELECT 1
+               FROM dbo.Companies company WITH (UPDLOCK,HOLDLOCK)
+               INNER JOIN dbo.BusinessPartnerSapCodePolicies policy WITH (UPDLOCK,HOLDLOCK)
+                 ON policy.CompanyId=@CompanyId
+                AND policy.IsEnabled=1
+               WHERE company.Id=@CompanyId
+                 AND company.IsMaster=1
+                 AND company.IsActive=1
+                 AND company.IsDeleted=0
+           )
+            THROW 52233, 'An enabled central SAP code policy is required for BusinessPartner proposals.', 1;
+
+        UPDATE dbo.SyncProfiles
+        SET CompanyId=@CompanyId,
+            Code=@Code,
+            Name=@Name,
+            Description=@Description,
+            Direction=@Direction,
+            ExecutionMode=@ExecutionMode,
+            ConflictStrategy=@ConflictStrategy,
+            BatchSize=@BatchSize,
+            MaxRetries=@MaxRetries,
+            RetryDelaySeconds=@RetryDelaySeconds,
+            TimeoutMinutes=@TimeoutMinutes,
+            IsActive=@IsActive,
+            UpdatedByUserId=@AuditUserId,
+            UpdatedByUserName=@AuditUserName,
+            UpdatedAt=SYSUTCDATETIME()
+        WHERE Id=@Id AND IsDeleted=0;
+
+        UPDATE branch
+        SET IsDeleted=1,
+            DeletedByUserId=@AuditUserId,
+            DeletedByUserName=@AuditUserName,
+            DeletedAt=SYSUTCDATETIME()
+        FROM dbo.SyncProfileBranches branch
+        WHERE branch.SyncProfileId=@Id
+          AND branch.IsDeleted=0
+          AND NOT EXISTS
+          (
+              SELECT 1 FROM @Branches source
+              WHERE source.BranchCompanyId=branch.BranchCompanyId
+          );
+
+        MERGE dbo.SyncProfileBranches AS target
+        USING @Branches AS source
+        ON target.SyncProfileId=@Id AND target.BranchCompanyId=source.BranchCompanyId
+        WHEN MATCHED THEN UPDATE SET
+            BatchSize=source.BatchSize,MaxRetries=source.MaxRetries,IsActive=source.IsActive,
+            IsDeleted=0,UpdatedByUserId=@AuditUserId,UpdatedByUserName=@AuditUserName,
+            UpdatedAt=SYSUTCDATETIME(),DeletedByUserId=NULL,DeletedByUserName=NULL,DeletedAt=NULL
+        WHEN NOT MATCHED THEN INSERT
+            (SyncProfileId,BranchCompanyId,BatchSize,MaxRetries,IsActive,CreatedByUserId,CreatedByUserName)
+        VALUES
+            (@Id,source.BranchCompanyId,source.BatchSize,source.MaxRetries,source.IsActive,@AuditUserId,@AuditUserName);
+
+        UPDATE entity
+        SET IsDeleted=1,
+            DeletedByUserId=@AuditUserId,
+            DeletedByUserName=@AuditUserName,
+            DeletedAt=SYSUTCDATETIME()
+        FROM dbo.SyncProfileEntities entity
+        WHERE entity.SyncProfileId=@Id
+          AND entity.IsDeleted=0
+          AND NOT EXISTS
+          (
+              SELECT 1 FROM @Entities source
+              WHERE source.EntityCode=entity.EntityCode
+          );
+
+        MERGE dbo.SyncProfileEntities AS target
+        USING @Entities AS source
+        ON target.SyncProfileId=@Id AND target.EntityCode=source.EntityCode
+        WHEN MATCHED THEN UPDATE SET
+            EntityName=source.EntityName,ExecutionOrder=source.ExecutionOrder,SyncMode=source.SyncMode,
+            KeyField=source.KeyField,ModifiedAtField=source.ModifiedAtField,VersionField=source.VersionField,
+            ActiveField=source.ActiveField,AllowInsert=source.AllowInsert,AllowUpdate=source.AllowUpdate,
+            AllowDeactivate=source.AllowDeactivate,ContinueOnError=source.ContinueOnError,
+            BatchSize=source.BatchSize,IsActive=source.IsActive,IsDeleted=0,
+            UpdatedByUserId=@AuditUserId,UpdatedByUserName=@AuditUserName,UpdatedAt=SYSUTCDATETIME(),
+            DeletedByUserId=NULL,DeletedByUserName=NULL,DeletedAt=NULL
+        WHEN NOT MATCHED THEN INSERT
+            (SyncProfileId,EntityCode,EntityName,ExecutionOrder,SyncMode,KeyField,ModifiedAtField,
+             VersionField,ActiveField,AllowInsert,AllowUpdate,AllowDeactivate,ContinueOnError,
+             BatchSize,IsActive,CreatedByUserId,CreatedByUserName)
+        VALUES
+            (@Id,source.EntityCode,source.EntityName,source.ExecutionOrder,source.SyncMode,source.KeyField,
+             source.ModifiedAtField,source.VersionField,source.ActiveField,source.AllowInsert,source.AllowUpdate,
+             source.AllowDeactivate,source.ContinueOnError,source.BatchSize,source.IsActive,@AuditUserId,@AuditUserName);
+
+        UPDATE map
+        SET IsDeleted=1,
+            DeletedByUserId=@AuditUserId,
+            DeletedByUserName=@AuditUserName,
+            DeletedAt=SYSUTCDATETIME()
+        FROM dbo.SyncProfileEntityBranches map
+        INNER JOIN dbo.SyncProfileEntities entity ON entity.Id=map.SyncProfileEntityId
+        INNER JOIN dbo.SyncProfileBranches branch ON branch.Id=map.SyncProfileBranchId
+        WHERE map.SyncProfileId=@Id
+          AND map.IsDeleted=0
+          AND NOT EXISTS
+          (
+              SELECT 1 FROM @Matrix source
+              WHERE source.EntityCode=entity.EntityCode
+                AND source.BranchCompanyId=branch.BranchCompanyId
+          );
+
+        MERGE dbo.SyncProfileEntityBranches AS target
+        USING
+        (
+            SELECT entity.Id AS SyncProfileEntityId,branch.Id AS SyncProfileBranchId,
+                   matrix.IsEnabled,matrix.BatchSize
+            FROM @Matrix matrix
+            INNER JOIN dbo.SyncProfileEntities entity
+              ON entity.SyncProfileId=@Id
+             AND entity.EntityCode=matrix.EntityCode
+             AND entity.IsDeleted=0
+            INNER JOIN dbo.SyncProfileBranches branch
+              ON branch.SyncProfileId=@Id
+             AND branch.BranchCompanyId=matrix.BranchCompanyId
+             AND branch.IsDeleted=0
+        ) AS source
+        ON target.SyncProfileEntityId=source.SyncProfileEntityId
+       AND target.SyncProfileBranchId=source.SyncProfileBranchId
+        WHEN MATCHED THEN UPDATE SET
+            IsEnabled=source.IsEnabled,BatchSize=source.BatchSize,SyncProfileId=@Id,IsDeleted=0,
+            UpdatedByUserId=@AuditUserId,UpdatedByUserName=@AuditUserName,UpdatedAt=SYSUTCDATETIME(),
+            DeletedByUserId=NULL,DeletedByUserName=NULL,DeletedAt=NULL
+        WHEN NOT MATCHED THEN INSERT
+            (SyncProfileId,SyncProfileEntityId,SyncProfileBranchId,IsEnabled,BatchSize,CreatedByUserId,CreatedByUserName)
+        VALUES
+            (@Id,source.SyncProfileEntityId,source.SyncProfileBranchId,source.IsEnabled,source.BatchSize,@AuditUserId,@AuditUserName);
+
+        IF @ScheduleJson IS NULL
+        BEGIN
+            UPDATE dbo.SyncSchedules
+            SET IsDeleted=1,
+                DeletedByUserId=@AuditUserId,
+                DeletedByUserName=@AuditUserName,
+                DeletedAt=SYSUTCDATETIME()
+            WHERE SyncProfileId=@Id AND IsDeleted=0;
+        END
+        ELSE
+        BEGIN
+            DECLARE @ScheduleType nvarchar(20),@IntervalMinutes int,@ExecutionTime time(0),
+                    @TimeZoneId nvarchar(100),@PreventConcurrentExecutions bit,@ScheduleIsActive bit;
+            SELECT @ScheduleType=ScheduleType,
+                   @IntervalMinutes=IntervalMinutes,
+                   @ExecutionTime=TRY_CONVERT(time(0),ExecutionTime),
+                   @TimeZoneId=ISNULL(NULLIF(TimeZoneId,N''),N'America/Guayaquil'),
+                   @PreventConcurrentExecutions=PreventConcurrentExecutions,
+                   @ScheduleIsActive=IsActive
+            FROM OPENJSON(@ScheduleJson)
+            WITH
+            (
+                ScheduleType nvarchar(20) '$.scheduleType',
+                IntervalMinutes int '$.intervalMinutes',
+                ExecutionTime nvarchar(8) '$.executionTime',
+                TimeZoneId nvarchar(100) '$.timeZoneId',
+                PreventConcurrentExecutions bit '$.preventConcurrentExecutions',
+                IsActive bit '$.isActive'
+            );
+
+            UPDATE dbo.SyncSchedules
+            SET IsDeleted=1,
+                DeletedByUserId=@AuditUserId,
+                DeletedByUserName=@AuditUserName,
+                DeletedAt=SYSUTCDATETIME()
+            WHERE SyncProfileId=@Id AND IsDeleted=0;
+
+            INSERT dbo.SyncSchedules
+                (SyncProfileId,ScheduleType,IntervalMinutes,ExecutionTime,TimeZoneId,
+                 PreventConcurrentExecutions,IsActive,CreatedByUserId,CreatedByUserName)
+            VALUES
+                (@Id,@ScheduleType,@IntervalMinutes,@ExecutionTime,@TimeZoneId,
+                 @PreventConcurrentExecutions,@ScheduleIsActive,@AuditUserId,@AuditUserName);
+        END;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE()<>0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+
+    IF @SuppressResult=0 SELECT 1;
+END;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.SP_NA_PATCH_SYNCPROFILEACTIVAR
     @Id int,
     @IsActive bit,
@@ -438,45 +807,64 @@ BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
-    IF @IsActive=1 AND EXISTS
-    (
-        SELECT 1
-        FROM dbo.SyncProfiles profile
-        INNER JOIN dbo.SyncProfileEntities entity
-          ON entity.SyncProfileId=profile.Id
-         AND entity.EntityCode=N'BusinessPartnerProposal'
-         AND entity.IsActive=1
-         AND entity.IsDeleted=0
-        WHERE profile.Id=@Id
-          AND profile.Direction=N'BranchToMaster'
-          AND profile.IsDeleted=0
-          AND NOT EXISTS
-          (
-              SELECT 1 FROM dbo.BusinessPartnerSapCodePolicies policy
-              WHERE policy.CompanyId=profile.CompanyId AND policy.IsEnabled=1
-          )
-    )
-        THROW 52233, 'An enabled central SAP code policy is required for BusinessPartner proposals.', 1;
+    BEGIN TRY
+        BEGIN TRANSACTION;
 
-    UPDATE dbo.SyncProfiles
-    SET IsActive=@IsActive,
-        UpdatedByUserId=@UpdatedByUserId,
-        UpdatedByUserName=@UpdatedByUserName,
-        UpdatedAt=SYSUTCDATETIME()
-    WHERE Id=@Id AND IsDeleted=0;
+        IF @IsActive=1
+           AND EXISTS
+           (
+               SELECT 1
+               FROM dbo.SyncProfiles profile WITH (UPDLOCK,HOLDLOCK)
+               INNER JOIN dbo.SyncProfileEntities entity WITH (UPDLOCK,HOLDLOCK)
+                 ON entity.SyncProfileId=profile.Id
+                AND entity.EntityCode=N'BusinessPartnerProposal'
+                AND entity.IsActive=1
+                AND entity.IsDeleted=0
+               WHERE profile.Id=@Id
+                 AND profile.IsDeleted=0
+           )
+           AND NOT EXISTS
+           (
+               SELECT 1
+               FROM dbo.SyncProfiles profile WITH (UPDLOCK,HOLDLOCK)
+               INNER JOIN dbo.Companies company WITH (UPDLOCK,HOLDLOCK)
+                 ON company.Id=profile.CompanyId
+                AND company.IsMaster=1
+                AND company.IsActive=1
+                AND company.IsDeleted=0
+               INNER JOIN dbo.BusinessPartnerSapCodePolicies policy WITH (UPDLOCK,HOLDLOCK)
+                 ON policy.CompanyId=profile.CompanyId
+                AND policy.IsEnabled=1
+               WHERE profile.Id=@Id
+                 AND profile.IsDeleted=0
+           )
+            THROW 52233, 'An enabled central SAP code policy is required for BusinessPartner proposals.', 1;
 
-    DECLARE @Affected int=@@ROWCOUNT;
-    IF @Affected>0 AND @IsActive=0
-    BEGIN
-        UPDATE dbo.SyncSchedules
-        SET IsActive=0,
+        UPDATE dbo.SyncProfiles
+        SET IsActive=@IsActive,
             UpdatedByUserId=@UpdatedByUserId,
             UpdatedByUserName=@UpdatedByUserName,
             UpdatedAt=SYSUTCDATETIME()
-        WHERE SyncProfileId=@Id AND IsDeleted=0 AND IsActive=1;
-    END;
+        WHERE Id=@Id AND IsDeleted=0;
 
-    SELECT @Affected;
+        DECLARE @Affected int=@@ROWCOUNT;
+        IF @Affected>0 AND @IsActive=0
+        BEGIN
+            UPDATE dbo.SyncSchedules
+            SET IsActive=0,
+                UpdatedByUserId=@UpdatedByUserId,
+                UpdatedByUserName=@UpdatedByUserName,
+                UpdatedAt=SYSUTCDATETIME()
+            WHERE SyncProfileId=@Id AND IsDeleted=0 AND IsActive=1;
+        END;
+
+        COMMIT TRANSACTION;
+        SELECT @Affected;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE()<>0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
 END;
 GO
 
@@ -486,6 +874,7 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_SYNCROUTINGTARGETS
     @SyncProfileId int=NULL,
     @TargetBranchCode nvarchar(50)=NULL,
     @RequireTargetBranchMatch bit=0,
+    @EntityGlobalId uniqueidentifier=NULL,
     @TargetCompanyId int=NULL
 AS
 BEGIN
@@ -508,7 +897,19 @@ BEGIN
         entity.AllowInsert,
         entity.AllowUpdate,
         entity.AllowDeactivate,
-        entity.ContinueOnError
+        entity.ContinueOnError,
+        matrix.Id AS SyncProfileEntityBranchId,
+        matrix.DistributionMode,
+        matrix.OnNoMatch,
+        matrix.RuleExpressionJson,
+        matrix.RuleVersion,
+        CONVERT(bit,CASE WHEN EXISTS
+        (
+            SELECT 1 FROM dbo.SyncDistributionSelections selection
+            WHERE selection.SyncProfileEntityBranchId=matrix.Id
+              AND selection.EntityGlobalId=@EntityGlobalId
+              AND selection.IsDeleted=0
+        ) THEN 1 ELSE 0 END) AS IsSelected
     FROM dbo.SyncProfiles profile
     INNER JOIN dbo.Companies sourceCompany
       ON sourceCompany.Id=profile.CompanyId
@@ -583,7 +984,19 @@ BEGIN
         entity.AllowInsert,
         entity.AllowUpdate,
         entity.AllowDeactivate,
-        entity.ContinueOnError
+        entity.ContinueOnError,
+        matrix.Id AS SyncProfileEntityBranchId,
+        matrix.DistributionMode,
+        matrix.OnNoMatch,
+        matrix.RuleExpressionJson,
+        matrix.RuleVersion,
+        CONVERT(bit,CASE WHEN EXISTS
+        (
+            SELECT 1 FROM dbo.SyncDistributionSelections selection
+            WHERE selection.SyncProfileEntityBranchId=matrix.Id
+              AND selection.EntityGlobalId=@EntityGlobalId
+              AND selection.IsDeleted=0
+        ) THEN 1 ELSE 0 END) AS IsSelected
     FROM dbo.SyncProfiles profile
     INNER JOIN dbo.Companies centralCompany
       ON centralCompany.Id=profile.CompanyId
