@@ -33,6 +33,7 @@ public sealed record BusinessPartnerProposalResultPayloadV1(
     int SchemaVersion,
     Guid GlobalId,
     Guid ProposalEventId,
+    int OriginCompanyId,
     string Status,
     string? Message,
     long CanonicalVersion,

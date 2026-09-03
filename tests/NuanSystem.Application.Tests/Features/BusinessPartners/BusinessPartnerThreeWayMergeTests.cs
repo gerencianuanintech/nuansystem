@@ -134,6 +134,92 @@ public sealed class BusinessPartnerThreeWayMergeTests
             $"Addresses/{AddressId:N}");
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Merge_AcceptsChildRemovalWhenOtherSideLeavesBaseUnchanged(bool proposalRemoves)
+    {
+        var baseAddress = Address();
+        var @base = Snapshot(addresses: [baseAddress]);
+        var proposed = Snapshot(addresses: proposalRemoves ? [] : [baseAddress]);
+        var current = Snapshot(addresses: proposalRemoves ? [baseAddress] : []);
+
+        var result = service.Merge(@base, proposed, current);
+
+        result.Status.Should().Be(BusinessPartnerMergeStatus.Accepted);
+        result.Merged!.Addresses.Should().BeEmpty();
+        result.ConflictFields.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Merge_ReportsChildPathWhenBranchEditsChildRemovedByCentral()
+    {
+        var baseAddress = Address(line1: "Base");
+        var @base = Snapshot(addresses: [baseAddress]);
+        var proposed = Snapshot(addresses: [baseAddress with { Line1 = "Sucursal" }]);
+        var current = Snapshot(addresses: []);
+
+        var result = service.Merge(@base, proposed, current);
+
+        result.Status.Should().Be(BusinessPartnerMergeStatus.Conflict);
+        result.ConflictFields.Should().ContainSingle().Which.Should().Be(
+            $"Addresses/{AddressId:N}");
+    }
+
+    [Fact]
+    public void Merge_ReportsChildPathWhenBothSidesAddSameGlobalIdDifferently()
+    {
+        var @base = Snapshot(addresses: []);
+        var proposed = Snapshot(addresses: [Address(line1: "Sucursal")]);
+        var current = Snapshot(addresses: [Address(line1: "Central")]);
+
+        var result = service.Merge(@base, proposed, current);
+
+        result.Status.Should().Be(BusinessPartnerMergeStatus.Conflict);
+        result.ConflictFields.Should().ContainSingle().Which.Should().Be(
+            $"Addresses/{AddressId:N}");
+    }
+
+    [Theory]
+    [InlineData("Addresses")]
+    [InlineData("Contacts")]
+    public void Merge_RejectsDuplicateChildGlobalIds(string collection)
+    {
+        var @base = Snapshot();
+        var proposed = collection == "Addresses"
+            ? Snapshot(addresses: [Address(), Address()])
+            : Snapshot(contacts: [Contact(), Contact()]);
+
+        var action = () => service.Merge(@base, proposed, @base);
+
+        action.Should().Throw<ArgumentException>()
+            .WithParameterName(collection);
+    }
+
+    [Fact]
+    public void Merge_OrdersStableConflictPathsDeterministically()
+    {
+        var baseAddress = Address(line1: "Base address");
+        var baseContact = Contact(email: "base@example.test");
+        var @base = Snapshot(name: "Base", addresses: [baseAddress], contacts: [baseContact]);
+        var proposed = Snapshot(
+            name: "Sucursal",
+            addresses: [baseAddress with { Line1 = "Branch address" }],
+            contacts: [baseContact with { Email = "branch@example.test" }]);
+        var current = Snapshot(
+            name: "Central",
+            addresses: [baseAddress with { Line1 = "Central address" }],
+            contacts: [baseContact with { Email = "central@example.test" }]);
+
+        var result = service.Merge(@base, proposed, current);
+
+        result.Status.Should().Be(BusinessPartnerMergeStatus.Conflict);
+        result.ConflictFields.Should().Equal(
+            $"Addresses/{AddressId:N}/Line1",
+            $"Contacts/{ContactId:N}/Email",
+            "Name");
+    }
+
     [Fact]
     public void Merge_PreservesDisjointChildAddsAndOrdersThemByGlobalId()
     {

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using FluentAssertions;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
@@ -10,6 +11,7 @@ namespace NuanSystem.Application.Tests.Features.BusinessPartners;
 
 public sealed class BusinessPartnerSyncPayloadContractTests
 {
+    private static readonly JsonSerializerOptions WebSerializerOptions = new(JsonSerializerDefaults.Web);
     private static readonly Guid PartnerId = Guid.Parse("10000000-0000-0000-0000-000000000001");
     private static readonly Guid LowerAddressId = Guid.Parse("20000000-0000-0000-0000-000000000001");
     private static readonly Guid HigherAddressId = Guid.Parse("20000000-0000-0000-0000-000000000002");
@@ -84,6 +86,31 @@ public sealed class BusinessPartnerSyncPayloadContractTests
             .WithParameterName("partner");
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Create_RejectsDuplicateChildGlobalIds(bool address)
+    {
+        var source = address
+            ? Partner(
+                [
+                    Address(LowerAddressId, "B", "EC", "AZU", "CUE"),
+                    Address(LowerAddressId, "S", "EC", "PIC", "UIO")
+                ],
+                [])
+            : Partner(
+                [],
+                [
+                    Contact(LowerContactId, "OWNER", "EMAIL"),
+                    Contact(LowerContactId, "BUYER", "MOBILE")
+                ]);
+
+        var action = () => snapshotFactory.Create(source);
+
+        action.Should().Throw<ArgumentException>()
+            .WithParameterName("partner");
+    }
+
     [Fact]
     public void ProductionSerialization_IsDeterministicAndOmitsLocalOrProtectedData()
     {
@@ -139,9 +166,9 @@ public sealed class BusinessPartnerSyncPayloadContractTests
     }
 
     [Fact]
-    public void VersionedContracts_SerializeProposalCanonicalAndResultSchemasThroughProductionFactory()
+    public void ProposalV1_FreezesCompleteWireShapeAndRoundTripsAllValues()
     {
-        var snapshot = snapshotFactory.Create(Partner([], []));
+        var snapshot = CompleteSnapshot();
         var proposal = new BusinessPartnerProposalPayloadV1(
             BusinessPartnerSyncSchemaVersions.Proposal,
             PartnerId,
@@ -155,25 +182,83 @@ public sealed class BusinessPartnerSyncPayloadContractTests
             "branch-user",
             snapshot,
             snapshot with { Name = "Proposed" },
-            ["Name"]);
+            [$"Addresses/{LowerAddressId:N}/Line1", "Name"]);
+
+        var (wire, roundTrip) = SerializeAndRoundTrip("BusinessPartnerProposal", proposal);
+
+        AssertPropertySet(
+            wire,
+            "schemaVersion",
+            "globalId",
+            "code",
+            "partnerType",
+            "identificationTypeCode",
+            "identificationNumber",
+            "normalizedIdentificationNumber",
+            "baseCanonicalVersion",
+            "originUserId",
+            "originUserName",
+            "base",
+            "proposed",
+            "changedFields");
+        AssertCompleteSnapshotShape(wire["base"]!.AsObject());
+        AssertCompleteSnapshotShape(wire["proposed"]!.AsObject());
+        roundTrip.Should().BeEquivalentTo(proposal, options => options.WithStrictOrdering());
+    }
+
+    [Fact]
+    public void CanonicalV2_FreezesCompleteWireShapeAndRoundTripsAllValues()
+    {
+        var snapshot = CompleteSnapshot();
         var canonical = new BusinessPartnerCanonicalPayloadV2(
             BusinessPartnerSyncSchemaVersions.Canonical,
             8,
             10,
             CausationId,
             snapshot);
+
+        var (wire, roundTrip) = SerializeAndRoundTrip("BusinessPartner", canonical);
+
+        AssertPropertySet(
+            wire,
+            "schemaVersion",
+            "canonicalVersion",
+            "originCompanyId",
+            "causationEventId",
+            "partner");
+        AssertCompleteSnapshotShape(wire["partner"]!.AsObject());
+        roundTrip.Should().BeEquivalentTo(canonical, options => options.WithStrictOrdering());
+    }
+
+    [Fact]
+    public void ProposalResultV1_FreezesOriginCompanyAndCompleteWireShapeAndRoundTripsAllValues()
+    {
+        var snapshot = CompleteSnapshot();
         var result = new BusinessPartnerProposalResultPayloadV1(
             BusinessPartnerSyncSchemaVersions.ProposalResult,
             PartnerId,
             CausationId,
-            "Accepted",
-            null,
+            21,
+            "Rejected",
+            "Duplicate identification",
             8,
             snapshot);
 
-        PayloadSchema(Serialize("BusinessPartnerProposal", proposal)).Should().Be(1);
-        PayloadSchema(Serialize("BusinessPartner", canonical)).Should().Be(2);
-        PayloadSchema(Serialize("BusinessPartnerProposalResult", result)).Should().Be(1);
+        var (wire, roundTrip) = SerializeAndRoundTrip("BusinessPartnerProposalResult", result);
+
+        AssertPropertySet(
+            wire,
+            "schemaVersion",
+            "globalId",
+            "proposalEventId",
+            "originCompanyId",
+            "status",
+            "message",
+            "canonicalVersion",
+            "canonical");
+        wire["originCompanyId"]!.GetValue<int>().Should().Be(21);
+        AssertCompleteSnapshotShape(wire["canonical"]!.AsObject());
+        roundTrip.Should().BeEquivalentTo(result, options => options.WithStrictOrdering());
     }
 
     private string SerializeCanonical(BusinessPartnerDto partner) =>
@@ -198,8 +283,120 @@ public sealed class BusinessPartnerSyncPayloadContractTests
                 SourceSystem: null,
                 SourceReference: null));
 
-    private static int PayloadSchema(string json) =>
-        JsonNode.Parse(json)!["payload"]!["schemaVersion"]!.GetValue<int>();
+    private (JsonObject Wire, T RoundTrip) SerializeAndRoundTrip<T>(string entityName, T payload)
+        where T : notnull
+    {
+        var root = JsonNode.Parse(Serialize(entityName, payload))!.AsObject();
+        AssertPropertySet(root, "entityName", "globalId", "code", "operation", "payload");
+        var wire = root["payload"]!.AsObject();
+        var roundTrip = JsonSerializer.Deserialize<T>(wire.ToJsonString(), WebSerializerOptions);
+        roundTrip.Should().NotBeNull();
+        return (wire, roundTrip!);
+    }
+
+    private static void AssertCompleteSnapshotShape(JsonObject snapshot)
+    {
+        AssertPropertySet(
+            snapshot,
+            "globalId",
+            "code",
+            "name",
+            "commercialName",
+            "partnerType",
+            "identificationTypeCode",
+            "identificationNumber",
+            "normalizedIdentificationNumber",
+            "email",
+            "phone",
+            "sapCardCode",
+            "isActive",
+            "addresses",
+            "contacts");
+        var address = snapshot["addresses"]!.AsArray().Should().ContainSingle().Which!.AsObject();
+        AssertPropertySet(
+            address,
+            "globalId",
+            "addressType",
+            "line1",
+            "line2",
+            "countryCode",
+            "provinceCode",
+            "cityCode",
+            "postalCode",
+            "latitude",
+            "longitude",
+            "isPrimary",
+            "isActive");
+        var contact = snapshot["contacts"]!.AsArray().Should().ContainSingle().Which!.AsObject();
+        AssertPropertySet(
+            contact,
+            "globalId",
+            "contactTypeCode",
+            "contactChannelCode",
+            "name",
+            "position",
+            "department",
+            "phone",
+            "extension",
+            "mobile",
+            "email",
+            "language",
+            "receivesNotifications",
+            "isPrimary",
+            "isActive",
+            "notes");
+    }
+
+    private static void AssertPropertySet(JsonObject value, params string[] expected) =>
+        value.Select(property => property.Key).Should().BeEquivalentTo(expected);
+
+    private static BusinessPartnerCanonicalSnapshot CompleteSnapshot() =>
+        new(
+            PartnerId,
+            "BP-10000000000000000000000000000001",
+            "Partner",
+            "Trade",
+            "Customer",
+            "RUC",
+            "09.999-999 99001",
+            "0999999999001",
+            "partner@example.test",
+            "111",
+            "CN0999999999001",
+            true,
+            [
+                new BusinessPartnerAddressSnapshot(
+                    LowerAddressId,
+                    "Billing",
+                    "Main street",
+                    "Suite 2",
+                    "EC",
+                    "AZU",
+                    "CUE",
+                    "010101",
+                    -2.9001m,
+                    -79.0059m,
+                    true,
+                    true)
+            ],
+            [
+                new BusinessPartnerContactSnapshot(
+                    LowerContactId,
+                    "OWNER",
+                    "EMAIL",
+                    "Owner",
+                    "Manager",
+                    "Sales",
+                    "222",
+                    "10",
+                    "0999999999",
+                    "owner@example.test",
+                    "es",
+                    true,
+                    true,
+                    true,
+                    "Primary contact")
+            ]);
 
     private static BusinessPartnerDto Partner(
         IReadOnlyCollection<BusinessPartnerAddressDto> addresses,
