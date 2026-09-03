@@ -1,4 +1,6 @@
+using System.Collections;
 using NuanSystem.Application.Abstractions.Tenancy;
+using NuanSystem.Application.Features.BusinessPartners.Commands;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
 
 namespace NuanSystem.Application.Features.BusinessPartners.Policies;
@@ -7,6 +9,21 @@ public static class BusinessPartnerWritePolicy
 {
     public static readonly IReadOnlyCollection<string> BranchEditableFields =
         ["Name", "CommercialName", "Phone", "Email", "Addresses", "Contacts"];
+
+    private static readonly HashSet<string> BranchCreateAllowedInputFields =
+    [
+        nameof(CreateBusinessPartnerCommand.Name),
+        nameof(CreateBusinessPartnerCommand.CommercialName),
+        nameof(CreateBusinessPartnerCommand.Phone),
+        nameof(CreateBusinessPartnerCommand.Email),
+        nameof(CreateBusinessPartnerCommand.Addresses),
+        nameof(CreateBusinessPartnerCommand.Contacts),
+        nameof(CreateBusinessPartnerCommand.PartnerType),
+        nameof(CreateBusinessPartnerCommand.IdentificationTypeId),
+        nameof(CreateBusinessPartnerCommand.IdentificationNumber),
+        nameof(CreateBusinessPartnerCommand.AuditUserId),
+        nameof(CreateBusinessPartnerCommand.AuditUserName)
+    ];
 
     public static bool IsSynchronizedBranch(CompanyConnectionInfo? company) =>
         company is { IsMaster: false, SyncEnabled: true };
@@ -26,6 +43,14 @@ public static class BusinessPartnerWritePolicy
         var branch = IsSynchronizedBranch(company);
         return new BusinessPartnerEditPolicyDto(branch, !branch, branch ? BranchEditableFields : []);
     }
+
+    public static IReadOnlyCollection<string> GetNonDefaultProtectedPaths(CreateBusinessPartnerCommand proposed) =>
+        proposed.GetType()
+            .GetProperties()
+            .Where(property => !BranchCreateAllowedInputFields.Contains(property.Name))
+            .Where(property => HasUserValue(property.GetValue(proposed)))
+            .Select(property => property.Name)
+            .ToArray();
 
     public static IReadOnlyCollection<string> GetChangedProtectedPaths(
         BusinessPartnerDto current,
@@ -140,4 +165,20 @@ public static class BusinessPartnerWritePolicy
 
     private static bool AttachmentsEqual(IReadOnlyCollection<BusinessPartnerAttachmentDto> current, IReadOnlyCollection<SaveBusinessPartnerAttachmentData> proposed) =>
         current.Select(x => new SaveBusinessPartnerAttachmentData(x.AttachmentType, x.FileName, x.Description, x.ReferencePath, x.FileSize, x.IsActive)).SequenceEqual(proposed);
+
+    private static bool HasUserValue(object? value) => value switch
+    {
+        null => false,
+        string text => !string.IsNullOrWhiteSpace(text),
+        bool flag => flag,
+        byte number => number != 0,
+        short number => number != 0,
+        int number => number != 0,
+        long number => number != 0,
+        float number => number != 0,
+        double number => number != 0,
+        decimal number => number != 0,
+        IEnumerable values => values.Cast<object?>().Any(),
+        _ => true
+    };
 }

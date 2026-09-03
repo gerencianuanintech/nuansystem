@@ -541,54 +541,6 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_BUSINESSPARTNER_LOCAL_FORREAD
-    @Id int
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SELECT bp.Id AS Id,bp.NormalizedIdentificationNumber AS NormalizedIdentificationNumber,
-           bp.CanonicalVersion AS CanonicalVersion,bp.MasterSyncStatus AS MasterSyncStatus,
-           bp.MasterSyncMessage AS MasterSyncMessage,bp.RowVersion AS RowVersion
-    FROM dbo.BusinessPartners AS bp
-    WHERE bp.Id=@Id AND bp.IsDeleted=0;
-
-    SELECT addressItem.Id AS Id,addressItem.GlobalId AS GlobalId,
-           addressItem.BusinessPartnerId AS BusinessPartnerId,
-           addressItem.CountryId AS CountryId,addressItem.ProvinceId AS ProvinceId,
-           addressItem.CityId AS CityId,addressItem.AddressType AS AddressType,
-           addressItem.Line1 AS Line1,addressItem.Line2 AS Line2,
-           addressItem.CountryCode AS CountryCode,addressItem.Province AS Province,
-           province.Code AS ProvinceCode,addressItem.City AS City,city.Code AS CityCode,
-           addressItem.PostalCode AS PostalCode,addressItem.Latitude AS Latitude,
-           addressItem.Longitude AS Longitude,addressItem.IsPrimary AS IsPrimary,
-           addressItem.IsActive AS IsActive
-    FROM dbo.BusinessPartnerAddresses AS addressItem
-    LEFT JOIN dbo.Provinces AS province ON province.ProvinceId=addressItem.ProvinceId
-    LEFT JOIN dbo.Cities AS city ON city.CityId=addressItem.CityId
-    WHERE addressItem.BusinessPartnerId=@Id AND addressItem.IsDeleted=0
-    ORDER BY addressItem.Id;
-
-    SELECT contactItem.Id AS Id,contactItem.GlobalId AS GlobalId,
-           contactItem.BusinessPartnerId AS BusinessPartnerId,
-           contactItem.ContactTypeId AS ContactTypeId,contactType.Code AS ContactTypeCode,
-           contactItem.ContactChannelId AS ContactChannelId,
-           contactChannel.Code AS ContactChannelCode,contactItem.Name AS Name,
-           contactItem.Position AS Position,contactItem.Department AS Department,
-           contactItem.Phone AS Phone,contactItem.Extension AS Extension,
-           contactItem.Mobile AS Mobile,contactItem.Email AS Email,
-           contactItem.[Language] AS [Language],
-           contactItem.ReceivesNotifications AS ReceivesNotifications,
-           contactItem.IsPrimary AS IsPrimary,contactItem.IsActive AS IsActive,
-           contactItem.Notes AS Notes
-    FROM dbo.BusinessPartnerContacts AS contactItem
-    LEFT JOIN dbo.ContactTypes AS contactType ON contactType.ContactTypeId=contactItem.ContactTypeId
-    LEFT JOIN dbo.ContactChannels AS contactChannel ON contactChannel.ContactChannelId=contactItem.ContactChannelId
-    WHERE contactItem.BusinessPartnerId=@Id AND contactItem.IsDeleted=0
-    ORDER BY contactItem.Id;
-END;
-GO
-
 CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_BUSINESSPARTNER_PROPOSAL_ACCEPT
     @ProposalEventId uniqueidentifier,
     @CompanyId int,
@@ -1390,6 +1342,222 @@ BEGIN
 END;
 GO
 
+CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_BUSINESSPARTNERS_LISTAR
+    @PartnerType nvarchar(20)=NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        bp.Id,bp.GlobalId,bp.Code,bp.Name,bp.ExternalSystem,bp.ExternalCode,
+        bp.CommercialName,bp.PartnerType,
+        bp.IdentificationTypeId,idt.Code AS IdentificationTypeCode,idt.Name AS IdentificationTypeName,
+        bp.IdentificationNumber,
+        bp.SupplierGroupId,bp.SupplierClassId,bp.EconomicActivityId,bp.ZoneId,bp.SupplyMethodId,
+        bp.Email,bp.Phone,bp.Website,bp.Remarks,bp.IsActive,
+        fiscal.TaxpayerTypeId,fiscal.TaxRegimeId,fiscal.FiscalCountryId,
+        fiscal.TaxpayerType,fiscal.IsAccountingRequired,fiscal.AppliesRetention,fiscal.FiscalRegime,
+        fiscal.CountryCode,fiscal.Province,fiscal.City,
+        credit.PaymentTermId,terms.Code AS PaymentTermCode,terms.Name AS PaymentTermName,
+        credit.CreditDays,credit.CreditLimit,credit.DeliveryDays,credit.MinimumOrderAmount,
+        credit.AllowsBackorder,credit.PreferredCurrencyCode,credit.PriceListCode,
+        credit.AssignedSellerCode,credit.AssignedBuyerCode,
+        purchase.Incoterm,purchase.CommercialDiscountPercent,purchase.PurchaseCurrencyCode,
+        purchase.PreferredWarehouseId,purchase.PurchaseSupplierType,purchase.PreferredWarehouseCode,
+        purchase.MinimumOrderQuantity,purchase.ActiveForImport,purchase.SubjectToEvaluation,
+        purchase.AllowsUrgentPurchases,purchase.AverageDeliveryDays,purchase.LeadTimeDays,
+        purchase.DeliveryToleranceDays,purchase.RequiresPurchaseOrder,
+        credit.CreditStatus,
+        accounting.CustomerAccountId,customerAccount.Code AS CustomerAccountCode,
+        customerAccount.Name AS CustomerAccountName,
+        accounting.SupplierAccountId,supplierAccount.Code AS SupplierAccountCode,
+        supplierAccount.Name AS SupplierAccountName,
+        accounting.CustomerAdvanceAccountId,accounting.SupplierAdvanceAccountId,
+        accounting.RetentionAccountId,
+        accounting.BranchId,branch.Name AS BranchName,
+        accounting.DepartmentId,department.Name AS DepartmentName,
+        accounting.BusinessLineId,businessLine.Name AS BusinessLineName,
+        accounting.CostCenterId,costCenter.Name AS CostCenterName,
+        accounting.ProjectId,project.Name AS ProjectName,
+        accounting.CostCenterCode,
+        accounting.DefaultExpenseAccountId,accounting.DifferenceAccountId,
+        accounting.RoundingAccountId,accounting.ClearingAccountId,accounting.DiscountAccountId,
+        accounting.AccountingBySupplier,accounting.RequiresProvision,accounting.AllowsAdvance,
+        accounting.AllowsCompensation,accounting.AllowsPartialPayments,accounting.IsPaymentBlocked,
+        accounting.UsesWithholdingBase,accounting.ConciliationRequired,
+        accounting.AccountingPaymentMethodId,accounting.PaymentPriorityId,
+        accounting.ApprovalFlowId,accounting.PaymentDocumentTypeId,
+        accounting.AccountingPaymentMethod,accounting.PaymentPriority,accounting.RequiredPaymentDay,
+        accounting.ApprovalFlow,accounting.PaymentDocumentType,accounting.AveragePaymentDays,
+        accounting.PaymentTolerancePercent,
+        sap.SapCardCode,sap.SapCardType,sap.SapSyncStatus,sap.SapLastSyncAt,sap.SapLastError,
+        sap.SapEnabled,sap.SapMode,sap.SapCompanyCode,sap.SapRetryCount,
+        sap.SyncAsSupplier,sap.AllowManualSapRetry,sap.RequiresApprovalBeforeSapSync,
+        bp.CreatedByUserId,bp.CreatedByUserName,bp.CreatedAt,
+        bp.UpdatedByUserId,bp.UpdatedByUserName,bp.UpdatedAt,
+        bp.NormalizedIdentificationNumber AS NormalizedIdentificationNumber,
+        bp.CanonicalVersion AS CanonicalVersion,
+        bp.MasterSyncStatus AS MasterSyncStatus,
+        bp.MasterSyncMessage AS MasterSyncMessage,
+        bp.RowVersion AS RowVersion
+    FROM dbo.BusinessPartners AS bp
+    INNER JOIN dbo.BusinessPartnerIdentificationTypes AS idt ON idt.Id=bp.IdentificationTypeId
+    LEFT JOIN dbo.BusinessPartnerFiscalData AS fiscal ON fiscal.BusinessPartnerId=bp.Id
+    LEFT JOIN dbo.BusinessPartnerCreditSettings AS credit ON credit.BusinessPartnerId=bp.Id
+    LEFT JOIN dbo.BusinessPartnerPurchaseSettings AS purchase ON purchase.BusinessPartnerId=bp.Id
+    LEFT JOIN dbo.BusinessPartnerPaymentTerms AS terms ON terms.Id=credit.PaymentTermId
+    LEFT JOIN dbo.BusinessPartnerAccountingSettings AS accounting ON accounting.BusinessPartnerId=bp.Id
+    LEFT JOIN dbo.ChartOfAccounts AS customerAccount ON customerAccount.Id=accounting.CustomerAccountId
+    LEFT JOIN dbo.ChartOfAccounts AS supplierAccount ON supplierAccount.Id=accounting.SupplierAccountId
+    LEFT JOIN dbo.Branches AS branch ON branch.BranchId=accounting.BranchId
+    LEFT JOIN dbo.Departments AS department ON department.DepartmentId=accounting.DepartmentId
+    LEFT JOIN dbo.BusinessLines AS businessLine ON businessLine.BusinessLineId=accounting.BusinessLineId
+    LEFT JOIN dbo.CostCenters AS costCenter ON costCenter.CostCenterId=accounting.CostCenterId
+    LEFT JOIN dbo.Projects AS project ON project.ProjectId=accounting.ProjectId
+    LEFT JOIN dbo.BusinessPartnerSapMapping AS sap ON sap.BusinessPartnerId=bp.Id
+    WHERE bp.IsDeleted=0
+      AND (@PartnerType IS NULL OR bp.PartnerType=@PartnerType OR bp.PartnerType=N'Both')
+    ORDER BY bp.Code,bp.Name;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORID
+    @Id int
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        bp.Id,bp.GlobalId,bp.Code,bp.Name,bp.ExternalSystem,bp.ExternalCode,
+        bp.CommercialName,bp.PartnerType,
+        bp.IdentificationTypeId,idt.Code AS IdentificationTypeCode,idt.Name AS IdentificationTypeName,
+        bp.IdentificationNumber,
+        bp.SupplierGroupId,bp.SupplierClassId,bp.EconomicActivityId,bp.ZoneId,bp.SupplyMethodId,
+        bp.Email,bp.Phone,bp.Website,bp.Remarks,bp.IsActive,
+        fiscal.TaxpayerTypeId,fiscal.TaxRegimeId,fiscal.FiscalCountryId,
+        fiscal.TaxpayerType,fiscal.IsAccountingRequired,fiscal.AppliesRetention,fiscal.FiscalRegime,
+        fiscal.CountryCode,fiscal.Province,fiscal.City,
+        credit.PaymentTermId,terms.Code AS PaymentTermCode,terms.Name AS PaymentTermName,
+        credit.CreditDays,credit.CreditLimit,credit.DeliveryDays,credit.MinimumOrderAmount,
+        credit.AllowsBackorder,credit.PreferredCurrencyCode,credit.PriceListCode,
+        credit.AssignedSellerCode,credit.AssignedBuyerCode,
+        purchase.Incoterm,purchase.CommercialDiscountPercent,purchase.PurchaseCurrencyCode,
+        purchase.PreferredWarehouseId,purchase.PurchaseSupplierType,purchase.PreferredWarehouseCode,
+        purchase.MinimumOrderQuantity,purchase.ActiveForImport,purchase.SubjectToEvaluation,
+        purchase.AllowsUrgentPurchases,purchase.AverageDeliveryDays,purchase.LeadTimeDays,
+        purchase.DeliveryToleranceDays,purchase.RequiresPurchaseOrder,
+        credit.CreditStatus,
+        accounting.CustomerAccountId,customerAccount.Code AS CustomerAccountCode,
+        customerAccount.Name AS CustomerAccountName,
+        accounting.SupplierAccountId,supplierAccount.Code AS SupplierAccountCode,
+        supplierAccount.Name AS SupplierAccountName,
+        accounting.CustomerAdvanceAccountId,accounting.SupplierAdvanceAccountId,
+        accounting.RetentionAccountId,
+        accounting.BranchId,branch.Name AS BranchName,
+        accounting.DepartmentId,department.Name AS DepartmentName,
+        accounting.BusinessLineId,businessLine.Name AS BusinessLineName,
+        accounting.CostCenterId,costCenter.Name AS CostCenterName,
+        accounting.ProjectId,project.Name AS ProjectName,
+        accounting.CostCenterCode,
+        accounting.DefaultExpenseAccountId,accounting.DifferenceAccountId,
+        accounting.RoundingAccountId,accounting.ClearingAccountId,accounting.DiscountAccountId,
+        accounting.AccountingBySupplier,accounting.RequiresProvision,accounting.AllowsAdvance,
+        accounting.AllowsCompensation,accounting.AllowsPartialPayments,accounting.IsPaymentBlocked,
+        accounting.UsesWithholdingBase,accounting.ConciliationRequired,
+        accounting.AccountingPaymentMethodId,accounting.PaymentPriorityId,
+        accounting.ApprovalFlowId,accounting.PaymentDocumentTypeId,
+        accounting.AccountingPaymentMethod,accounting.PaymentPriority,accounting.RequiredPaymentDay,
+        accounting.ApprovalFlow,accounting.PaymentDocumentType,accounting.AveragePaymentDays,
+        accounting.PaymentTolerancePercent,
+        sap.SapCardCode,sap.SapCardType,sap.SapSyncStatus,sap.SapLastSyncAt,sap.SapLastError,
+        sap.SapEnabled,sap.SapMode,sap.SapCompanyCode,sap.SapRetryCount,
+        sap.SyncAsSupplier,sap.AllowManualSapRetry,sap.RequiresApprovalBeforeSapSync,
+        bp.CreatedByUserId,bp.CreatedByUserName,bp.CreatedAt,
+        bp.UpdatedByUserId,bp.UpdatedByUserName,bp.UpdatedAt,
+        bp.NormalizedIdentificationNumber AS NormalizedIdentificationNumber,
+        bp.CanonicalVersion AS CanonicalVersion,
+        bp.MasterSyncStatus AS MasterSyncStatus,
+        bp.MasterSyncMessage AS MasterSyncMessage,
+        bp.RowVersion AS RowVersion
+    FROM dbo.BusinessPartners AS bp
+    INNER JOIN dbo.BusinessPartnerIdentificationTypes AS idt ON idt.Id=bp.IdentificationTypeId
+    LEFT JOIN dbo.BusinessPartnerFiscalData AS fiscal ON fiscal.BusinessPartnerId=bp.Id
+    LEFT JOIN dbo.BusinessPartnerCreditSettings AS credit ON credit.BusinessPartnerId=bp.Id
+    LEFT JOIN dbo.BusinessPartnerPurchaseSettings AS purchase ON purchase.BusinessPartnerId=bp.Id
+    LEFT JOIN dbo.BusinessPartnerPaymentTerms AS terms ON terms.Id=credit.PaymentTermId
+    LEFT JOIN dbo.BusinessPartnerAccountingSettings AS accounting ON accounting.BusinessPartnerId=bp.Id
+    LEFT JOIN dbo.ChartOfAccounts AS customerAccount ON customerAccount.Id=accounting.CustomerAccountId
+    LEFT JOIN dbo.ChartOfAccounts AS supplierAccount ON supplierAccount.Id=accounting.SupplierAccountId
+    LEFT JOIN dbo.Branches AS branch ON branch.BranchId=accounting.BranchId
+    LEFT JOIN dbo.Departments AS department ON department.DepartmentId=accounting.DepartmentId
+    LEFT JOIN dbo.BusinessLines AS businessLine ON businessLine.BusinessLineId=accounting.BusinessLineId
+    LEFT JOIN dbo.CostCenters AS costCenter ON costCenter.CostCenterId=accounting.CostCenterId
+    LEFT JOIN dbo.Projects AS project ON project.ProjectId=accounting.ProjectId
+    LEFT JOIN dbo.BusinessPartnerSapMapping AS sap ON sap.BusinessPartnerId=bp.Id
+    WHERE bp.Id=@Id AND bp.IsDeleted=0;
+
+    SELECT
+        addressItem.Id,addressItem.GlobalId AS GlobalId,addressItem.BusinessPartnerId,
+        addressItem.CountryId,addressItem.ProvinceId,addressItem.CityId,
+        addressItem.AddressType,addressItem.Line1,addressItem.Line2,addressItem.CountryCode,
+        addressItem.Province,addressItem.City,addressItem.PostalCode,
+        addressItem.Latitude,addressItem.Longitude,addressItem.IsPrimary,addressItem.IsActive,
+        province.Code AS ProvinceCode,city.Code AS CityCode
+    FROM dbo.BusinessPartnerAddresses AS addressItem
+    LEFT JOIN dbo.Provinces AS province ON province.ProvinceId=addressItem.ProvinceId
+    LEFT JOIN dbo.Cities AS city ON city.CityId=addressItem.CityId
+    WHERE addressItem.BusinessPartnerId=@Id AND addressItem.IsDeleted=0
+    ORDER BY addressItem.IsPrimary DESC,addressItem.AddressType,addressItem.City;
+
+    SELECT
+        contactItem.Id,contactItem.GlobalId AS GlobalId,contactItem.BusinessPartnerId,
+        contactItem.ContactTypeId,contactItem.ContactChannelId,contactItem.Name,
+        contactItem.Position,contactItem.Department,contactItem.Phone,contactItem.Extension,
+        contactItem.Mobile,contactItem.Email,contactItem.[Language],
+        contactItem.ReceivesNotifications,contactItem.IsPrimary,contactItem.IsActive,contactItem.Notes,
+        contactType.Code AS ContactTypeCode,contactChannel.Code AS ContactChannelCode
+    FROM dbo.BusinessPartnerContacts AS contactItem
+    LEFT JOIN dbo.ContactTypes AS contactType ON contactType.ContactTypeId=contactItem.ContactTypeId
+    LEFT JOIN dbo.ContactChannels AS contactChannel ON contactChannel.ContactChannelId=contactItem.ContactChannelId
+    WHERE contactItem.BusinessPartnerId=@Id AND contactItem.IsDeleted=0
+    ORDER BY contactItem.IsPrimary DESC,contactItem.Name;
+
+    SELECT
+        BusinessPartnerBankAccountId AS Id,BusinessPartnerId,BankId,BankAccountTypeId,
+        BankName,AccountType,AccountNumber,HolderName,HolderIdentification,CurrencyCode,
+        SwiftCode,AbaRoutingCode,Iban,BankCountry,BankCity,Notes,IsPrimary,IsActive
+    FROM dbo.BusinessPartnerBankAccounts
+    WHERE BusinessPartnerId=@Id AND IsDeleted=0
+    ORDER BY IsPrimary DESC,BankName,AccountNumber;
+
+    SELECT
+        BusinessPartnerRetentionSettingId AS Id,BusinessPartnerId,RetentionTypeId,
+        RetentionConceptId,TaxSupportId,RetentionType,SriCode,[Percent],EntryAccountId,
+        TaxSupport,AppliesIva,AppliesIncome,IsCurrent,Notes
+    FROM dbo.BusinessPartnerRetentionSettings
+    WHERE BusinessPartnerId=@Id AND IsDeleted=0
+    ORDER BY IsCurrent DESC,SriCode,RetentionType;
+
+    SELECT BusinessPartnerId,InternalNotes,PurchasingNotes,PaymentNotes,OperationalAlert
+    FROM dbo.BusinessPartnerNotes
+    WHERE BusinessPartnerId=@Id;
+
+    SELECT
+        BusinessPartnerSapFieldMappingId AS Id,BusinessPartnerId,SystemField,SapField,
+        Description,IsRequired,IsEnabled
+    FROM dbo.BusinessPartnerSapFieldMappings
+    WHERE BusinessPartnerId=@Id AND IsDeleted=0
+    ORDER BY SystemField,SapField;
+
+    SELECT
+        BusinessPartnerAttachmentId AS Id,BusinessPartnerId,AttachmentType,FileName,
+        Description,ReferencePath,FileSize,UploadedBy,UploadedAt,IsActive
+    FROM dbo.BusinessPartnerAttachmentsMetadata
+    WHERE BusinessPartnerId=@Id AND IsDeleted=0
+    ORDER BY UploadedAt DESC,FileName;
+END;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_BUSINESSPARTNERS_CREAR
     @GlobalId uniqueidentifier,
     @Code nvarchar(50),
@@ -1516,6 +1684,47 @@ BEGIN
         DECLARE @SapCardType nvarchar(1)=CASE WHEN @PartnerType=N'Supplier' THEN N'S' ELSE N'C' END,
                 @SapEnabled bit=CASE WHEN @SapCardCode IS NULL THEN 0 ELSE 1 END,
                 @SyncAsSupplier bit=CASE WHEN @PartnerType=N'Supplier' THEN 1 ELSE 0 END;
+
+        IF @IsActive=1 AND EXISTS
+        (
+            SELECT 1
+            FROM dbo.BusinessPartners WITH (UPDLOCK,HOLDLOCK,INDEX(UX_BusinessPartners_Identification_Active))
+            WHERE PartnerType=@PartnerType
+              AND IdentificationTypeId=@IdentificationTypeId
+              AND NormalizedIdentificationNumber=@NormalizedIdentificationNumber
+              AND IsDeleted=0 AND IsActive=1
+        )
+        BEGIN
+            IF @StartedTransaction=1 COMMIT TRANSACTION;
+            SELECT CAST(-1 AS int);
+            RETURN;
+        END;
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM dbo.BusinessPartners WITH (UPDLOCK,HOLDLOCK,INDEX(UX_BusinessPartners_Code_Active))
+            WHERE Code=@Code AND IsDeleted=0
+        )
+        BEGIN
+            IF @StartedTransaction=1 COMMIT TRANSACTION;
+            SELECT CAST(-2 AS int);
+            RETURN;
+        END;
+
+        IF @SapCardCode IS NOT NULL AND @SapCardCode<>N'' AND EXISTS
+        (
+            SELECT 1
+            FROM dbo.BusinessPartnerSapMapping WITH (UPDLOCK,HOLDLOCK,INDEX(UX_BusinessPartners_SapCardCode_Active))
+            WHERE SapCardCode=@SapCardCode
+              AND SapCardCode IS NOT NULL AND SapCardCode<>N''
+        )
+        BEGIN
+            IF @StartedTransaction=1 COMMIT TRANSACTION;
+            SELECT CAST(-3 AS int);
+            RETURN;
+        END;
+
         INSERT dbo.BusinessPartners
         (
             GlobalId,Code,Name,CommercialName,PartnerType,IdentificationTypeId,
@@ -1618,9 +1827,25 @@ BEGIN
         SELECT @Id;
     END TRY
     BEGIN CATCH
+        DECLARE @ErrorNumber int=ERROR_NUMBER(),@ErrorMessage nvarchar(4000)=ERROR_MESSAGE();
         IF XACT_STATE()=-1 ROLLBACK TRANSACTION;
         ELSE IF @StartedTransaction=1 ROLLBACK TRANSACTION;
         ELSE IF XACT_STATE()=1 ROLLBACK TRANSACTION BPCreate230;
+        IF @ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_Identification_Active%'
+        BEGIN
+            SELECT CAST(-1 AS int);
+            RETURN;
+        END;
+        IF @ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_Code_Active%'
+        BEGIN
+            SELECT CAST(-2 AS int);
+            RETURN;
+        END;
+        IF @ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_SapCardCode_Active%'
+        BEGIN
+            SELECT CAST(-3 AS int);
+            RETURN;
+        END;
         THROW;
     END CATCH;
 END;
@@ -1739,14 +1964,17 @@ BEGIN
 
     BEGIN TRY
         DECLARE @Code nvarchar(50),@PartnerType nvarchar(20),@IdentificationTypeId int,
-                @IdentificationNumber nvarchar(50),@CurrentRowVersion binary(8),
+                @IdentificationNumber nvarchar(50),@NormalizedIdentificationNumber nvarchar(50),
+                @CurrentIsActive bit,@CurrentRowVersion binary(8),
                 @SapCardCode nvarchar(50),@SapCardType nvarchar(1),@SapSyncStatus nvarchar(30),
                 @SapLastSyncAt datetime2(0),@SapLastError nvarchar(max),@SapEnabled bit,
                 @SapMode nvarchar(50),@SapCompanyCode nvarchar(80),@SapRetryCount int,
                 @SyncAsSupplier bit,@AllowManualSapRetry bit,@RequiresApprovalBeforeSapSync bit;
         SELECT @Code=bp.Code,@PartnerType=bp.PartnerType,
                @IdentificationTypeId=bp.IdentificationTypeId,
-               @IdentificationNumber=bp.IdentificationNumber,@CurrentRowVersion=bp.RowVersion,
+               @IdentificationNumber=bp.IdentificationNumber,
+               @NormalizedIdentificationNumber=bp.NormalizedIdentificationNumber,
+               @CurrentIsActive=bp.IsActive,@CurrentRowVersion=bp.RowVersion,
                @SapCardCode=mapping.SapCardCode,@SapCardType=mapping.SapCardType,
                @SapSyncStatus=mapping.SapSyncStatus,@SapLastSyncAt=mapping.SapLastSyncAt,
                @SapLastError=mapping.SapLastError,@SapEnabled=mapping.SapEnabled,
@@ -1764,6 +1992,22 @@ BEGIN
         BEGIN
             IF @StartedTransaction=1 COMMIT TRANSACTION;
             SELECT 0;
+            RETURN;
+        END;
+
+        IF @CurrentIsActive=0 AND @IsActive=1 AND EXISTS
+        (
+            SELECT 1
+            FROM dbo.BusinessPartners WITH (UPDLOCK,HOLDLOCK,INDEX(UX_BusinessPartners_Identification_Active))
+            WHERE PartnerType=@PartnerType
+              AND IdentificationTypeId=@IdentificationTypeId
+              AND NormalizedIdentificationNumber=@NormalizedIdentificationNumber
+              AND IsDeleted=0 AND IsActive=1
+              AND Id<>@Id
+        )
+        BEGIN
+            IF @StartedTransaction=1 COMMIT TRANSACTION;
+            SELECT CAST(-1 AS int);
             RETURN;
         END;
 
@@ -1845,9 +2089,15 @@ BEGIN
         SELECT COALESCE((SELECT TOP(1) AffectedRows FROM @LegacyResult),0);
     END TRY
     BEGIN CATCH
+        DECLARE @ErrorNumber int=ERROR_NUMBER(),@ErrorMessage nvarchar(4000)=ERROR_MESSAGE();
         IF XACT_STATE()=-1 ROLLBACK TRANSACTION;
         ELSE IF @StartedTransaction=1 ROLLBACK TRANSACTION;
         ELSE IF XACT_STATE()=1 ROLLBACK TRANSACTION BPUpdate230;
+        IF @ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_Identification_Active%'
+        BEGIN
+            SELECT CAST(-1 AS int);
+            RETURN;
+        END;
         THROW;
     END CATCH;
 END;
@@ -1914,20 +2164,6 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_BUSINESSPARTNER_CANONICAL_METADATA_LISTAR
-    @PartnerType nvarchar(20)=NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT Id,NormalizedIdentificationNumber,CanonicalVersion,MasterSyncStatus,
-           MasterSyncMessage,RowVersion
-    FROM dbo.BusinessPartners
-    WHERE IsDeleted=0
-      AND (@PartnerType IS NULL OR PartnerType=@PartnerType OR PartnerType=N'Both')
-    ORDER BY Id;
-END;
-GO
-
 CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_BUSINESSPARTNER_IDENTIFICATIONTYPE_CODE
     @IdentificationTypeId int
 AS
@@ -1952,7 +2188,7 @@ BEGIN
     WHERE PartnerType=@PartnerType
       AND IdentificationTypeId=@IdentificationTypeId
       AND NormalizedIdentificationNumber=@NormalizedIdentificationNumber
-      AND IsDeleted=0
+      AND IsDeleted=0 AND IsActive=1
       AND (@ExcluirId IS NULL OR Id<>@ExcluirId);
 END;
 GO

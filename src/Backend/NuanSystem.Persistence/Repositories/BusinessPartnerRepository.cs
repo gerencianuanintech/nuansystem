@@ -10,8 +10,6 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
 {
     private const string ListProcedure = "dbo.SP_NA_GET_BUSINESSPARTNERS_LISTAR";
     private const string GetByIdProcedure = "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORID";
-    private const string LocalReadProcedure = "dbo.SP_NA_GET_BUSINESSPARTNER_LOCAL_FORREAD";
-    private const string CanonicalMetadataListProcedure = "dbo.SP_NA_GET_BUSINESSPARTNER_CANONICAL_METADATA_LISTAR";
     private const string LookupsProcedure = "dbo.SP_NA_GET_BUSINESSPARTNERS_LOOKUPS";
     private const string CreateProcedure = "dbo.SP_NA_POST_BUSINESSPARTNERS_CREAR";
     private const string ExistsByCodeProcedure = "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORCODIGO";
@@ -26,17 +24,10 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
     public async Task<IReadOnlyCollection<BusinessPartnerDto>> GetAllAsync(string? partnerType, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        var partners = (await connection.QueryAsync<BusinessPartnerDto>(
-            new CommandDefinition(ListProcedure, new { PartnerType = partnerType }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure))).AsList();
-        var metadata = await connection.QueryAsync<BusinessPartnerCanonicalMetadataRow>(
-            new CommandDefinition(CanonicalMetadataListProcedure, new { PartnerType = partnerType }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
-        var byId = metadata.ToDictionary(item => item.Id);
-        foreach (var partner in partners)
-        {
-            if (byId.TryGetValue(partner.Id, out var item)) ApplyCanonicalMetadata(partner, item);
-        }
-
-        return partners;
+        return (await connection.QueryAsync<BusinessPartnerDto, BusinessPartnerCanonicalMetadataRow, BusinessPartnerDto>(
+            new CommandDefinition(ListProcedure, new { PartnerType = partnerType }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure),
+            MapCanonicalMetadata,
+            splitOn: "NormalizedIdentificationNumber")).AsList();
     }
 
     public async Task<BusinessPartnerDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -61,7 +52,11 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
         using var grid = await connection.QueryMultipleAsync(
             new CommandDefinition(GetByIdProcedure, new { Id = id }, transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
 
-        var partner = await grid.ReadSingleOrDefaultAsync<BusinessPartnerDto>();
+        var partner = grid
+            .Read<BusinessPartnerDto, BusinessPartnerCanonicalMetadataRow, BusinessPartnerDto>(
+                MapCanonicalMetadata,
+                splitOn: "NormalizedIdentificationNumber")
+            .SingleOrDefault();
         if (partner is null)
         {
             return null;
@@ -74,19 +69,6 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
         partner.Notes = await grid.ReadSingleOrDefaultAsync<BusinessPartnerNotesDto>();
         partner.SapFieldMappings = (await grid.ReadAsync<BusinessPartnerSapFieldMappingDto>()).AsList();
         partner.Attachments = (await grid.ReadAsync<BusinessPartnerAttachmentDto>()).AsList();
-        grid.Dispose();
-
-        using var localRead = await connection.QueryMultipleAsync(
-            new CommandDefinition(
-                LocalReadProcedure,
-                new { Id = id },
-                transaction,
-                cancellationToken: cancellationToken,
-                commandType: CommandType.StoredProcedure));
-        var metadata = await localRead.ReadSingleAsync<BusinessPartnerCanonicalMetadataRow>();
-        ApplyCanonicalMetadata(partner, metadata);
-        partner.Addresses = (await localRead.ReadAsync<BusinessPartnerAddressDto>()).AsList();
-        partner.Contacts = (await localRead.ReadAsync<BusinessPartnerContactDto>()).AsList();
         return partner;
     }
 
@@ -232,30 +214,26 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
                 cancellationToken: cancellationToken,
                 commandType: CommandType.StoredProcedure));
 
-    public async Task<bool> UpdateAsync(UpdateBusinessPartnerData partner, CancellationToken cancellationToken = default)
+    public async Task<int> UpdateAsync(UpdateBusinessPartnerData partner, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
         return await UpdateCoreAsync(partner, connection, transaction: null, cancellationToken);
     }
 
-    public Task<bool> UpdateAsync(
+    public Task<int> UpdateAsync(
         UpdateBusinessPartnerData partner,
         IDbConnection connection,
         IDbTransaction transaction,
         CancellationToken cancellationToken = default) =>
         UpdateCoreAsync(partner, connection, transaction, cancellationToken);
 
-    private static async Task<bool> UpdateCoreAsync(
+    private static Task<int> UpdateCoreAsync(
         UpdateBusinessPartnerData partner,
         IDbConnection connection,
         IDbTransaction? transaction,
         CancellationToken cancellationToken)
-    {
-        var affectedRows = await connection.ExecuteScalarAsync<int>(
+        => connection.ExecuteScalarAsync<int>(
             new CommandDefinition(UpdateProcedure, ToParameters(partner), transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
-
-        return affectedRows > 0;
-    }
 
     public async Task<BusinessPartnerSapImportResultData> ImportSupplierFromSapAsync(
         BusinessPartnerSapImportData supplier,
@@ -526,5 +504,13 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
         partner.MasterSyncStatus = metadata.MasterSyncStatus;
         partner.MasterSyncMessage = metadata.MasterSyncMessage;
         partner.RowVersion = Convert.ToBase64String(metadata.RowVersion);
+    }
+
+    private static BusinessPartnerDto MapCanonicalMetadata(
+        BusinessPartnerDto partner,
+        BusinessPartnerCanonicalMetadataRow metadata)
+    {
+        ApplyCanonicalMetadata(partner, metadata);
+        return partner;
     }
 }

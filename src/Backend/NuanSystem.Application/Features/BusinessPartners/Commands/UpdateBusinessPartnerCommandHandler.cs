@@ -63,11 +63,38 @@ public sealed class UpdateBusinessPartnerCommandHandler(
                     }
                 }
 
-                var updated = await repository.UpdateAsync(
+                if (!current.IsActive && updateData.IsActive
+                    && await repository.ExistsByIdentificationAsync(
+                        current.PartnerType,
+                        current.IdentificationTypeId,
+                        current.NormalizedIdentificationNumber,
+                        current.Id,
+                        connection,
+                        transaction,
+                        token))
+                {
+                    return Failure(
+                        "BP_IDENTIFICATION_ALREADY_EXISTS",
+                        "La identificacion ya existe para el mismo rol.",
+                        nameof(current.IdentificationNumber));
+                }
+
+                var updateResult = await repository.UpdateAsync(
                     updateData, connection, transaction, token);
-                if (!updated)
+                if (updateResult == -1)
+                {
+                    return Failure(
+                        "BP_IDENTIFICATION_ALREADY_EXISTS",
+                        "La identificacion ya existe para el mismo rol.",
+                        nameof(current.IdentificationNumber));
+                }
+                if (updateResult == 0)
                 {
                     return Failure("BP_CONCURRENCY_CONFLICT", "El tercero fue modificado por otro proceso. Recargue e intente nuevamente.", nameof(request.ExpectedRowVersion));
+                }
+                if (updateResult < 0)
+                {
+                    throw new InvalidOperationException($"El procedimiento de actualizacion devolvio un resultado inesperado: {updateResult}.");
                 }
 
                 var partner = await repository.GetByIdAsync(request.Id, connection, transaction, token)

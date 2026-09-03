@@ -23,8 +23,8 @@ public interface IBusinessPartnerRepository : IRepository
 
     Task<string?> GetIdentificationTypeCodeAsync(int identificationTypeId, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
 
-    Task<bool> UpdateAsync(UpdateBusinessPartnerData partner, CancellationToken cancellationToken = default);
-    Task<bool> UpdateAsync(UpdateBusinessPartnerData partner, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
+    Task<int> UpdateAsync(UpdateBusinessPartnerData partner, CancellationToken cancellationToken = default);
+    Task<int> UpdateAsync(UpdateBusinessPartnerData partner, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
 
     Task<BusinessPartnerSapImportResultData> ImportSupplierFromSapAsync(
         BusinessPartnerSapImportData supplier,

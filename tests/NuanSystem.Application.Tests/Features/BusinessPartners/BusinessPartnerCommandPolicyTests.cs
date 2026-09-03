@@ -71,7 +71,8 @@ public sealed class BusinessPartnerCommandPolicyTests
 
         Procedure(sql, "SP_NA_GET_BUSINESSPARTNERS_BUSCARPORIDENTIFICACION")
             .Should().ContainAll("@PartnerType nvarchar(20)", "@NormalizedIdentificationNumber nvarchar(50)",
-                "PartnerType=@PartnerType", "NormalizedIdentificationNumber=@NormalizedIdentificationNumber");
+                "PartnerType=@PartnerType", "NormalizedIdentificationNumber=@NormalizedIdentificationNumber",
+                "IsActive=1", "IsDeleted=0");
         Procedure(sql, "SP_NA_POST_BUSINESSPARTNER_CHILDREN_APPLY")
             .Should().Contain("$.globalId");
     }
@@ -96,21 +97,69 @@ public sealed class BusinessPartnerCommandPolicyTests
     }
 
     [Fact]
-    public void LocalRead230_ReturnsOnlyNonDeletedChildrenWithoutReusingCanonicalUpdateLocks()
+    public void LocalReads230_ReturnAggregateCanonicalMetadataAndRowVersionAtomically()
     {
         var sql = Read("database", "sql", "230_tenant_business_partner_bidirectional_operations.sql");
         var repository = Read("src", "Backend", "NuanSystem.Persistence", "Repositories", "BusinessPartnerRepository.cs");
 
-        var localRead = Procedure(sql, "SP_NA_GET_BUSINESSPARTNER_LOCAL_FORREAD");
-        localRead.Should().ContainAll(
+        var list = Procedure(sql, "SP_NA_GET_BUSINESSPARTNERS_LISTAR");
+        list.Should().ContainAll(
+            "bp.NormalizedIdentificationNumber AS NormalizedIdentificationNumber",
+            "bp.CanonicalVersion AS CanonicalVersion",
+            "bp.MasterSyncStatus AS MasterSyncStatus",
+            "bp.MasterSyncMessage AS MasterSyncMessage",
+            "bp.RowVersion AS RowVersion");
+
+        var detail = Procedure(sql, "SP_NA_GET_BUSINESSPARTNERS_BUSCARPORID");
+        detail.Should().ContainAll(
+                "bp.NormalizedIdentificationNumber AS NormalizedIdentificationNumber",
+                "bp.CanonicalVersion AS CanonicalVersion",
+                "bp.MasterSyncStatus AS MasterSyncStatus",
+                "bp.MasterSyncMessage AS MasterSyncMessage",
+                "bp.RowVersion AS RowVersion",
                 "addressItem.GlobalId AS GlobalId", "addressItem.IsDeleted=0",
                 "contactItem.GlobalId AS GlobalId", "contactItem.IsDeleted=0",
                 "province.Code AS ProvinceCode", "city.Code AS CityCode",
-                "contactType.Code AS ContactTypeCode", "contactChannel.Code AS ContactChannelCode")
-            .And.NotContain("UPDLOCK")
-            .And.NotContain("HOLDLOCK");
-        repository.Should().Contain("LocalReadProcedure")
-            .And.Contain("new { Id = id }");
+                "contactType.Code AS ContactTypeCode", "contactChannel.Code AS ContactChannelCode");
+        repository.Should().Contain("splitOn: \"NormalizedIdentificationNumber\"")
+            .And.NotContain("CanonicalMetadataListProcedure")
+            .And.NotContain("LocalReadProcedure");
+    }
+
+    [Fact]
+    public void TenantCrud230_ClassifiesOnlyNamedUniqueIndexCollisions()
+    {
+        var sql = Read("database", "sql", "230_tenant_business_partner_bidirectional_operations.sql");
+
+        var create = Procedure(sql, "SP_NA_POST_BUSINESSPARTNERS_CREAR");
+        create.Should().ContainAll(
+                "@IsActive=1 AND EXISTS",
+                "WITH (UPDLOCK,HOLDLOCK,INDEX(UX_BusinessPartners_Identification_Active))",
+                "WITH (UPDLOCK,HOLDLOCK,INDEX(UX_BusinessPartners_Code_Active))",
+                "WITH (UPDLOCK,HOLDLOCK,INDEX(UX_BusinessPartners_SapCardCode_Active))",
+                "ERROR_NUMBER()",
+                "ERROR_MESSAGE()",
+                "@ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_Identification_Active%'",
+                "@ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_Code_Active%'",
+                "@ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_SapCardCode_Active%'",
+                "SELECT CAST(-1 AS int)",
+                "SELECT CAST(-2 AS int)",
+                "SELECT CAST(-3 AS int)")
+            .And.Contain("THROW;");
+
+        var update = Procedure(sql, "SP_NA_PUT_BUSINESSPARTNERS_ACTUALIZAR");
+        update.Should().ContainAll(
+                "@CurrentIsActive=0 AND @IsActive=1 AND EXISTS",
+                "WITH (UPDLOCK,HOLDLOCK,INDEX(UX_BusinessPartners_Identification_Active))",
+                "ERROR_NUMBER()",
+                "ERROR_MESSAGE()",
+                "@ErrorNumber IN (2601,2627) AND @ErrorMessage LIKE N'%UX_BusinessPartners_Identification_Active%'",
+                "SELECT CAST(-1 AS int)")
+            .And.Contain("THROW;");
+
+        var repository = Read("src", "Backend", "NuanSystem.Persistence", "Repositories", "BusinessPartnerRepository.cs");
+        repository.Should().Contain("ExecuteScalarAsync<int>")
+            .And.Contain("Task<int> UpdateAsync");
     }
 
     [Fact]

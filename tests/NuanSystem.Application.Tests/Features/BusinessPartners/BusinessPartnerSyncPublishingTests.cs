@@ -47,7 +47,7 @@ public sealed class BusinessPartnerSyncPublishingTests
     {
         var partner = CreatePartner(name: "Cliente Actualizado");
         _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
-        _repository.UpdateAsync(Arg.Any<UpdateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
+        _repository.UpdateAsync(Arg.Any<UpdateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(1);
         var handler = CreateUpdateHandler();
 
         var result = await handler.Handle(UpdateCommand(partner.Id), CancellationToken.None);
@@ -152,6 +152,112 @@ public sealed class BusinessPartnerSyncPublishingTests
     }
 
     [Fact]
+    public async Task Create_BranchRejectsProtectedScalarBeforePersistence()
+    {
+        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(25);
+        _repository.GetByIdAsync(25, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(CreatePartner());
+
+        var result = await CreateCreateHandler(BranchCompany()).Handle(
+            BranchCreateCommand() with { Website = "https://branch.invalid" },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_PROTECTED_FIELD" && error.Field == "Website");
+        await _repository.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Create_BranchRejectsProtectedCollectionBeforePersistence()
+    {
+        var bankAccount = new SaveBusinessPartnerBankAccountData(
+            BankId: null,
+            BankAccountTypeId: null,
+            BankName: "Banco",
+            AccountType: "Checking",
+            AccountNumber: "001",
+            HolderName: null,
+            HolderIdentification: null,
+            CurrencyCode: null,
+            SwiftCode: null,
+            AbaRoutingCode: null,
+            Iban: null,
+            BankCountry: null,
+            BankCity: null,
+            Notes: null,
+            IsPrimary: false,
+            IsActive: true);
+        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(25);
+        _repository.GetByIdAsync(25, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(CreatePartner());
+
+        var result = await CreateCreateHandler(BranchCompany()).Handle(
+            BranchCreateCommand() with { BankAccounts = [bankAccount] },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_PROTECTED_FIELD" && error.Field == "BankAccounts");
+        await _repository.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Create_BranchAllowsAddressesAndContacts()
+    {
+        CreateBusinessPartnerData? saved = null;
+        var command = BranchCreateCommand() with
+        {
+            Addresses = [new SaveBusinessPartnerAddressData(null, null, null, null, "Main", "Calle 1", null, null, null, null, null, null, null, true, true)],
+            Contacts = [new SaveBusinessPartnerContactData(null, null, null, "Contacto", null, null, null, null, null, "contacto@example.test", null, false, true, true, null)]
+        };
+        _repository.CreateAsync(Arg.Do<CreateBusinessPartnerData>(data => saved = data), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(25);
+        _repository.GetByIdAsync(25, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(CreatePartner());
+
+        var result = await CreateCreateHandler(BranchCompany()).Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        saved!.Addresses.Should().ContainSingle();
+        saved.Contacts.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task Create_InactiveCandidateDoesNotConflictWithActiveIdentification()
+    {
+        _repository.ExistsByIdentificationAsync("Customer", 1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
+        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(25);
+        _repository.GetByIdAsync(25, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(CreatePartner());
+
+        var result = await CreateCreateHandler().Handle(
+            CreateCommand() with { IsActive = false },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Create_ActiveCandidateAllowsAnInactiveExistingIdentification()
+    {
+        _repository.ExistsByIdentificationAsync("Customer", 1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(25);
+        _repository.GetByIdAsync(25, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(CreatePartner());
+
+        var result = await CreateCreateHandler().Handle(CreateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(-1, "BP_IDENTIFICATION_ALREADY_EXISTS")]
+    [InlineData(-2, "BusinessPartnerCodeAlreadyExists")]
+    [InlineData(-3, "BP_SAP_CARD_CODE_ALREADY_EXISTS")]
+    public async Task Create_MapsOnlyAuthoritativeConcurrentNamedUniqueCollisions(int persistenceResult, string expectedCode)
+    {
+        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(persistenceResult);
+
+        var result = await CreateCreateHandler().Handle(CreateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == expectedCode);
+    }
+
+    [Fact]
     public async Task Create_CentralEnabledPolicyCalculatesSapCodeButBranchNeverDoes()
     {
         var central = Company(syncEnabled: true);
@@ -178,7 +284,7 @@ public sealed class BusinessPartnerSyncPublishingTests
         _repository.GetByIdAsync(26, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(CreatePartner());
 
         var branchResult = await new CreateBusinessPartnerCommandHandler(_repository, _transactionRunner, _writer, _companyContext, _sapPolicyRepository)
-            .Handle(CreateCommand(), CancellationToken.None);
+            .Handle(BranchCreateCommand(), CancellationToken.None);
 
         branchResult.IsSuccess.Should().BeTrue();
         branchSaved!.SapCardCode.Should().BeNull();
@@ -193,7 +299,7 @@ public sealed class BusinessPartnerSyncPublishingTests
         var partner = CreatePartner();
         UpdateBusinessPartnerData? saved = null;
         _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
-        _repository.UpdateAsync(Arg.Do<UpdateBusinessPartnerData>(data => saved = data), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.UpdateAsync(Arg.Do<UpdateBusinessPartnerData>(data => saved = data), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(0);
 
         var result = await CreateUpdateHandler().Handle(UpdateCommand(partner.Id), CancellationToken.None);
 
@@ -203,6 +309,39 @@ public sealed class BusinessPartnerSyncPublishingTests
         saved.Code.Should().Be(partner.Code);
         saved.PartnerType.Should().Be(partner.PartnerType);
         saved.IdentificationNumber.Should().Be(partner.IdentificationNumber);
+    }
+
+    [Fact]
+    public async Task Update_ReactivationRejectsAnActiveIdentificationCompetitor()
+    {
+        var partner = CreatePartner();
+        partner.IsActive = false;
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+        _repository.ExistsByIdentificationAsync(partner.PartnerType, partner.IdentificationTypeId, partner.NormalizedIdentificationNumber, partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
+        _repository.UpdateAsync(Arg.Any<UpdateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(1);
+
+        var result = await CreateUpdateHandler().Handle(
+            UpdateCommand(partner.Id) with { IsActive = true },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_IDENTIFICATION_ALREADY_EXISTS");
+    }
+
+    [Fact]
+    public async Task Update_MapsAuthoritativeReactivationRaceToIdentificationConflict()
+    {
+        var partner = CreatePartner();
+        partner.IsActive = false;
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+        _repository.UpdateAsync(Arg.Any<UpdateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(-1);
+
+        var result = await CreateUpdateHandler().Handle(
+            UpdateCommand(partner.Id) with { IsActive = true },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_IDENTIFICATION_ALREADY_EXISTS");
     }
 
     [Theory]
@@ -228,7 +367,7 @@ public sealed class BusinessPartnerSyncPublishingTests
         var partner = CreatePartner();
         _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
         UpdateBusinessPartnerData? saved = null;
-        _repository.UpdateAsync(Arg.Do<UpdateBusinessPartnerData>(data => saved = data), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
+        _repository.UpdateAsync(Arg.Do<UpdateBusinessPartnerData>(data => saved = data), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(1);
 
         var allowed = await CreateUpdateHandler(BranchCompany()).Handle(UpdateCommand(partner.Id) with { Name = "Cliente Editado" }, CancellationToken.None);
 
@@ -248,7 +387,7 @@ public sealed class BusinessPartnerSyncPublishingTests
         partner.CanonicalVersion = 7;
         _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
         UpdateBusinessPartnerData? saved = null;
-        _repository.UpdateAsync(Arg.Do<UpdateBusinessPartnerData>(data => saved = data), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
+        _repository.UpdateAsync(Arg.Do<UpdateBusinessPartnerData>(data => saved = data), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(1);
 
         var result = await CreateUpdateHandler().Handle(UpdateCommand(partner.Id) with { Website = "https://standalone.example" }, CancellationToken.None);
 
@@ -505,6 +644,15 @@ public sealed class BusinessPartnerSyncPublishingTests
             AuditUserId: 7,
             AuditUserName: "admin");
     }
+
+    private static CreateBusinessPartnerCommand BranchCreateCommand() =>
+        CreateCommand() with
+        {
+            IsActive = false,
+            CountryCode = null,
+            AllowsPartialPayments = false,
+            CreditStatus = null
+        };
 
     private static UpdateBusinessPartnerCommand UpdateCommand(int id)
     {

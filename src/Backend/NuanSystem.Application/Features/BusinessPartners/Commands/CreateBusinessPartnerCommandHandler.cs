@@ -40,6 +40,17 @@ public sealed class CreateBusinessPartnerCommandHandler(
 
         var isBranch = BusinessPartnerWritePolicy.IsSynchronizedBranch(company);
         var isCentral = BusinessPartnerWritePolicy.IsSynchronizedCentral(company);
+        if (isBranch)
+        {
+            var protectedPaths = BusinessPartnerWritePolicy.GetNonDefaultProtectedPaths(request);
+            if (protectedPaths.Count > 0)
+            {
+                return Result<BusinessPartnerDto>.Failure(
+                    "La sucursal no puede establecer campos gobernados por la central.",
+                    protectedPaths.Select(path => new ApiError("BP_PROTECTED_FIELD", "El campo es administrado por la central.", path)).ToArray());
+            }
+        }
+
         var canonicalVersion = isCentral ? 1L : 0L;
         var masterSyncStatus = isBranch ? "PendingMaster" : "Accepted";
         var sapPolicy = company is { IsMaster: true }
@@ -56,7 +67,7 @@ public sealed class CreateBusinessPartnerCommandHandler(
                         [new ApiError("BusinessPartnerCodeAlreadyExists", "El codigo interno ya existe.", "Code")]);
                 }
 
-                if (await repository.ExistsByIdentificationAsync(
+                if (request.IsActive && await repository.ExistsByIdentificationAsync(
                         partnerType, request.IdentificationTypeId, normalizedIdentification, null, connection, transaction, token))
                 {
                     return Result<BusinessPartnerDto>.Failure(
@@ -93,6 +104,23 @@ public sealed class CreateBusinessPartnerCommandHandler(
                     ToCreateData(request, globalId, code, partnerType, identificationNumber,
                         normalizedIdentification, canonicalVersion, masterSyncStatus, sapCardCode),
                     connection, transaction, token);
+                if (id == -1)
+                {
+                    return Failure("BP_IDENTIFICATION_ALREADY_EXISTS", "La identificacion ya existe para el mismo rol.", nameof(request.IdentificationNumber));
+                }
+                if (id == -2)
+                {
+                    return Failure("BusinessPartnerCodeAlreadyExists", "El codigo interno ya existe.", "Code");
+                }
+                if (id == -3)
+                {
+                    return Failure("BP_SAP_CARD_CODE_ALREADY_EXISTS", "El codigo SAP ya esta asignado a otro tercero.", "SapCardCode");
+                }
+                if (id <= 0)
+                {
+                    throw new InvalidOperationException($"El procedimiento de creacion devolvio un resultado inesperado: {id}.");
+                }
+
                 var partner = await repository.GetByIdAsync(id, connection, transaction, token)
                     ?? throw new InvalidOperationException("El tercero comercial fue creado pero no pudo consultarse.");
 
