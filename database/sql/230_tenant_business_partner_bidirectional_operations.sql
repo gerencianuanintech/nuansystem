@@ -58,6 +58,8 @@ BEGIN
     SET NOCOUNT ON;
     IF @@TRANCOUNT = 0
         THROW 52030, 'SyncInbox envelope guard requires an ambient transaction.', 1;
+    IF @EventId IS NULL OR @SourceCompanyId IS NULL OR @EntityName IS NULL OR @EntityGlobalId IS NULL OR @Operation IS NULL OR @PayloadJson IS NULL
+        THROW 52030, 'SyncInbox envelope required fields cannot be null.', 1;
 
     DECLARE @ExistingSourceCompanyId int,@ExistingEntityName nvarchar(120),
             @ExistingEntityGlobalId uniqueidentifier,@ExistingOperation nvarchar(30),
@@ -79,11 +81,11 @@ BEGIN
         RETURN;
     END;
 
-    IF @ExistingSourceCompanyId<>@SourceCompanyId
-       OR @ExistingEntityGlobalId<>@EntityGlobalId
-       OR @ExistingEntityName COLLATE Latin1_General_100_BIN2<>@EntityName COLLATE Latin1_General_100_BIN2
-       OR @ExistingOperation COLLATE Latin1_General_100_BIN2<>@Operation COLLATE Latin1_General_100_BIN2
-       OR @ExistingPayloadJson COLLATE Latin1_General_100_BIN2<>@PayloadJson COLLATE Latin1_General_100_BIN2
+    IF CASE WHEN @ExistingSourceCompanyId=@SourceCompanyId OR (@ExistingSourceCompanyId IS NULL AND @SourceCompanyId IS NULL) THEN 0 ELSE 1 END=1
+       OR CASE WHEN @ExistingEntityName COLLATE Latin1_General_100_BIN2=@EntityName COLLATE Latin1_General_100_BIN2 OR (@ExistingEntityName IS NULL AND @EntityName IS NULL) THEN 0 ELSE 1 END=1
+       OR CASE WHEN @ExistingEntityGlobalId=@EntityGlobalId OR (@ExistingEntityGlobalId IS NULL AND @EntityGlobalId IS NULL) THEN 0 ELSE 1 END=1
+       OR CASE WHEN @ExistingOperation COLLATE Latin1_General_100_BIN2=@Operation COLLATE Latin1_General_100_BIN2 OR (@ExistingOperation IS NULL AND @Operation IS NULL) THEN 0 ELSE 1 END=1
+       OR CASE WHEN @ExistingPayloadJson COLLATE Latin1_General_100_BIN2=@PayloadJson COLLATE Latin1_General_100_BIN2 OR (@ExistingPayloadJson IS NULL AND @PayloadJson IS NULL) THEN 0 ELSE 1 END=1
     BEGIN
         UPDATE dbo.SyncInbox
         SET Status=N'DeadLetter',ErrorMessage=N'EventId collision: persisted inbox envelope differs.',
@@ -116,6 +118,8 @@ BEGIN
     SET NOCOUNT ON;
     IF @@TRANCOUNT = 0
         THROW 52030, 'LocalOutbox envelope guard requires an ambient transaction.', 1;
+    IF @EventId IS NULL OR @CompanyId IS NULL OR @EntityName IS NULL OR @EntityGlobalId IS NULL OR @Operation IS NULL OR @PayloadJson IS NULL
+        THROW 52030, 'LocalOutbox envelope required fields cannot be null.', 1;
 
     DECLARE @ExistingCompanyId int,@ExistingTargetCompanyId int,
             @ExistingCausationEventId uniqueidentifier,@ExistingEntityName nvarchar(120),
@@ -141,14 +145,14 @@ BEGIN
         RETURN;
     END;
 
-    IF @ExistingCompanyId<>@CompanyId
-       OR @ExistingEntityGlobalId<>@EntityGlobalId
-       OR (@ExistingTargetCompanyId<>@TargetCompanyId OR (@ExistingTargetCompanyId IS NULL AND @TargetCompanyId IS NOT NULL) OR (@ExistingTargetCompanyId IS NOT NULL AND @TargetCompanyId IS NULL))
-       OR (@ExistingCausationEventId<>@CausationEventId OR (@ExistingCausationEventId IS NULL AND @CausationEventId IS NOT NULL) OR (@ExistingCausationEventId IS NOT NULL AND @CausationEventId IS NULL))
-       OR @ExistingEntityName COLLATE Latin1_General_100_BIN2<>@EntityName COLLATE Latin1_General_100_BIN2
-       OR (@ExistingEntityCode COLLATE Latin1_General_100_BIN2<>@EntityCode COLLATE Latin1_General_100_BIN2 OR (@ExistingEntityCode IS NULL AND @EntityCode IS NOT NULL) OR (@ExistingEntityCode IS NOT NULL AND @EntityCode IS NULL))
-       OR @ExistingOperation COLLATE Latin1_General_100_BIN2<>@Operation COLLATE Latin1_General_100_BIN2
-       OR @ExistingPayloadJson COLLATE Latin1_General_100_BIN2<>@PayloadJson COLLATE Latin1_General_100_BIN2
+    IF CASE WHEN @ExistingCompanyId=@CompanyId OR (@ExistingCompanyId IS NULL AND @CompanyId IS NULL) THEN 0 ELSE 1 END=1
+       OR CASE WHEN @ExistingTargetCompanyId=@TargetCompanyId OR (@ExistingTargetCompanyId IS NULL AND @TargetCompanyId IS NULL) THEN 0 ELSE 1 END=1
+       OR CASE WHEN @ExistingCausationEventId=@CausationEventId OR (@ExistingCausationEventId IS NULL AND @CausationEventId IS NULL) THEN 0 ELSE 1 END=1
+       OR CASE WHEN @ExistingEntityName COLLATE Latin1_General_100_BIN2=@EntityName COLLATE Latin1_General_100_BIN2 OR (@ExistingEntityName IS NULL AND @EntityName IS NULL) THEN 0 ELSE 1 END=1
+       OR CASE WHEN @ExistingEntityGlobalId=@EntityGlobalId OR (@ExistingEntityGlobalId IS NULL AND @EntityGlobalId IS NULL) THEN 0 ELSE 1 END=1
+       OR CASE WHEN @ExistingEntityCode COLLATE Latin1_General_100_BIN2=@EntityCode COLLATE Latin1_General_100_BIN2 OR (@ExistingEntityCode IS NULL AND @EntityCode IS NULL) THEN 0 ELSE 1 END=1
+       OR CASE WHEN @ExistingOperation COLLATE Latin1_General_100_BIN2=@Operation COLLATE Latin1_General_100_BIN2 OR (@ExistingOperation IS NULL AND @Operation IS NULL) THEN 0 ELSE 1 END=1
+       OR CASE WHEN @ExistingPayloadJson COLLATE Latin1_General_100_BIN2=@PayloadJson COLLATE Latin1_General_100_BIN2 OR (@ExistingPayloadJson IS NULL AND @PayloadJson IS NULL) THEN 0 ELSE 1 END=1
     BEGIN
         UPDATE dbo.LocalOutbox
         SET Status=N'DeadLetter',LastErrorMessage=N'EventId collision: persisted outbox envelope differs.',NextRetryAt=NULL

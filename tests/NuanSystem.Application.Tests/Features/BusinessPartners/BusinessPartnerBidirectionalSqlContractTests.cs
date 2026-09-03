@@ -184,6 +184,41 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
     }
 
     [Fact]
+    public void EventEnvelopeGuards_RejectMissingRequiredValuesAndCompareEveryFieldNullSafely()
+    {
+        var inboxGuard = Procedure("SP_NA_POST_BUSINESSPARTNER_SYNCINBOX_ENSURE");
+        var outboxGuard = Procedure("SP_NA_POST_BUSINESSPARTNER_LOCALOUTBOX_ENSURE");
+
+        inboxGuard.Should().Contain(
+                "IF @EventId IS NULL OR @SourceCompanyId IS NULL OR @EntityName IS NULL OR @EntityGlobalId IS NULL OR @Operation IS NULL OR @PayloadJson IS NULL")
+            .And.Contain("SyncInbox envelope required fields cannot be null.")
+            .And.ContainAll(
+                "CASE WHEN @ExistingSourceCompanyId=@SourceCompanyId OR (@ExistingSourceCompanyId IS NULL AND @SourceCompanyId IS NULL) THEN 0 ELSE 1 END=1",
+                "CASE WHEN @ExistingEntityName COLLATE Latin1_General_100_BIN2=@EntityName COLLATE Latin1_General_100_BIN2 OR (@ExistingEntityName IS NULL AND @EntityName IS NULL) THEN 0 ELSE 1 END=1",
+                "CASE WHEN @ExistingEntityGlobalId=@EntityGlobalId OR (@ExistingEntityGlobalId IS NULL AND @EntityGlobalId IS NULL) THEN 0 ELSE 1 END=1",
+                "CASE WHEN @ExistingOperation COLLATE Latin1_General_100_BIN2=@Operation COLLATE Latin1_General_100_BIN2 OR (@ExistingOperation IS NULL AND @Operation IS NULL) THEN 0 ELSE 1 END=1",
+                "CASE WHEN @ExistingPayloadJson COLLATE Latin1_General_100_BIN2=@PayloadJson COLLATE Latin1_General_100_BIN2 OR (@ExistingPayloadJson IS NULL AND @PayloadJson IS NULL) THEN 0 ELSE 1 END=1");
+
+        outboxGuard.Should().Contain(
+                "IF @EventId IS NULL OR @CompanyId IS NULL OR @EntityName IS NULL OR @EntityGlobalId IS NULL OR @Operation IS NULL OR @PayloadJson IS NULL")
+            .And.Contain("LocalOutbox envelope required fields cannot be null.")
+            .And.ContainAll(
+                "CASE WHEN @ExistingCompanyId=@CompanyId OR (@ExistingCompanyId IS NULL AND @CompanyId IS NULL) THEN 0 ELSE 1 END=1",
+                "CASE WHEN @ExistingTargetCompanyId=@TargetCompanyId OR (@ExistingTargetCompanyId IS NULL AND @TargetCompanyId IS NULL) THEN 0 ELSE 1 END=1",
+                "CASE WHEN @ExistingCausationEventId=@CausationEventId OR (@ExistingCausationEventId IS NULL AND @CausationEventId IS NULL) THEN 0 ELSE 1 END=1",
+                "CASE WHEN @ExistingEntityName COLLATE Latin1_General_100_BIN2=@EntityName COLLATE Latin1_General_100_BIN2 OR (@ExistingEntityName IS NULL AND @EntityName IS NULL) THEN 0 ELSE 1 END=1",
+                "CASE WHEN @ExistingEntityGlobalId=@EntityGlobalId OR (@ExistingEntityGlobalId IS NULL AND @EntityGlobalId IS NULL) THEN 0 ELSE 1 END=1",
+                "CASE WHEN @ExistingEntityCode COLLATE Latin1_General_100_BIN2=@EntityCode COLLATE Latin1_General_100_BIN2 OR (@ExistingEntityCode IS NULL AND @EntityCode IS NULL) THEN 0 ELSE 1 END=1",
+                "CASE WHEN @ExistingOperation COLLATE Latin1_General_100_BIN2=@Operation COLLATE Latin1_General_100_BIN2 OR (@ExistingOperation IS NULL AND @Operation IS NULL) THEN 0 ELSE 1 END=1",
+                "CASE WHEN @ExistingPayloadJson COLLATE Latin1_General_100_BIN2=@PayloadJson COLLATE Latin1_General_100_BIN2 OR (@ExistingPayloadJson IS NULL AND @PayloadJson IS NULL) THEN 0 ELSE 1 END=1");
+
+        inboxGuard.IndexOf("SyncInbox envelope required fields cannot be null.", StringComparison.Ordinal)
+            .Should().BeLessThan(inboxGuard.IndexOf("FROM dbo.SyncInbox", StringComparison.Ordinal));
+        outboxGuard.IndexOf("LocalOutbox envelope required fields cannot be null.", StringComparison.Ordinal)
+            .Should().BeLessThan(outboxGuard.IndexOf("FROM dbo.LocalOutbox", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void CanonicalUpsert_ProtectsImmutableIdentityLegacyReviewAndConfirmedSapCode()
     {
         var procedure = Procedure("SP_NA_POST_BUSINESSPARTNER_CANONICAL_UPSERT");
@@ -255,6 +290,34 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
             "UX_BusinessPartnerContacts_GlobalId has an incompatible shape")
             .And.Contain("THROW 52028")
             .And.NotContain("CanonicalVersion > 0");
+    }
+
+    [Fact]
+    public void Foundation_ValidatesCompleteConflictMetadataExactDefinitionsAndStableChildDuplicates()
+    {
+        var sql = Read("database", "sql", "228_tenant_business_partner_bidirectional_foundation.sql");
+
+        sql.Should().ContainAll(
+                "UserTypeId", "PrecisionValue", "ScaleValue", "CollationName",
+                "actual.user_type_id<>expected.UserTypeId",
+                "actual.precision<>expected.PrecisionValue",
+                "actual.scale<>expected.ScaleValue",
+                "CASE WHEN actual.collation_name=expected.CollationName",
+                "OR (actual.collation_name IS NULL AND expected.CollationName IS NULL)",
+                "(N'CreatedAt',42,42,6,19,0,NULL,0)",
+                "ExpectedDefinition", "NormalizedDefinition<>required.ExpectedDefinition",
+                "N'isdeleted=0andisactive=1'",
+                "N'sapcardcodeisnotnullandsapcardcode<>n''''",
+                "Duplicate BusinessPartnerAddresses.GlobalId prevents unique index creation.",
+                "Duplicate BusinessPartnerContacts.GlobalId prevents unique index creation.",
+                "HAVING COUNT_BIG(1)>1")
+            .And.NotContain("RequiredToken1")
+            .And.NotContain("filter_definition LIKE");
+
+        sql.IndexOf("Duplicate BusinessPartnerAddresses.GlobalId prevents unique index creation.", StringComparison.Ordinal)
+            .Should().BeLessThan(sql.IndexOf("CREATE UNIQUE INDEX UX_BusinessPartnerAddresses_GlobalId", StringComparison.Ordinal));
+        sql.IndexOf("Duplicate BusinessPartnerContacts.GlobalId prevents unique index creation.", StringComparison.Ordinal)
+            .Should().BeLessThan(sql.IndexOf("CREATE UNIQUE INDEX UX_BusinessPartnerContacts_GlobalId", StringComparison.Ordinal));
     }
 
     [Fact]

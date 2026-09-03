@@ -283,6 +283,16 @@ IF OBJECT_ID(N'dbo.DF_BusinessPartnerContacts_GlobalId', N'D') IS NULL
     ALTER TABLE dbo.BusinessPartnerContacts ADD CONSTRAINT DF_BusinessPartnerContacts_GlobalId DEFAULT NEWID() FOR GlobalId;
 GO
 
+IF EXISTS
+(
+    SELECT GlobalId
+    FROM dbo.BusinessPartnerAddresses
+    GROUP BY GlobalId
+    HAVING COUNT_BIG(1)>1
+)
+    THROW 52028, 'Duplicate BusinessPartnerAddresses.GlobalId prevents unique index creation.', 1;
+GO
+
 IF NOT EXISTS
 (
     SELECT 1
@@ -293,7 +303,7 @@ IF NOT EXISTS
     WHERE defaultItem.parent_object_id = OBJECT_ID(N'dbo.BusinessPartnerAddresses')
       AND defaultItem.name = N'DF_BusinessPartnerAddresses_GlobalId'
       AND columnItem.name = N'GlobalId'
-      AND LOWER(defaultItem.definition) LIKE N'%newid%'
+      AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(defaultItem.definition COLLATE Latin1_General_100_BIN2,N'(',N''),N')',N''),N' ',N''),NCHAR(13),N''),NCHAR(10),N'')) = N'newid'
 )
     THROW 52028, 'DF_BusinessPartnerAddresses_GlobalId has an incompatible shape.', 1;
 IF NOT EXISTS
@@ -306,9 +316,19 @@ IF NOT EXISTS
     WHERE defaultItem.parent_object_id = OBJECT_ID(N'dbo.BusinessPartnerContacts')
       AND defaultItem.name = N'DF_BusinessPartnerContacts_GlobalId'
       AND columnItem.name = N'GlobalId'
-      AND LOWER(defaultItem.definition) LIKE N'%newid%'
+      AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(defaultItem.definition COLLATE Latin1_General_100_BIN2,N'(',N''),N')',N''),N' ',N''),NCHAR(13),N''),NCHAR(10),N'')) = N'newid'
 )
     THROW 52028, 'DF_BusinessPartnerContacts_GlobalId has an incompatible shape.', 1;
+GO
+
+IF EXISTS
+(
+    SELECT GlobalId
+    FROM dbo.BusinessPartnerContacts
+    GROUP BY GlobalId
+    HAVING COUNT_BIG(1)>1
+)
+    THROW 52028, 'Duplicate BusinessPartnerContacts.GlobalId prevents unique index creation.', 1;
 GO
 
 IF NOT EXISTS
@@ -323,16 +343,6 @@ IF NOT EXISTS
     CHECK (PartnerType IN (N'Customer', N'Supplier', N'Both'));
 GO
 
-IF NOT EXISTS
-(
-    SELECT 1 FROM sys.check_constraints
-    WHERE parent_object_id = OBJECT_ID(N'dbo.BusinessPartners')
-      AND name = N'CK_BusinessPartners_PartnerType'
-      AND is_disabled = 0 AND is_not_trusted = 0
-      AND definition LIKE N'%Customer%' AND definition LIKE N'%Supplier%'
-      AND definition LIKE N'%Both%'
-)
-    THROW 52028, 'CK_BusinessPartners_PartnerType has an incompatible shape.', 1;
 IF NOT EXISTS
 (
     SELECT 1 FROM sys.check_constraints
@@ -376,85 +386,81 @@ IF NOT EXISTS
     CHECK (SapCardCode IS NULL OR LEN(SapCardCode) <= 15);
 GO
 
-IF NOT EXISTS
+DECLARE @ExpectedBaseChecks table
 (
-    SELECT 1 FROM sys.check_constraints
-    WHERE parent_object_id = OBJECT_ID(N'dbo.BusinessPartners')
-      AND name = N'CK_BusinessPartners_MasterSyncStatus'
-      AND is_disabled = 0 AND is_not_trusted = 0
-      AND definition LIKE N'%PendingMaster%' AND definition LIKE N'%Accepted%'
-      AND definition LIKE N'%Rejected%' AND definition LIKE N'%Conflict%'
-      AND definition LIKE N'%LegacyReview%'
-)
-    THROW 52028, 'CK_BusinessPartners_MasterSyncStatus has an incompatible shape.', 1;
-IF NOT EXISTS
-(
-    SELECT 1 FROM sys.check_constraints
-    WHERE parent_object_id = OBJECT_ID(N'dbo.BusinessPartners')
-      AND name = N'CK_BusinessPartners_CanonicalVersion'
-      AND is_disabled = 0 AND is_not_trusted = 0
-      AND CHARINDEX(N'CanonicalVersion', definition) > 0
-      AND CHARINDEX(N'>=', definition) > 0
-      AND CHARINDEX(N'(0)', definition) > 0
-)
-    THROW 52028, 'CK_BusinessPartners_CanonicalVersion has an incompatible shape.', 1;
-IF NOT EXISTS
-(
-    SELECT 1 FROM sys.check_constraints
-    WHERE parent_object_id = OBJECT_ID(N'dbo.BusinessPartners')
-      AND name = N'CK_BusinessPartners_NormalizedIdentificationNumber'
-      AND is_disabled = 0 AND is_not_trusted = 0
-      AND definition LIKE N'%NormalizedIdentificationNumber%'
-      AND definition LIKE N'%IS NOT NULL%'
-)
-    THROW 52028, 'CK_BusinessPartners_NormalizedIdentificationNumber has an incompatible shape.', 1;
-IF NOT EXISTS
-(
-    SELECT 1 FROM sys.check_constraints
-    WHERE parent_object_id = OBJECT_ID(N'dbo.BusinessPartnerSapMapping')
-      AND name = N'CK_BusinessPartnerSapMapping_SapCardCodeLength'
-      AND is_disabled = 0 AND is_not_trusted = 0
-      AND definition LIKE N'%SapCardCode%' AND definition LIKE N'%15%'
-)
-    THROW 52028, 'CK_BusinessPartnerSapMapping_SapCardCodeLength has an incompatible shape.', 1;
-IF NOT EXISTS
+    ParentObjectId int NOT NULL,
+    ConstraintName sysname NOT NULL,
+    ExpectedDefinition nvarchar(max) NOT NULL
+);
+INSERT @ExpectedBaseChecks(ParentObjectId,ConstraintName,ExpectedDefinition)
+VALUES
+    (OBJECT_ID(N'dbo.BusinessPartners'),N'CK_BusinessPartners_PartnerType',N'partnertypeinn''customer'',n''supplier'',n''both'''),
+    (OBJECT_ID(N'dbo.BusinessPartners'),N'CK_BusinessPartners_MasterSyncStatus',N'mastersyncstatusin''pendingmaster'',''accepted'',''rejected'',''conflict'',''legacyreview'''),
+    (OBJECT_ID(N'dbo.BusinessPartners'),N'CK_BusinessPartners_CanonicalVersion',N'canonicalversion>=0'),
+    (OBJECT_ID(N'dbo.BusinessPartners'),N'CK_BusinessPartners_NormalizedIdentificationNumber',N'nullifnormalizedidentificationnumber,n''''isnotnull'),
+    (OBJECT_ID(N'dbo.BusinessPartnerSapMapping'),N'CK_BusinessPartnerSapMapping_SapCardCodeLength',N'sapcardcodeisnullorlensapcardcode<=15');
+
+IF EXISTS
 (
     SELECT 1
-    FROM sys.default_constraints AS defaultItem
-    INNER JOIN sys.columns AS columnItem
-        ON columnItem.object_id = defaultItem.parent_object_id
-       AND columnItem.column_id = defaultItem.parent_column_id
-    WHERE defaultItem.parent_object_id = OBJECT_ID(N'dbo.BusinessPartners')
-      AND defaultItem.name = N'DF_BusinessPartners_CanonicalVersion'
-      AND columnItem.name = N'CanonicalVersion'
-      AND defaultItem.definition LIKE N'%(1)%'
+    FROM @ExpectedBaseChecks AS required
+    LEFT JOIN sys.check_constraints AS checkItem
+        ON checkItem.parent_object_id=required.ParentObjectId
+       AND checkItem.name=required.ConstraintName
+    CROSS APPLY
+    (
+        VALUES (LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(checkItem.definition COLLATE Latin1_General_100_BIN2,N'[',N''),N']',N''),N'(',N''),N')',N''),N' ',N''),NCHAR(9),N''),NCHAR(13),N''),NCHAR(10),N'')))
+    ) AS normalized(NormalizedDefinition)
+    WHERE checkItem.object_id IS NULL OR checkItem.is_disabled=1 OR checkItem.is_not_trusted=1
+       OR normalized.NormalizedDefinition<>required.ExpectedDefinition
 )
-    THROW 52028, 'DF_BusinessPartners_CanonicalVersion has an incompatible shape.', 1;
-IF NOT EXISTS
+    THROW 52028, 'BusinessPartner check constraints have an incompatible shape.', 1;
+
+DECLARE @ExpectedBaseDefaults table
+(
+    ParentObjectId int NOT NULL,
+    ConstraintName sysname NOT NULL,
+    ColumnName sysname NOT NULL,
+    ExpectedDefinition nvarchar(100) NOT NULL
+);
+INSERT @ExpectedBaseDefaults(ParentObjectId,ConstraintName,ColumnName,ExpectedDefinition)
+VALUES
+    (OBJECT_ID(N'dbo.BusinessPartners'),N'DF_BusinessPartners_CanonicalVersion',N'CanonicalVersion',N'1'),
+    (OBJECT_ID(N'dbo.BusinessPartners'),N'DF_BusinessPartners_MasterSyncStatus',N'MasterSyncStatus',N'''accepted''');
+
+IF EXISTS
 (
     SELECT 1
-    FROM sys.default_constraints AS defaultItem
-    INNER JOIN sys.columns AS columnItem
-        ON columnItem.object_id = defaultItem.parent_object_id
-       AND columnItem.column_id = defaultItem.parent_column_id
-    WHERE defaultItem.parent_object_id = OBJECT_ID(N'dbo.BusinessPartners')
-      AND defaultItem.name = N'DF_BusinessPartners_MasterSyncStatus'
-      AND columnItem.name = N'MasterSyncStatus'
-      AND defaultItem.definition LIKE N'%Accepted%'
+    FROM @ExpectedBaseDefaults AS required
+    LEFT JOIN sys.default_constraints AS defaultItem
+        ON defaultItem.parent_object_id=required.ParentObjectId
+       AND defaultItem.name=required.ConstraintName
+    LEFT JOIN sys.columns AS columnItem
+        ON columnItem.object_id=defaultItem.parent_object_id
+       AND columnItem.column_id=defaultItem.parent_column_id
+    CROSS APPLY
+    (
+        VALUES (LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(defaultItem.definition COLLATE Latin1_General_100_BIN2,N'(',N''),N')',N''),N' ',N''),NCHAR(13),N''),NCHAR(10),N'')))
+    ) AS normalized(NormalizedDefinition)
+    WHERE defaultItem.object_id IS NULL OR columnItem.name<>required.ColumnName
+       OR normalized.NormalizedDefinition<>required.ExpectedDefinition
 )
-    THROW 52028, 'DF_BusinessPartners_MasterSyncStatus has an incompatible shape.', 1;
+    THROW 52028, 'BusinessPartner default constraints have an incompatible shape.', 1;
 GO
 
 IF EXISTS
 (
     SELECT 1 FROM sys.indexes AS indexItem
+    CROSS APPLY
+    (
+        VALUES (LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(indexItem.filter_definition COLLATE Latin1_General_100_BIN2,N'[',N''),N']',N''),N'(',N''),N')',N''),N' ',N''),NCHAR(9),N''),NCHAR(13),N''),NCHAR(10),N'')))
+    ) AS filterShape(NormalizedFilterDefinition)
     WHERE indexItem.object_id = OBJECT_ID(N'dbo.BusinessPartners')
       AND indexItem.name = N'UX_BusinessPartners_Identification_Active'
       AND
       (
           indexItem.is_unique <> 1 OR indexItem.has_filter <> 1
-          OR indexItem.filter_definition NOT LIKE N'%IsDeleted%=%(0)%'
-          OR indexItem.filter_definition NOT LIKE N'%IsActive%=%(1)%'
+          OR filterShape.NormalizedFilterDefinition<>N'isdeleted=0andisactive=1'
           OR (SELECT COUNT_BIG(1) FROM sys.index_columns WHERE object_id=indexItem.object_id AND index_id=indexItem.index_id AND key_ordinal>0) <> 3
           OR NOT EXISTS (SELECT 1 FROM sys.index_columns AS ic INNER JOIN sys.columns AS c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE ic.object_id=indexItem.object_id AND ic.index_id=indexItem.index_id AND ic.key_ordinal=1 AND c.name=N'PartnerType')
           OR NOT EXISTS (SELECT 1 FROM sys.index_columns AS ic INNER JOIN sys.columns AS c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE ic.object_id=indexItem.object_id AND ic.index_id=indexItem.index_id AND ic.key_ordinal=2 AND c.name=N'IdentificationTypeId')
@@ -478,11 +484,14 @@ GO
 IF NOT EXISTS
 (
     SELECT 1 FROM sys.indexes AS indexItem
+    CROSS APPLY
+    (
+        VALUES (LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(indexItem.filter_definition COLLATE Latin1_General_100_BIN2,N'[',N''),N']',N''),N'(',N''),N')',N''),N' ',N''),NCHAR(9),N''),NCHAR(13),N''),NCHAR(10),N'')))
+    ) AS filterShape(NormalizedFilterDefinition)
     WHERE indexItem.object_id=OBJECT_ID(N'dbo.BusinessPartners')
       AND indexItem.name=N'UX_BusinessPartners_Identification_Active'
       AND indexItem.is_unique=1 AND indexItem.has_filter=1
-      AND indexItem.filter_definition LIKE N'%IsDeleted%=%(0)%'
-      AND indexItem.filter_definition LIKE N'%IsActive%=%(1)%'
+      AND filterShape.NormalizedFilterDefinition=N'isdeleted=0andisactive=1'
       AND (SELECT COUNT_BIG(1) FROM sys.index_columns WHERE object_id=indexItem.object_id AND index_id=indexItem.index_id AND key_ordinal>0)=3
       AND EXISTS (SELECT 1 FROM sys.index_columns AS ic INNER JOIN sys.columns AS c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE ic.object_id=indexItem.object_id AND ic.index_id=indexItem.index_id AND ic.key_ordinal=1 AND c.name=N'PartnerType')
       AND EXISTS (SELECT 1 FROM sys.index_columns AS ic INNER JOIN sys.columns AS c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE ic.object_id=indexItem.object_id AND ic.index_id=indexItem.index_id AND ic.key_ordinal=2 AND c.name=N'IdentificationTypeId')
@@ -506,13 +515,16 @@ GO
 IF EXISTS
 (
     SELECT 1 FROM sys.indexes AS indexItem
+    CROSS APPLY
+    (
+        VALUES (LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(indexItem.filter_definition COLLATE Latin1_General_100_BIN2,N'[',N''),N']',N''),N'(',N''),N')',N''),N' ',N''),NCHAR(9),N''),NCHAR(13),N''),NCHAR(10),N'')))
+    ) AS filterShape(NormalizedFilterDefinition)
     WHERE indexItem.object_id=OBJECT_ID(N'dbo.BusinessPartnerSapMapping')
       AND indexItem.name=N'UX_BusinessPartners_SapCardCode_Active'
       AND
       (
           indexItem.is_unique<>1 OR indexItem.has_filter<>1
-          OR indexItem.filter_definition NOT LIKE N'%SapCardCode%IS NOT NULL%'
-          OR indexItem.filter_definition NOT LIKE N'%SapCardCode%<>%'
+          OR filterShape.NormalizedFilterDefinition<>N'sapcardcodeisnotnullandsapcardcode<>n'''''
           OR (SELECT COUNT_BIG(1) FROM sys.index_columns WHERE object_id=indexItem.object_id AND index_id=indexItem.index_id AND key_ordinal>0)<>1
           OR NOT EXISTS (SELECT 1 FROM sys.index_columns AS ic INNER JOIN sys.columns AS c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE ic.object_id=indexItem.object_id AND ic.index_id=indexItem.index_id AND ic.key_ordinal=1 AND c.name=N'SapCardCode')
       )
@@ -528,11 +540,14 @@ GO
 IF NOT EXISTS
 (
     SELECT 1 FROM sys.indexes AS indexItem
+    CROSS APPLY
+    (
+        VALUES (LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(indexItem.filter_definition COLLATE Latin1_General_100_BIN2,N'[',N''),N']',N''),N'(',N''),N')',N''),N' ',N''),NCHAR(9),N''),NCHAR(13),N''),NCHAR(10),N'')))
+    ) AS filterShape(NormalizedFilterDefinition)
     WHERE indexItem.object_id=OBJECT_ID(N'dbo.BusinessPartnerSapMapping')
       AND indexItem.name=N'UX_BusinessPartners_SapCardCode_Active'
       AND indexItem.is_unique=1 AND indexItem.has_filter=1
-      AND indexItem.filter_definition LIKE N'%SapCardCode%IS NOT NULL%'
-      AND indexItem.filter_definition LIKE N'%SapCardCode%<>%'
+      AND filterShape.NormalizedFilterDefinition=N'sapcardcodeisnotnullandsapcardcode<>n'''''
       AND (SELECT COUNT_BIG(1) FROM sys.index_columns WHERE object_id=indexItem.object_id AND index_id=indexItem.index_id AND key_ordinal>0)=1
       AND EXISTS (SELECT 1 FROM sys.index_columns AS ic INNER JOIN sys.columns AS c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE ic.object_id=indexItem.object_id AND ic.index_id=indexItem.index_id AND ic.key_ordinal=1 AND c.name=N'SapCardCode')
 )
@@ -731,22 +746,29 @@ GO
 DECLARE @ExpectedConflictColumns table
 (
     ColumnName sysname NOT NULL,
+    UserTypeId int NOT NULL,
     SystemTypeId tinyint NOT NULL,
-    MaxLength smallint NULL,
+    MaxLength smallint NOT NULL,
+    PrecisionValue tinyint NOT NULL,
+    ScaleValue tinyint NOT NULL,
+    CollationName sysname NULL,
     IsNullable bit NOT NULL
 );
-INSERT @ExpectedConflictColumns(ColumnName,SystemTypeId,MaxLength,IsNullable)
+DECLARE @DatabaseCollation sysname=CONVERT(sysname,DATABASEPROPERTYEX(DB_NAME(),N'Collation'));
+INSERT @ExpectedConflictColumns
+    (ColumnName,UserTypeId,SystemTypeId,MaxLength,PrecisionValue,ScaleValue,CollationName,IsNullable)
 VALUES
-    (N'Id',127,NULL,0),(N'ProposalEventId',36,NULL,0),(N'BusinessPartnerId',56,NULL,1),
-    (N'BusinessPartnerGlobalId',36,NULL,0),(N'OriginCompanyId',56,NULL,0),
-    (N'BaseCanonicalVersion',127,NULL,0),(N'CurrentCanonicalVersion',127,NULL,0),
-    (N'PresentedBusinessPartnerRowVersion',173,8,1),
-    (N'BaseSnapshotJson',231,-1,1),(N'ProposedSnapshotJson',231,-1,0),
-    (N'CanonicalSnapshotJson',231,-1,0),(N'ConflictFieldsJson',231,-1,0),
-    (N'Status',167,20,0),(N'Resolution',167,20,1),(N'ResolutionReason',231,1000,1),
-    (N'CreatedByUserId',56,NULL,1),(N'CreatedByUserName',231,240,1),
-    (N'CreatedAt',42,NULL,0),(N'ResolvedByUserId',56,NULL,1),
-    (N'ResolvedByUserName',231,240,1),(N'ResolvedAt',42,NULL,1),(N'RowVersion',189,8,0);
+    (N'Id',127,127,8,19,0,NULL,0),(N'ProposalEventId',36,36,16,0,0,NULL,0),
+    (N'BusinessPartnerId',56,56,4,10,0,NULL,1),(N'BusinessPartnerGlobalId',36,36,16,0,0,NULL,0),
+    (N'OriginCompanyId',56,56,4,10,0,NULL,0),(N'BaseCanonicalVersion',127,127,8,19,0,NULL,0),
+    (N'CurrentCanonicalVersion',127,127,8,19,0,NULL,0),(N'PresentedBusinessPartnerRowVersion',173,173,8,0,0,NULL,1),
+    (N'BaseSnapshotJson',231,231,-1,0,0,@DatabaseCollation,1),(N'ProposedSnapshotJson',231,231,-1,0,0,@DatabaseCollation,0),
+    (N'CanonicalSnapshotJson',231,231,-1,0,0,@DatabaseCollation,0),(N'ConflictFieldsJson',231,231,-1,0,0,@DatabaseCollation,0),
+    (N'Status',167,167,20,0,0,@DatabaseCollation,0),(N'Resolution',167,167,20,0,0,@DatabaseCollation,1),
+    (N'ResolutionReason',231,231,1000,0,0,@DatabaseCollation,1),(N'CreatedByUserId',56,56,4,10,0,NULL,1),
+    (N'CreatedByUserName',231,231,240,0,0,@DatabaseCollation,1),(N'CreatedAt',42,42,6,19,0,NULL,0),
+    (N'ResolvedByUserId',56,56,4,10,0,NULL,1),(N'ResolvedByUserName',231,231,240,0,0,@DatabaseCollation,1),
+    (N'ResolvedAt',42,42,6,19,0,NULL,1),(N'RowVersion',189,189,8,0,0,NULL,0);
 
 IF (SELECT COUNT_BIG(1) FROM sys.columns WHERE object_id=OBJECT_ID(N'dbo.BusinessPartnerSyncConflicts')) <> 22
    OR EXISTS
@@ -756,8 +778,14 @@ IF (SELECT COUNT_BIG(1) FROM sys.columns WHERE object_id=OBJECT_ID(N'dbo.Busines
        LEFT JOIN sys.columns AS actual
            ON actual.object_id=OBJECT_ID(N'dbo.BusinessPartnerSyncConflicts')
           AND actual.name=expected.ColumnName
-       WHERE actual.column_id IS NULL OR actual.system_type_id<>expected.SystemTypeId
-          OR (expected.MaxLength IS NOT NULL AND actual.max_length<>expected.MaxLength)
+       WHERE actual.column_id IS NULL OR actual.user_type_id<>expected.UserTypeId
+          OR actual.system_type_id<>expected.SystemTypeId
+          OR actual.max_length<>expected.MaxLength
+          OR actual.precision<>expected.PrecisionValue
+          OR actual.scale<>expected.ScaleValue
+          OR CASE WHEN actual.collation_name=expected.CollationName
+                       OR (actual.collation_name IS NULL AND expected.CollationName IS NULL)
+                  THEN 0 ELSE 1 END=1
           OR actual.is_nullable<>expected.IsNullable
    )
    OR COLUMNPROPERTY(OBJECT_ID(N'dbo.BusinessPartnerSyncConflicts'),N'Id',N'IsIdentity')<>1
@@ -798,25 +826,35 @@ IF NOT EXISTS
 )
     THROW 52028, 'BusinessPartnerSyncConflicts foreign key has an incompatible shape.', 1;
 
+DECLARE @ExpectedConflictChecks table
+(
+    ConstraintName sysname NOT NULL,
+    ExpectedDefinition nvarchar(max) NOT NULL
+);
+INSERT @ExpectedConflictChecks(ConstraintName,ExpectedDefinition)
+VALUES
+    (N'CK_BusinessPartnerSyncConflicts_Versions',N'basecanonicalversion>=0andcurrentcanonicalversion>=0'),
+    (N'CK_BusinessPartnerSyncConflicts_Status',N'statusin''open'',''resolved'''),
+    (N'CK_BusinessPartnerSyncConflicts_Resolution',N'resolutionisnullorresolutionin''acceptbranch'',''keepcentral'''),
+    (N'CK_BusinessPartnerSyncConflicts_ResolutionState',N'status=''open''andresolutionisnullandresolvedatisnullorstatus=''resolved''andresolutionisnotnullandnulliflrtrimresolutionreason,n''''isnotnullandresolvedatisnotnull'),
+    (N'CK_BusinessPartnerSyncConflicts_BaseSnapshotJson',N'basesnapshotjsonisnullorisjsonbasesnapshotjson=1'),
+    (N'CK_BusinessPartnerSyncConflicts_ProposedSnapshotJson',N'isjsonproposedsnapshotjson=1'),
+    (N'CK_BusinessPartnerSyncConflicts_CanonicalSnapshotJson',N'isjsoncanonicalsnapshotjson=1'),
+    (N'CK_BusinessPartnerSyncConflicts_ConflictFieldsJson',N'isjsonconflictfieldsjson=1');
+
 IF EXISTS
 (
-    SELECT required.Name
-    FROM (VALUES
-        (N'CK_BusinessPartnerSyncConflicts_Versions',N'BaseCanonicalVersion',N'CurrentCanonicalVersion'),
-        (N'CK_BusinessPartnerSyncConflicts_Status',N'Status',N'Resolved'),
-        (N'CK_BusinessPartnerSyncConflicts_Resolution',N'AcceptBranch',N'KeepCentral'),
-        (N'CK_BusinessPartnerSyncConflicts_ResolutionState',N'ResolutionReason',N'ResolvedAt'),
-        (N'CK_BusinessPartnerSyncConflicts_BaseSnapshotJson',N'BaseSnapshotJson',N'ISJSON'),
-        (N'CK_BusinessPartnerSyncConflicts_ProposedSnapshotJson',N'ProposedSnapshotJson',N'ISJSON'),
-        (N'CK_BusinessPartnerSyncConflicts_CanonicalSnapshotJson',N'CanonicalSnapshotJson',N'ISJSON'),
-        (N'CK_BusinessPartnerSyncConflicts_ConflictFieldsJson',N'ConflictFieldsJson',N'ISJSON')
-    ) AS required(Name,RequiredToken1,RequiredToken2)
+    SELECT 1
+    FROM @ExpectedConflictChecks AS required
     LEFT JOIN sys.check_constraints AS checkItem
         ON checkItem.parent_object_id=OBJECT_ID(N'dbo.BusinessPartnerSyncConflicts')
-       AND checkItem.name=required.Name
+       AND checkItem.name=required.ConstraintName
+    CROSS APPLY
+    (
+        VALUES (LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(checkItem.definition COLLATE Latin1_General_100_BIN2,N'[',N''),N']',N''),N'(',N''),N')',N''),N' ',N''),NCHAR(9),N''),NCHAR(13),N''),NCHAR(10),N'')))
+    ) AS normalized(NormalizedDefinition)
     WHERE checkItem.object_id IS NULL OR checkItem.is_disabled=1 OR checkItem.is_not_trusted=1
-       OR CHARINDEX(required.RequiredToken1,checkItem.definition)=0
-       OR CHARINDEX(required.RequiredToken2,checkItem.definition)=0
+       OR normalized.NormalizedDefinition<>required.ExpectedDefinition
 )
     THROW 52028, 'BusinessPartnerSyncConflicts constraints have an incompatible shape.', 1;
 
@@ -827,7 +865,8 @@ IF NOT EXISTS
         ON columnItem.object_id=defaultItem.parent_object_id AND columnItem.column_id=defaultItem.parent_column_id
     WHERE defaultItem.parent_object_id=OBJECT_ID(N'dbo.BusinessPartnerSyncConflicts')
       AND defaultItem.name=N'DF_BusinessPartnerSyncConflicts_Status'
-      AND columnItem.name=N'Status' AND defaultItem.definition LIKE N'%Open%'
+      AND columnItem.name=N'Status'
+      AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(defaultItem.definition COLLATE Latin1_General_100_BIN2,N'(',N''),N')',N''),N' ',N''),NCHAR(13),N''),NCHAR(10),N''))=N'''open'''
 )
    OR NOT EXISTS
 (
@@ -836,7 +875,8 @@ IF NOT EXISTS
         ON columnItem.object_id=defaultItem.parent_object_id AND columnItem.column_id=defaultItem.parent_column_id
     WHERE defaultItem.parent_object_id=OBJECT_ID(N'dbo.BusinessPartnerSyncConflicts')
       AND defaultItem.name=N'DF_BusinessPartnerSyncConflicts_CreatedAt'
-      AND columnItem.name=N'CreatedAt' AND LOWER(defaultItem.definition) LIKE N'%sysutcdatetime%'
+      AND columnItem.name=N'CreatedAt'
+      AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(defaultItem.definition COLLATE Latin1_General_100_BIN2,N'(',N''),N')',N''),N' ',N''),NCHAR(13),N''),NCHAR(10),N''))=N'sysutcdatetime'
 )
     THROW 52028, 'BusinessPartnerSyncConflicts defaults have an incompatible shape.', 1;
 GO
