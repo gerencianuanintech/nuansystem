@@ -22,6 +22,8 @@ public sealed class BusinessPartnerProposalApplyRepository(
     ISyncEventPayloadFactory payloadFactory) : IBusinessPartnerProposalApplyRepository
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    internal const string InboxEnsureProcedure =
+        "dbo.SP_NA_POST_BUSINESSPARTNER_SYNCINBOX_ENSURE";
     internal const string StableReferencesProcedure =
         "dbo.SP_NA_GET_BUSINESSPARTNER_STABLE_REFERENCES_RESOLVE";
     internal const string CanonicalForUpdateProcedure =
@@ -51,11 +53,6 @@ public sealed class BusinessPartnerProposalApplyRepository(
             throw new InvalidOperationException($"La empresa {centralCompanyId} no es una empresa central.");
         }
 
-        var policyRecord = await sapCodePolicyRepository.GetByCompanyIdAsync(
-            centralCompanyId,
-            cancellationToken);
-        var sapPolicy = ToEnabledPolicy(policyRecord);
-
         await using var connection = CreateSqlConnection(company);
         await connection.OpenAsync(cancellationToken);
         await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(
@@ -64,6 +61,22 @@ public sealed class BusinessPartnerProposalApplyRepository(
 
         try
         {
+            var earlyInboxResult = await EnsureInboxAsync(
+                connection,
+                transaction,
+                context,
+                cancellationToken);
+            if (earlyInboxResult is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+                return earlyInboxResult;
+            }
+
+            var policyRecord = await sapCodePolicyRepository.GetByCompanyIdAsync(
+                centralCompanyId,
+                cancellationToken);
+            var sapPolicy = ToEnabledPolicy(policyRecord);
+
             var current = await LoadCentralStateAsync(
                 connection,
                 transaction,
@@ -192,6 +205,80 @@ public sealed class BusinessPartnerProposalApplyRepository(
 
             throw;
         }
+    }
+
+    private static async Task<BusinessPartnerProposalApplyResult?> EnsureInboxAsync(
+        SqlConnection connection,
+        SqlTransaction transaction,
+        SyncEventApplyContext context,
+        CancellationToken cancellationToken)
+    {
+        var parameters = new DynamicParameters(CreateInboxEnsureParameters(context));
+        parameters.Add("InboxId", dbType: DbType.Int64, direction: ParameterDirection.Output);
+        parameters.Add(
+            "InboxStatus",
+            dbType: DbType.String,
+            direction: ParameterDirection.Output,
+            size: 30);
+        parameters.Add("EnvelopeResult", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+        await connection.ExecuteAsync(new CommandDefinition(
+            InboxEnsureProcedure,
+            parameters,
+            transaction,
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+
+        return MapEarlyInboxResult(new InboxEnsureResultRow
+        {
+            InboxId = parameters.Get<long>("InboxId"),
+            InboxStatus = parameters.Get<string>("InboxStatus"),
+            EnvelopeResult = parameters.Get<int>("EnvelopeResult")
+        });
+    }
+
+    internal static InboxEnsureParameters CreateInboxEnsureParameters(SyncEventApplyContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return new InboxEnsureParameters(
+            context.EventId,
+            context.SourceCompanyId,
+            context.EntityName,
+            context.EntityGlobalId,
+            context.Operation,
+            context.PayloadJson);
+    }
+
+    internal static BusinessPartnerProposalApplyResult? MapEarlyInboxResult(
+        InboxEnsureResultRow result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        if (result.EnvelopeResult == 4)
+        {
+            return new BusinessPartnerProposalApplyResult(
+                BusinessPartnerProposalApplyOutcome.TerminalFailure,
+                0,
+                "El EventId ya pertenece a un sobre distinto.",
+                "BP_SYNC_EVENT_ID_COLLISION");
+        }
+
+        if (string.Equals(result.InboxStatus, "Applied", StringComparison.Ordinal))
+        {
+            return new BusinessPartnerProposalApplyResult(
+                BusinessPartnerProposalApplyOutcome.Duplicate,
+                0,
+                "El evento de propuesta ya fue consumido.");
+        }
+
+        if (string.Equals(result.InboxStatus, "Pending", StringComparison.Ordinal) &&
+            result.EnvelopeResult is 1 or 2)
+        {
+            return null;
+        }
+
+        throw new InvalidOperationException(
+            $"Unexpected SyncInbox guard result {result.EnvelopeResult}/{result.InboxStatus}.");
     }
 
     private static async Task<BusinessPartnerProposalCentralState?> LoadCentralStateAsync(
@@ -860,5 +947,20 @@ public sealed class BusinessPartnerProposalApplyRepository(
         public int ResultCode { get; init; }
         public int? BusinessPartnerId { get; init; }
         public long? CanonicalVersion { get; init; }
+    }
+
+    internal sealed record InboxEnsureParameters(
+        Guid EventId,
+        int SourceCompanyId,
+        string EntityName,
+        Guid EntityGlobalId,
+        string Operation,
+        string PayloadJson);
+
+    internal sealed class InboxEnsureResultRow
+    {
+        public long InboxId { get; init; }
+        public string InboxStatus { get; init; } = string.Empty;
+        public int EnvelopeResult { get; init; }
     }
 }

@@ -243,6 +243,96 @@ public sealed class BusinessPartnerProposalApplyRepositoryContractTests
     }
 
     [Fact]
+    public void EarlyInboxGuard_CarriesTheCompletePersistedEnvelope()
+    {
+        var eventId = Guid.Parse("80000000-0000-0000-0000-000000000008");
+        var context = new NuanSystem.Application.Features.Sync.Dtos.SyncEventApplyContext(
+            eventId,
+            21,
+            "BusinessPartnerProposal",
+            PartnerId,
+            "Updated",
+            "{\"persistedEnvelope\":true}",
+            10);
+
+        var parameters = BusinessPartnerProposalApplyRepository.CreateInboxEnsureParameters(context);
+
+        parameters.EventId.Should().Be(eventId);
+        parameters.SourceCompanyId.Should().Be(21);
+        parameters.EntityName.Should().Be("BusinessPartnerProposal");
+        parameters.EntityGlobalId.Should().Be(PartnerId);
+        parameters.Operation.Should().Be("Updated");
+        parameters.PayloadJson.Should().Be(context.PayloadJson);
+    }
+
+    [Theory]
+    [InlineData("Applied", 2, BusinessPartnerProposalApplyOutcome.Duplicate, null)]
+    [InlineData("DeadLetter", 4, BusinessPartnerProposalApplyOutcome.TerminalFailure, "BP_SYNC_EVENT_ID_COLLISION")]
+    public void EarlyInboxGuard_ClosesAppliedReplayAndEnvelopeCollision(
+        string inboxStatus,
+        int envelopeResult,
+        BusinessPartnerProposalApplyOutcome expectedOutcome,
+        string? expectedErrorCode)
+    {
+        var result = BusinessPartnerProposalApplyRepository.MapEarlyInboxResult(
+            new BusinessPartnerProposalApplyRepository.InboxEnsureResultRow
+            {
+                InboxId = 9,
+                InboxStatus = inboxStatus,
+                EnvelopeResult = envelopeResult
+            });
+
+        result.Should().NotBeNull();
+        result!.Outcome.Should().Be(expectedOutcome);
+        result.ErrorCode.Should().Be(expectedErrorCode);
+    }
+
+    [Theory]
+    [InlineData("Pending", 1)]
+    [InlineData("Pending", 2)]
+    public void EarlyInboxGuard_AllowsOnlyNewOrExactPendingEnvelopeToContinue(
+        string inboxStatus,
+        int envelopeResult)
+    {
+        var result = BusinessPartnerProposalApplyRepository.MapEarlyInboxResult(
+            new BusinessPartnerProposalApplyRepository.InboxEnsureResultRow
+            {
+                InboxId = 9,
+                InboxStatus = inboxStatus,
+                EnvelopeResult = envelopeResult
+            });
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void Repository_EnsuresInboxBeforePolicyCanonicalAndStableReferenceReads()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            Root(),
+            "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync",
+            "BusinessPartnerProposalApplyRepository.cs")).ReplaceLineEndings("\n");
+
+        var ensureIndex = source.IndexOf("var earlyInboxResult = await EnsureInboxAsync(", StringComparison.Ordinal);
+        var earlyReturnIndex = source.IndexOf(
+            "if (earlyInboxResult is not null)\n            {\n                await transaction.CommitAsync(cancellationToken);\n                return earlyInboxResult;\n            }",
+            StringComparison.Ordinal);
+        var policyIndex = source.IndexOf("sapCodePolicyRepository.GetByCompanyIdAsync(", StringComparison.Ordinal);
+        var canonicalIndex = source.IndexOf("var current = await LoadCentralStateAsync(", StringComparison.Ordinal);
+        var referencesIndex = source.IndexOf("var proposedReferences = await ResolveStableReferencesAsync(", StringComparison.Ordinal);
+
+        ensureIndex.Should().BeGreaterThan(0);
+        earlyReturnIndex.Should().BeGreaterThan(ensureIndex);
+        earlyReturnIndex.Should().BeLessThan(policyIndex);
+        ensureIndex.Should().BeLessThan(policyIndex);
+        ensureIndex.Should().BeLessThan(canonicalIndex);
+        ensureIndex.Should().BeLessThan(referencesIndex);
+        source.Should().Contain("InboxEnsureProcedure")
+            .And.Contain("transaction,\n            commandType: CommandType.StoredProcedure")
+            .And.Contain("await transaction.CommitAsync(cancellationToken);\n                return earlyInboxResult;");
+    }
+
+    [Fact]
     public void Create_ValidProposalBecomesCanonicalVersionOne()
     {
         var decision = BusinessPartnerProposalReconciliationPolicy.Evaluate(

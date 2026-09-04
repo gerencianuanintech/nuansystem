@@ -153,7 +153,12 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
 
         inboxGuard.Should().ContainAll(
             "SourceCompanyId", "EntityName", "EntityGlobalId", "Operation", "PayloadJson",
-            "COLLATE Latin1_General_100_BIN2", "Status=N'DeadLetter'", "@EnvelopeResult=4");
+            "COLLATE Latin1_General_100_BIN2", "Status=N'DeadLetter'", "@EnvelopeResult=4")
+            .And.NotContain("SET SourceCompanyId=")
+            .And.NotContain("SET EntityName=")
+            .And.NotContain("SET EntityGlobalId=")
+            .And.NotContain("SET Operation=")
+            .And.NotContain("SET PayloadJson=");
         outboxGuard.Should().ContainAll(
             "CompanyId", "TargetCompanyId", "CausationEventId", "EntityName", "EntityGlobalId",
             "EntityCode", "Operation", "PayloadJson", "COLLATE Latin1_General_100_BIN2",
