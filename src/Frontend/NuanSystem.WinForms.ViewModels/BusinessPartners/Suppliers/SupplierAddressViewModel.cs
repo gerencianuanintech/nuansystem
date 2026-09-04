@@ -13,6 +13,10 @@ public sealed class SupplierAddressViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid? GlobalId { get; set; }
+    public int? CountryId { get; set; }
+    public int? ProvinceId { get; set; }
+    public int? CityId { get; set; }
     public string AddressType { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
     public string AddressName { get; set; } = string.Empty;
@@ -62,6 +66,10 @@ public sealed class SupplierAddressViewModel : INotifyPropertyChanged
         return new SupplierAddressViewModel
         {
             Id = Id,
+            GlobalId = GlobalId,
+            CountryId = CountryId,
+            ProvinceId = ProvinceId,
+            CityId = CityId,
             AddressType = AddressType,
             Code = Code,
             AddressName = AddressName,
@@ -86,6 +94,10 @@ public sealed class SupplierAddressViewModel : INotifyPropertyChanged
 
     public void CopyFrom(SupplierAddressViewModel source)
     {
+        GlobalId = source.GlobalId;
+        CountryId = source.CountryId;
+        ProvinceId = source.ProvinceId;
+        CityId = source.CityId;
         AddressType = source.AddressType;
         Code = source.Code;
         AddressName = source.AddressName;

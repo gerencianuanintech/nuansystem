@@ -18,16 +18,18 @@ public interface IBusinessPartnerRepository : IRepository
     Task<bool> ExistsByCodeAsync(string code, int? excludingId = null, CancellationToken cancellationToken = default);
     Task<bool> ExistsByCodeAsync(string code, int? excludingId, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
 
-    Task<bool> ExistsByIdentificationAsync(int identificationTypeId, string identificationNumber, int? excludingId = null, CancellationToken cancellationToken = default);
-    Task<bool> ExistsByIdentificationAsync(int identificationTypeId, string identificationNumber, int? excludingId, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
+    Task<bool> ExistsByIdentificationAsync(string partnerType, int identificationTypeId, string normalizedIdentificationNumber, int? excludingId = null, CancellationToken cancellationToken = default);
+    Task<bool> ExistsByIdentificationAsync(string partnerType, int identificationTypeId, string normalizedIdentificationNumber, int? excludingId, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
 
-    Task<bool> UpdateAsync(UpdateBusinessPartnerData partner, CancellationToken cancellationToken = default);
-    Task<bool> UpdateAsync(UpdateBusinessPartnerData partner, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
+    Task<string?> GetIdentificationTypeCodeAsync(int identificationTypeId, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
+
+    Task<int> UpdateAsync(UpdateBusinessPartnerData partner, CancellationToken cancellationToken = default);
+    Task<int> UpdateAsync(UpdateBusinessPartnerData partner, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
 
     Task<BusinessPartnerSapImportResultData> ImportSupplierFromSapAsync(
         BusinessPartnerSapImportData supplier,
         CancellationToken cancellationToken = default);
 
-    Task<bool> DeleteAsync(int id, int? deletedByUserId, string? deletedByUserName, CancellationToken cancellationToken = default);
-    Task<bool> DeleteAsync(int id, int? deletedByUserId, string? deletedByUserName, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(DeleteBusinessPartnerData partner, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(DeleteBusinessPartnerData partner, IDbConnection connection, IDbTransaction transaction, CancellationToken cancellationToken = default);
 }

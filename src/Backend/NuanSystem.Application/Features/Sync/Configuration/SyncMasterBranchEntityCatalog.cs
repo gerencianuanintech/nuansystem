@@ -40,6 +40,8 @@ public static class SyncMasterBranchEntityCodes
     public const string Zones = "Zones";
     public const string SupplyMethods = "SupplyMethods";
     public const string BusinessPartner = "BusinessPartner";
+    public const string BusinessPartnerProposal = "BusinessPartnerProposal";
+    public const string BusinessPartnerProposalResult = "BusinessPartnerProposalResult";
     public const string ItemGroups = "ItemGroups";
     public const string ItemFamilies = "ItemFamilies";
     public const string ItemSubgroups = "ItemSubgroups";
@@ -67,7 +69,9 @@ public static class SyncMasterBranchEntityCodes
         new(EconomicActivities, EconomicActivities, "Actividades economicas", true, false, false, false, false, false, "Catalogo tenant definido en 026_tenant_general_supplier_catalogs.sql. Sin productor/aplicador Master-Branch operativo.", 80),
         new(Zones, Zones, "Zonas", true, false, false, false, false, false, "Catalogo tenant definido en 026_tenant_general_supplier_catalogs.sql. Sin productor/aplicador Master-Branch operativo.", 90),
         new(SupplyMethods, SupplyMethods, "Metodos de abastecimiento", true, false, false, false, false, false, "Catalogo tenant definido en 026_tenant_general_supplier_catalogs.sql. Sin productor/aplicador Master-Branch operativo.", 100),
-        new(BusinessPartner, BusinessPartner, "Socios de negocio", true, true, true, true, true, true, "Productor BusinessPartnerSyncPublisher y aplicador BusinessPartnerSyncApplyRepository existentes; alcance limitado, no BusinessPartners completos.", 200),
+        new(BusinessPartner, BusinessPartner, "Socios de negocio", true, true, true, true, true, true, "Productor incremental y Full canonical v2 completo; aplicador transaccional por GlobalId sin republicacion local.", 200),
+        new(BusinessPartnerProposal, BusinessPartnerProposal, "Propuestas de socios de negocio", true, true, true, true, true, false, "Productor direccional y aplicador central transaccional disponibles; no admite desactivacion.", 201, DefaultKeyField: "GlobalId"),
+        new(BusinessPartnerProposalResult, BusinessPartnerProposalResult, "Resultados de propuestas de socios de negocio", true, true, true, false, true, false, "Productor dirigido y aplicador de sucursal disponibles; solo admite resultados Updated de central hacia la sucursal origen.", 202, DefaultKeyField: "GlobalId"),
         new(ItemGroups, ItemGroups, "Grupos de articulos", true, true, true, true, true, true, "Catalogo maestro con LocalOutbox transaccional, fuente Full y conflicto terminal sin adopcion por codigo.", 205),
         new(ItemFamilies, ItemFamilies, "Familias de articulos", true, true, true, true, true, true, "Catalogo maestro dependiente de ItemGroups con LocalOutbox transaccional, fuente Full y aplicador sin adopcion por codigo.", 207, Dependencies: [ItemGroups]),
         new(ItemSubgroups, ItemSubgroups, "Subgrupos de articulos", true, true, true, true, true, true, "Catalogo maestro dependiente de ItemFamilies con LocalOutbox transaccional, fuente Full y aplicador sin adopcion por codigo.", 209, DefaultKeyField: "GlobalId", Dependencies: [ItemFamilies]),

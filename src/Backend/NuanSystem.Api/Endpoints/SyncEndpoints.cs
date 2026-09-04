@@ -3,6 +3,7 @@ using MediatR;
 using NuanSystem.Application.Features.Sync.Commands;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Application.Features.Sync.Queries;
+using NuanSystem.Application.Features.BusinessPartners.SyncConflicts;
 using NuanSystem.Api.Extensions;
 using NuanSystem.Shared.Constants;
 using NuanSystem.Shared.Responses;
@@ -169,6 +170,38 @@ public static class SyncEndpoints
             return result.ToHttpResult();
         })
         .RequirePermission(PermissionCodes.SyncOutboxReleaseLock);
+
+        app.MapGet("/api/sync/business-partner-conflicts", async (
+            string? status,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await sender.Send(
+                new GetBusinessPartnerSyncConflictsQuery(status ?? "Open"),
+                cancellationToken);
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.BusinessPartnerSyncConflictsView);
+
+        app.MapPost("/api/sync/business-partner-conflicts/{id:long}/resolve", async (
+            long id,
+            ResolveBusinessPartnerSyncConflictCommand request,
+            ISender sender,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken) =>
+        {
+            var auditUser = user.GetAuditUser();
+            var result = await sender.Send(
+                request with
+                {
+                    ConflictId = id,
+                    AuditUserId = auditUser.UserId,
+                    AuditUserName = auditUser.UserName
+                },
+                cancellationToken);
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.BusinessPartnerSyncConflictsResolve);
 
         return app;
     }

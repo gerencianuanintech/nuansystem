@@ -16,6 +16,7 @@ public static class SupplierBusinessPartnerMapper
             var contactChannel = LookupOption(lookups?.ContactChannels, contact.ContactChannelId);
             return new SupplierContactViewModel
             {
+                GlobalId = contact.GlobalId,
                 ContactTypeId = contact.ContactTypeId,
                 ContactTypeCode = contactType?.Code ?? string.Empty,
                 ContactTypeName = contactType?.Name ?? string.Empty,
@@ -30,6 +31,8 @@ public static class SupplierBusinessPartnerMapper
                 Extension = contact.Extension ?? string.Empty,
                 Mobile = contact.Mobile ?? string.Empty,
                 Email = contact.Email ?? string.Empty,
+                Language = contact.Language,
+                ReceivesNotifications = contact.ReceivesNotifications,
                 IsPrimary = contact.IsPrimary,
                 IsActive = contact.IsActive,
                 Notes = contact.Notes ?? string.Empty
@@ -47,6 +50,10 @@ public static class SupplierBusinessPartnerMapper
         var index = 1;
         return partner.Addresses.Select(address => new SupplierAddressViewModel
         {
+            GlobalId = address.GlobalId,
+            CountryId = address.CountryId,
+            ProvinceId = address.ProvinceId,
+            CityId = address.CityId,
             AddressType = FromApiAddressType(address.AddressType),
             Code = $"DIR-{index++:000}",
             AddressName = address.AddressType,
@@ -61,7 +68,7 @@ public static class SupplierBusinessPartnerMapper
             Longitude = address.Longitude,
             IsPrimary = address.IsPrimary,
             IsDefaultBilling = string.Equals(address.AddressType, "Billing", StringComparison.OrdinalIgnoreCase),
-            IsDefaultDelivery = string.Equals(address.AddressType, "Shipping", StringComparison.OrdinalIgnoreCase) || address.IsPrimary,
+            IsDefaultDelivery = string.Equals(address.AddressType, "Shipping", StringComparison.OrdinalIgnoreCase),
             IsActive = address.IsActive
         }).ToArray();
     }
@@ -160,6 +167,7 @@ public static class SupplierBusinessPartnerMapper
         return contacts
             .Where(contact => !string.IsNullOrWhiteSpace(contact.FullName))
             .Select(contact => new SaveBusinessPartnerContactRequest(
+                GlobalId: contact.GlobalId is null || contact.GlobalId == Guid.Empty ? null : contact.GlobalId,
                 ContactTypeId: contact.ContactTypeId,
                 ContactChannelId: contact.ContactChannelId,
                 Name: contact.FullName,
@@ -169,8 +177,8 @@ public static class SupplierBusinessPartnerMapper
                 Extension: TrimOrNull(contact.Extension),
                 Mobile: TrimOrNull(contact.Mobile),
                 Email: TrimOrNull(contact.Email),
-                Language: null,
-                ReceivesNotifications: contact.IsActive,
+                Language: TrimOrNull(contact.Language),
+                ReceivesNotifications: contact.ReceivesNotifications,
                 IsPrimary: contact.IsPrimary,
                 IsActive: contact.IsActive,
                 Notes: TrimOrNull(contact.Notes)))
@@ -184,9 +192,10 @@ public static class SupplierBusinessPartnerMapper
         return addresses
             .Where(address => !string.IsNullOrWhiteSpace(address.MainStreet))
             .Select(address => new SaveBusinessPartnerAddressRequest(
-                CountryId: LookupId(lookups.Countries, address.Country),
-                ProvinceId: LookupGeoId(lookups.Provinces, address.Province),
-                CityId: LookupGeoId(lookups.Cities, address.City),
+                GlobalId: address.GlobalId is null || address.GlobalId == Guid.Empty ? null : address.GlobalId,
+                CountryId: LookupId(lookups.Countries, address.Country) ?? address.CountryId,
+                ProvinceId: LookupGeoId(lookups.Provinces, address.Province) ?? address.ProvinceId,
+                CityId: LookupGeoId(lookups.Cities, address.City) ?? address.CityId,
                 AddressType: ToApiAddressType(address),
                 Line1: address.FullAddress.Length == 0 ? address.MainStreet.Trim() : address.FullAddress,
                 Line2: TrimOrNull(address.SecondaryStreet) ?? TrimOrNull(address.Reference),
@@ -323,6 +332,323 @@ public static class SupplierBusinessPartnerMapper
         };
     }
 
+    public static SaveBusinessPartnerRequest ProjectRequest(
+        SaveBusinessPartnerRequest proposed,
+        BusinessPartnerItem? current,
+        BusinessPartnerEditPolicy policy)
+    {
+        ArgumentNullException.ThrowIfNull(proposed);
+        ArgumentNullException.ThrowIfNull(policy);
+        if (!policy.IsSyncedBranch)
+        {
+            return proposed;
+        }
+
+        return current is null || current.Id <= 0
+            ? ProjectBranchCreate(proposed)
+            : ProjectBranchUpdate(proposed, current);
+    }
+
+    public static SaveBusinessPartnerRequest ComposeCustomerRequest(
+        SaveBusinessPartnerRequest formDraft,
+        BusinessPartnerItem? current,
+        BusinessPartnerEditPolicy policy)
+    {
+        ArgumentNullException.ThrowIfNull(formDraft);
+        ArgumentNullException.ThrowIfNull(policy);
+
+        if (current is null || current.Id <= 0)
+        {
+            return ProjectRequest(formDraft, current, policy);
+        }
+
+        var completeRequest = ProjectBranchUpdate(formDraft, current) with
+        {
+            Remarks = formDraft.Remarks,
+            IsActive = formDraft.IsActive,
+            TaxpayerType = formDraft.TaxpayerType,
+            IsAccountingRequired = formDraft.IsAccountingRequired,
+            AppliesRetention = formDraft.AppliesRetention,
+            FiscalRegime = formDraft.FiscalRegime,
+            CountryCode = formDraft.CountryCode,
+            Province = formDraft.Province,
+            City = formDraft.City,
+            CustomerAccountId = formDraft.CustomerAccountId,
+            CustomerAdvanceAccountId = formDraft.CustomerAdvanceAccountId,
+            RetentionAccountId = formDraft.RetentionAccountId,
+            CostCenterCode = formDraft.CostCenterCode,
+            PaymentTermId = formDraft.PaymentTermId,
+            CreditLimit = formDraft.CreditLimit,
+            PriceListCode = formDraft.PriceListCode,
+            AssignedSellerCode = formDraft.AssignedSellerCode,
+            CreditStatus = formDraft.CreditStatus,
+            SapCardCode = formDraft.SapCardCode,
+            SapSyncStatus = formDraft.SapSyncStatus
+        };
+
+        return ProjectRequest(completeRequest, current, policy);
+    }
+
+    public static CustomerContactDetailViewModel ToCustomerContactDetail(SupplierContactViewModel? contact) =>
+        new(
+            contact?.FullName ?? string.Empty,
+            contact?.Position ?? string.Empty,
+            contact?.Phone ?? string.Empty,
+            contact?.Mobile ?? string.Empty,
+            contact?.Email ?? string.Empty,
+            contact?.IsPrimary == true,
+            contact?.IsActive == true,
+            contact?.Notes ?? string.Empty);
+
+    public static SupplierAddressViewModel ComposeCustomerAddressEditResult(
+        SupplierAddressViewModel original,
+        SupplierAddressViewModel dialogResult)
+    {
+        ArgumentNullException.ThrowIfNull(original);
+        ArgumentNullException.ThrowIfNull(dialogResult);
+
+        var result = dialogResult.Clone();
+        result.IsPrimary = original.IsPrimary;
+        return result;
+    }
+
+    private static SaveBusinessPartnerRequest ProjectBranchCreate(SaveBusinessPartnerRequest proposed)
+    {
+        return proposed with
+        {
+            SupplierGroupId = null,
+            SupplierClassId = null,
+            EconomicActivityId = null,
+            ZoneId = null,
+            SupplyMethodId = null,
+            Website = null,
+            Remarks = null,
+            IsActive = false,
+            TaxpayerTypeId = null,
+            TaxRegimeId = null,
+            FiscalCountryId = null,
+            TaxpayerType = null,
+            IsAccountingRequired = false,
+            AppliesRetention = false,
+            FiscalRegime = null,
+            CountryCode = null,
+            Province = null,
+            City = null,
+            CustomerAccountId = null,
+            SupplierAccountId = null,
+            CustomerAdvanceAccountId = null,
+            SupplierAdvanceAccountId = null,
+            RetentionAccountId = null,
+            BranchId = null,
+            DepartmentId = null,
+            BusinessLineId = null,
+            CostCenterId = null,
+            ProjectId = null,
+            CostCenterCode = null,
+            DefaultExpenseAccountId = null,
+            DifferenceAccountId = null,
+            RoundingAccountId = null,
+            ClearingAccountId = null,
+            DiscountAccountId = null,
+            AccountingBySupplier = false,
+            RequiresProvision = false,
+            AllowsAdvance = false,
+            AllowsCompensation = false,
+            AllowsPartialPayments = false,
+            IsPaymentBlocked = false,
+            UsesWithholdingBase = false,
+            ConciliationRequired = false,
+            AccountingPaymentMethodId = null,
+            PaymentPriorityId = null,
+            ApprovalFlowId = null,
+            PaymentDocumentTypeId = null,
+            AccountingPaymentMethod = null,
+            PaymentPriority = null,
+            RequiredPaymentDay = null,
+            ApprovalFlow = null,
+            PaymentDocumentType = null,
+            AveragePaymentDays = 0,
+            PaymentTolerancePercent = 0,
+            PaymentTermId = null,
+            CreditDays = 0,
+            CreditLimit = 0,
+            DeliveryDays = 0,
+            MinimumOrderAmount = 0,
+            AllowsBackorder = false,
+            PreferredCurrencyCode = null,
+            PriceListCode = null,
+            AssignedSellerCode = null,
+            AssignedBuyerCode = null,
+            CreditStatus = null,
+            SapCardCode = null,
+            SapCardType = null,
+            SapSyncStatus = null,
+            SapLastSyncAt = null,
+            SapLastError = null,
+            SapEnabled = false,
+            SapMode = null,
+            SapCompanyCode = null,
+            SapRetryCount = 0,
+            SyncAsSupplier = false,
+            AllowManualSapRetry = false,
+            RequiresApprovalBeforeSapSync = false,
+            BankAccounts = [],
+            RetentionSettings = [],
+            Notes = null,
+            SapFieldMappings = [],
+            Attachments = [],
+            Incoterm = null,
+            CommercialDiscountPercent = 0,
+            PurchaseCurrencyCode = null,
+            PreferredWarehouseId = null,
+            PurchaseSupplierType = null,
+            PreferredWarehouseCode = null,
+            MinimumOrderQuantity = 0,
+            ActiveForImport = false,
+            SubjectToEvaluation = false,
+            AllowsUrgentPurchases = false,
+            AverageDeliveryDays = 0,
+            LeadTimeDays = 0,
+            DeliveryToleranceDays = 0,
+            RequiresPurchaseOrder = false,
+            ExpectedRowVersion = null
+        };
+    }
+
+    private static SaveBusinessPartnerRequest ProjectBranchUpdate(
+        SaveBusinessPartnerRequest proposed,
+        BusinessPartnerItem current)
+    {
+        return proposed with
+        {
+            PartnerType = current.PartnerType,
+            IdentificationTypeId = current.IdentificationTypeId,
+            IdentificationNumber = current.IdentificationNumber,
+            SupplierGroupId = current.SupplierGroupId,
+            SupplierClassId = current.SupplierClassId,
+            EconomicActivityId = current.EconomicActivityId,
+            ZoneId = current.ZoneId,
+            SupplyMethodId = current.SupplyMethodId,
+            Website = current.Website,
+            Remarks = current.Remarks,
+            IsActive = current.IsActive,
+            TaxpayerTypeId = current.TaxpayerTypeId,
+            TaxRegimeId = current.TaxRegimeId,
+            FiscalCountryId = current.FiscalCountryId,
+            TaxpayerType = current.TaxpayerType,
+            IsAccountingRequired = current.IsAccountingRequired,
+            AppliesRetention = current.AppliesRetention,
+            FiscalRegime = current.FiscalRegime,
+            CountryCode = current.CountryCode,
+            Province = current.Province,
+            City = current.City,
+            CustomerAccountId = current.CustomerAccountId,
+            SupplierAccountId = current.SupplierAccountId,
+            CustomerAdvanceAccountId = current.CustomerAdvanceAccountId,
+            SupplierAdvanceAccountId = current.SupplierAdvanceAccountId,
+            RetentionAccountId = current.RetentionAccountId,
+            BranchId = current.BranchId,
+            DepartmentId = current.DepartmentId,
+            BusinessLineId = current.BusinessLineId,
+            CostCenterId = current.CostCenterId,
+            ProjectId = current.ProjectId,
+            CostCenterCode = current.CostCenterCode,
+            DefaultExpenseAccountId = current.DefaultExpenseAccountId,
+            DifferenceAccountId = current.DifferenceAccountId,
+            RoundingAccountId = current.RoundingAccountId,
+            ClearingAccountId = current.ClearingAccountId,
+            DiscountAccountId = current.DiscountAccountId,
+            AccountingBySupplier = current.AccountingBySupplier,
+            RequiresProvision = current.RequiresProvision,
+            AllowsAdvance = current.AllowsAdvance,
+            AllowsCompensation = current.AllowsCompensation,
+            AllowsPartialPayments = current.AllowsPartialPayments,
+            IsPaymentBlocked = current.IsPaymentBlocked,
+            UsesWithholdingBase = current.UsesWithholdingBase,
+            ConciliationRequired = current.ConciliationRequired,
+            AccountingPaymentMethodId = current.AccountingPaymentMethodId,
+            PaymentPriorityId = current.PaymentPriorityId,
+            ApprovalFlowId = current.ApprovalFlowId,
+            PaymentDocumentTypeId = current.PaymentDocumentTypeId,
+            AccountingPaymentMethod = current.AccountingPaymentMethod,
+            PaymentPriority = current.PaymentPriority,
+            RequiredPaymentDay = current.RequiredPaymentDay,
+            ApprovalFlow = current.ApprovalFlow,
+            PaymentDocumentType = current.PaymentDocumentType,
+            AveragePaymentDays = current.AveragePaymentDays,
+            PaymentTolerancePercent = current.PaymentTolerancePercent,
+            PaymentTermId = current.PaymentTermId,
+            CreditDays = current.CreditDays,
+            CreditLimit = current.CreditLimit,
+            DeliveryDays = current.DeliveryDays,
+            MinimumOrderAmount = current.MinimumOrderAmount,
+            AllowsBackorder = current.AllowsBackorder,
+            PreferredCurrencyCode = current.PreferredCurrencyCode,
+            PriceListCode = current.PriceListCode,
+            AssignedSellerCode = current.AssignedSellerCode,
+            AssignedBuyerCode = current.AssignedBuyerCode,
+            CreditStatus = current.CreditStatus,
+            SapCardCode = current.SapCardCode,
+            SapCardType = current.SapCardType,
+            SapSyncStatus = current.SapSyncStatus,
+            SapLastSyncAt = current.SapLastSyncAt,
+            SapLastError = current.SapLastError,
+            SapEnabled = current.SapEnabled,
+            SapMode = current.SapMode,
+            SapCompanyCode = current.SapCompanyCode,
+            SapRetryCount = current.SapRetryCount,
+            SyncAsSupplier = current.SyncAsSupplier,
+            AllowManualSapRetry = current.AllowManualSapRetry,
+            RequiresApprovalBeforeSapSync = current.RequiresApprovalBeforeSapSync,
+            BankAccounts = current.BankAccounts.Select(ToRequest).ToArray(),
+            RetentionSettings = current.RetentionSettings.Select(ToRequest).ToArray(),
+            Notes = current.Notes is null ? null : new SaveBusinessPartnerNotesRequest(
+                current.Notes.InternalNotes,
+                current.Notes.PurchasingNotes,
+                current.Notes.PaymentNotes,
+                current.Notes.OperationalAlert),
+            SapFieldMappings = current.SapFieldMappings.Select(mapping => new SaveBusinessPartnerSapFieldMappingRequest(
+                mapping.SystemField,
+                mapping.SapField,
+                mapping.Description,
+                mapping.IsRequired,
+                mapping.IsEnabled)).ToArray(),
+            Attachments = current.Attachments.Select(attachment => new SaveBusinessPartnerAttachmentRequest(
+                attachment.AttachmentType,
+                attachment.FileName,
+                attachment.Description,
+                attachment.ReferencePath,
+                attachment.FileSize,
+                attachment.IsActive)).ToArray(),
+            Incoterm = current.Incoterm,
+            CommercialDiscountPercent = current.CommercialDiscountPercent,
+            PurchaseCurrencyCode = current.PurchaseCurrencyCode,
+            PreferredWarehouseId = current.PreferredWarehouseId,
+            PurchaseSupplierType = current.PurchaseSupplierType,
+            PreferredWarehouseCode = current.PreferredWarehouseCode,
+            MinimumOrderQuantity = current.MinimumOrderQuantity,
+            ActiveForImport = current.ActiveForImport,
+            SubjectToEvaluation = current.SubjectToEvaluation,
+            AllowsUrgentPurchases = current.AllowsUrgentPurchases,
+            AverageDeliveryDays = current.AverageDeliveryDays,
+            LeadTimeDays = current.LeadTimeDays,
+            DeliveryToleranceDays = current.DeliveryToleranceDays,
+            RequiresPurchaseOrder = current.RequiresPurchaseOrder,
+            ExpectedRowVersion = current.RowVersion
+        };
+    }
+
+    private static SaveBusinessPartnerBankAccountRequest ToRequest(BusinessPartnerBankAccountItem account) =>
+        new(account.BankId, account.BankAccountTypeId, account.BankName, account.AccountType,
+            account.AccountNumber, account.HolderName, account.HolderIdentification, account.CurrencyCode,
+            account.SwiftCode, account.AbaRoutingCode, account.Iban, account.BankCountry, account.BankCity,
+            account.Notes, account.IsPrimary, account.IsActive);
+
+    private static SaveBusinessPartnerRetentionSettingRequest ToRequest(BusinessPartnerRetentionSettingItem setting) =>
+        new(setting.RetentionTypeId, setting.RetentionConceptId, setting.TaxSupportId, setting.RetentionType,
+            setting.SriCode, setting.Percent, setting.EntryAccountId, setting.TaxSupport, setting.AppliesIva,
+            setting.AppliesIncome, setting.IsCurrent, setting.Notes);
+
     public static string? TrimOrNull(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
@@ -440,17 +766,27 @@ public static class SupplierBusinessPartnerMapper
 
     private static string ToApiAddressType(SupplierAddressViewModel address)
     {
-        if (address.IsDefaultBilling || Contains(address.AddressType, "fact"))
+        if (Contains(address.AddressType, "fact") || Contains(address.AddressType, "billing"))
         {
             return "Billing";
         }
 
-        if (address.IsDefaultDelivery || Contains(address.AddressType, "entrega"))
+        if (Contains(address.AddressType, "entrega") || Contains(address.AddressType, "shipping"))
         {
             return "Shipping";
         }
 
-        return Contains(address.AddressType, "fiscal") || address.IsPrimary ? "Main" : "Other";
+        if (Contains(address.AddressType, "fiscal") || Contains(address.AddressType, "main"))
+        {
+            return "Main";
+        }
+
+        if (Contains(address.AddressType, "otro") || Contains(address.AddressType, "other"))
+        {
+            return "Other";
+        }
+
+        return "Other";
     }
 
     private static string FromApiAddressType(string value)

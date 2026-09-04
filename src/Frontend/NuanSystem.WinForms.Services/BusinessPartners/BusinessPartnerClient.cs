@@ -31,9 +31,12 @@ public sealed class BusinessPartnerClient(INuanApiClient apiClient) : IBusinessP
         return apiClient.PutAsync<SaveBusinessPartnerRequest, BusinessPartnerItem>($"{ResolveFormPath(formKey)}/{id}", request, cancellationToken);
     }
 
-    public async Task DeleteAsync(string formKey, int id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(string formKey, int id, string expectedRowVersion, CancellationToken cancellationToken = default)
     {
-        await apiClient.DeleteAsync<object>($"{ResolveFormPath(formKey)}/{id}", cancellationToken);
+        await apiClient.DeleteAsync<DeleteBusinessPartnerRequest, object>(
+            $"{ResolveFormPath(formKey)}/{id}",
+            new(expectedRowVersion),
+            cancellationToken);
     }
 
     private static string ResolveCollectionPath(string partnerType)
@@ -50,3 +53,5 @@ public sealed class BusinessPartnerClient(INuanApiClient apiClient) : IBusinessP
             : "/api/commercial/customers";
     }
 }
+
+file sealed record DeleteBusinessPartnerRequest(string ExpectedRowVersion);

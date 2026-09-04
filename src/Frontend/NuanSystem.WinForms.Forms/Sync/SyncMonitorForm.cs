@@ -18,6 +18,8 @@ public sealed partial class SyncMonitorForm : XtraForm
     private readonly SyncOutboxListViewModel outboxViewModel;
     private readonly SyncOutboxDetailViewModel detailViewModel;
     private readonly bool canViewAudit;
+    private readonly bool canViewConflicts;
+    private readonly bool canResolveConflicts;
 
     public SyncMonitorForm()
     {
@@ -40,11 +42,17 @@ public sealed partial class SyncMonitorForm : XtraForm
         this.outboxViewModel = outboxViewModel;
         this.detailViewModel = detailViewModel;
         canViewAudit = session.HasPermission(PermissionCodes.SyncAuditView);
+        canViewConflicts = session.HasPermission(PermissionCodes.BusinessPartnerSyncConflictsView);
+        canResolveConflicts = session.HasPermission(PermissionCodes.BusinessPartnerSyncConflictsResolve);
 
         InitializeComponent();
         ApplyDashboardTileStyles();
         ApplyFilterActionIcons();
         ConfigureOutboxGrid();
+        ConfigureConflictGrid();
+        pageBusinessPartnerConflicts.PageVisible = canViewConflicts;
+        btnAcceptBranch.Enabled = canResolveConflicts;
+        btnKeepCentral.Enabled = canResolveConflicts;
         WireEvents();
     }
 
@@ -54,7 +62,8 @@ public sealed partial class SyncMonitorForm : XtraForm
         await RefreshAllAsync();
     }
 
-    private void WireEvents() {
+    private void WireEvents()
+    {
         btnApplyFilters.Click += async (_, _) => await RefreshListsAsync();
         btnClearFilters.Click += async (_, _) =>
         {
@@ -62,6 +71,8 @@ public sealed partial class SyncMonitorForm : XtraForm
             await RefreshListsAsync();
         };
         outboxGrid.RowDoubleClick += async (_, _) => await OpenSelectedDetailAsync();
+        btnAcceptBranch.Click += async (_, _) => await ResolveSelectedConflictAsync("AcceptBranch");
+        btnKeepCentral.Click += async (_, _) => await ResolveSelectedConflictAsync("KeepCentral");
     }
 
     private async Task RefreshAllAsync()
@@ -71,9 +82,14 @@ public sealed partial class SyncMonitorForm : XtraForm
             ApplyFiltersToViewModels();
             await monitorViewModel.LoadAsync();
             await outboxViewModel.LoadAsync();
+            if (canViewConflicts)
+            {
+                await monitorViewModel.LoadBusinessPartnerConflictsAsync();
+            }
 
             BindDashboard();
             BindOutbox();
+            BindConflicts();
         });
     }
 
@@ -83,8 +99,13 @@ public sealed partial class SyncMonitorForm : XtraForm
         {
             ApplyFiltersToViewModels();
             await outboxViewModel.LoadAsync();
+            if (canViewConflicts)
+            {
+                await monitorViewModel.LoadBusinessPartnerConflictsAsync();
+            }
 
             BindOutbox();
+            BindConflicts();
         });
     }
 
@@ -247,9 +268,146 @@ public sealed partial class SyncMonitorForm : XtraForm
             });
     }
 
+    private void ConfigureConflictGrid()
+    {
+        conflictGrid.ShowPagination = true;
+        conflictGrid.PageSize = 50;
+        conflictGrid.ShowFindPanel = true;
+        conflictGrid.MultiSelect = false;
+        conflictGrid.ShowSelectionCheckBox = false;
+        conflictGrid.ConfigureColumns(
+            new NuanGridColumnDefinition
+            {
+                FieldName = nameof(BusinessPartnerSyncConflictGridRow.Partner),
+                Caption = "Socio de negocio",
+                VisibleIndex = 0,
+                Width = 220,
+                Format = NuanGridColumnFormat.Text
+            },
+            new NuanGridColumnDefinition
+            {
+                FieldName = nameof(BusinessPartnerSyncConflictGridRow.OriginCompanyId),
+                Caption = "Empresa origen",
+                VisibleIndex = 1,
+                Width = 110,
+                Format = NuanGridColumnFormat.Number
+            },
+            new NuanGridColumnDefinition
+            {
+                FieldName = nameof(BusinessPartnerSyncConflictGridRow.FieldPath),
+                Caption = "Campo",
+                VisibleIndex = 2,
+                Width = 210,
+                Format = NuanGridColumnFormat.Text
+            },
+            new NuanGridColumnDefinition
+            {
+                FieldName = nameof(BusinessPartnerSyncConflictGridRow.BaseCanonicalVersion),
+                Caption = "Versión base",
+                VisibleIndex = 3,
+                Width = 95,
+                Format = NuanGridColumnFormat.Number
+            },
+            new NuanGridColumnDefinition
+            {
+                FieldName = nameof(BusinessPartnerSyncConflictGridRow.CurrentCanonicalVersion),
+                Caption = "Versión central",
+                VisibleIndex = 4,
+                Width = 105,
+                Format = NuanGridColumnFormat.Number
+            },
+            new NuanGridColumnDefinition
+            {
+                FieldName = nameof(BusinessPartnerSyncConflictGridRow.ProposedValue),
+                Caption = "Propuesto por sucursal",
+                VisibleIndex = 5,
+                Width = 260,
+                Format = NuanGridColumnFormat.Text
+            },
+            new NuanGridColumnDefinition
+            {
+                FieldName = nameof(BusinessPartnerSyncConflictGridRow.CentralValue),
+                Caption = "Valor central",
+                VisibleIndex = 6,
+                Width = 260,
+                Format = NuanGridColumnFormat.Text
+            },
+            new NuanGridColumnDefinition
+            {
+                FieldName = nameof(BusinessPartnerSyncConflictGridRow.CreatedAt),
+                Caption = "Creado",
+                VisibleIndex = 7,
+                Width = 150,
+                Format = NuanGridColumnFormat.DateTime
+            },
+            new NuanGridColumnDefinition
+            {
+                FieldName = nameof(BusinessPartnerSyncConflictGridRow.Status),
+                Caption = "Estado",
+                VisibleIndex = 8,
+                Width = 100,
+                Format = NuanGridColumnFormat.Text
+            });
+    }
+
     private void BindOutbox()
     {
         outboxGrid.SetData(outboxViewModel.Items.ToList());
+    }
+
+    private void BindConflicts()
+    {
+        conflictGrid.SetData(canViewConflicts
+            ? monitorViewModel.BusinessPartnerConflictRows.ToList()
+            : []);
+    }
+
+    private BusinessPartnerSyncConflictGridRow? SelectedConflict() =>
+        conflictGrid.GetFocusedRow<BusinessPartnerSyncConflictGridRow>();
+
+    private async Task ResolveSelectedConflictAsync(string resolution)
+    {
+        if (!canResolveConflicts)
+        {
+            return;
+        }
+
+        if (SelectedConflict() is not { } conflict)
+        {
+            XtraMessageBox.Show(this, "Seleccione una diferencia del conflicto.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        var reason = XtraInputBox.Show(
+            "Ingrese el motivo auditable de la decisión:",
+            resolution == "AcceptBranch" ? "Aceptar cambio de sucursal" : "Mantener valor central",
+            string.Empty)?.Trim();
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            XtraMessageBox.Show(this, "El motivo es obligatorio.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var confirmation = XtraMessageBox.Show(
+            this,
+            resolution == "AcceptBranch"
+                ? "¿Desea aceptar los valores propuestos por la sucursal?"
+                : "¿Desea mantener los valores actuales de central?",
+            Text,
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question);
+        if (confirmation != DialogResult.Yes)
+        {
+            return;
+        }
+
+        await RunWithBusyStateAsync(async () =>
+        {
+            await monitorViewModel.ResolveBusinessPartnerConflictAsync(conflict.ConflictId, resolution, reason);
+            BindConflicts();
+            await monitorViewModel.LoadAsync();
+            BindDashboard();
+        });
     }
 
     private void ApplyFiltersToViewModels()
@@ -331,9 +489,12 @@ public sealed partial class SyncMonitorForm : XtraForm
         }
     }
 
-    private void ToggleBusy(bool enabled) {
+    private void ToggleBusy(bool enabled)
+    {
         btnApplyFilters.Enabled = enabled;
         btnClearFilters.Enabled = enabled;
+        btnAcceptBranch.Enabled = enabled && canResolveConflicts;
+        btnKeepCentral.Enabled = enabled && canResolveConflicts;
         Cursor = enabled ? Cursors.Default : Cursors.WaitCursor;
     }
 }

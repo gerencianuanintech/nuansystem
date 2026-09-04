@@ -3,4 +3,4 @@ using NuanSystem.Application.Features.BusinessPartners.Dtos;
 
 namespace NuanSystem.Application.Features.BusinessPartners.Queries;
 
-public sealed record GetBusinessPartnerByIdQuery(int Id) : IQuery<BusinessPartnerDto>;
+public sealed record GetBusinessPartnerByIdQuery(int Id, string? ExpectedPartnerType = null) : IQuery<BusinessPartnerDto>;

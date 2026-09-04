@@ -21,9 +21,9 @@ public sealed class LocalSyncOutboxRepository(
     {
         const string sql = """
 INSERT dbo.LocalOutbox
-    (EventId,CompanyId,EntityName,EntityGlobalId,EntityCode,Operation,PayloadJson,MaxAttempts)
+    (EventId,CompanyId,TargetCompanyId,CausationEventId,EntityName,EntityGlobalId,EntityCode,Operation,PayloadJson,MaxAttempts)
 VALUES
-    (@EventId,@CompanyId,@EntityName,@EntityGlobalId,@EntityCode,@Operation,@PayloadJson,@MaxAttempts);
+    (@EventId,@CompanyId,@TargetCompanyId,@CausationEventId,@EntityName,@EntityGlobalId,@EntityCode,@Operation,@PayloadJson,@MaxAttempts);
 DECLARE @Id bigint=CAST(SCOPE_IDENTITY() AS bigint);
 INSERT dbo.SyncAudit
     (CompanyId,EventId,EntityName,EntityGlobalId,[Action],NewStatus,[Message],CreatedBy)
@@ -38,6 +38,8 @@ SELECT @Id;
             {
                 data.EventId,
                 data.CompanyId,
+                data.TargetCompanyId,
+                data.CausationEventId,
                 EntityName = data.EntityName.Trim(),
                 data.EntityGlobalId,
                 EntityCode = data.EntityCode?.Trim(),
@@ -55,7 +57,7 @@ SELECT @Id;
         const string sql = """
 SELECT Id AS CompanyId, Code AS CompanyCode
 FROM dbo.Companies
-WHERE IsActive=1 AND IsDeleted=0 AND IsMaster=1 AND SyncEnabled=1
+WHERE IsActive=1 AND IsDeleted=0 AND SyncEnabled=1
 ORDER BY Code;
 """;
         using var connection = masterConnectionFactory.CreateConnection();

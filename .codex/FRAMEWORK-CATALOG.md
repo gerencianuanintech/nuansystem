@@ -336,7 +336,7 @@ These are related but non-interchangeable pipelines. Route through `$nuansystem-
 
 | Entity | Tenant producer | Dependencies | Code/migrations | SQL/runtime |
 |---|---|---|---|---|
-| BusinessPartner | Transactional LocalOutbox | None | Integrated | Validated |
+| BusinessPartner | Proposal/Canonical/ProposalResult LocalOutbox | None | Blocks 1/2 code-complete | Unit/static validated; SQL runtime/pilot pending |
 | Item 8.4A | Transactional LocalOutbox | Limited payload | Integrated | Validated in ObserveOnly |
 | ItemFamily | Transactional LocalOutbox | ItemGroup | Integrated | Validated DEMO to Remigio |
 | ItemGroup | Transactional LocalOutbox | None | Scripts 129/130 deployed | Validated DEMO to Remigio |
@@ -346,6 +346,14 @@ These are related but non-interchangeable pipelines. Route through `$nuansystem-
 
 For every row marked pending, the relay and worker remain disabled. Code-ready
 does not imply permission to deploy SQL, create fixtures or apply branch events.
+
+### BusinessPartner bidirectional blocks 1/2
+
+The internal `BusinessPartner` path now reuses the production snapshot and payload factories, central identity/prefix policy, three-way merge/reconciliation, local promotion, closed routing, relay, worker dispatcher and the three directional appliers. The acceptance harness models one central tenant and two branches and covers the twelve approved create/replay/outage/distribution/no-loop/role/conflict/merge/payload/disabled/no-SAP scenarios. Persistence and external infrastructure are the only in-memory boundaries.
+
+Scripts `228`/`229`/`230` and their Dapper contracts are code-complete. Migration `229` accepts only the exact production database or a disposable `NuanSystem_Test_Master_<32hex>` database bound through a same-connection, read-only session-context marker. The opt-in SQL fixture also requires an administrative connection whose initial catalog is `master`, exact generated-name validation, a `RunId` ownership marker and a creation registry before cleanup.
+
+This entry records code/unit/static verification only. SQL runtime, migration execution, readiness review, worker/profile activation, operational pilot, rollback and every SAP action remain pending. The authoritative operational gate is `docs/operations/BUSINESS-PARTNER-BIDIRECTIONAL-PILOT.md`.
 
 ## Iteration 5 SRI framework
 

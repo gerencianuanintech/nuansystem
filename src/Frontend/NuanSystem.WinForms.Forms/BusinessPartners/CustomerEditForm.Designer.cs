@@ -15,6 +15,8 @@ partial class CustomerEditForm
     private PanelControl grpClassification;
     private LabelControl lblGeneralInfoTitle;
     private LabelControl lblClassificationTitle;
+    private LabelControl lblMasterSyncStatus;
+    private LabelControl lblMasterSyncMessage;
     private XtraTabControl xtcMain;
     private XtraTabPage xtpGeneral;
     private XtraTabPage xtpFiscal;
@@ -156,6 +158,8 @@ partial class CustomerEditForm
         pnlMain = new PanelControl();
         grpGeneralInfo = new PanelControl();
         lblGeneralInfoTitle = new LabelControl();
+        lblMasterSyncStatus = new LabelControl();
+        lblMasterSyncMessage = new LabelControl();
         lblCustomerCode = new LabelControl();
         txtCustomerCode = new TextEdit();
         lblCustomerName = new LabelControl();
@@ -608,9 +612,9 @@ partial class CustomerEditForm
         ((System.ComponentModel.ISupportInitialize)pnlFooter).BeginInit();
         pnlFooter.SuspendLayout();
         SuspendLayout();
-        // 
+        //
         // pnlMain
-        // 
+        //
         pnlMain.Appearance.BackColor = Color.White;
         pnlMain.Appearance.Options.UseBackColor = true;
         pnlMain.BorderStyle = BorderStyles.NoBorder;
@@ -623,10 +627,12 @@ partial class CustomerEditForm
         pnlMain.Name = "pnlMain";
         pnlMain.Size = new Size(1286, 737);
         pnlMain.TabIndex = 0;
-        // 
+        //
         // grpGeneralInfo
-        // 
+        //
         grpGeneralInfo.Controls.Add(lblGeneralInfoTitle);
+        grpGeneralInfo.Controls.Add(lblMasterSyncStatus);
+        grpGeneralInfo.Controls.Add(lblMasterSyncMessage);
         grpGeneralInfo.Controls.Add(lblCustomerCode);
         grpGeneralInfo.Controls.Add(txtCustomerCode);
         grpGeneralInfo.Controls.Add(lblCustomerName);
@@ -655,9 +661,9 @@ partial class CustomerEditForm
         grpGeneralInfo.Name = "grpGeneralInfo";
         grpGeneralInfo.Size = new Size(555, 268);
         grpGeneralInfo.TabIndex = 0;
-        // 
+        //
         // lblGeneralInfoTitle
-        // 
+        //
         lblGeneralInfoTitle.Appearance.Font = new Font("Segoe UI", 10F);
         lblGeneralInfoTitle.Appearance.ForeColor = Color.FromArgb(0, 184, 148);
         lblGeneralInfoTitle.Appearance.Options.UseFont = true;
@@ -667,9 +673,34 @@ partial class CustomerEditForm
         lblGeneralInfoTitle.Size = new Size(117, 17);
         lblGeneralInfoTitle.TabIndex = 0;
         lblGeneralInfoTitle.Text = "Informacion general";
-        // 
+        //
+        // lblMasterSyncStatus
+        //
+        lblMasterSyncStatus.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        lblMasterSyncStatus.Appearance.ForeColor = Color.FromArgb(0, 120, 215);
+        lblMasterSyncStatus.Appearance.Options.UseFont = true;
+        lblMasterSyncStatus.Appearance.Options.UseForeColor = true;
+        lblMasterSyncStatus.AutoSizeMode = LabelAutoSizeMode.None;
+        lblMasterSyncStatus.Location = new Point(255, 4);
+        lblMasterSyncStatus.Name = "lblMasterSyncStatus";
+        lblMasterSyncStatus.Size = new Size(145, 20);
+        lblMasterSyncStatus.TabIndex = 25;
+        lblMasterSyncStatus.Text = "Aceptado";
+        //
+        // lblMasterSyncMessage
+        //
+        lblMasterSyncMessage.Appearance.Font = new Font("Segoe UI", 8F);
+        lblMasterSyncMessage.Appearance.ForeColor = Color.FromArgb(87, 96, 111);
+        lblMasterSyncMessage.Appearance.Options.UseFont = true;
+        lblMasterSyncMessage.Appearance.Options.UseForeColor = true;
+        lblMasterSyncMessage.AutoSizeMode = LabelAutoSizeMode.None;
+        lblMasterSyncMessage.Location = new Point(407, 4);
+        lblMasterSyncMessage.Name = "lblMasterSyncMessage";
+        lblMasterSyncMessage.Size = new Size(130, 20);
+        lblMasterSyncMessage.TabIndex = 26;
+        //
         // lblCustomerCode
-        // 
+        //
         lblCustomerCode.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerCode.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerCode.Appearance.Options.UseFont = true;
@@ -679,20 +710,23 @@ partial class CustomerEditForm
         lblCustomerCode.Size = new Size(96, 15);
         lblCustomerCode.TabIndex = 1;
         lblCustomerCode.Text = "Codigo del cliente";
-        // 
+        //
         // txtCustomerCode
-        // 
+        //
         txtCustomerCode.Location = new Point(155, 32);
         txtCustomerCode.Name = "txtCustomerCode";
         txtCustomerCode.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         txtCustomerCode.Properties.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         txtCustomerCode.Properties.Appearance.Options.UseFont = true;
         txtCustomerCode.Properties.Appearance.Options.UseForeColor = true;
+        txtCustomerCode.Properties.NullValuePrompt = "Se asigna al guardar";
+        txtCustomerCode.Properties.ReadOnly = true;
+        txtCustomerCode.Properties.ShowNullValuePromptWhenFocused = true;
         txtCustomerCode.Size = new Size(360, 22);
         txtCustomerCode.TabIndex = 2;
-        // 
+        //
         // lblCustomerName
-        // 
+        //
         lblCustomerName.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerName.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerName.Appearance.Options.UseFont = true;
@@ -702,9 +736,9 @@ partial class CustomerEditForm
         lblCustomerName.Size = new Size(101, 15);
         lblCustomerName.TabIndex = 3;
         lblCustomerName.Text = "Nombre del cliente";
-        // 
+        //
         // txtCustomerName
-        // 
+        //
         txtCustomerName.Location = new Point(155, 60);
         txtCustomerName.Name = "txtCustomerName";
         txtCustomerName.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -713,9 +747,9 @@ partial class CustomerEditForm
         txtCustomerName.Properties.Appearance.Options.UseForeColor = true;
         txtCustomerName.Size = new Size(360, 22);
         txtCustomerName.TabIndex = 4;
-        // 
+        //
         // lblCustomerCommercialName
-        // 
+        //
         lblCustomerCommercialName.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerCommercialName.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerCommercialName.Appearance.Options.UseFont = true;
@@ -725,9 +759,9 @@ partial class CustomerEditForm
         lblCustomerCommercialName.Size = new Size(99, 15);
         lblCustomerCommercialName.TabIndex = 5;
         lblCustomerCommercialName.Text = "Nombre comercial";
-        // 
+        //
         // txtCustomerCommercialName
-        // 
+        //
         txtCustomerCommercialName.Location = new Point(155, 88);
         txtCustomerCommercialName.Name = "txtCustomerCommercialName";
         txtCustomerCommercialName.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -736,9 +770,9 @@ partial class CustomerEditForm
         txtCustomerCommercialName.Properties.Appearance.Options.UseForeColor = true;
         txtCustomerCommercialName.Size = new Size(360, 22);
         txtCustomerCommercialName.TabIndex = 6;
-        // 
+        //
         // lblIdentificationType
-        // 
+        //
         lblIdentificationType.Appearance.Font = new Font("Segoe UI", 9F);
         lblIdentificationType.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblIdentificationType.Appearance.Options.UseFont = true;
@@ -748,9 +782,9 @@ partial class CustomerEditForm
         lblIdentificationType.Size = new Size(115, 15);
         lblIdentificationType.TabIndex = 7;
         lblIdentificationType.Text = "Tipo de identificacion";
-        // 
+        //
         // lueIdentificationType
-        // 
+        //
         lueIdentificationType.Location = new Point(155, 116);
         lueIdentificationType.Name = "lueIdentificationType";
         lueIdentificationType.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -760,9 +794,9 @@ partial class CustomerEditForm
         lueIdentificationType.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueIdentificationType.Size = new Size(150, 22);
         lueIdentificationType.TabIndex = 8;
-        // 
+        //
         // lblIdentificationNumber
-        // 
+        //
         lblIdentificationNumber.Appearance.Font = new Font("Segoe UI", 9F);
         lblIdentificationNumber.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblIdentificationNumber.Appearance.Options.UseFont = true;
@@ -772,9 +806,9 @@ partial class CustomerEditForm
         lblIdentificationNumber.Size = new Size(72, 15);
         lblIdentificationNumber.TabIndex = 9;
         lblIdentificationNumber.Text = "Identificacion";
-        // 
+        //
         // txtIdentificationNumber
-        // 
+        //
         txtIdentificationNumber.Location = new Point(394, 116);
         txtIdentificationNumber.Name = "txtIdentificationNumber";
         txtIdentificationNumber.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -783,9 +817,9 @@ partial class CustomerEditForm
         txtIdentificationNumber.Properties.Appearance.Options.UseForeColor = true;
         txtIdentificationNumber.Size = new Size(121, 22);
         txtIdentificationNumber.TabIndex = 10;
-        // 
+        //
         // lblExternalCode
-        // 
+        //
         lblExternalCode.Appearance.Font = new Font("Segoe UI", 9F);
         lblExternalCode.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblExternalCode.Appearance.Options.UseFont = true;
@@ -795,9 +829,9 @@ partial class CustomerEditForm
         lblExternalCode.Size = new Size(81, 15);
         lblExternalCode.TabIndex = 11;
         lblExternalCode.Text = "Codigo externo";
-        // 
+        //
         // txtExternalCode
-        // 
+        //
         txtExternalCode.Location = new Point(155, 144);
         txtExternalCode.Name = "txtExternalCode";
         txtExternalCode.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -807,9 +841,9 @@ partial class CustomerEditForm
         txtExternalCode.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton() });
         txtExternalCode.Size = new Size(360, 22);
         txtExternalCode.TabIndex = 12;
-        // 
+        //
         // lblCustomerGroup
-        // 
+        //
         lblCustomerGroup.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerGroup.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerGroup.Appearance.Options.UseFont = true;
@@ -819,9 +853,9 @@ partial class CustomerEditForm
         lblCustomerGroup.Size = new Size(92, 15);
         lblCustomerGroup.TabIndex = 13;
         lblCustomerGroup.Text = "Grupo de clientes";
-        // 
+        //
         // lueCustomerGroup
-        // 
+        //
         lueCustomerGroup.Location = new Point(155, 172);
         lueCustomerGroup.Name = "lueCustomerGroup";
         lueCustomerGroup.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -832,9 +866,9 @@ partial class CustomerEditForm
         lueCustomerGroup.Properties.PopupView = lueCustomerGroupView;
         lueCustomerGroup.Size = new Size(360, 22);
         lueCustomerGroup.TabIndex = 14;
-        // 
+        //
         // lueCustomerGroupView
-        // 
+        //
         lueCustomerGroupView.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F);
         lueCustomerGroupView.Appearance.FilterPanel.Options.UseFont = true;
         lueCustomerGroupView.Appearance.FooterPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -847,9 +881,9 @@ partial class CustomerEditForm
         lueCustomerGroupView.Name = "lueCustomerGroupView";
         lueCustomerGroupView.OptionsSelection.EnableAppearanceFocusedCell = false;
         lueCustomerGroupView.OptionsView.ShowGroupPanel = false;
-        // 
+        //
         // lblSalesPerson
-        // 
+        //
         lblSalesPerson.Appearance.Font = new Font("Segoe UI", 9F);
         lblSalesPerson.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblSalesPerson.Appearance.Options.UseFont = true;
@@ -859,9 +893,9 @@ partial class CustomerEditForm
         lblSalesPerson.Size = new Size(51, 15);
         lblSalesPerson.TabIndex = 15;
         lblSalesPerson.Text = "Vendedor";
-        // 
+        //
         // lueSalesPerson
-        // 
+        //
         lueSalesPerson.Location = new Point(155, 200);
         lueSalesPerson.Name = "lueSalesPerson";
         lueSalesPerson.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -872,9 +906,9 @@ partial class CustomerEditForm
         lueSalesPerson.Properties.PopupView = lueSalesPersonView;
         lueSalesPerson.Size = new Size(360, 22);
         lueSalesPerson.TabIndex = 16;
-        // 
+        //
         // lueSalesPersonView
-        // 
+        //
         lueSalesPersonView.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F);
         lueSalesPersonView.Appearance.FilterPanel.Options.UseFont = true;
         lueSalesPersonView.Appearance.FooterPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -887,9 +921,9 @@ partial class CustomerEditForm
         lueSalesPersonView.Name = "lueSalesPersonView";
         lueSalesPersonView.OptionsSelection.EnableAppearanceFocusedCell = false;
         lueSalesPersonView.OptionsView.ShowGroupPanel = false;
-        // 
+        //
         // lblPhone
-        // 
+        //
         lblPhone.Appearance.Font = new Font("Segoe UI", 9F);
         lblPhone.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblPhone.Appearance.Options.UseFont = true;
@@ -899,9 +933,9 @@ partial class CustomerEditForm
         lblPhone.Size = new Size(47, 15);
         lblPhone.TabIndex = 17;
         lblPhone.Text = "Telefono";
-        // 
+        //
         // txtPhone
-        // 
+        //
         txtPhone.Location = new Point(171, 230);
         txtPhone.Name = "txtPhone";
         txtPhone.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -910,9 +944,9 @@ partial class CustomerEditForm
         txtPhone.Properties.Appearance.Options.UseForeColor = true;
         txtPhone.Size = new Size(160, 22);
         txtPhone.TabIndex = 18;
-        // 
+        //
         // lblEmail
-        // 
+        //
         lblEmail.Appearance.Font = new Font("Segoe UI", 9F);
         lblEmail.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblEmail.Appearance.Options.UseFont = true;
@@ -922,9 +956,9 @@ partial class CustomerEditForm
         lblEmail.Size = new Size(36, 15);
         lblEmail.TabIndex = 19;
         lblEmail.Text = "Correo";
-        // 
+        //
         // txtEmail
-        // 
+        //
         txtEmail.Location = new Point(400, 230);
         txtEmail.Name = "txtEmail";
         txtEmail.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -933,9 +967,9 @@ partial class CustomerEditForm
         txtEmail.Properties.Appearance.Options.UseForeColor = true;
         txtEmail.Size = new Size(131, 22);
         txtEmail.TabIndex = 20;
-        // 
+        //
         // lblShortAddress
-        // 
+        //
         lblShortAddress.Appearance.Font = new Font("Segoe UI", 9F);
         lblShortAddress.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblShortAddress.Appearance.Options.UseFont = true;
@@ -945,9 +979,9 @@ partial class CustomerEditForm
         lblShortAddress.Size = new Size(80, 15);
         lblShortAddress.TabIndex = 21;
         lblShortAddress.Text = "Direccion corta";
-        // 
+        //
         // txtShortAddress
-        // 
+        //
         txtShortAddress.Location = new Point(171, 254);
         txtShortAddress.Name = "txtShortAddress";
         txtShortAddress.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -956,9 +990,9 @@ partial class CustomerEditForm
         txtShortAddress.Properties.Appearance.Options.UseForeColor = true;
         txtShortAddress.Size = new Size(250, 22);
         txtShortAddress.TabIndex = 22;
-        // 
+        //
         // lblStatus
-        // 
+        //
         lblStatus.Appearance.Font = new Font("Segoe UI", 9F);
         lblStatus.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblStatus.Appearance.Options.UseFont = true;
@@ -968,9 +1002,9 @@ partial class CustomerEditForm
         lblStatus.Size = new Size(35, 15);
         lblStatus.TabIndex = 23;
         lblStatus.Text = "Estado";
-        // 
+        //
         // lueStatus
-        // 
+        //
         lueStatus.Location = new Point(485, 254);
         lueStatus.Name = "lueStatus";
         lueStatus.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -980,9 +1014,9 @@ partial class CustomerEditForm
         lueStatus.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueStatus.Size = new Size(46, 22);
         lueStatus.TabIndex = 24;
-        // 
+        //
         // grpClassification
-        // 
+        //
         grpClassification.Controls.Add(lblClassificationTitle);
         grpClassification.Controls.Add(lblCustomerType);
         grpClassification.Controls.Add(lueCustomerType);
@@ -1012,9 +1046,9 @@ partial class CustomerEditForm
         grpClassification.Name = "grpClassification";
         grpClassification.Size = new Size(694, 268);
         grpClassification.TabIndex = 1;
-        // 
+        //
         // lblClassificationTitle
-        // 
+        //
         lblClassificationTitle.Appearance.Font = new Font("Segoe UI", 10F);
         lblClassificationTitle.Appearance.ForeColor = Color.FromArgb(0, 184, 148);
         lblClassificationTitle.Appearance.Options.UseFont = true;
@@ -1024,9 +1058,9 @@ partial class CustomerEditForm
         lblClassificationTitle.Size = new Size(126, 17);
         lblClassificationTitle.TabIndex = 0;
         lblClassificationTitle.Text = "Clasificacion y control";
-        // 
+        //
         // lblCustomerType
-        // 
+        //
         lblCustomerType.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerType.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerType.Appearance.Options.UseFont = true;
@@ -1036,9 +1070,9 @@ partial class CustomerEditForm
         lblCustomerType.Size = new Size(78, 15);
         lblCustomerType.TabIndex = 1;
         lblCustomerType.Text = "Tipo de cliente";
-        // 
+        //
         // lueCustomerType
-        // 
+        //
         lueCustomerType.Location = new Point(132, 25);
         lueCustomerType.Name = "lueCustomerType";
         lueCustomerType.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1048,9 +1082,9 @@ partial class CustomerEditForm
         lueCustomerType.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueCustomerType.Size = new Size(230, 22);
         lueCustomerType.TabIndex = 2;
-        // 
+        //
         // lblPriceList
-        // 
+        //
         lblPriceList.Appearance.Font = new Font("Segoe UI", 9F);
         lblPriceList.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblPriceList.Appearance.Options.UseFont = true;
@@ -1060,9 +1094,9 @@ partial class CustomerEditForm
         lblPriceList.Size = new Size(81, 15);
         lblPriceList.TabIndex = 3;
         lblPriceList.Text = "Lista de precios";
-        // 
+        //
         // luePriceList
-        // 
+        //
         luePriceList.Location = new Point(163, 62);
         luePriceList.Name = "luePriceList";
         luePriceList.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1072,9 +1106,9 @@ partial class CustomerEditForm
         luePriceList.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         luePriceList.Size = new Size(230, 22);
         luePriceList.TabIndex = 4;
-        // 
+        //
         // lblPaymentTerm
-        // 
+        //
         lblPaymentTerm.Appearance.Font = new Font("Segoe UI", 9F);
         lblPaymentTerm.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblPaymentTerm.Appearance.Options.UseFont = true;
@@ -1084,9 +1118,9 @@ partial class CustomerEditForm
         lblPaymentTerm.Size = new Size(101, 15);
         lblPaymentTerm.TabIndex = 5;
         lblPaymentTerm.Text = "Condicion de pago";
-        // 
+        //
         // luePaymentTerm
-        // 
+        //
         luePaymentTerm.Location = new Point(163, 90);
         luePaymentTerm.Name = "luePaymentTerm";
         luePaymentTerm.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1096,9 +1130,9 @@ partial class CustomerEditForm
         luePaymentTerm.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         luePaymentTerm.Size = new Size(230, 22);
         luePaymentTerm.TabIndex = 6;
-        // 
+        //
         // lblCurrency
-        // 
+        //
         lblCurrency.Appearance.Font = new Font("Segoe UI", 9F);
         lblCurrency.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCurrency.Appearance.Options.UseFont = true;
@@ -1108,9 +1142,9 @@ partial class CustomerEditForm
         lblCurrency.Size = new Size(44, 15);
         lblCurrency.TabIndex = 7;
         lblCurrency.Text = "Moneda";
-        // 
+        //
         // lueCurrency
-        // 
+        //
         lueCurrency.Location = new Point(163, 118);
         lueCurrency.Name = "lueCurrency";
         lueCurrency.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1120,9 +1154,9 @@ partial class CustomerEditForm
         lueCurrency.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueCurrency.Size = new Size(230, 22);
         lueCurrency.TabIndex = 8;
-        // 
+        //
         // lblCreditLimit
-        // 
+        //
         lblCreditLimit.Appearance.Font = new Font("Segoe UI", 9F);
         lblCreditLimit.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCreditLimit.Appearance.Options.UseFont = true;
@@ -1132,9 +1166,9 @@ partial class CustomerEditForm
         lblCreditLimit.Size = new Size(89, 15);
         lblCreditLimit.TabIndex = 9;
         lblCreditLimit.Text = "Limite de credito";
-        // 
+        //
         // spnCreditLimit
-        // 
+        //
         spnCreditLimit.EditValue = new decimal(new int[] { 0, 0, 0, 0 });
         spnCreditLimit.Location = new Point(163, 146);
         spnCreditLimit.Name = "spnCreditLimit";
@@ -1147,9 +1181,9 @@ partial class CustomerEditForm
         spnCreditLimit.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         spnCreditLimit.Size = new Size(230, 22);
         spnCreditLimit.TabIndex = 10;
-        // 
+        //
         // lblChannel
-        // 
+        //
         lblChannel.Appearance.Font = new Font("Segoe UI", 9F);
         lblChannel.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblChannel.Appearance.Options.UseFont = true;
@@ -1159,9 +1193,9 @@ partial class CustomerEditForm
         lblChannel.Size = new Size(30, 15);
         lblChannel.TabIndex = 11;
         lblChannel.Text = "Canal";
-        // 
+        //
         // lueChannel
-        // 
+        //
         lueChannel.Location = new Point(163, 174);
         lueChannel.Name = "lueChannel";
         lueChannel.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1171,9 +1205,9 @@ partial class CustomerEditForm
         lueChannel.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueChannel.Size = new Size(230, 22);
         lueChannel.TabIndex = 12;
-        // 
+        //
         // lblZone
-        // 
+        //
         lblZone.Appearance.Font = new Font("Segoe UI", 9F);
         lblZone.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblZone.Appearance.Options.UseFont = true;
@@ -1183,9 +1217,9 @@ partial class CustomerEditForm
         lblZone.Size = new Size(27, 15);
         lblZone.TabIndex = 13;
         lblZone.Text = "Zona";
-        // 
+        //
         // lueZone
-        // 
+        //
         lueZone.Location = new Point(163, 202);
         lueZone.Name = "lueZone";
         lueZone.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1195,9 +1229,9 @@ partial class CustomerEditForm
         lueZone.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueZone.Size = new Size(230, 22);
         lueZone.TabIndex = 14;
-        // 
+        //
         // lblRisk
-        // 
+        //
         lblRisk.Appearance.Font = new Font("Segoe UI", 9F);
         lblRisk.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblRisk.Appearance.Options.UseFont = true;
@@ -1207,9 +1241,9 @@ partial class CustomerEditForm
         lblRisk.Size = new Size(35, 15);
         lblRisk.TabIndex = 15;
         lblRisk.Text = "Riesgo";
-        // 
+        //
         // lueRiskLevel
-        // 
+        //
         lueRiskLevel.Location = new Point(163, 230);
         lueRiskLevel.Name = "lueRiskLevel";
         lueRiskLevel.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1219,9 +1253,9 @@ partial class CustomerEditForm
         lueRiskLevel.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueRiskLevel.Size = new Size(230, 22);
         lueRiskLevel.TabIndex = 16;
-        // 
+        //
         // lblAllowSales
-        // 
+        //
         lblAllowSales.Appearance.Font = new Font("Segoe UI", 9F);
         lblAllowSales.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblAllowSales.Appearance.Options.UseFont = true;
@@ -1231,9 +1265,9 @@ partial class CustomerEditForm
         lblAllowSales.Size = new Size(79, 15);
         lblAllowSales.TabIndex = 17;
         lblAllowSales.Text = "Permitir ventas";
-        // 
+        //
         // tsAllowSales
-        // 
+        //
         tsAllowSales.Location = new Point(585, 44);
         tsAllowSales.Name = "tsAllowSales";
         tsAllowSales.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1244,9 +1278,9 @@ partial class CustomerEditForm
         tsAllowSales.Properties.OnText = "";
         tsAllowSales.Size = new Size(55, 20);
         tsAllowSales.TabIndex = 18;
-        // 
+        //
         // lblCreditBlocked
-        // 
+        //
         lblCreditBlocked.Appearance.Font = new Font("Segoe UI", 9F);
         lblCreditBlocked.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCreditBlocked.Appearance.Options.UseFont = true;
@@ -1256,9 +1290,9 @@ partial class CustomerEditForm
         lblCreditBlocked.Size = new Size(87, 15);
         lblCreditBlocked.TabIndex = 19;
         lblCreditBlocked.Text = "Bloquear credito";
-        // 
+        //
         // tsCreditBlocked
-        // 
+        //
         tsCreditBlocked.Location = new Point(585, 84);
         tsCreditBlocked.Name = "tsCreditBlocked";
         tsCreditBlocked.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1269,9 +1303,9 @@ partial class CustomerEditForm
         tsCreditBlocked.Properties.OnText = "";
         tsCreditBlocked.Size = new Size(55, 20);
         tsCreditBlocked.TabIndex = 20;
-        // 
+        //
         // lblTaxExempt
-        // 
+        //
         lblTaxExempt.Appearance.Font = new Font("Segoe UI", 9F);
         lblTaxExempt.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblTaxExempt.Appearance.Options.UseFont = true;
@@ -1281,9 +1315,9 @@ partial class CustomerEditForm
         lblTaxExempt.Size = new Size(88, 15);
         lblTaxExempt.TabIndex = 21;
         lblTaxExempt.Text = "Exento retencion";
-        // 
+        //
         // tsTaxExempt
-        // 
+        //
         tsTaxExempt.Location = new Point(585, 124);
         tsTaxExempt.Name = "tsTaxExempt";
         tsTaxExempt.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1294,9 +1328,9 @@ partial class CustomerEditForm
         tsTaxExempt.Properties.OnText = "";
         tsTaxExempt.Size = new Size(55, 20);
         tsTaxExempt.TabIndex = 22;
-        // 
+        //
         // lblStrategic
-        // 
+        //
         lblStrategic.Appearance.Font = new Font("Segoe UI", 9F);
         lblStrategic.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblStrategic.Appearance.Options.UseFont = true;
@@ -1306,9 +1340,9 @@ partial class CustomerEditForm
         lblStrategic.Size = new Size(98, 15);
         lblStrategic.TabIndex = 23;
         lblStrategic.Text = "Cliente estrategico";
-        // 
+        //
         // tsStrategicCustomer
-        // 
+        //
         tsStrategicCustomer.Location = new Point(585, 164);
         tsStrategicCustomer.Name = "tsStrategicCustomer";
         tsStrategicCustomer.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1319,18 +1353,18 @@ partial class CustomerEditForm
         tsStrategicCustomer.Properties.OnText = "";
         tsStrategicCustomer.Size = new Size(55, 20);
         tsStrategicCustomer.TabIndex = 24;
-        // 
+        //
         // xtcMain
-        // 
+        //
         xtcMain.Location = new Point(14, 286);
         xtcMain.Name = "xtcMain";
         xtcMain.SelectedTabPage = xtpGeneral;
         xtcMain.Size = new Size(1260, 389);
         xtcMain.TabIndex = 2;
         xtcMain.TabPages.AddRange(new XtraTabPage[] { xtpGeneral, xtpFiscal, xtpAddresses, xtpContacts, xtpCommercial, xtpAccounting, xtpSap });
-        // 
+        //
         // xtpGeneral
-        // 
+        //
         xtpGeneral.Controls.Add(grpCustomerImage);
         xtpGeneral.Controls.Add(grpCustomerObservations);
         xtpGeneral.Controls.Add(grpCustomerComplement);
@@ -1340,17 +1374,17 @@ partial class CustomerEditForm
         xtpGeneral.Name = "xtpGeneral";
         xtpGeneral.Size = new Size(1258, 364);
         xtpGeneral.Text = "General";
-        // 
+        //
         // picCustomerLogo
-        // 
+        //
         picCustomerLogo.Location = new Point(18, 32);
         picCustomerLogo.Name = "picCustomerLogo";
         picCustomerLogo.Properties.SizeMode = PictureSizeMode.Squeeze;
         picCustomerLogo.Size = new Size(168, 130);
         picCustomerLogo.TabIndex = 0;
-        // 
+        //
         // btnLoadImage
-        // 
+        //
         btnLoadImage.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnLoadImage.Appearance.Options.UseFont = true;
         btnLoadImage.Location = new Point(18, 174);
@@ -1358,9 +1392,9 @@ partial class CustomerEditForm
         btnLoadImage.Size = new Size(72, 28);
         btnLoadImage.TabIndex = 1;
         btnLoadImage.Text = "Cargar";
-        // 
+        //
         // btnRemoveImage
-        // 
+        //
         btnRemoveImage.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnRemoveImage.Appearance.Options.UseFont = true;
         btnRemoveImage.Location = new Point(108, 174);
@@ -1368,9 +1402,9 @@ partial class CustomerEditForm
         btnRemoveImage.Size = new Size(72, 28);
         btnRemoveImage.TabIndex = 2;
         btnRemoveImage.Text = "Quitar";
-        // 
+        //
         // memObservations
-        // 
+        //
         memObservations.Location = new Point(16, 32);
         memObservations.Name = "memObservations";
         memObservations.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1379,9 +1413,9 @@ partial class CustomerEditForm
         memObservations.Properties.Appearance.Options.UseForeColor = true;
         memObservations.Size = new Size(328, 70);
         memObservations.TabIndex = 3;
-        // 
+        //
         // dtpStartDate
-        // 
+        //
         dtpStartDate.EditValue = new DateTime(2026, 5, 22, 0, 0, 0, 0);
         dtpStartDate.Location = new Point(140, 32);
         dtpStartDate.Name = "dtpStartDate";
@@ -1392,9 +1426,9 @@ partial class CustomerEditForm
         dtpStartDate.Properties.CalendarTimeProperties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         dtpStartDate.Size = new Size(180, 22);
         dtpStartDate.TabIndex = 4;
-        // 
+        //
         // lueCustomerOrigin
-        // 
+        //
         lueCustomerOrigin.Location = new Point(140, 62);
         lueCustomerOrigin.Name = "lueCustomerOrigin";
         lueCustomerOrigin.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1404,9 +1438,9 @@ partial class CustomerEditForm
         lueCustomerOrigin.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueCustomerOrigin.Size = new Size(180, 22);
         lueCustomerOrigin.TabIndex = 5;
-        // 
+        //
         // lueAbcClassification
-        // 
+        //
         lueAbcClassification.Location = new Point(140, 92);
         lueAbcClassification.Name = "lueAbcClassification";
         lueAbcClassification.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1416,9 +1450,9 @@ partial class CustomerEditForm
         lueAbcClassification.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueAbcClassification.Size = new Size(180, 22);
         lueAbcClassification.TabIndex = 6;
-        // 
+        //
         // luePurchaseFrequency
-        // 
+        //
         luePurchaseFrequency.Location = new Point(140, 122);
         luePurchaseFrequency.Name = "luePurchaseFrequency";
         luePurchaseFrequency.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1428,9 +1462,9 @@ partial class CustomerEditForm
         luePurchaseFrequency.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         luePurchaseFrequency.Size = new Size(180, 22);
         luePurchaseFrequency.TabIndex = 7;
-        // 
+        //
         // spnCurrentBalance
-        // 
+        //
         spnCurrentBalance.EditValue = new decimal(new int[] { 0, 0, 0, 0 });
         spnCurrentBalance.Location = new Point(150, 58);
         spnCurrentBalance.Name = "spnCurrentBalance";
@@ -1443,9 +1477,9 @@ partial class CustomerEditForm
         spnCurrentBalance.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         spnCurrentBalance.Size = new Size(120, 22);
         spnCurrentBalance.TabIndex = 8;
-        // 
+        //
         // spnCreditAvailable
-        // 
+        //
         spnCreditAvailable.EditValue = new decimal(new int[] { 0, 0, 0, 0 });
         spnCreditAvailable.Location = new Point(276, 58);
         spnCreditAvailable.Name = "spnCreditAvailable";
@@ -1458,9 +1492,9 @@ partial class CustomerEditForm
         spnCreditAvailable.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         spnCreditAvailable.Size = new Size(120, 22);
         spnCreditAvailable.TabIndex = 9;
-        // 
+        //
         // dtpLastPurchase
-        // 
+        //
         dtpLastPurchase.EditValue = new DateTime(2026, 5, 22, 0, 0, 0, 0);
         dtpLastPurchase.Location = new Point(402, 58);
         dtpLastPurchase.Name = "dtpLastPurchase";
@@ -1471,9 +1505,9 @@ partial class CustomerEditForm
         dtpLastPurchase.Properties.CalendarTimeProperties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         dtpLastPurchase.Size = new Size(120, 22);
         dtpLastPurchase.TabIndex = 10;
-        // 
+        //
         // spnOpenOrders
-        // 
+        //
         spnOpenOrders.EditValue = new decimal(new int[] { 0, 0, 0, 0 });
         spnOpenOrders.Location = new Point(520, 58);
         spnOpenOrders.Name = "spnOpenOrders";
@@ -1486,9 +1520,9 @@ partial class CustomerEditForm
         spnOpenOrders.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         spnOpenOrders.Size = new Size(100, 22);
         spnOpenOrders.TabIndex = 11;
-        // 
+        //
         // spnYtdSales
-        // 
+        //
         spnYtdSales.EditValue = new decimal(new int[] { 0, 0, 0, 0 });
         spnYtdSales.Location = new Point(24, 58);
         spnYtdSales.Name = "spnYtdSales";
@@ -1501,9 +1535,9 @@ partial class CustomerEditForm
         spnYtdSales.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         spnYtdSales.Size = new Size(120, 22);
         spnYtdSales.TabIndex = 12;
-        // 
+        //
         // grdCustomerContacts
-        // 
+        //
         grdCustomerContacts.Font = new Font("Segoe UI", 9F);
         grdCustomerContacts.Location = new Point(14, 30);
         grdCustomerContacts.MainView = grvCustomerContacts;
@@ -1511,9 +1545,9 @@ partial class CustomerEditForm
         grdCustomerContacts.Size = new Size(592, 128);
         grdCustomerContacts.TabIndex = 13;
         grdCustomerContacts.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { grvCustomerContacts });
-        // 
+        //
         // grvCustomerContacts
-        // 
+        //
         grvCustomerContacts.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F);
         grvCustomerContacts.Appearance.FilterPanel.Options.UseFont = true;
         grvCustomerContacts.Appearance.FooterPanel.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
@@ -1530,9 +1564,9 @@ partial class CustomerEditForm
         grvCustomerContacts.Name = "grvCustomerContacts";
         grvCustomerContacts.OptionsBehavior.Editable = false;
         grvCustomerContacts.OptionsView.ShowGroupPanel = false;
-        // 
+        //
         // memInternalNotes
-        // 
+        //
         memInternalNotes.Location = new Point(14, 32);
         memInternalNotes.Name = "memInternalNotes";
         memInternalNotes.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1541,9 +1575,9 @@ partial class CustomerEditForm
         memInternalNotes.Properties.Appearance.Options.UseForeColor = true;
         memInternalNotes.Size = new Size(320, 62);
         memInternalNotes.TabIndex = 14;
-        // 
+        //
         // lueSegment
-        // 
+        //
         lueSegment.Location = new Point(440, 32);
         lueSegment.Name = "lueSegment";
         lueSegment.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1553,9 +1587,9 @@ partial class CustomerEditForm
         lueSegment.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueSegment.Size = new Size(170, 22);
         lueSegment.TabIndex = 15;
-        // 
+        //
         // lueInternalClassification
-        // 
+        //
         lueInternalClassification.Location = new Point(440, 62);
         lueInternalClassification.Name = "lueInternalClassification";
         lueInternalClassification.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1565,9 +1599,9 @@ partial class CustomerEditForm
         lueInternalClassification.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueInternalClassification.Size = new Size(170, 22);
         lueInternalClassification.TabIndex = 16;
-        // 
+        //
         // memCommercialTerms
-        // 
+        //
         memCommercialTerms.Location = new Point(560, 32);
         memCommercialTerms.Name = "memCommercialTerms";
         memCommercialTerms.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1576,9 +1610,9 @@ partial class CustomerEditForm
         memCommercialTerms.Properties.Appearance.Options.UseForeColor = true;
         memCommercialTerms.Size = new Size(360, 62);
         memCommercialTerms.TabIndex = 17;
-        // 
+        //
         // txtTags
-        // 
+        //
         txtTags.Location = new Point(1075, 32);
         txtTags.Name = "txtTags";
         txtTags.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1587,9 +1621,9 @@ partial class CustomerEditForm
         txtTags.Properties.Appearance.Options.UseForeColor = true;
         txtTags.Size = new Size(150, 22);
         txtTags.TabIndex = 18;
-        // 
+        //
         // grpCustomerImage
-        // 
+        //
         grpCustomerImage.Controls.Add(picCustomerLogo);
         grpCustomerImage.Controls.Add(btnLoadImage);
         grpCustomerImage.Controls.Add(btnRemoveImage);
@@ -1607,9 +1641,9 @@ partial class CustomerEditForm
         grpCustomerImageTitle.Text = "Imagen / Logo";
         grpCustomerImage.Controls.Add(grpCustomerImageTitle);
         grpCustomerImageTitle.BringToFront();
-        // 
+        //
         // grpCustomerObservations
-        // 
+        //
         grpCustomerObservations.Controls.Add(memObservations);
         grpCustomerObservations.Location = new Point(230, 14);
         grpCustomerObservations.Name = "grpCustomerObservations";
@@ -1625,9 +1659,9 @@ partial class CustomerEditForm
         grpCustomerObservationsTitle.Text = "Descripcion / Observaciones";
         grpCustomerObservations.Controls.Add(grpCustomerObservationsTitle);
         grpCustomerObservationsTitle.BringToFront();
-        // 
+        //
         // grpCustomerComplement
-        // 
+        //
         grpCustomerComplement.Controls.Add(lblCustomerStartDate);
         grpCustomerComplement.Controls.Add(dtpStartDate);
         grpCustomerComplement.Controls.Add(lblCustomerOrigin);
@@ -1650,9 +1684,9 @@ partial class CustomerEditForm
         grpCustomerComplementTitle.Text = "Datos complementarios";
         grpCustomerComplement.Controls.Add(grpCustomerComplementTitle);
         grpCustomerComplementTitle.BringToFront();
-        // 
+        //
         // lblCustomerStartDate
-        // 
+        //
         lblCustomerStartDate.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerStartDate.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerStartDate.Appearance.Options.UseFont = true;
@@ -1662,9 +1696,9 @@ partial class CustomerEditForm
         lblCustomerStartDate.Size = new Size(69, 15);
         lblCustomerStartDate.TabIndex = 0;
         lblCustomerStartDate.Text = "Fecha de alta";
-        // 
+        //
         // lblCustomerOrigin
-        // 
+        //
         lblCustomerOrigin.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerOrigin.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerOrigin.Appearance.Options.UseFont = true;
@@ -1674,9 +1708,9 @@ partial class CustomerEditForm
         lblCustomerOrigin.Size = new Size(74, 15);
         lblCustomerOrigin.TabIndex = 5;
         lblCustomerOrigin.Text = "Origen cliente";
-        // 
+        //
         // lblCustomerAbc
-        // 
+        //
         lblCustomerAbc.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerAbc.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerAbc.Appearance.Options.UseFont = true;
@@ -1686,9 +1720,9 @@ partial class CustomerEditForm
         lblCustomerAbc.Size = new Size(93, 15);
         lblCustomerAbc.TabIndex = 6;
         lblCustomerAbc.Text = "Clasificacion ABC";
-        // 
+        //
         // lblCustomerFrequency
-        // 
+        //
         lblCustomerFrequency.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerFrequency.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerFrequency.Appearance.Options.UseFont = true;
@@ -1698,9 +1732,9 @@ partial class CustomerEditForm
         lblCustomerFrequency.Size = new Size(101, 15);
         lblCustomerFrequency.TabIndex = 7;
         lblCustomerFrequency.Text = "Frecuencia compra";
-        // 
+        //
         // grpCustomerSummary
-        // 
+        //
         grpCustomerSummary.Controls.Add(lblCustomerSalesYtd);
         grpCustomerSummary.Controls.Add(spnYtdSales);
         grpCustomerSummary.Controls.Add(lblCustomerBalance);
@@ -1725,9 +1759,9 @@ partial class CustomerEditForm
         grpCustomerSummaryTitle.Text = "Resumen comercial";
         grpCustomerSummary.Controls.Add(grpCustomerSummaryTitle);
         grpCustomerSummaryTitle.BringToFront();
-        // 
+        //
         // lblCustomerSalesYtd
-        // 
+        //
         lblCustomerSalesYtd.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerSalesYtd.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerSalesYtd.Appearance.Options.UseFont = true;
@@ -1737,9 +1771,9 @@ partial class CustomerEditForm
         lblCustomerSalesYtd.Size = new Size(60, 15);
         lblCustomerSalesYtd.TabIndex = 0;
         lblCustomerSalesYtd.Text = "Ventas YTD";
-        // 
+        //
         // lblCustomerBalance
-        // 
+        //
         lblCustomerBalance.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerBalance.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerBalance.Appearance.Options.UseFont = true;
@@ -1749,9 +1783,9 @@ partial class CustomerEditForm
         lblCustomerBalance.Size = new Size(64, 15);
         lblCustomerBalance.TabIndex = 13;
         lblCustomerBalance.Text = "Saldo actual";
-        // 
+        //
         // lblCustomerAvailable
-        // 
+        //
         lblCustomerAvailable.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerAvailable.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerAvailable.Appearance.Options.UseFont = true;
@@ -1761,9 +1795,9 @@ partial class CustomerEditForm
         lblCustomerAvailable.Size = new Size(56, 15);
         lblCustomerAvailable.TabIndex = 14;
         lblCustomerAvailable.Text = "Disponible";
-        // 
+        //
         // lblCustomerLastPurchase
-        // 
+        //
         lblCustomerLastPurchase.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerLastPurchase.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerLastPurchase.Appearance.Options.UseFont = true;
@@ -1773,9 +1807,9 @@ partial class CustomerEditForm
         lblCustomerLastPurchase.Size = new Size(79, 15);
         lblCustomerLastPurchase.TabIndex = 15;
         lblCustomerLastPurchase.Text = "Ultima compra";
-        // 
+        //
         // lblCustomerOpenOrders
-        // 
+        //
         lblCustomerOpenOrders.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerOpenOrders.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerOpenOrders.Appearance.Options.UseFont = true;
@@ -1785,9 +1819,9 @@ partial class CustomerEditForm
         lblCustomerOpenOrders.Size = new Size(42, 15);
         lblCustomerOpenOrders.TabIndex = 16;
         lblCustomerOpenOrders.Text = "Pedidos";
-        // 
+        //
         // grpCustomerPreview
-        // 
+        //
         grpCustomerPreview.Controls.Add(grdCustomerContacts);
         grpCustomerPreview.Location = new Point(610, 140);
         grpCustomerPreview.Name = "grpCustomerPreview";
@@ -1803,9 +1837,9 @@ partial class CustomerEditForm
         grpCustomerPreviewTitle.Text = "Contactos / Direcciones";
         grpCustomerPreview.Controls.Add(grpCustomerPreviewTitle);
         grpCustomerPreviewTitle.BringToFront();
-        // 
+        //
         // grpCustomerTerms
-        // 
+        //
         grpCustomerTerms.Controls.Add(memInternalNotes);
         grpCustomerTerms.Controls.Add(lblCustomerSegment);
         grpCustomerTerms.Controls.Add(lueSegment);
@@ -1827,9 +1861,9 @@ partial class CustomerEditForm
         grpCustomerTermsTitle.Text = "Notas internas y terminos";
         grpCustomerTerms.Controls.Add(grpCustomerTermsTitle);
         grpCustomerTermsTitle.BringToFront();
-        // 
+        //
         // lblCustomerSegment
-        // 
+        //
         lblCustomerSegment.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerSegment.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerSegment.Appearance.Options.UseFont = true;
@@ -1839,9 +1873,9 @@ partial class CustomerEditForm
         lblCustomerSegment.Size = new Size(54, 15);
         lblCustomerSegment.TabIndex = 15;
         lblCustomerSegment.Text = "Segmento";
-        // 
+        //
         // lblCustomerInternalClass
-        // 
+        //
         lblCustomerInternalClass.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerInternalClass.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerInternalClass.Appearance.Options.UseFont = true;
@@ -1851,9 +1885,9 @@ partial class CustomerEditForm
         lblCustomerInternalClass.Size = new Size(67, 15);
         lblCustomerInternalClass.TabIndex = 16;
         lblCustomerInternalClass.Text = "Clasificacion";
-        // 
+        //
         // lblCustomerTags
-        // 
+        //
         lblCustomerTags.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerTags.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerTags.Appearance.Options.UseFont = true;
@@ -1863,9 +1897,9 @@ partial class CustomerEditForm
         lblCustomerTags.Size = new Size(48, 15);
         lblCustomerTags.TabIndex = 18;
         lblCustomerTags.Text = "Etiquetas";
-        // 
+        //
         // xtpFiscal
-        // 
+        //
         xtpFiscal.Controls.Add(lblFiscalTitle);
         xtpFiscal.Controls.Add(lblRetentionTitle);
         xtpFiscal.Controls.Add(grpCustomerFiscalInfo);
@@ -1876,9 +1910,9 @@ partial class CustomerEditForm
         xtpFiscal.Name = "xtpFiscal";
         xtpFiscal.Size = new Size(1258, 364);
         xtpFiscal.Text = "Fiscal";
-        // 
+        //
         // lblFiscalTitle
-        // 
+        //
         lblFiscalTitle.Appearance.Font = new Font("Segoe UI", 9F);
         lblFiscalTitle.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblFiscalTitle.Appearance.Options.UseFont = true;
@@ -1888,9 +1922,9 @@ partial class CustomerEditForm
         lblFiscalTitle.Size = new Size(95, 15);
         lblFiscalTitle.TabIndex = 0;
         lblFiscalTitle.Text = "Informacion fiscal";
-        // 
+        //
         // lueTaxpayerType
-        // 
+        //
         lueTaxpayerType.Location = new Point(180, 32);
         lueTaxpayerType.Name = "lueTaxpayerType";
         lueTaxpayerType.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1900,9 +1934,9 @@ partial class CustomerEditForm
         lueTaxpayerType.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueTaxpayerType.Size = new Size(180, 22);
         lueTaxpayerType.TabIndex = 1;
-        // 
+        //
         // lueFiscalRegime
-        // 
+        //
         lueFiscalRegime.Location = new Point(180, 62);
         lueFiscalRegime.Name = "lueFiscalRegime";
         lueFiscalRegime.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1912,9 +1946,9 @@ partial class CustomerEditForm
         lueFiscalRegime.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueFiscalRegime.Size = new Size(180, 22);
         lueFiscalRegime.TabIndex = 2;
-        // 
+        //
         // tsAccountingRequired
-        // 
+        //
         tsAccountingRequired.Location = new Point(180, 92);
         tsAccountingRequired.Name = "tsAccountingRequired";
         tsAccountingRequired.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1925,9 +1959,9 @@ partial class CustomerEditForm
         tsAccountingRequired.Properties.OnText = "";
         tsAccountingRequired.Size = new Size(95, 20);
         tsAccountingRequired.TabIndex = 3;
-        // 
+        //
         // tsWithholdingAgent
-        // 
+        //
         tsWithholdingAgent.Location = new Point(180, 122);
         tsWithholdingAgent.Name = "tsWithholdingAgent";
         tsWithholdingAgent.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1938,9 +1972,9 @@ partial class CustomerEditForm
         tsWithholdingAgent.Properties.OnText = "";
         tsWithholdingAgent.Size = new Size(95, 20);
         tsWithholdingAgent.TabIndex = 4;
-        // 
+        //
         // lblRetentionTitle
-        // 
+        //
         lblRetentionTitle.Appearance.Font = new Font("Segoe UI", 9F);
         lblRetentionTitle.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblRetentionTitle.Appearance.Options.UseFont = true;
@@ -1950,9 +1984,9 @@ partial class CustomerEditForm
         lblRetentionTitle.Size = new Size(64, 15);
         lblRetentionTitle.TabIndex = 5;
         lblRetentionTitle.Text = "Retenciones";
-        // 
+        //
         // tsSubjectToWithholding
-        // 
+        //
         tsSubjectToWithholding.Location = new Point(170, 32);
         tsSubjectToWithholding.Name = "tsSubjectToWithholding";
         tsSubjectToWithholding.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1963,9 +1997,9 @@ partial class CustomerEditForm
         tsSubjectToWithholding.Properties.OnText = "";
         tsSubjectToWithholding.Size = new Size(95, 20);
         tsSubjectToWithholding.TabIndex = 6;
-        // 
+        //
         // spnWithholdingPercent
-        // 
+        //
         spnWithholdingPercent.EditValue = new decimal(new int[] { 0, 0, 0, 0 });
         spnWithholdingPercent.Location = new Point(170, 66);
         spnWithholdingPercent.Name = "spnWithholdingPercent";
@@ -1978,9 +2012,9 @@ partial class CustomerEditForm
         spnWithholdingPercent.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         spnWithholdingPercent.Size = new Size(120, 22);
         spnWithholdingPercent.TabIndex = 7;
-        // 
+        //
         // lueRentType
-        // 
+        //
         lueRentType.Location = new Point(170, 98);
         lueRentType.Name = "lueRentType";
         lueRentType.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -1990,9 +2024,9 @@ partial class CustomerEditForm
         lueRentType.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueRentType.Size = new Size(220, 22);
         lueRentType.TabIndex = 8;
-        // 
+        //
         // lueFiscalCountry
-        // 
+        //
         lueFiscalCountry.Location = new Point(105, 32);
         lueFiscalCountry.Name = "lueFiscalCountry";
         lueFiscalCountry.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2002,9 +2036,9 @@ partial class CustomerEditForm
         lueFiscalCountry.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueFiscalCountry.Size = new Size(160, 22);
         lueFiscalCountry.TabIndex = 9;
-        // 
+        //
         // lueFiscalProvince
-        // 
+        //
         lueFiscalProvince.Location = new Point(365, 32);
         lueFiscalProvince.Name = "lueFiscalProvince";
         lueFiscalProvince.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2014,9 +2048,9 @@ partial class CustomerEditForm
         lueFiscalProvince.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueFiscalProvince.Size = new Size(160, 22);
         lueFiscalProvince.TabIndex = 10;
-        // 
+        //
         // lueFiscalCity
-        // 
+        //
         lueFiscalCity.Location = new Point(600, 32);
         lueFiscalCity.Name = "lueFiscalCity";
         lueFiscalCity.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2026,9 +2060,9 @@ partial class CustomerEditForm
         lueFiscalCity.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueFiscalCity.Size = new Size(160, 22);
         lueFiscalCity.TabIndex = 11;
-        // 
+        //
         // memFiscalAddress
-        // 
+        //
         memFiscalAddress.Location = new Point(105, 66);
         memFiscalAddress.Name = "memFiscalAddress";
         memFiscalAddress.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2037,9 +2071,9 @@ partial class CustomerEditForm
         memFiscalAddress.Properties.Appearance.Options.UseForeColor = true;
         memFiscalAddress.Size = new Size(512, 70);
         memFiscalAddress.TabIndex = 12;
-        // 
+        //
         // txtFiscalPostalCode
-        // 
+        //
         txtFiscalPostalCode.Location = new Point(635, 66);
         txtFiscalPostalCode.Name = "txtFiscalPostalCode";
         txtFiscalPostalCode.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2048,9 +2082,9 @@ partial class CustomerEditForm
         txtFiscalPostalCode.Properties.Appearance.Options.UseForeColor = true;
         txtFiscalPostalCode.Size = new Size(160, 22);
         txtFiscalPostalCode.TabIndex = 13;
-        // 
+        //
         // lueEmissionType
-        // 
+        //
         lueEmissionType.Location = new Point(155, 32);
         lueEmissionType.Name = "lueEmissionType";
         lueEmissionType.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2060,9 +2094,9 @@ partial class CustomerEditForm
         lueEmissionType.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueEmissionType.Size = new Size(200, 22);
         lueEmissionType.TabIndex = 14;
-        // 
+        //
         // txtDefaultSeries
-        // 
+        //
         txtDefaultSeries.Location = new Point(155, 62);
         txtDefaultSeries.Name = "txtDefaultSeries";
         txtDefaultSeries.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2071,9 +2105,9 @@ partial class CustomerEditForm
         txtDefaultSeries.Properties.Appearance.Options.UseForeColor = true;
         txtDefaultSeries.Size = new Size(200, 22);
         txtDefaultSeries.TabIndex = 15;
-        // 
+        //
         // spnInitialNumber
-        // 
+        //
         spnInitialNumber.EditValue = new decimal(new int[] { 0, 0, 0, 0 });
         spnInitialNumber.Location = new Point(155, 92);
         spnInitialNumber.Name = "spnInitialNumber";
@@ -2084,9 +2118,9 @@ partial class CustomerEditForm
         spnInitialNumber.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         spnInitialNumber.Size = new Size(200, 22);
         spnInitialNumber.TabIndex = 16;
-        // 
+        //
         // luePrintFormat
-        // 
+        //
         luePrintFormat.Location = new Point(155, 122);
         luePrintFormat.Name = "luePrintFormat";
         luePrintFormat.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2096,9 +2130,9 @@ partial class CustomerEditForm
         luePrintFormat.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         luePrintFormat.Size = new Size(200, 22);
         luePrintFormat.TabIndex = 17;
-        // 
+        //
         // memFiscalNotes
-        // 
+        //
         memFiscalNotes.Location = new Point(16, 32);
         memFiscalNotes.Name = "memFiscalNotes";
         memFiscalNotes.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2107,9 +2141,9 @@ partial class CustomerEditForm
         memFiscalNotes.Properties.Appearance.Options.UseForeColor = true;
         memFiscalNotes.Size = new Size(402, 112);
         memFiscalNotes.TabIndex = 18;
-        // 
+        //
         // grpCustomerFiscalInfo
-        // 
+        //
         grpCustomerFiscalInfo.Controls.Add(lblCustomerTaxpayer);
         grpCustomerFiscalInfo.Controls.Add(lueTaxpayerType);
         grpCustomerFiscalInfo.Controls.Add(lblCustomerFiscalRegime);
@@ -2132,9 +2166,9 @@ partial class CustomerEditForm
         grpCustomerFiscalInfoTitle.Text = "Informacion fiscal";
         grpCustomerFiscalInfo.Controls.Add(grpCustomerFiscalInfoTitle);
         grpCustomerFiscalInfoTitle.BringToFront();
-        // 
+        //
         // lblCustomerTaxpayer
-        // 
+        //
         lblCustomerTaxpayer.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerTaxpayer.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerTaxpayer.Appearance.Options.UseFont = true;
@@ -2144,9 +2178,9 @@ partial class CustomerEditForm
         lblCustomerTaxpayer.Size = new Size(101, 15);
         lblCustomerTaxpayer.TabIndex = 0;
         lblCustomerTaxpayer.Text = "Tipo contribuyente";
-        // 
+        //
         // lblCustomerFiscalRegime
-        // 
+        //
         lblCustomerFiscalRegime.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerFiscalRegime.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerFiscalRegime.Appearance.Options.UseFont = true;
@@ -2156,9 +2190,9 @@ partial class CustomerEditForm
         lblCustomerFiscalRegime.Size = new Size(77, 15);
         lblCustomerFiscalRegime.TabIndex = 2;
         lblCustomerFiscalRegime.Text = "Regimen fiscal";
-        // 
+        //
         // lblCustomerAccountingRequired
-        // 
+        //
         lblCustomerAccountingRequired.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerAccountingRequired.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerAccountingRequired.Appearance.Options.UseFont = true;
@@ -2168,9 +2202,9 @@ partial class CustomerEditForm
         lblCustomerAccountingRequired.Size = new Size(96, 15);
         lblCustomerAccountingRequired.TabIndex = 3;
         lblCustomerAccountingRequired.Text = "Lleva contabilidad";
-        // 
+        //
         // lblCustomerWithholdingAgent
-        // 
+        //
         lblCustomerWithholdingAgent.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerWithholdingAgent.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerWithholdingAgent.Appearance.Options.UseFont = true;
@@ -2180,9 +2214,9 @@ partial class CustomerEditForm
         lblCustomerWithholdingAgent.Size = new Size(91, 15);
         lblCustomerWithholdingAgent.TabIndex = 4;
         lblCustomerWithholdingAgent.Text = "Agente retencion";
-        // 
+        //
         // grpCustomerRetentions
-        // 
+        //
         grpCustomerRetentions.Controls.Add(lblCustomerSubjectWithholding);
         grpCustomerRetentions.Controls.Add(tsSubjectToWithholding);
         grpCustomerRetentions.Controls.Add(lblCustomerWithholdingPercent);
@@ -2203,9 +2237,9 @@ partial class CustomerEditForm
         grpCustomerRetentionsTitle.Text = "Retenciones";
         grpCustomerRetentions.Controls.Add(grpCustomerRetentionsTitle);
         grpCustomerRetentionsTitle.BringToFront();
-        // 
+        //
         // lblCustomerSubjectWithholding
-        // 
+        //
         lblCustomerSubjectWithholding.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerSubjectWithholding.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerSubjectWithholding.Appearance.Options.UseFont = true;
@@ -2215,9 +2249,9 @@ partial class CustomerEditForm
         lblCustomerSubjectWithholding.Size = new Size(95, 15);
         lblCustomerSubjectWithholding.TabIndex = 0;
         lblCustomerSubjectWithholding.Text = "Sujeto a retencion";
-        // 
+        //
         // lblCustomerWithholdingPercent
-        // 
+        //
         lblCustomerWithholdingPercent.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerWithholdingPercent.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerWithholdingPercent.Appearance.Options.UseFont = true;
@@ -2227,9 +2261,9 @@ partial class CustomerEditForm
         lblCustomerWithholdingPercent.Size = new Size(56, 15);
         lblCustomerWithholdingPercent.TabIndex = 7;
         lblCustomerWithholdingPercent.Text = "Porcentaje";
-        // 
+        //
         // lblCustomerRentType
-        // 
+        //
         lblCustomerRentType.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerRentType.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerRentType.Appearance.Options.UseFont = true;
@@ -2239,9 +2273,9 @@ partial class CustomerEditForm
         lblCustomerRentType.Size = new Size(70, 15);
         lblCustomerRentType.TabIndex = 8;
         lblCustomerRentType.Text = "Tipo de renta";
-        // 
+        //
         // grpCustomerFiscalLocation
-        // 
+        //
         grpCustomerFiscalLocation.Controls.Add(lblCustomerFiscalCountry);
         grpCustomerFiscalLocation.Controls.Add(lueFiscalCountry);
         grpCustomerFiscalLocation.Controls.Add(lblCustomerFiscalProvince);
@@ -2266,9 +2300,9 @@ partial class CustomerEditForm
         grpCustomerFiscalLocationTitle.Text = "Ubicacion fiscal";
         grpCustomerFiscalLocation.Controls.Add(grpCustomerFiscalLocationTitle);
         grpCustomerFiscalLocationTitle.BringToFront();
-        // 
+        //
         // lblCustomerFiscalCountry
-        // 
+        //
         lblCustomerFiscalCountry.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerFiscalCountry.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerFiscalCountry.Appearance.Options.UseFont = true;
@@ -2278,9 +2312,9 @@ partial class CustomerEditForm
         lblCustomerFiscalCountry.Size = new Size(21, 15);
         lblCustomerFiscalCountry.TabIndex = 0;
         lblCustomerFiscalCountry.Text = "Pais";
-        // 
+        //
         // lblCustomerFiscalProvince
-        // 
+        //
         lblCustomerFiscalProvince.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerFiscalProvince.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerFiscalProvince.Appearance.Options.UseFont = true;
@@ -2290,9 +2324,9 @@ partial class CustomerEditForm
         lblCustomerFiscalProvince.Size = new Size(49, 15);
         lblCustomerFiscalProvince.TabIndex = 10;
         lblCustomerFiscalProvince.Text = "Provincia";
-        // 
+        //
         // lblCustomerFiscalCity
-        // 
+        //
         lblCustomerFiscalCity.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerFiscalCity.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerFiscalCity.Appearance.Options.UseFont = true;
@@ -2302,9 +2336,9 @@ partial class CustomerEditForm
         lblCustomerFiscalCity.Size = new Size(38, 15);
         lblCustomerFiscalCity.TabIndex = 11;
         lblCustomerFiscalCity.Text = "Ciudad";
-        // 
+        //
         // lblCustomerFiscalAddress
-        // 
+        //
         lblCustomerFiscalAddress.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerFiscalAddress.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerFiscalAddress.Appearance.Options.UseFont = true;
@@ -2314,9 +2348,9 @@ partial class CustomerEditForm
         lblCustomerFiscalAddress.Size = new Size(80, 15);
         lblCustomerFiscalAddress.TabIndex = 12;
         lblCustomerFiscalAddress.Text = "Direccion fiscal";
-        // 
+        //
         // lblCustomerFiscalPostal
-        // 
+        //
         lblCustomerFiscalPostal.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerFiscalPostal.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerFiscalPostal.Appearance.Options.UseFont = true;
@@ -2326,9 +2360,9 @@ partial class CustomerEditForm
         lblCustomerFiscalPostal.Size = new Size(74, 15);
         lblCustomerFiscalPostal.TabIndex = 13;
         lblCustomerFiscalPostal.Text = "Codigo postal";
-        // 
+        //
         // grpCustomerFiscalDocuments
-        // 
+        //
         grpCustomerFiscalDocuments.Controls.Add(lblCustomerEmissionType);
         grpCustomerFiscalDocuments.Controls.Add(lueEmissionType);
         grpCustomerFiscalDocuments.Controls.Add(lblCustomerDefaultSeries);
@@ -2351,9 +2385,9 @@ partial class CustomerEditForm
         grpCustomerFiscalDocumentsTitle.Text = "Documentos fiscales";
         grpCustomerFiscalDocuments.Controls.Add(grpCustomerFiscalDocumentsTitle);
         grpCustomerFiscalDocumentsTitle.BringToFront();
-        // 
+        //
         // lblCustomerEmissionType
-        // 
+        //
         lblCustomerEmissionType.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerEmissionType.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerEmissionType.Appearance.Options.UseFont = true;
@@ -2363,9 +2397,9 @@ partial class CustomerEditForm
         lblCustomerEmissionType.Size = new Size(69, 15);
         lblCustomerEmissionType.TabIndex = 0;
         lblCustomerEmissionType.Text = "Tipo emision";
-        // 
+        //
         // lblCustomerDefaultSeries
-        // 
+        //
         lblCustomerDefaultSeries.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerDefaultSeries.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerDefaultSeries.Appearance.Options.UseFont = true;
@@ -2375,9 +2409,9 @@ partial class CustomerEditForm
         lblCustomerDefaultSeries.Size = new Size(89, 15);
         lblCustomerDefaultSeries.TabIndex = 15;
         lblCustomerDefaultSeries.Text = "Serie por defecto";
-        // 
+        //
         // lblCustomerInitialNumber
-        // 
+        //
         lblCustomerInitialNumber.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerInitialNumber.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerInitialNumber.Appearance.Options.UseFont = true;
@@ -2387,9 +2421,9 @@ partial class CustomerEditForm
         lblCustomerInitialNumber.Size = new Size(78, 15);
         lblCustomerInitialNumber.TabIndex = 16;
         lblCustomerInitialNumber.Text = "Numero inicial";
-        // 
+        //
         // lblCustomerPrintFormat
-        // 
+        //
         lblCustomerPrintFormat.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerPrintFormat.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerPrintFormat.Appearance.Options.UseFont = true;
@@ -2399,9 +2433,9 @@ partial class CustomerEditForm
         lblCustomerPrintFormat.Size = new Size(101, 15);
         lblCustomerPrintFormat.TabIndex = 17;
         lblCustomerPrintFormat.Text = "Formato impresion";
-        // 
+        //
         // grpCustomerFiscalNotes
-        // 
+        //
         grpCustomerFiscalNotes.Controls.Add(memFiscalNotes);
         grpCustomerFiscalNotes.Location = new Point(796, 188);
         grpCustomerFiscalNotes.Name = "grpCustomerFiscalNotes";
@@ -2417,18 +2451,18 @@ partial class CustomerEditForm
         grpCustomerFiscalNotesTitle.Text = "Notas fiscales";
         grpCustomerFiscalNotes.Controls.Add(grpCustomerFiscalNotesTitle);
         grpCustomerFiscalNotesTitle.BringToFront();
-        // 
+        //
         // xtpAddresses
-        // 
+        //
         xtpAddresses.Controls.Add(lblAddressButtons);
         xtpAddresses.Controls.Add(grpCustomerAddressList);
         xtpAddresses.Controls.Add(grpCustomerAddressDetail);
         xtpAddresses.Name = "xtpAddresses";
         xtpAddresses.Size = new Size(1258, 364);
         xtpAddresses.Text = "Direcciones";
-        // 
+        //
         // grdCustomerAddresses
-        // 
+        //
         grdCustomerAddresses.Font = new Font("Segoe UI", 9F);
         grdCustomerAddresses.Location = new Point(14, 30);
         grdCustomerAddresses.MainView = grvCustomerAddresses;
@@ -2436,9 +2470,9 @@ partial class CustomerEditForm
         grdCustomerAddresses.Size = new Size(1188, 128);
         grdCustomerAddresses.TabIndex = 0;
         grdCustomerAddresses.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { grvCustomerAddresses });
-        // 
+        //
         // grvCustomerAddresses
-        // 
+        //
         grvCustomerAddresses.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F);
         grvCustomerAddresses.Appearance.FilterPanel.Options.UseFont = true;
         grvCustomerAddresses.Appearance.FooterPanel.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
@@ -2455,9 +2489,9 @@ partial class CustomerEditForm
         grvCustomerAddresses.Name = "grvCustomerAddresses";
         grvCustomerAddresses.OptionsBehavior.Editable = false;
         grvCustomerAddresses.OptionsView.ShowGroupPanel = false;
-        // 
+        //
         // lueAddressType
-        // 
+        //
         lueAddressType.Location = new Point(105, 32);
         lueAddressType.Name = "lueAddressType";
         lueAddressType.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2467,9 +2501,9 @@ partial class CustomerEditForm
         lueAddressType.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueAddressType.Size = new Size(180, 22);
         lueAddressType.TabIndex = 1;
-        // 
+        //
         // memAddress
-        // 
+        //
         memAddress.Location = new Point(105, 62);
         memAddress.Name = "memAddress";
         memAddress.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2478,9 +2512,9 @@ partial class CustomerEditForm
         memAddress.Properties.Appearance.Options.UseForeColor = true;
         memAddress.Size = new Size(420, 70);
         memAddress.TabIndex = 2;
-        // 
+        //
         // lueAddressCountry
-        // 
+        //
         lueAddressCountry.Location = new Point(580, 32);
         lueAddressCountry.Name = "lueAddressCountry";
         lueAddressCountry.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2490,9 +2524,9 @@ partial class CustomerEditForm
         lueAddressCountry.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueAddressCountry.Size = new Size(150, 22);
         lueAddressCountry.TabIndex = 3;
-        // 
+        //
         // lueAddressProvince
-        // 
+        //
         lueAddressProvince.Location = new Point(580, 62);
         lueAddressProvince.Name = "lueAddressProvince";
         lueAddressProvince.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2502,9 +2536,9 @@ partial class CustomerEditForm
         lueAddressProvince.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueAddressProvince.Size = new Size(150, 22);
         lueAddressProvince.TabIndex = 4;
-        // 
+        //
         // lueAddressCity
-        // 
+        //
         lueAddressCity.Location = new Point(580, 92);
         lueAddressCity.Name = "lueAddressCity";
         lueAddressCity.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2514,9 +2548,9 @@ partial class CustomerEditForm
         lueAddressCity.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueAddressCity.Size = new Size(150, 22);
         lueAddressCity.TabIndex = 5;
-        // 
+        //
         // txtPostalCode
-        // 
+        //
         txtPostalCode.Location = new Point(880, 32);
         txtPostalCode.Name = "txtPostalCode";
         txtPostalCode.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2525,9 +2559,9 @@ partial class CustomerEditForm
         txtPostalCode.Properties.Appearance.Options.UseForeColor = true;
         txtPostalCode.Size = new Size(140, 22);
         txtPostalCode.TabIndex = 6;
-        // 
+        //
         // txtAddressReference
-        // 
+        //
         txtAddressReference.Location = new Point(880, 62);
         txtAddressReference.Name = "txtAddressReference";
         txtAddressReference.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2536,9 +2570,9 @@ partial class CustomerEditForm
         txtAddressReference.Properties.Appearance.Options.UseForeColor = true;
         txtAddressReference.Size = new Size(300, 22);
         txtAddressReference.TabIndex = 7;
-        // 
+        //
         // tsPrimaryAddress
-        // 
+        //
         tsPrimaryAddress.Location = new Point(880, 94);
         tsPrimaryAddress.Name = "tsPrimaryAddress";
         tsPrimaryAddress.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2549,9 +2583,9 @@ partial class CustomerEditForm
         tsPrimaryAddress.Properties.OnText = "";
         tsPrimaryAddress.Size = new Size(95, 20);
         tsPrimaryAddress.TabIndex = 8;
-        // 
+        //
         // lblAddressButtons
-        // 
+        //
         lblAddressButtons.Appearance.Font = new Font("Segoe UI", 9F);
         lblAddressButtons.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblAddressButtons.Appearance.Options.UseFont = true;
@@ -2561,9 +2595,9 @@ partial class CustomerEditForm
         lblAddressButtons.Size = new Size(51, 15);
         lblAddressButtons.TabIndex = 9;
         lblAddressButtons.Text = "Acciones:";
-        // 
+        //
         // btnAddAddress
-        // 
+        //
         btnAddAddress.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnAddAddress.Appearance.Options.UseFont = true;
         btnAddAddress.Location = new Point(100, 118);
@@ -2571,9 +2605,9 @@ partial class CustomerEditForm
         btnAddAddress.Size = new Size(90, 30);
         btnAddAddress.TabIndex = 10;
         btnAddAddress.Text = "Agregar";
-        // 
+        //
         // btnEditAddress
-        // 
+        //
         btnEditAddress.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnEditAddress.Appearance.Options.UseFont = true;
         btnEditAddress.Location = new Point(202, 118);
@@ -2581,9 +2615,9 @@ partial class CustomerEditForm
         btnEditAddress.Size = new Size(90, 30);
         btnEditAddress.TabIndex = 11;
         btnEditAddress.Text = "Editar";
-        // 
+        //
         // btnDeleteAddress
-        // 
+        //
         btnDeleteAddress.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnDeleteAddress.Appearance.Options.UseFont = true;
         btnDeleteAddress.Location = new Point(304, 118);
@@ -2591,9 +2625,9 @@ partial class CustomerEditForm
         btnDeleteAddress.Size = new Size(90, 30);
         btnDeleteAddress.TabIndex = 12;
         btnDeleteAddress.Text = "Eliminar";
-        // 
+        //
         // btnSetPrimaryAddress
-        // 
+        //
         btnSetPrimaryAddress.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnSetPrimaryAddress.Appearance.Options.UseFont = true;
         btnSetPrimaryAddress.Location = new Point(406, 118);
@@ -2601,9 +2635,9 @@ partial class CustomerEditForm
         btnSetPrimaryAddress.Size = new Size(150, 30);
         btnSetPrimaryAddress.TabIndex = 13;
         btnSetPrimaryAddress.Text = "Establecer principal";
-        // 
+        //
         // grpCustomerAddressList
-        // 
+        //
         grpCustomerAddressList.Controls.Add(grdCustomerAddresses);
         grpCustomerAddressList.Location = new Point(14, 14);
         grpCustomerAddressList.Name = "grpCustomerAddressList";
@@ -2619,9 +2653,9 @@ partial class CustomerEditForm
         grpCustomerAddressListTitle.Text = "Lista de direcciones";
         grpCustomerAddressList.Controls.Add(grpCustomerAddressListTitle);
         grpCustomerAddressListTitle.BringToFront();
-        // 
+        //
         // grpCustomerAddressDetail
-        // 
+        //
         grpCustomerAddressDetail.Controls.Add(lblCustomerAddressType);
         grpCustomerAddressDetail.Controls.Add(lueAddressType);
         grpCustomerAddressDetail.Controls.Add(lblCustomerAddress);
@@ -2656,9 +2690,9 @@ partial class CustomerEditForm
         grpCustomerAddressDetailTitle.Text = "Detalle de direccion seleccionada";
         grpCustomerAddressDetail.Controls.Add(grpCustomerAddressDetailTitle);
         grpCustomerAddressDetailTitle.BringToFront();
-        // 
+        //
         // lblCustomerAddressType
-        // 
+        //
         lblCustomerAddressType.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerAddressType.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerAddressType.Appearance.Options.UseFont = true;
@@ -2668,9 +2702,9 @@ partial class CustomerEditForm
         lblCustomerAddressType.Size = new Size(24, 15);
         lblCustomerAddressType.TabIndex = 0;
         lblCustomerAddressType.Text = "Tipo";
-        // 
+        //
         // lblCustomerAddress
-        // 
+        //
         lblCustomerAddress.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerAddress.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerAddress.Appearance.Options.UseFont = true;
@@ -2680,9 +2714,9 @@ partial class CustomerEditForm
         lblCustomerAddress.Size = new Size(50, 15);
         lblCustomerAddress.TabIndex = 2;
         lblCustomerAddress.Text = "Direccion";
-        // 
+        //
         // lblCustomerAddressCountry
-        // 
+        //
         lblCustomerAddressCountry.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerAddressCountry.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerAddressCountry.Appearance.Options.UseFont = true;
@@ -2692,9 +2726,9 @@ partial class CustomerEditForm
         lblCustomerAddressCountry.Size = new Size(21, 15);
         lblCustomerAddressCountry.TabIndex = 3;
         lblCustomerAddressCountry.Text = "Pais";
-        // 
+        //
         // lblCustomerAddressProvince
-        // 
+        //
         lblCustomerAddressProvince.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerAddressProvince.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerAddressProvince.Appearance.Options.UseFont = true;
@@ -2704,9 +2738,9 @@ partial class CustomerEditForm
         lblCustomerAddressProvince.Size = new Size(49, 15);
         lblCustomerAddressProvince.TabIndex = 4;
         lblCustomerAddressProvince.Text = "Provincia";
-        // 
+        //
         // lblCustomerAddressCity
-        // 
+        //
         lblCustomerAddressCity.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerAddressCity.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerAddressCity.Appearance.Options.UseFont = true;
@@ -2716,9 +2750,9 @@ partial class CustomerEditForm
         lblCustomerAddressCity.Size = new Size(38, 15);
         lblCustomerAddressCity.TabIndex = 5;
         lblCustomerAddressCity.Text = "Ciudad";
-        // 
+        //
         // lblCustomerPostal
-        // 
+        //
         lblCustomerPostal.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerPostal.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerPostal.Appearance.Options.UseFont = true;
@@ -2728,9 +2762,9 @@ partial class CustomerEditForm
         lblCustomerPostal.Size = new Size(74, 15);
         lblCustomerPostal.TabIndex = 6;
         lblCustomerPostal.Text = "Codigo postal";
-        // 
+        //
         // lblCustomerReference
-        // 
+        //
         lblCustomerReference.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerReference.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerReference.Appearance.Options.UseFont = true;
@@ -2740,9 +2774,9 @@ partial class CustomerEditForm
         lblCustomerReference.Size = new Size(55, 15);
         lblCustomerReference.TabIndex = 7;
         lblCustomerReference.Text = "Referencia";
-        // 
+        //
         // lblCustomerPrimaryAddress
-        // 
+        //
         lblCustomerPrimaryAddress.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerPrimaryAddress.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerPrimaryAddress.Appearance.Options.UseFont = true;
@@ -2752,18 +2786,18 @@ partial class CustomerEditForm
         lblCustomerPrimaryAddress.Size = new Size(46, 15);
         lblCustomerPrimaryAddress.TabIndex = 8;
         lblCustomerPrimaryAddress.Text = "Principal";
-        // 
+        //
         // xtpContacts
-        // 
+        //
         xtpContacts.Controls.Add(lblContactButtons);
         xtpContacts.Controls.Add(grpCustomerContactList);
         xtpContacts.Controls.Add(grpCustomerContactDetail);
         xtpContacts.Name = "xtpContacts";
         xtpContacts.Size = new Size(1258, 364);
         xtpContacts.Text = "Contactos";
-        // 
+        //
         // grdCustomerContactList
-        // 
+        //
         grdCustomerContactList.Font = new Font("Segoe UI", 9F);
         grdCustomerContactList.Location = new Point(14, 30);
         grdCustomerContactList.MainView = grvCustomerContactList;
@@ -2771,9 +2805,9 @@ partial class CustomerEditForm
         grdCustomerContactList.Size = new Size(735, 250);
         grdCustomerContactList.TabIndex = 0;
         grdCustomerContactList.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { grvCustomerContactList });
-        // 
+        //
         // grvCustomerContactList
-        // 
+        //
         grvCustomerContactList.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F);
         grvCustomerContactList.Appearance.FilterPanel.Options.UseFont = true;
         grvCustomerContactList.Appearance.FooterPanel.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
@@ -2790,64 +2824,69 @@ partial class CustomerEditForm
         grvCustomerContactList.Name = "grvCustomerContactList";
         grvCustomerContactList.OptionsBehavior.Editable = false;
         grvCustomerContactList.OptionsView.ShowGroupPanel = false;
-        // 
+        //
         // txtContactName
-        // 
+        //
         txtContactName.Location = new Point(150, 32);
         txtContactName.Name = "txtContactName";
         txtContactName.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         txtContactName.Properties.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         txtContactName.Properties.Appearance.Options.UseFont = true;
         txtContactName.Properties.Appearance.Options.UseForeColor = true;
+        txtContactName.Properties.ReadOnly = true;
         txtContactName.Size = new Size(240, 22);
         txtContactName.TabIndex = 1;
-        // 
+        //
         // txtContactPosition
-        // 
+        //
         txtContactPosition.Location = new Point(150, 62);
         txtContactPosition.Name = "txtContactPosition";
         txtContactPosition.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         txtContactPosition.Properties.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         txtContactPosition.Properties.Appearance.Options.UseFont = true;
         txtContactPosition.Properties.Appearance.Options.UseForeColor = true;
+        txtContactPosition.Properties.ReadOnly = true;
         txtContactPosition.Size = new Size(240, 22);
         txtContactPosition.TabIndex = 2;
-        // 
+        //
         // txtContactPhone
-        // 
+        //
         txtContactPhone.Location = new Point(150, 92);
         txtContactPhone.Name = "txtContactPhone";
         txtContactPhone.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         txtContactPhone.Properties.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         txtContactPhone.Properties.Appearance.Options.UseFont = true;
         txtContactPhone.Properties.Appearance.Options.UseForeColor = true;
+        txtContactPhone.Properties.ReadOnly = true;
         txtContactPhone.Size = new Size(240, 22);
         txtContactPhone.TabIndex = 3;
-        // 
+        //
         // txtContactMobile
-        // 
+        //
         txtContactMobile.Location = new Point(150, 122);
         txtContactMobile.Name = "txtContactMobile";
         txtContactMobile.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         txtContactMobile.Properties.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         txtContactMobile.Properties.Appearance.Options.UseFont = true;
         txtContactMobile.Properties.Appearance.Options.UseForeColor = true;
+        txtContactMobile.Properties.ReadOnly = true;
         txtContactMobile.Size = new Size(240, 22);
         txtContactMobile.TabIndex = 4;
-        // 
+        //
         // txtContactEmail
-        // 
+        //
         txtContactEmail.Location = new Point(150, 152);
         txtContactEmail.Name = "txtContactEmail";
         txtContactEmail.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         txtContactEmail.Properties.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         txtContactEmail.Properties.Appearance.Options.UseFont = true;
         txtContactEmail.Properties.Appearance.Options.UseForeColor = true;
+        txtContactEmail.Properties.ReadOnly = true;
         txtContactEmail.Size = new Size(240, 22);
         txtContactEmail.TabIndex = 5;
-        // 
+        //
         // tsPrimaryContact
-        // 
+        //
         tsPrimaryContact.Location = new Point(150, 184);
         tsPrimaryContact.Name = "tsPrimaryContact";
         tsPrimaryContact.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2856,11 +2895,12 @@ partial class CustomerEditForm
         tsPrimaryContact.Properties.Appearance.Options.UseForeColor = true;
         tsPrimaryContact.Properties.OffText = "";
         tsPrimaryContact.Properties.OnText = "";
+        tsPrimaryContact.Properties.ReadOnly = true;
         tsPrimaryContact.Size = new Size(95, 20);
         tsPrimaryContact.TabIndex = 6;
-        // 
+        //
         // tsActiveContact
-        // 
+        //
         tsActiveContact.Location = new Point(150, 214);
         tsActiveContact.Name = "tsActiveContact";
         tsActiveContact.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -2869,22 +2909,24 @@ partial class CustomerEditForm
         tsActiveContact.Properties.Appearance.Options.UseForeColor = true;
         tsActiveContact.Properties.OffText = "";
         tsActiveContact.Properties.OnText = "";
+        tsActiveContact.Properties.ReadOnly = true;
         tsActiveContact.Size = new Size(95, 20);
         tsActiveContact.TabIndex = 7;
-        // 
+        //
         // memContactNotes
-        // 
+        //
         memContactNotes.Location = new Point(150, 246);
         memContactNotes.Name = "memContactNotes";
         memContactNotes.Properties.Appearance.Font = new Font("Segoe UI", 9F);
         memContactNotes.Properties.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         memContactNotes.Properties.Appearance.Options.UseFont = true;
         memContactNotes.Properties.Appearance.Options.UseForeColor = true;
+        memContactNotes.Properties.ReadOnly = true;
         memContactNotes.Size = new Size(360, 70);
         memContactNotes.TabIndex = 8;
-        // 
+        //
         // lblContactButtons
-        // 
+        //
         lblContactButtons.Appearance.Font = new Font("Segoe UI", 9F);
         lblContactButtons.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblContactButtons.Appearance.Options.UseFont = true;
@@ -2894,9 +2936,9 @@ partial class CustomerEditForm
         lblContactButtons.Size = new Size(51, 15);
         lblContactButtons.TabIndex = 9;
         lblContactButtons.Text = "Acciones:";
-        // 
+        //
         // btnAddContact
-        // 
+        //
         btnAddContact.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnAddContact.Appearance.Options.UseFont = true;
         btnAddContact.Location = new Point(14, 292);
@@ -2904,9 +2946,9 @@ partial class CustomerEditForm
         btnAddContact.Size = new Size(90, 30);
         btnAddContact.TabIndex = 10;
         btnAddContact.Text = "Agregar";
-        // 
+        //
         // btnEditContact
-        // 
+        //
         btnEditContact.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnEditContact.Appearance.Options.UseFont = true;
         btnEditContact.Location = new Point(116, 292);
@@ -2914,9 +2956,9 @@ partial class CustomerEditForm
         btnEditContact.Size = new Size(90, 30);
         btnEditContact.TabIndex = 11;
         btnEditContact.Text = "Editar";
-        // 
+        //
         // btnDeleteContact
-        // 
+        //
         btnDeleteContact.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnDeleteContact.Appearance.Options.UseFont = true;
         btnDeleteContact.Location = new Point(218, 292);
@@ -2924,9 +2966,9 @@ partial class CustomerEditForm
         btnDeleteContact.Size = new Size(90, 30);
         btnDeleteContact.TabIndex = 12;
         btnDeleteContact.Text = "Eliminar";
-        // 
+        //
         // grpCustomerContactList
-        // 
+        //
         grpCustomerContactList.Controls.Add(grdCustomerContactList);
         grpCustomerContactList.Controls.Add(btnAddContact);
         grpCustomerContactList.Controls.Add(btnEditContact);
@@ -2945,9 +2987,9 @@ partial class CustomerEditForm
         grpCustomerContactListTitle.Text = "Lista de contactos";
         grpCustomerContactList.Controls.Add(grpCustomerContactListTitle);
         grpCustomerContactListTitle.BringToFront();
-        // 
+        //
         // grpCustomerContactDetail
-        // 
+        //
         grpCustomerContactDetail.Controls.Add(lblCustomerContactName);
         grpCustomerContactDetail.Controls.Add(txtContactName);
         grpCustomerContactDetail.Controls.Add(lblCustomerContactPosition);
@@ -2977,9 +3019,9 @@ partial class CustomerEditForm
         grpCustomerContactDetailTitle.Text = "Detalle del contacto seleccionado";
         grpCustomerContactDetail.Controls.Add(grpCustomerContactDetailTitle);
         grpCustomerContactDetailTitle.BringToFront();
-        // 
+        //
         // lblCustomerContactName
-        // 
+        //
         lblCustomerContactName.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerContactName.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerContactName.Appearance.Options.UseFont = true;
@@ -2989,9 +3031,9 @@ partial class CustomerEditForm
         lblCustomerContactName.Size = new Size(98, 15);
         lblCustomerContactName.TabIndex = 0;
         lblCustomerContactName.Text = "Nombre completo";
-        // 
+        //
         // lblCustomerContactPosition
-        // 
+        //
         lblCustomerContactPosition.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerContactPosition.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerContactPosition.Appearance.Options.UseFont = true;
@@ -3001,9 +3043,9 @@ partial class CustomerEditForm
         lblCustomerContactPosition.Size = new Size(32, 15);
         lblCustomerContactPosition.TabIndex = 2;
         lblCustomerContactPosition.Text = "Cargo";
-        // 
+        //
         // lblCustomerContactPhone
-        // 
+        //
         lblCustomerContactPhone.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerContactPhone.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerContactPhone.Appearance.Options.UseFont = true;
@@ -3013,9 +3055,9 @@ partial class CustomerEditForm
         lblCustomerContactPhone.Size = new Size(47, 15);
         lblCustomerContactPhone.TabIndex = 3;
         lblCustomerContactPhone.Text = "Telefono";
-        // 
+        //
         // lblCustomerContactMobile
-        // 
+        //
         lblCustomerContactMobile.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerContactMobile.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerContactMobile.Appearance.Options.UseFont = true;
@@ -3025,9 +3067,9 @@ partial class CustomerEditForm
         lblCustomerContactMobile.Size = new Size(30, 15);
         lblCustomerContactMobile.TabIndex = 4;
         lblCustomerContactMobile.Text = "Movil";
-        // 
+        //
         // lblCustomerContactEmail
-        // 
+        //
         lblCustomerContactEmail.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerContactEmail.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerContactEmail.Appearance.Options.UseFont = true;
@@ -3037,9 +3079,9 @@ partial class CustomerEditForm
         lblCustomerContactEmail.Size = new Size(36, 15);
         lblCustomerContactEmail.TabIndex = 5;
         lblCustomerContactEmail.Text = "Correo";
-        // 
+        //
         // lblCustomerPrimaryContact
-        // 
+        //
         lblCustomerPrimaryContact.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerPrimaryContact.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerPrimaryContact.Appearance.Options.UseFont = true;
@@ -3049,9 +3091,9 @@ partial class CustomerEditForm
         lblCustomerPrimaryContact.Size = new Size(46, 15);
         lblCustomerPrimaryContact.TabIndex = 6;
         lblCustomerPrimaryContact.Text = "Principal";
-        // 
+        //
         // lblCustomerActiveContact
-        // 
+        //
         lblCustomerActiveContact.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerActiveContact.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerActiveContact.Appearance.Options.UseFont = true;
@@ -3061,9 +3103,9 @@ partial class CustomerEditForm
         lblCustomerActiveContact.Size = new Size(34, 15);
         lblCustomerActiveContact.TabIndex = 7;
         lblCustomerActiveContact.Text = "Activo";
-        // 
+        //
         // xtpCommercial
-        // 
+        //
         xtpCommercial.Controls.Add(grpCustomerCommercialConditions);
         xtpCommercial.Controls.Add(grpCustomerCredit);
         xtpCommercial.Controls.Add(grpCustomerCommercialSummary);
@@ -3071,9 +3113,9 @@ partial class CustomerEditForm
         xtpCommercial.Name = "xtpCommercial";
         xtpCommercial.Size = new Size(1258, 364);
         xtpCommercial.Text = "Comercial";
-        // 
+        //
         // spnOverdueDays
-        // 
+        //
         spnOverdueDays.EditValue = new decimal(new int[] { 0, 0, 0, 0 });
         spnOverdueDays.Location = new Point(160, 100);
         spnOverdueDays.Name = "spnOverdueDays";
@@ -3086,9 +3128,9 @@ partial class CustomerEditForm
         spnOverdueDays.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         spnOverdueDays.Size = new Size(100, 22);
         spnOverdueDays.TabIndex = 0;
-        // 
+        //
         // memCommercialNotes
-        // 
+        //
         memCommercialNotes.Location = new Point(16, 32);
         memCommercialNotes.Name = "memCommercialNotes";
         memCommercialNotes.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3097,9 +3139,9 @@ partial class CustomerEditForm
         memCommercialNotes.Properties.Appearance.Options.UseForeColor = true;
         memCommercialNotes.Size = new Size(530, 150);
         memCommercialNotes.TabIndex = 1;
-        // 
+        //
         // grpCustomerCommercialConditions
-        // 
+        //
         grpCustomerCommercialConditions.Location = new Point(14, 14);
         grpCustomerCommercialConditions.Name = "grpCustomerCommercialConditions";
         grpCustomerCommercialConditions.Size = new Size(405, 210);
@@ -3114,9 +3156,9 @@ partial class CustomerEditForm
         grpCustomerCommercialConditionsTitle.Text = "Condiciones comerciales";
         grpCustomerCommercialConditions.Controls.Add(grpCustomerCommercialConditionsTitle);
         grpCustomerCommercialConditionsTitle.BringToFront();
-        // 
+        //
         // grpCustomerCredit
-        // 
+        //
         grpCustomerCredit.Controls.Add(lblCustomerOverdue);
         grpCustomerCredit.Controls.Add(spnOverdueDays);
         grpCustomerCredit.Location = new Point(432, 14);
@@ -3133,9 +3175,9 @@ partial class CustomerEditForm
         grpCustomerCreditTitle.Text = "Situacion crediticia";
         grpCustomerCredit.Controls.Add(grpCustomerCreditTitle);
         grpCustomerCreditTitle.BringToFront();
-        // 
+        //
         // lblCustomerOverdue
-        // 
+        //
         lblCustomerOverdue.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerOverdue.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerOverdue.Appearance.Options.UseFont = true;
@@ -3145,9 +3187,9 @@ partial class CustomerEditForm
         lblCustomerOverdue.Size = new Size(72, 15);
         lblCustomerOverdue.TabIndex = 0;
         lblCustomerOverdue.Text = "Dias vencidos";
-        // 
+        //
         // grpCustomerCommercialSummary
-        // 
+        //
         grpCustomerCommercialSummary.Controls.Add(lblCustomerCommercialSummaryHint);
         grpCustomerCommercialSummary.Location = new Point(830, 14);
         grpCustomerCommercialSummary.Name = "grpCustomerCommercialSummary";
@@ -3163,9 +3205,9 @@ partial class CustomerEditForm
         grpCustomerCommercialSummaryTitle.Text = "Resumen comercial";
         grpCustomerCommercialSummary.Controls.Add(grpCustomerCommercialSummaryTitle);
         grpCustomerCommercialSummaryTitle.BringToFront();
-        // 
+        //
         // lblCustomerCommercialSummaryHint
-        // 
+        //
         lblCustomerCommercialSummaryHint.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerCommercialSummaryHint.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerCommercialSummaryHint.Appearance.Options.UseFont = true;
@@ -3175,9 +3217,9 @@ partial class CustomerEditForm
         lblCustomerCommercialSummaryHint.Size = new Size(243, 15);
         lblCustomerCommercialSummaryHint.TabIndex = 0;
         lblCustomerCommercialSummaryHint.Text = "Ventas YTD, ultima compra y pedidos abiertos";
-        // 
+        //
         // grpCustomerCommercialNotes
-        // 
+        //
         grpCustomerCommercialNotes.Controls.Add(memCommercialNotes);
         grpCustomerCommercialNotes.Controls.Add(memCommercialTerms);
         grpCustomerCommercialNotes.Location = new Point(14, 236);
@@ -3194,9 +3236,9 @@ partial class CustomerEditForm
         grpCustomerCommercialNotesTitle.Text = "Notas y terminos comerciales";
         grpCustomerCommercialNotes.Controls.Add(grpCustomerCommercialNotesTitle);
         grpCustomerCommercialNotesTitle.BringToFront();
-        // 
+        //
         // xtpAccounting
-        // 
+        //
         xtpAccounting.Controls.Add(grpCustomerAccounts);
         xtpAccounting.Controls.Add(grpCustomerAssignments);
         xtpAccounting.Controls.Add(grpCustomerWithholdings);
@@ -3204,9 +3246,9 @@ partial class CustomerEditForm
         xtpAccounting.Name = "xtpAccounting";
         xtpAccounting.Size = new Size(1258, 364);
         xtpAccounting.Text = "Contable";
-        // 
+        //
         // sluReceivableAccount
-        // 
+        //
         sluReceivableAccount.Location = new Point(170, 32);
         sluReceivableAccount.Name = "sluReceivableAccount";
         sluReceivableAccount.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3217,9 +3259,9 @@ partial class CustomerEditForm
         sluReceivableAccount.Properties.PopupView = sluReceivableAccountView;
         sluReceivableAccount.Size = new Size(320, 22);
         sluReceivableAccount.TabIndex = 0;
-        // 
+        //
         // sluReceivableAccountView
-        // 
+        //
         sluReceivableAccountView.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F);
         sluReceivableAccountView.Appearance.FilterPanel.Options.UseFont = true;
         sluReceivableAccountView.Appearance.FooterPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -3232,9 +3274,9 @@ partial class CustomerEditForm
         sluReceivableAccountView.Name = "sluReceivableAccountView";
         sluReceivableAccountView.OptionsSelection.EnableAppearanceFocusedCell = false;
         sluReceivableAccountView.OptionsView.ShowGroupPanel = false;
-        // 
+        //
         // sluCustomerAdvanceAccount
-        // 
+        //
         sluCustomerAdvanceAccount.Location = new Point(170, 62);
         sluCustomerAdvanceAccount.Name = "sluCustomerAdvanceAccount";
         sluCustomerAdvanceAccount.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3245,9 +3287,9 @@ partial class CustomerEditForm
         sluCustomerAdvanceAccount.Properties.PopupView = sluCustomerAdvanceAccountView;
         sluCustomerAdvanceAccount.Size = new Size(320, 22);
         sluCustomerAdvanceAccount.TabIndex = 1;
-        // 
+        //
         // sluCustomerAdvanceAccountView
-        // 
+        //
         sluCustomerAdvanceAccountView.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F);
         sluCustomerAdvanceAccountView.Appearance.FilterPanel.Options.UseFont = true;
         sluCustomerAdvanceAccountView.Appearance.FooterPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -3260,9 +3302,9 @@ partial class CustomerEditForm
         sluCustomerAdvanceAccountView.Name = "sluCustomerAdvanceAccountView";
         sluCustomerAdvanceAccountView.OptionsSelection.EnableAppearanceFocusedCell = false;
         sluCustomerAdvanceAccountView.OptionsView.ShowGroupPanel = false;
-        // 
+        //
         // sluDiscountAccount
-        // 
+        //
         sluDiscountAccount.Location = new Point(170, 92);
         sluDiscountAccount.Name = "sluDiscountAccount";
         sluDiscountAccount.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3273,9 +3315,9 @@ partial class CustomerEditForm
         sluDiscountAccount.Properties.PopupView = sluDiscountAccountView;
         sluDiscountAccount.Size = new Size(320, 22);
         sluDiscountAccount.TabIndex = 2;
-        // 
+        //
         // sluDiscountAccountView
-        // 
+        //
         sluDiscountAccountView.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F);
         sluDiscountAccountView.Appearance.FilterPanel.Options.UseFont = true;
         sluDiscountAccountView.Appearance.FooterPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -3288,9 +3330,9 @@ partial class CustomerEditForm
         sluDiscountAccountView.Name = "sluDiscountAccountView";
         sluDiscountAccountView.OptionsSelection.EnableAppearanceFocusedCell = false;
         sluDiscountAccountView.OptionsView.ShowGroupPanel = false;
-        // 
+        //
         // sluInterestAccount
-        // 
+        //
         sluInterestAccount.Location = new Point(170, 122);
         sluInterestAccount.Name = "sluInterestAccount";
         sluInterestAccount.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3301,9 +3343,9 @@ partial class CustomerEditForm
         sluInterestAccount.Properties.PopupView = sluInterestAccountView;
         sluInterestAccount.Size = new Size(320, 22);
         sluInterestAccount.TabIndex = 3;
-        // 
+        //
         // sluInterestAccountView
-        // 
+        //
         sluInterestAccountView.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F);
         sluInterestAccountView.Appearance.FilterPanel.Options.UseFont = true;
         sluInterestAccountView.Appearance.FooterPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -3316,9 +3358,9 @@ partial class CustomerEditForm
         sluInterestAccountView.Name = "sluInterestAccountView";
         sluInterestAccountView.OptionsSelection.EnableAppearanceFocusedCell = false;
         sluInterestAccountView.OptionsView.ShowGroupPanel = false;
-        // 
+        //
         // lueCostCenter
-        // 
+        //
         lueCostCenter.Location = new Point(145, 32);
         lueCostCenter.Name = "lueCostCenter";
         lueCostCenter.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3328,9 +3370,9 @@ partial class CustomerEditForm
         lueCostCenter.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueCostCenter.Size = new Size(240, 22);
         lueCostCenter.TabIndex = 4;
-        // 
+        //
         // lueProject
-        // 
+        //
         lueProject.Location = new Point(145, 62);
         lueProject.Name = "lueProject";
         lueProject.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3340,9 +3382,9 @@ partial class CustomerEditForm
         lueProject.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueProject.Size = new Size(240, 22);
         lueProject.TabIndex = 5;
-        // 
+        //
         // sluIncomeWithholding
-        // 
+        //
         sluIncomeWithholding.Location = new Point(160, 32);
         sluIncomeWithholding.Name = "sluIncomeWithholding";
         sluIncomeWithholding.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3353,9 +3395,9 @@ partial class CustomerEditForm
         sluIncomeWithholding.Properties.PopupView = sluIncomeWithholdingView;
         sluIncomeWithholding.Size = new Size(260, 22);
         sluIncomeWithholding.TabIndex = 6;
-        // 
+        //
         // sluIncomeWithholdingView
-        // 
+        //
         sluIncomeWithholdingView.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F);
         sluIncomeWithholdingView.Appearance.FilterPanel.Options.UseFont = true;
         sluIncomeWithholdingView.Appearance.FooterPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -3368,9 +3410,9 @@ partial class CustomerEditForm
         sluIncomeWithholdingView.Name = "sluIncomeWithholdingView";
         sluIncomeWithholdingView.OptionsSelection.EnableAppearanceFocusedCell = false;
         sluIncomeWithholdingView.OptionsView.ShowGroupPanel = false;
-        // 
+        //
         // sluVatWithholding
-        // 
+        //
         sluVatWithholding.Location = new Point(160, 62);
         sluVatWithholding.Name = "sluVatWithholding";
         sluVatWithholding.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3381,9 +3423,9 @@ partial class CustomerEditForm
         sluVatWithholding.Properties.PopupView = sluVatWithholdingView;
         sluVatWithholding.Size = new Size(260, 22);
         sluVatWithholding.TabIndex = 7;
-        // 
+        //
         // sluVatWithholdingView
-        // 
+        //
         sluVatWithholdingView.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F);
         sluVatWithholdingView.Appearance.FilterPanel.Options.UseFont = true;
         sluVatWithholdingView.Appearance.FooterPanel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -3396,9 +3438,9 @@ partial class CustomerEditForm
         sluVatWithholdingView.Name = "sluVatWithholdingView";
         sluVatWithholdingView.OptionsSelection.EnableAppearanceFocusedCell = false;
         sluVatWithholdingView.OptionsView.ShowGroupPanel = false;
-        // 
+        //
         // lueIcaWithholding
-        // 
+        //
         lueIcaWithholding.Location = new Point(160, 92);
         lueIcaWithholding.Name = "lueIcaWithholding";
         lueIcaWithholding.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3408,9 +3450,9 @@ partial class CustomerEditForm
         lueIcaWithholding.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueIcaWithholding.Size = new Size(260, 22);
         lueIcaWithholding.TabIndex = 8;
-        // 
+        //
         // lueAccountingCurrency
-        // 
+        //
         lueAccountingCurrency.Location = new Point(150, 32);
         lueAccountingCurrency.Name = "lueAccountingCurrency";
         lueAccountingCurrency.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3420,9 +3462,9 @@ partial class CustomerEditForm
         lueAccountingCurrency.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueAccountingCurrency.Size = new Size(240, 22);
         lueAccountingCurrency.TabIndex = 9;
-        // 
+        //
         // spnExchangeRate
-        // 
+        //
         spnExchangeRate.EditValue = new decimal(new int[] { 0, 0, 0, 0 });
         spnExchangeRate.Location = new Point(540, 32);
         spnExchangeRate.Name = "spnExchangeRate";
@@ -3435,9 +3477,9 @@ partial class CustomerEditForm
         spnExchangeRate.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         spnExchangeRate.Size = new Size(240, 22);
         spnExchangeRate.TabIndex = 10;
-        // 
+        //
         // lueValidationStatus
-        // 
+        //
         lueValidationStatus.Location = new Point(875, 32);
         lueValidationStatus.Name = "lueValidationStatus";
         lueValidationStatus.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3447,9 +3489,9 @@ partial class CustomerEditForm
         lueValidationStatus.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueValidationStatus.Size = new Size(260, 22);
         lueValidationStatus.TabIndex = 11;
-        // 
+        //
         // grpCustomerAccounts
-        // 
+        //
         grpCustomerAccounts.Controls.Add(lblCustomerReceivable);
         grpCustomerAccounts.Controls.Add(sluReceivableAccount);
         grpCustomerAccounts.Controls.Add(lblCustomerAdvance);
@@ -3472,9 +3514,9 @@ partial class CustomerEditForm
         grpCustomerAccountsTitle.Text = "Cuentas contables";
         grpCustomerAccounts.Controls.Add(grpCustomerAccountsTitle);
         grpCustomerAccountsTitle.BringToFront();
-        // 
+        //
         // lblCustomerReceivable
-        // 
+        //
         lblCustomerReceivable.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerReceivable.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerReceivable.Appearance.Options.UseFont = true;
@@ -3484,9 +3526,9 @@ partial class CustomerEditForm
         lblCustomerReceivable.Size = new Size(96, 15);
         lblCustomerReceivable.TabIndex = 0;
         lblCustomerReceivable.Text = "Cuenta por cobrar";
-        // 
+        //
         // lblCustomerAdvance
-        // 
+        //
         lblCustomerAdvance.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerAdvance.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerAdvance.Appearance.Options.UseFont = true;
@@ -3496,9 +3538,9 @@ partial class CustomerEditForm
         lblCustomerAdvance.Size = new Size(88, 15);
         lblCustomerAdvance.TabIndex = 1;
         lblCustomerAdvance.Text = "Anticipo clientes";
-        // 
+        //
         // lblCustomerDiscount
-        // 
+        //
         lblCustomerDiscount.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerDiscount.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerDiscount.Appearance.Options.UseFont = true;
@@ -3508,9 +3550,9 @@ partial class CustomerEditForm
         lblCustomerDiscount.Size = new Size(61, 15);
         lblCustomerDiscount.TabIndex = 2;
         lblCustomerDiscount.Text = "Descuentos";
-        // 
+        //
         // lblCustomerInterest
-        // 
+        //
         lblCustomerInterest.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerInterest.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerInterest.Appearance.Options.UseFont = true;
@@ -3520,9 +3562,9 @@ partial class CustomerEditForm
         lblCustomerInterest.Size = new Size(98, 15);
         lblCustomerInterest.TabIndex = 3;
         lblCustomerInterest.Text = "Intereses cobrados";
-        // 
+        //
         // grpCustomerAssignments
-        // 
+        //
         grpCustomerAssignments.Controls.Add(lblCustomerCostCenter);
         grpCustomerAssignments.Controls.Add(lueCostCenter);
         grpCustomerAssignments.Controls.Add(lblCustomerProject);
@@ -3541,9 +3583,9 @@ partial class CustomerEditForm
         grpCustomerAssignmentsTitle.Text = "Asignaciones";
         grpCustomerAssignments.Controls.Add(grpCustomerAssignmentsTitle);
         grpCustomerAssignmentsTitle.BringToFront();
-        // 
+        //
         // lblCustomerCostCenter
-        // 
+        //
         lblCustomerCostCenter.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerCostCenter.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerCostCenter.Appearance.Options.UseFont = true;
@@ -3553,9 +3595,9 @@ partial class CustomerEditForm
         lblCustomerCostCenter.Size = new Size(84, 15);
         lblCustomerCostCenter.TabIndex = 0;
         lblCustomerCostCenter.Text = "Centro de costo";
-        // 
+        //
         // lblCustomerProject
-        // 
+        //
         lblCustomerProject.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerProject.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerProject.Appearance.Options.UseFont = true;
@@ -3565,9 +3607,9 @@ partial class CustomerEditForm
         lblCustomerProject.Size = new Size(47, 15);
         lblCustomerProject.TabIndex = 5;
         lblCustomerProject.Text = "Proyecto";
-        // 
+        //
         // grpCustomerWithholdings
-        // 
+        //
         grpCustomerWithholdings.Controls.Add(lblCustomerIncomeWh);
         grpCustomerWithholdings.Controls.Add(sluIncomeWithholding);
         grpCustomerWithholdings.Controls.Add(lblCustomerVatWh);
@@ -3588,9 +3630,9 @@ partial class CustomerEditForm
         grpCustomerWithholdingsTitle.Text = "Retenciones por defecto";
         grpCustomerWithholdings.Controls.Add(grpCustomerWithholdingsTitle);
         grpCustomerWithholdingsTitle.BringToFront();
-        // 
+        //
         // lblCustomerIncomeWh
-        // 
+        //
         lblCustomerIncomeWh.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerIncomeWh.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerIncomeWh.Appearance.Options.UseFont = true;
@@ -3600,9 +3642,9 @@ partial class CustomerEditForm
         lblCustomerIncomeWh.Size = new Size(83, 15);
         lblCustomerIncomeWh.TabIndex = 0;
         lblCustomerIncomeWh.Text = "Retencion renta";
-        // 
+        //
         // lblCustomerVatWh
-        // 
+        //
         lblCustomerVatWh.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerVatWh.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerVatWh.Appearance.Options.UseFont = true;
@@ -3612,9 +3654,9 @@ partial class CustomerEditForm
         lblCustomerVatWh.Size = new Size(74, 15);
         lblCustomerVatWh.TabIndex = 7;
         lblCustomerVatWh.Text = "Retencion IVA";
-        // 
+        //
         // lblCustomerIcaWh
-        // 
+        //
         lblCustomerIcaWh.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerIcaWh.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerIcaWh.Appearance.Options.UseFont = true;
@@ -3624,9 +3666,9 @@ partial class CustomerEditForm
         lblCustomerIcaWh.Size = new Size(75, 15);
         lblCustomerIcaWh.TabIndex = 8;
         lblCustomerIcaWh.Text = "Retencion ICA";
-        // 
+        //
         // grpCustomerCurrency
-        // 
+        //
         grpCustomerCurrency.Controls.Add(lblCustomerAccountingCurrency);
         grpCustomerCurrency.Controls.Add(lueAccountingCurrency);
         grpCustomerCurrency.Controls.Add(lblCustomerExchangeRate);
@@ -3647,9 +3689,9 @@ partial class CustomerEditForm
         grpCustomerCurrencyTitle.Text = "Moneda y validacion";
         grpCustomerCurrency.Controls.Add(grpCustomerCurrencyTitle);
         grpCustomerCurrencyTitle.BringToFront();
-        // 
+        //
         // lblCustomerAccountingCurrency
-        // 
+        //
         lblCustomerAccountingCurrency.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerAccountingCurrency.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerAccountingCurrency.Appearance.Options.UseFont = true;
@@ -3659,9 +3701,9 @@ partial class CustomerEditForm
         lblCustomerAccountingCurrency.Size = new Size(93, 15);
         lblCustomerAccountingCurrency.TabIndex = 0;
         lblCustomerAccountingCurrency.Text = "Moneda contable";
-        // 
+        //
         // lblCustomerExchangeRate
-        // 
+        //
         lblCustomerExchangeRate.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerExchangeRate.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerExchangeRate.Appearance.Options.UseFont = true;
@@ -3671,9 +3713,9 @@ partial class CustomerEditForm
         lblCustomerExchangeRate.Size = new Size(83, 15);
         lblCustomerExchangeRate.TabIndex = 10;
         lblCustomerExchangeRate.Text = "Tipo de cambio";
-        // 
+        //
         // lblCustomerValidation
-        // 
+        //
         lblCustomerValidation.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerValidation.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerValidation.Appearance.Options.UseFont = true;
@@ -3683,9 +3725,9 @@ partial class CustomerEditForm
         lblCustomerValidation.Size = new Size(92, 15);
         lblCustomerValidation.TabIndex = 11;
         lblCustomerValidation.Text = "Estado validacion";
-        // 
+        //
         // xtpSap
-        // 
+        //
         xtpSap.Controls.Add(grpCustomerSapSync);
         xtpSap.Controls.Add(grpCustomerSapStatus);
         xtpSap.Controls.Add(grpCustomerSapTools);
@@ -3693,9 +3735,9 @@ partial class CustomerEditForm
         xtpSap.Name = "xtpSap";
         xtpSap.Size = new Size(1258, 364);
         xtpSap.Text = "SAP Business One";
-        // 
+        //
         // txtSapCardCode
-        // 
+        //
         txtSapCardCode.Location = new Point(150, 32);
         txtSapCardCode.Name = "txtSapCardCode";
         txtSapCardCode.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3704,9 +3746,9 @@ partial class CustomerEditForm
         txtSapCardCode.Properties.Appearance.Options.UseForeColor = true;
         txtSapCardCode.Size = new Size(220, 22);
         txtSapCardCode.TabIndex = 0;
-        // 
+        //
         // lueSapGroup
-        // 
+        //
         lueSapGroup.Location = new Point(150, 62);
         lueSapGroup.Name = "lueSapGroup";
         lueSapGroup.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3716,9 +3758,9 @@ partial class CustomerEditForm
         lueSapGroup.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueSapGroup.Size = new Size(220, 22);
         lueSapGroup.TabIndex = 1;
-        // 
+        //
         // lueSapPaymentTerm
-        // 
+        //
         lueSapPaymentTerm.Location = new Point(150, 92);
         lueSapPaymentTerm.Name = "lueSapPaymentTerm";
         lueSapPaymentTerm.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3728,9 +3770,9 @@ partial class CustomerEditForm
         lueSapPaymentTerm.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueSapPaymentTerm.Size = new Size(220, 22);
         lueSapPaymentTerm.TabIndex = 2;
-        // 
+        //
         // lueSapCurrency
-        // 
+        //
         lueSapCurrency.Location = new Point(150, 122);
         lueSapCurrency.Name = "lueSapCurrency";
         lueSapCurrency.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3740,9 +3782,9 @@ partial class CustomerEditForm
         lueSapCurrency.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueSapCurrency.Size = new Size(220, 22);
         lueSapCurrency.TabIndex = 3;
-        // 
+        //
         // lueSapStatus
-        // 
+        //
         lueSapStatus.Location = new Point(150, 32);
         lueSapStatus.Name = "lueSapStatus";
         lueSapStatus.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3752,9 +3794,9 @@ partial class CustomerEditForm
         lueSapStatus.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         lueSapStatus.Size = new Size(220, 22);
         lueSapStatus.TabIndex = 4;
-        // 
+        //
         // dtpSapLastSync
-        // 
+        //
         dtpSapLastSync.EditValue = new DateTime(2026, 5, 22, 0, 0, 0, 0);
         dtpSapLastSync.Location = new Point(150, 62);
         dtpSapLastSync.Name = "dtpSapLastSync";
@@ -3765,9 +3807,9 @@ partial class CustomerEditForm
         dtpSapLastSync.Properties.CalendarTimeProperties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
         dtpSapLastSync.Size = new Size(220, 22);
         dtpSapLastSync.TabIndex = 5;
-        // 
+        //
         // txtSapUser
-        // 
+        //
         txtSapUser.Location = new Point(150, 92);
         txtSapUser.Name = "txtSapUser";
         txtSapUser.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3776,9 +3818,9 @@ partial class CustomerEditForm
         txtSapUser.Properties.Appearance.Options.UseForeColor = true;
         txtSapUser.Size = new Size(220, 22);
         txtSapUser.TabIndex = 6;
-        // 
+        //
         // txtSapSourceSystem
-        // 
+        //
         txtSapSourceSystem.Location = new Point(150, 122);
         txtSapSourceSystem.Name = "txtSapSourceSystem";
         txtSapSourceSystem.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3787,9 +3829,9 @@ partial class CustomerEditForm
         txtSapSourceSystem.Properties.Appearance.Options.UseForeColor = true;
         txtSapSourceSystem.Size = new Size(220, 22);
         txtSapSourceSystem.TabIndex = 7;
-        // 
+        //
         // txtSapCompany
-        // 
+        //
         txtSapCompany.Location = new Point(150, 152);
         txtSapCompany.Name = "txtSapCompany";
         txtSapCompany.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -3798,9 +3840,9 @@ partial class CustomerEditForm
         txtSapCompany.Properties.Appearance.Options.UseForeColor = true;
         txtSapCompany.Size = new Size(220, 22);
         txtSapCompany.TabIndex = 8;
-        // 
+        //
         // btnSyncSap
-        // 
+        //
         btnSyncSap.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnSyncSap.Appearance.Options.UseFont = true;
         btnSyncSap.Location = new Point(36, 70);
@@ -3808,9 +3850,9 @@ partial class CustomerEditForm
         btnSyncSap.Size = new Size(140, 32);
         btnSyncSap.TabIndex = 9;
         btnSyncSap.Text = "Sincronizar ahora";
-        // 
+        //
         // btnValidateSap
-        // 
+        //
         btnValidateSap.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnValidateSap.Appearance.Options.UseFont = true;
         btnValidateSap.Location = new Point(180, 70);
@@ -3818,9 +3860,9 @@ partial class CustomerEditForm
         btnValidateSap.Size = new Size(120, 32);
         btnValidateSap.TabIndex = 10;
         btnValidateSap.Text = "Validar datos";
-        // 
+        //
         // btnOpenSap
-        // 
+        //
         btnOpenSap.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnOpenSap.Appearance.Options.UseFont = true;
         btnOpenSap.Location = new Point(314, 70);
@@ -3828,9 +3870,9 @@ partial class CustomerEditForm
         btnOpenSap.Size = new Size(110, 32);
         btnOpenSap.TabIndex = 11;
         btnOpenSap.Text = "Ver en SAP";
-        // 
+        //
         // grdCustomerSapLog
-        // 
+        //
         grdCustomerSapLog.Font = new Font("Segoe UI", 9F);
         grdCustomerSapLog.Location = new Point(14, 30);
         grdCustomerSapLog.MainView = grvCustomerSapLog;
@@ -3838,9 +3880,9 @@ partial class CustomerEditForm
         grdCustomerSapLog.Size = new Size(1188, 88);
         grdCustomerSapLog.TabIndex = 12;
         grdCustomerSapLog.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { grvCustomerSapLog });
-        // 
+        //
         // grvCustomerSapLog
-        // 
+        //
         grvCustomerSapLog.Appearance.FilterPanel.Font = new Font("Segoe UI", 9F);
         grvCustomerSapLog.Appearance.FilterPanel.Options.UseFont = true;
         grvCustomerSapLog.Appearance.FooterPanel.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
@@ -3857,9 +3899,9 @@ partial class CustomerEditForm
         grvCustomerSapLog.Name = "grvCustomerSapLog";
         grvCustomerSapLog.OptionsBehavior.Editable = false;
         grvCustomerSapLog.OptionsView.ShowGroupPanel = false;
-        // 
+        //
         // grpCustomerSapSync
-        // 
+        //
         grpCustomerSapSync.Controls.Add(lblCustomerSapCard);
         grpCustomerSapSync.Controls.Add(txtSapCardCode);
         grpCustomerSapSync.Controls.Add(lblCustomerSapGroup);
@@ -3882,9 +3924,9 @@ partial class CustomerEditForm
         grpCustomerSapSyncTitle.Text = "Sincronizacion SAP";
         grpCustomerSapSync.Controls.Add(grpCustomerSapSyncTitle);
         grpCustomerSapSyncTitle.BringToFront();
-        // 
+        //
         // lblCustomerSapCard
-        // 
+        //
         lblCustomerSapCard.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerSapCard.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerSapCard.Appearance.Options.UseFont = true;
@@ -3894,9 +3936,9 @@ partial class CustomerEditForm
         lblCustomerSapCard.Size = new Size(53, 15);
         lblCustomerSapCard.TabIndex = 0;
         lblCustomerSapCard.Text = "CardCode";
-        // 
+        //
         // lblCustomerSapGroup
-        // 
+        //
         lblCustomerSapGroup.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerSapGroup.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerSapGroup.Appearance.Options.UseFont = true;
@@ -3906,9 +3948,9 @@ partial class CustomerEditForm
         lblCustomerSapGroup.Size = new Size(85, 15);
         lblCustomerSapGroup.TabIndex = 1;
         lblCustomerSapGroup.Text = "Grupo de socios";
-        // 
+        //
         // lblCustomerSapTerm
-        // 
+        //
         lblCustomerSapTerm.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerSapTerm.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerSapTerm.Appearance.Options.UseFont = true;
@@ -3918,9 +3960,9 @@ partial class CustomerEditForm
         lblCustomerSapTerm.Size = new Size(79, 15);
         lblCustomerSapTerm.TabIndex = 2;
         lblCustomerSapTerm.Text = "Condicion SAP";
-        // 
+        //
         // lblCustomerSapCurrency
-        // 
+        //
         lblCustomerSapCurrency.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerSapCurrency.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerSapCurrency.Appearance.Options.UseFont = true;
@@ -3930,9 +3972,9 @@ partial class CustomerEditForm
         lblCustomerSapCurrency.Size = new Size(68, 15);
         lblCustomerSapCurrency.TabIndex = 3;
         lblCustomerSapCurrency.Text = "Moneda SAP";
-        // 
+        //
         // grpCustomerSapStatus
-        // 
+        //
         grpCustomerSapStatus.Controls.Add(lblCustomerSapStatus);
         grpCustomerSapStatus.Controls.Add(lueSapStatus);
         grpCustomerSapStatus.Controls.Add(lblCustomerSapLastSync);
@@ -3957,9 +3999,9 @@ partial class CustomerEditForm
         grpCustomerSapStatusTitle.Text = "Estado de sincronizacion";
         grpCustomerSapStatus.Controls.Add(grpCustomerSapStatusTitle);
         grpCustomerSapStatusTitle.BringToFront();
-        // 
+        //
         // lblCustomerSapStatus
-        // 
+        //
         lblCustomerSapStatus.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerSapStatus.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerSapStatus.Appearance.Options.UseFont = true;
@@ -3969,9 +4011,9 @@ partial class CustomerEditForm
         lblCustomerSapStatus.Size = new Size(35, 15);
         lblCustomerSapStatus.TabIndex = 0;
         lblCustomerSapStatus.Text = "Estado";
-        // 
+        //
         // lblCustomerSapLastSync
-        // 
+        //
         lblCustomerSapLastSync.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerSapLastSync.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerSapLastSync.Appearance.Options.UseFont = true;
@@ -3981,9 +4023,9 @@ partial class CustomerEditForm
         lblCustomerSapLastSync.Size = new Size(114, 15);
         lblCustomerSapLastSync.TabIndex = 5;
         lblCustomerSapLastSync.Text = "Ultima sincronizacion";
-        // 
+        //
         // lblCustomerSapUser
-        // 
+        //
         lblCustomerSapUser.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerSapUser.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerSapUser.Appearance.Options.UseFont = true;
@@ -3993,9 +4035,9 @@ partial class CustomerEditForm
         lblCustomerSapUser.Size = new Size(89, 15);
         lblCustomerSapUser.TabIndex = 6;
         lblCustomerSapUser.Text = "Sincronizado por";
-        // 
+        //
         // lblCustomerSapSource
-        // 
+        //
         lblCustomerSapSource.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerSapSource.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerSapSource.Appearance.Options.UseFont = true;
@@ -4005,9 +4047,9 @@ partial class CustomerEditForm
         lblCustomerSapSource.Size = new Size(78, 15);
         lblCustomerSapSource.TabIndex = 7;
         lblCustomerSapSource.Text = "Sistema origen";
-        // 
+        //
         // lblCustomerSapCompany
-        // 
+        //
         lblCustomerSapCompany.Appearance.Font = new Font("Segoe UI", 9F);
         lblCustomerSapCompany.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCustomerSapCompany.Appearance.Options.UseFont = true;
@@ -4017,9 +4059,9 @@ partial class CustomerEditForm
         lblCustomerSapCompany.Size = new Size(69, 15);
         lblCustomerSapCompany.TabIndex = 8;
         lblCustomerSapCompany.Text = "Empresa SAP";
-        // 
+        //
         // grpCustomerSapTools
-        // 
+        //
         grpCustomerSapTools.Controls.Add(btnSyncSap);
         grpCustomerSapTools.Controls.Add(btnValidateSap);
         grpCustomerSapTools.Controls.Add(btnOpenSap);
@@ -4037,9 +4079,9 @@ partial class CustomerEditForm
         grpCustomerSapToolsTitle.Text = "Herramientas";
         grpCustomerSapTools.Controls.Add(grpCustomerSapToolsTitle);
         grpCustomerSapToolsTitle.BringToFront();
-        // 
+        //
         // grpCustomerSapLog
-        // 
+        //
         grpCustomerSapLog.Controls.Add(grdCustomerSapLog);
         grpCustomerSapLog.Location = new Point(14, 216);
         grpCustomerSapLog.Name = "grpCustomerSapLog";
@@ -4055,9 +4097,9 @@ partial class CustomerEditForm
         grpCustomerSapLogTitle.Text = "Bitacora de integracion";
         grpCustomerSapLog.Controls.Add(grpCustomerSapLogTitle);
         grpCustomerSapLogTitle.BringToFront();
-        // 
+        //
         // pnlFooter
-        // 
+        //
         pnlFooter.BorderStyle = BorderStyles.NoBorder;
         pnlFooter.Controls.Add(btnSave);
         pnlFooter.Controls.Add(btnCancel);
@@ -4066,9 +4108,9 @@ partial class CustomerEditForm
         pnlFooter.Name = "pnlFooter";
         pnlFooter.Size = new Size(1286, 52);
         pnlFooter.TabIndex = 3;
-        // 
+        //
         // btnSave
-        // 
+        //
         btnSave.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         btnSave.Appearance.BackColor = Color.FromArgb(0, 86, 210);
         btnSave.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
@@ -4081,9 +4123,9 @@ partial class CustomerEditForm
         btnSave.Size = new Size(100, 36);
         btnSave.TabIndex = 0;
         btnSave.Text = "Guardar";
-        // 
+        //
         // btnCancel
-        // 
+        //
         btnCancel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         btnCancel.Appearance.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnCancel.Appearance.Options.UseFont = true;
@@ -4093,9 +4135,9 @@ partial class CustomerEditForm
         btnCancel.Size = new Size(100, 36);
         btnCancel.TabIndex = 1;
         btnCancel.Text = "Cancelar";
-        // 
+        //
         // CustomerEditForm
-        // 
+        //
         AcceptButton = btnSave;
         Appearance.Options.UseFont = true;
         AutoScaleDimensions = new SizeF(7F, 15F);

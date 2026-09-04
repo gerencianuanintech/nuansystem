@@ -1,8 +1,13 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
+using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Features.BusinessPartners.Exceptions;
+using NuanSystem.Application.Features.BusinessPartners.Policies;
+using NuanSystem.Application.Features.BusinessPartners.SapCodes;
 using NuanSystem.Shared.Sync;
 using NuanSystem.Shared.Responses;
 
@@ -11,53 +16,165 @@ namespace NuanSystem.Application.Features.BusinessPartners.Commands;
 public sealed class CreateBusinessPartnerCommandHandler(
     IBusinessPartnerRepository repository,
     ITransactionRunner transactionRunner,
-    IBusinessPartnerLocalOutboxWriter localOutboxWriter)
+    IBusinessPartnerLocalOutboxWriter localOutboxWriter,
+    ICompanyContext companyContext,
+    IBusinessPartnerSapCodePolicyRepository sapCodePolicyRepository)
     : ICommandHandler<CreateBusinessPartnerCommand, BusinessPartnerDto>
 {
     public async Task<Result<BusinessPartnerDto>> Handle(CreateBusinessPartnerCommand request, CancellationToken cancellationToken)
     {
-        var code = request.Code.Trim().ToUpperInvariant();
-        var identificationNumber = request.IdentificationNumber.Trim();
+        var company = companyContext.CurrentCompany;
+        var partnerType = request.PartnerType.Trim();
+        if (partnerType is not "Customer" and not "Supplier")
+        {
+            return Failure("BP_ROLE_INVALID", "El tipo de socio debe ser Customer o Supplier.", nameof(request.PartnerType));
+        }
 
-        return await transactionRunner.ExecuteInTenantTransactionAsync(
-            async (connection, transaction, token) =>
+        var globalId = Guid.NewGuid();
+        var code = BusinessPartnerIdentityPolicy.CreateInternalCode(globalId);
+        var identificationNumber = request.IdentificationNumber.Trim();
+        var normalizedIdentification = BusinessPartnerIdentityPolicy.NormalizeIdentification(identificationNumber);
+        if (normalizedIdentification.Length == 0)
+        {
+            return Failure("BP_IDENTIFICATION_INVALID", "La identificacion debe contener letras o numeros.", nameof(request.IdentificationNumber));
+        }
+
+        var isBranch = BusinessPartnerWritePolicy.IsSynchronizedBranch(company);
+        var isCentral = BusinessPartnerWritePolicy.IsSynchronizedCentral(company);
+        if (isBranch && company?.ParentCompanyId is not > 0)
+        {
+            return Failure("BP_BRANCH_PARENT_REQUIRED", "La sucursal sincronizada requiere una empresa central padre.", "ParentCompanyId");
+        }
+
+        if (isBranch)
+        {
+            var protectedPaths = BusinessPartnerWritePolicy.GetNonDefaultProtectedPaths(request);
+            if (protectedPaths.Count > 0)
             {
+                return Result<BusinessPartnerDto>.Failure(
+                    "La sucursal no puede establecer campos gobernados por la central.",
+                    protectedPaths.Select(path => new ApiError("BP_PROTECTED_FIELD", "El campo es administrado por la central.", path)).ToArray());
+            }
+        }
+
+        var canonicalVersion = isCentral ? 1L : 0L;
+        var masterSyncStatus = isBranch ? "PendingMaster" : "Accepted";
+        var sapPolicy = company is { IsMaster: true }
+            ? await sapCodePolicyRepository.GetByCompanyIdAsync(company.CompanyId, cancellationToken)
+            : null;
+
+        try
+        {
+            return await transactionRunner.ExecuteInTenantTransactionAsync(
+                async (connection, transaction, token) =>
+                {
                 if (await repository.ExistsByCodeAsync(code, null, connection, transaction, token))
                 {
                     return Result<BusinessPartnerDto>.Failure(
                         "Ya existe un tercero comercial con el codigo indicado.",
-                        [new ApiError("BusinessPartnerCodeAlreadyExists", "El codigo ya existe.", nameof(request.Code))]);
+                        [new ApiError("BusinessPartnerCodeAlreadyExists", "El codigo interno ya existe.", "Code")]);
                 }
 
-                if (await repository.ExistsByIdentificationAsync(
-                        request.IdentificationTypeId, identificationNumber, null, connection, transaction, token))
+                if ((request.IsActive || isBranch) && await repository.ExistsByIdentificationAsync(
+                        partnerType, request.IdentificationTypeId, normalizedIdentification, null, connection, transaction, token))
                 {
                     return Result<BusinessPartnerDto>.Failure(
                         "Ya existe un tercero comercial con la identificacion indicada.",
-                        [new ApiError("BusinessPartnerIdentificationAlreadyExists", "La identificacion ya existe.", nameof(request.IdentificationNumber))]);
+                        [new ApiError("BP_IDENTIFICATION_ALREADY_EXISTS", "La identificacion ya existe para el mismo rol.", nameof(request.IdentificationNumber))]);
+                }
+
+                string? sapCardCode = null;
+                if (sapPolicy is { IsEnabled: true })
+                {
+                    var identificationTypeCode = await repository.GetIdentificationTypeCodeAsync(
+                        request.IdentificationTypeId, connection, transaction, token);
+                    if (identificationTypeCode is null)
+                    {
+                        return Failure("BP_IDENTIFICATION_TYPE_NOT_FOUND", "El tipo de identificacion no existe.", nameof(request.IdentificationTypeId));
+                    }
+
+                    var calculated = BusinessPartnerSapCardCodePolicy.CreateSapCardCode(
+                        new BusinessPartnerSapCodePolicyData(
+                            GetBusinessPartnerSapCodePolicyQueryHandler.ParsePrefixMode(sapPolicy.PrefixMode),
+                            sapPolicy.PassportIdentificationTypeCode),
+                        partnerType,
+                        identificationTypeCode,
+                        normalizedIdentification);
+                    if (!calculated.IsSuccess)
+                    {
+                        return Result<BusinessPartnerDto>.Failure(calculated.Message, calculated.Errors);
+                    }
+
+                    sapCardCode = calculated.Value;
                 }
 
                 var id = await repository.CreateAsync(
-                    ToCreateData(request, code, identificationNumber), connection, transaction, token);
+                    ToCreateData(request, globalId, code, partnerType, identificationNumber,
+                        normalizedIdentification, canonicalVersion, masterSyncStatus, sapCardCode),
+                    connection, transaction, token);
+                if (id == -1)
+                {
+                    return Failure("BP_IDENTIFICATION_ALREADY_EXISTS", "La identificacion ya existe para el mismo rol.", nameof(request.IdentificationNumber));
+                }
+                if (id == -2)
+                {
+                    return Failure("BusinessPartnerCodeAlreadyExists", "El codigo interno ya existe.", "Code");
+                }
+                if (id == -3)
+                {
+                    return Failure("BP_SAP_CARD_CODE_ALREADY_EXISTS", "El codigo SAP ya esta asignado a otro tercero.", "SapCardCode");
+                }
+                if (id <= 0)
+                {
+                    throw new InvalidOperationException($"El procedimiento de creacion devolvio un resultado inesperado: {id}.");
+                }
+
                 var partner = await repository.GetByIdAsync(id, connection, transaction, token)
                     ?? throw new InvalidOperationException("El tercero comercial fue creado pero no pudo consultarse.");
 
                 await localOutboxWriter.EnqueueAsync(
-                    partner, SyncOperation.Created, connection, transaction, token);
+                    new BusinessPartnerOutboxWriteRequest(
+                        partner,
+                        Base: null,
+                        SyncOperation.Created,
+                        request.AuditUserId,
+                        CreateBusinessPartnerCommandHandler.TrimOrNull(request.AuditUserName),
+                        CausationEventId: null),
+                    connection,
+                    transaction,
+                    token);
                 return Result<BusinessPartnerDto>.Success(partner, "Tercero comercial creado correctamente.");
-            },
-            cancellationToken);
+                },
+                cancellationToken);
+        }
+        catch (BusinessPartnerUniqueConflictException exception)
+        {
+            return UniqueConflictFailure(exception.Kind);
+        }
     }
 
-    internal static CreateBusinessPartnerData ToCreateData(CreateBusinessPartnerCommand request, string code, string identificationNumber)
+    internal static CreateBusinessPartnerData ToCreateData(
+        CreateBusinessPartnerCommand request,
+        Guid globalId,
+        string code,
+        string partnerType,
+        string identificationNumber,
+        string normalizedIdentificationNumber,
+        long canonicalVersion,
+        string masterSyncStatus,
+        string? sapCardCode)
     {
         return new CreateBusinessPartnerData(
+            globalId,
             code,
             request.Name.Trim(),
             TrimOrNull(request.CommercialName),
-            request.PartnerType.Trim(),
+            partnerType,
             request.IdentificationTypeId,
             identificationNumber,
+            normalizedIdentificationNumber,
+            canonicalVersion,
+            masterSyncStatus,
             request.SupplierGroupId,
             request.SupplierClassId,
             request.EconomicActivityId,
@@ -138,18 +255,18 @@ public sealed class CreateBusinessPartnerCommandHandler(
             request.DeliveryToleranceDays,
             request.RequiresPurchaseOrder,
             string.IsNullOrWhiteSpace(request.CreditStatus) ? "Normal" : request.CreditStatus.Trim(),
-            TrimOrNull(request.SapCardCode),
-            TrimOrNull(request.SapCardType),
-            string.IsNullOrWhiteSpace(request.SapSyncStatus) ? "Pending" : request.SapSyncStatus.Trim(),
-            request.SapLastSyncAt,
-            TrimOrNull(request.SapLastError),
-            request.SapEnabled,
-            TrimOrNull(request.SapMode),
-            TrimOrNull(request.SapCompanyCode),
-            request.SapRetryCount,
-            request.SyncAsSupplier,
-            request.AllowManualSapRetry,
-            request.RequiresApprovalBeforeSapSync,
+            sapCardCode,
+            partnerType == "Supplier" ? "S" : "C",
+            "Pending",
+            null,
+            null,
+            sapCardCode is not null,
+            null,
+            null,
+            0,
+            partnerType == "Supplier",
+            false,
+            false,
             NormalizeAddresses(request.Addresses),
             NormalizeContacts(request.Contacts),
             NormalizeBankAccounts(request.BankAccounts),
@@ -167,6 +284,7 @@ public sealed class CreateBusinessPartnerCommandHandler(
             .Where(item => !string.IsNullOrWhiteSpace(item.Line1))
             .Select(item => item with
             {
+                GlobalId = item.GlobalId.GetValueOrDefault() == Guid.Empty ? Guid.NewGuid() : item.GlobalId,
                 CountryId = item.CountryId,
                 ProvinceId = item.ProvinceId,
                 CityId = item.CityId,
@@ -187,6 +305,7 @@ public sealed class CreateBusinessPartnerCommandHandler(
             .Where(item => !string.IsNullOrWhiteSpace(item.Name))
             .Select(item => item with
             {
+                GlobalId = item.GlobalId.GetValueOrDefault() == Guid.Empty ? Guid.NewGuid() : item.GlobalId,
                 Name = item.Name.Trim(),
                 Position = TrimOrNull(item.Position),
                 Department = TrimOrNull(item.Department),
@@ -306,4 +425,21 @@ public sealed class CreateBusinessPartnerCommandHandler(
         var normalized = TrimOrNull(value);
         return normalized is null ? null : normalized.ToUpperInvariant();
     }
+
+    private static Result<BusinessPartnerDto> Failure(string code, string message, string field) =>
+        Result<BusinessPartnerDto>.Failure(
+            "No fue posible guardar el tercero comercial.",
+            [new ApiError(code, message, field)]);
+
+    private static Result<BusinessPartnerDto> UniqueConflictFailure(BusinessPartnerUniqueConflictKind conflictKind) =>
+        conflictKind switch
+        {
+            BusinessPartnerUniqueConflictKind.Identification =>
+                Failure("BP_IDENTIFICATION_ALREADY_EXISTS", "La identificacion ya existe para el mismo rol.", "IdentificationNumber"),
+            BusinessPartnerUniqueConflictKind.Code =>
+                Failure("BusinessPartnerCodeAlreadyExists", "El codigo interno ya existe.", "Code"),
+            BusinessPartnerUniqueConflictKind.SapCardCode =>
+                Failure("BP_SAP_CARD_CODE_ALREADY_EXISTS", "El codigo SAP ya esta asignado a otro tercero.", "SapCardCode"),
+            _ => throw new ArgumentOutOfRangeException(nameof(conflictKind), conflictKind, null)
+        };
 }

@@ -23,7 +23,8 @@ public sealed class SyncRoutingRepository(IMasterConnectionFactory connectionFac
                 context.SyncProfileId,
                 context.TargetBranchCode,
                 context.RequireTargetBranchMatch,
-                context.EntityGlobalId
+                context.EntityGlobalId,
+                context.TargetCompanyId
             },
             commandType: CommandType.StoredProcedure,
             cancellationToken: cancellationToken));

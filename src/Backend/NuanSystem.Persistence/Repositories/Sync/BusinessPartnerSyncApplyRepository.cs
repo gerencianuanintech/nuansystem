@@ -1,445 +1,422 @@
 using System.Data;
+using System.Text.Json;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
-using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Features.BusinessPartners.Sync;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Domain.Tenancy;
-using NuanSystem.Shared.Sync;
 
 namespace NuanSystem.Persistence.Repositories.Sync;
 
-public sealed class BusinessPartnerSyncApplyRepository(ICompanyResolver companyResolver) : IBusinessPartnerSyncApplyRepository
+public sealed class BusinessPartnerSyncApplyRepository(ICompanyResolver companyResolver)
+    : IBusinessPartnerSyncApplyRepository
 {
-    public async Task<bool> ExistsByGlobalIdAsync(
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    internal const string StableReferencesProcedure =
+        "dbo.SP_NA_GET_BUSINESSPARTNER_STABLE_REFERENCES_RESOLVE";
+    internal const string BranchApplyPreflightProcedure =
+        "dbo.SP_NA_POST_BUSINESSPARTNER_BRANCH_APPLY_PREFLIGHT";
+    internal const string CanonicalApplyProcedure =
+        "dbo.SP_NA_POST_BUSINESSPARTNER_CANONICAL_APPLY";
+    internal const string ProposalResultApplyProcedure =
+        "dbo.SP_NA_POST_BUSINESSPARTNER_PROPOSAL_RESULT_APPLY";
+
+    public async Task<BusinessPartnerSyncApplyResult> ApplyCanonicalAsync(
         int branchCompanyId,
-        Guid globalId,
+        SyncEventApplyContext context,
+        BusinessPartnerCanonicalPayloadV2 payload,
         CancellationToken cancellationToken = default)
     {
         var company = await ResolveBranchAsync(branchCompanyId, cancellationToken);
         await using var connection = CreateSqlConnection(company);
         await connection.OpenAsync(cancellationToken);
-
-        const string sql = """
-SELECT COUNT(1)
-FROM dbo.BusinessPartners
-WHERE GlobalId = @GlobalId;
-""";
-
-        var count = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
-            sql,
-            new { GlobalId = globalId },
-            cancellationToken: cancellationToken));
-        return count > 0;
-    }
-
-    public Task<BusinessPartnerSyncApplyResult> UpsertFromSyncAsync(
-        int branchCompanyId,
-        SyncEventApplyContext context,
-        BusinessPartnerSyncPayload payload,
-        SyncOperation operation,
-        CancellationToken cancellationToken = default)
-    {
-        return ApplyAsync(branchCompanyId, context, payload, operation, markDeleted: false, cancellationToken);
-    }
-
-    public Task<BusinessPartnerSyncApplyResult> DisableFromSyncAsync(
-        int branchCompanyId,
-        SyncEventApplyContext context,
-        BusinessPartnerSyncPayload payload,
-        bool markDeleted,
-        CancellationToken cancellationToken = default)
-    {
-        return ApplyAsync(branchCompanyId, context, payload, SyncOperation.Disabled, markDeleted, cancellationToken);
-    }
-
-    private async Task<BusinessPartnerSyncApplyResult> ApplyAsync(
-        int branchCompanyId,
-        SyncEventApplyContext context,
-        BusinessPartnerSyncPayload payload,
-        SyncOperation operation,
-        bool markDeleted,
-        CancellationToken cancellationToken)
-    {
-        var company = await ResolveBranchAsync(branchCompanyId, cancellationToken);
-        await using var connection = CreateSqlConnection(company);
-        await connection.OpenAsync(cancellationToken);
-        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            cancellationToken);
 
         try
         {
-            var inbox = await GetInboxAsync(connection, transaction, context.EventId, cancellationToken);
-            if (inbox?.Status == SyncEventStatus.Applied.ToString())
+            var preflightRow = await connection.QuerySingleAsync<ApplyResultRow>(new CommandDefinition(
+                BranchApplyPreflightProcedure,
+                CreateCanonicalPreflightParameters(context, payload),
+                transaction,
+                commandType: CommandType.StoredProcedure,
+                cancellationToken: cancellationToken));
+            var preflightResult = MapCanonicalPreflightResult(preflightRow);
+            if (preflightResult is not null)
             {
                 await transaction.CommitAsync(cancellationToken);
-                return new BusinessPartnerSyncApplyResult(true, true, null, "Evento ya aplicado en SyncInbox.");
+                return preflightResult;
             }
 
-            var inboxId = inbox?.Id ?? await InsertInboxAsync(connection, transaction, context, cancellationToken);
-            var identificationTypeId = await ResolveIdentificationTypeIdAsync(
+            var references = await ResolveStableReferencesAsync(
                 connection,
                 transaction,
-                payload.IdentificationTypeCode,
+                payload.Partner,
                 cancellationToken);
+            if (!references.IsComplete)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return MissingReference();
+            }
 
-            var businessPartnerId = await UpsertBusinessPartnerAsync(
-                connection,
+            var row = await connection.QuerySingleAsync<ApplyResultRow>(new CommandDefinition(
+                CanonicalApplyProcedure,
+                CreateCanonicalParameters(context, payload, references),
                 transaction,
-                payload,
-                operation,
-                markDeleted,
-                identificationTypeId,
-                cancellationToken);
-
-            await MarkInboxAppliedAsync(connection, transaction, inboxId, cancellationToken);
+                commandType: CommandType.StoredProcedure,
+                cancellationToken: cancellationToken));
             await transaction.CommitAsync(cancellationToken);
-
-            return new BusinessPartnerSyncApplyResult(
-                true,
-                false,
-                businessPartnerId,
-                $"BusinessPartner sincronizado por GlobalId {payload.GlobalId}.");
+            return MapCanonicalResult(row);
         }
-        catch (Exception exception) when (exception is not OperationCanceledException)
+        catch
         {
-            await transaction.RollbackAsync(CancellationToken.None);
-            await RecordInboxErrorAsync(connection, context, exception.Message, CancellationToken.None);
+            if (transaction.Connection is not null)
+                await transaction.RollbackAsync(CancellationToken.None);
             throw;
         }
     }
 
-    private static async Task<InboxState?> GetInboxAsync(
-        SqlConnection connection,
-        IDbTransaction transaction,
-        Guid eventId,
-        CancellationToken cancellationToken)
-    {
-        const string sql = """
-SELECT TOP (1) Id, Status
-FROM dbo.SyncInbox WITH (UPDLOCK, HOLDLOCK)
-WHERE EventId = @EventId;
-""";
-
-        return await connection.QuerySingleOrDefaultAsync<InboxState>(new CommandDefinition(
-            sql,
-            new { EventId = eventId },
-            transaction,
-            cancellationToken: cancellationToken));
-    }
-
-    private static async Task<long> InsertInboxAsync(
-        SqlConnection connection,
-        IDbTransaction transaction,
+    public async Task<BusinessPartnerSyncApplyResult> ApplyProposalResultAsync(
+        int branchCompanyId,
         SyncEventApplyContext context,
+        BusinessPartnerProposalResultPayloadV1 payload,
+        CancellationToken cancellationToken = default)
+    {
+        var company = await ResolveBranchAsync(branchCompanyId, cancellationToken);
+        await using var connection = CreateSqlConnection(company);
+        await connection.OpenAsync(cancellationToken);
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            cancellationToken);
+
+        try
+        {
+            var preflightRow = await connection.QuerySingleAsync<ApplyResultRow>(new CommandDefinition(
+                BranchApplyPreflightProcedure,
+                CreateProposalResultPreflightParameters(context, payload),
+                transaction,
+                commandType: CommandType.StoredProcedure,
+                cancellationToken: cancellationToken));
+            var preflightResult = MapProposalResultPreflightResult(preflightRow);
+            if (preflightResult is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+                return preflightResult;
+            }
+
+            StableReferenceResolution? references = null;
+            if (payload.Status == "Rejected" && payload.Canonical is not null)
+            {
+                references = await ResolveStableReferencesAsync(
+                    connection,
+                    transaction,
+                    payload.Canonical,
+                    cancellationToken);
+                if (!references.IsComplete)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return MissingReference();
+                }
+            }
+
+            var row = await connection.QuerySingleAsync<ApplyResultRow>(new CommandDefinition(
+                ProposalResultApplyProcedure,
+                CreateProposalResultParameters(context, payload, references),
+                transaction,
+                commandType: CommandType.StoredProcedure,
+                cancellationToken: cancellationToken));
+            await transaction.CommitAsync(cancellationToken);
+            return MapProposalResult(row);
+        }
+        catch
+        {
+            if (transaction.Connection is not null)
+                await transaction.RollbackAsync(CancellationToken.None);
+            throw;
+        }
+    }
+
+    private static async Task<StableReferenceResolution> ResolveStableReferencesAsync(
+        SqlConnection connection,
+        SqlTransaction transaction,
+        BusinessPartnerCanonicalSnapshot snapshot,
         CancellationToken cancellationToken)
     {
-        const string sql = """
-INSERT INTO dbo.SyncInbox
-(
-    EventId,
-    SourceCompanyId,
-    EntityName,
-    EntityGlobalId,
-    Operation,
-    PayloadJson,
-    Status
-)
-VALUES
-(
-    @EventId,
-    @SourceCompanyId,
-    @EntityName,
-    @EntityGlobalId,
-    @Operation,
-    @PayloadJson,
-    N'Pending'
-);
-
-SELECT CAST(SCOPE_IDENTITY() AS bigint);
-""";
-
-        return await connection.ExecuteScalarAsync<long>(new CommandDefinition(
-            sql,
+        var sorted = SortSnapshot(snapshot);
+        using var grid = await connection.QueryMultipleAsync(new CommandDefinition(
+            StableReferencesProcedure,
             new
             {
-                context.EventId,
-                context.SourceCompanyId,
-                context.EntityName,
-                context.EntityGlobalId,
-                context.Operation,
-                context.PayloadJson
+                sorted.IdentificationTypeCode,
+                AddressesJson = JsonSerializer.Serialize(sorted.Addresses, JsonOptions),
+                ContactsJson = JsonSerializer.Serialize(sorted.Contacts, JsonOptions)
             },
             transaction,
+            commandType: CommandType.StoredProcedure,
             cancellationToken: cancellationToken));
+        var identification = await grid.ReadSingleAsync<BusinessPartnerProposalApplyRepository.IdentificationReferenceRow>();
+        var addresses = (await grid.ReadAsync<BusinessPartnerProposalApplyRepository.AddressReferenceRow>()).AsList();
+        var contacts = (await grid.ReadAsync<BusinessPartnerProposalApplyRepository.ContactReferenceRow>()).AsList();
+        var resolved = BusinessPartnerProposalApplyRepository.ResolveStableReferences(
+            sorted,
+            identification,
+            addresses,
+            contacts);
+        return new StableReferenceResolution(
+            resolved.IsComplete,
+            resolved.IdentificationTypeId,
+            resolved.AddressesJson,
+            resolved.ContactsJson);
     }
 
-    private static async Task<int> ResolveIdentificationTypeIdAsync(
-        SqlConnection connection,
-        IDbTransaction transaction,
-        string? identificationTypeCode,
-        CancellationToken cancellationToken)
-    {
-        const string sql = """
-SELECT TOP (1) Id
-FROM dbo.BusinessPartnerIdentificationTypes
-WHERE IsDeleted = 0
-  AND IsActive = 1
-  AND (@Code IS NULL OR Code = @Code)
-ORDER BY CASE WHEN Code = @Code THEN 0 WHEN Code = N'RUC' THEN 1 ELSE 2 END, Id;
-""";
-
-        var identificationTypeId = await connection.ExecuteScalarAsync<int?>(new CommandDefinition(
-            sql,
-            new { Code = string.IsNullOrWhiteSpace(identificationTypeCode) ? null : identificationTypeCode.Trim() },
-            transaction,
-            cancellationToken: cancellationToken));
-
-        return identificationTypeId
-            ?? throw new InvalidOperationException("No existe tipo de identificacion activo para sincronizar BusinessPartner.");
-    }
-
-    private static async Task<int> UpsertBusinessPartnerAsync(
-        SqlConnection connection,
-        IDbTransaction transaction,
-        BusinessPartnerSyncPayload payload,
-        SyncOperation operation,
-        bool markDeleted,
-        int identificationTypeId,
-        CancellationToken cancellationToken)
-    {
-        var isDeleted = markDeleted || operation == SyncOperation.Deleted;
-        var isActive = !isDeleted && operation != SyncOperation.Disabled && payload.IsActive;
-
-        const string sql = """
-DECLARE @BusinessPartnerId int;
-
-SELECT @BusinessPartnerId = Id
-FROM dbo.BusinessPartners WITH (UPDLOCK, HOLDLOCK)
-WHERE GlobalId = @GlobalId;
-
-IF @BusinessPartnerId IS NULL
-BEGIN
-    INSERT INTO dbo.BusinessPartners
-    (
-        GlobalId,
-        Code,
-        Name,
-        ExternalSystem,
-        ExternalCode,
-        CommercialName,
-        PartnerType,
-        IdentificationTypeId,
-        IdentificationNumber,
-        Email,
-        Phone,
-        IsActive,
-        CreatedByUserName,
-        CreatedAt,
-        IsDeleted,
-        DeletedByUserName,
-        DeletedAt
-    )
-    VALUES
-    (
-        @GlobalId,
-        @Code,
-        @Name,
-        @ExternalSystem,
-        @ExternalCode,
-        @CommercialName,
-        @PartnerType,
-        @IdentificationTypeId,
-        @IdentificationNumber,
-        @Email,
-        @Phone,
-        @IsActive,
-        N'MasterBranchSyncWorker',
-        SYSUTCDATETIME(),
-        @IsDeleted,
-        CASE WHEN @IsDeleted = 1 THEN N'MasterBranchSyncWorker' ELSE NULL END,
-        CASE WHEN @IsDeleted = 1 THEN SYSUTCDATETIME() ELSE NULL END
-    );
-
-    SET @BusinessPartnerId = CONVERT(int, SCOPE_IDENTITY());
-END
-ELSE
-BEGIN
-    UPDATE dbo.BusinessPartners
-    SET Code = @Code,
-        Name = @Name,
-        ExternalSystem = @ExternalSystem,
-        ExternalCode = @ExternalCode,
-        CommercialName = @CommercialName,
-        PartnerType = @PartnerType,
-        IdentificationTypeId = @IdentificationTypeId,
-        IdentificationNumber = @IdentificationNumber,
-        Email = @Email,
-        Phone = @Phone,
-        IsActive = @IsActive,
-        UpdatedByUserName = N'MasterBranchSyncWorker',
-        UpdatedAt = SYSUTCDATETIME(),
-        IsDeleted = @IsDeleted,
-        DeletedByUserName = CASE WHEN @IsDeleted = 1 THEN N'MasterBranchSyncWorker' ELSE NULL END,
-        DeletedAt = CASE WHEN @IsDeleted = 1 THEN COALESCE(DeletedAt, SYSUTCDATETIME()) ELSE NULL END
-    WHERE Id = @BusinessPartnerId;
-END;
-
-SELECT @BusinessPartnerId;
-""";
-
-        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
-            sql,
-            new
-            {
-                payload.GlobalId,
-                Code = NormalizeRequired(payload.Code, "Code", 50),
-                Name = NormalizeRequired(payload.Name, "Name", 200),
-                ExternalSystem = NormalizeOptional(payload.ExternalSystem, 50),
-                ExternalCode = NormalizeOptional(payload.ExternalCode, 100),
-                CommercialName = NormalizeOptional(payload.CommercialName, 200),
-                PartnerType = NormalizePartnerType(payload.PartnerType),
-                IdentificationTypeId = identificationTypeId,
-                IdentificationNumber = NormalizeRequired(payload.IdentificationNumber, "IdentificationNumber", 50),
-                Email = NormalizeOptional(payload.Email, 256),
-                Phone = NormalizeOptional(payload.Phone, 50),
-                IsActive = isActive,
-                IsDeleted = isDeleted
-            },
-            transaction,
-            cancellationToken: cancellationToken));
-    }
-
-    private static async Task MarkInboxAppliedAsync(
-        SqlConnection connection,
-        IDbTransaction transaction,
-        long inboxId,
-        CancellationToken cancellationToken)
-    {
-        const string sql = """
-UPDATE dbo.SyncInbox
-SET Status = N'Applied',
-    AppliedAt = SYSUTCDATETIME(),
-    ErrorMessage = NULL,
-    LastErrorMessage = NULL,
-    NextRetryAt = NULL
-WHERE Id = @InboxId;
-""";
-
-        await connection.ExecuteAsync(new CommandDefinition(
-            sql,
-            new { InboxId = inboxId },
-            transaction,
-            cancellationToken: cancellationToken));
-    }
-
-    private static async Task RecordInboxErrorAsync(
-        SqlConnection connection,
+    internal static CanonicalApplyParameters CreateCanonicalParameters(
         SyncEventApplyContext context,
-        string errorMessage,
-        CancellationToken cancellationToken)
+        BusinessPartnerCanonicalPayloadV2 payload,
+        StableReferenceResolution references)
     {
-        const string sql = """
-IF EXISTS (SELECT 1 FROM dbo.SyncInbox WHERE EventId = @EventId)
-BEGIN
-    UPDATE dbo.SyncInbox
-    SET Status = N'Error',
-        AttemptCount = AttemptCount + 1,
-        ErrorMessage = @ErrorMessage,
-        LastErrorMessage = @ErrorMessage,
-        NextRetryAt = DATEADD(second, 30, SYSUTCDATETIME())
-    WHERE EventId = @EventId
-      AND Status <> N'Applied';
-END
-ELSE
-BEGIN
-    INSERT INTO dbo.SyncInbox
-    (
-        EventId,
-        SourceCompanyId,
-        EntityName,
-        EntityGlobalId,
-        Operation,
-        PayloadJson,
-        Status,
-        AttemptCount,
-        ErrorMessage,
-        LastErrorMessage,
-        NextRetryAt
-    )
-    VALUES
-    (
-        @EventId,
-        @SourceCompanyId,
-        @EntityName,
-        @EntityGlobalId,
-        @Operation,
-        @PayloadJson,
-        N'Error',
-        1,
-        @ErrorMessage,
-        @ErrorMessage,
-        DATEADD(second, 30, SYSUTCDATETIME())
-    );
-END;
-""";
-
-        await connection.ExecuteAsync(new CommandDefinition(
-            sql,
-            new
-            {
-                context.EventId,
-                context.SourceCompanyId,
-                context.EntityName,
-                context.EntityGlobalId,
-                context.Operation,
-                context.PayloadJson,
-                ErrorMessage = errorMessage
-            },
-            cancellationToken: cancellationToken));
+        var partner = SortSnapshot(payload.Partner);
+        var deleted = context.Operation == "Deleted";
+        return new CanonicalApplyParameters(
+            context.EventId,
+            context.SourceCompanyId,
+            partner.GlobalId,
+            context.Operation,
+            context.PayloadJson,
+            partner.Code,
+            partner.Name,
+            partner.CommercialName,
+            partner.PartnerType,
+            references.IdentificationTypeId
+                ?? throw new InvalidOperationException("Identification type reference is required."),
+            partner.IdentificationNumber,
+            partner.NormalizedIdentificationNumber,
+            partner.Email,
+            partner.Phone,
+            partner.SapCardCode,
+            payload.CanonicalVersion,
+            !deleted && context.Operation != "Disabled" && partner.IsActive,
+            deleted,
+            references.AddressesJson
+                ?? throw new InvalidOperationException("Resolved addresses are required."),
+            references.ContactsJson
+                ?? throw new InvalidOperationException("Resolved contacts are required."));
     }
 
-    private async Task<CompanyConnectionInfo> ResolveBranchAsync(int branchCompanyId, CancellationToken cancellationToken)
+    internal static PreflightParameters CreateCanonicalPreflightParameters(
+        SyncEventApplyContext context,
+        BusinessPartnerCanonicalPayloadV2 payload) =>
+        new(
+            context.EventId,
+            context.SourceCompanyId,
+            "BusinessPartner",
+            context.EntityGlobalId,
+            context.Operation,
+            context.PayloadJson,
+            payload.CanonicalVersion,
+            CompareCanonicalVersion: true,
+            EqualVersionIsReplay: true);
+
+    internal static PreflightParameters CreateProposalResultPreflightParameters(
+        SyncEventApplyContext context,
+        BusinessPartnerProposalResultPayloadV1 payload) =>
+        new(
+            context.EventId,
+            context.SourceCompanyId,
+            "BusinessPartnerProposalResult",
+            context.EntityGlobalId,
+            "Updated",
+            context.PayloadJson,
+            payload.CanonicalVersion,
+            CompareCanonicalVersion: payload.Status != "Accepted",
+            EqualVersionIsReplay: false);
+
+    internal static ProposalResultApplyParameters CreateProposalResultParameters(
+        SyncEventApplyContext context,
+        BusinessPartnerProposalResultPayloadV1 payload,
+        StableReferenceResolution? references)
     {
-        return await companyResolver.ResolveByIdAsync(branchCompanyId, cancellationToken)
+        var restoreCanonical = payload.Status == "Rejected" && payload.Canonical is not null;
+        var canonical = restoreCanonical ? SortSnapshot(payload.Canonical!) : null;
+        var hasCanonicalVersion = payload.Status != "Accepted" && payload.Canonical is not null;
+        return new ProposalResultApplyParameters(
+            context.EventId,
+            context.SourceCompanyId,
+            payload.GlobalId,
+            context.PayloadJson,
+            payload.Status,
+            payload.Message,
+            payload.CanonicalVersion,
+            hasCanonicalVersion,
+            canonical?.Code,
+            canonical?.Name,
+            canonical?.CommercialName,
+            canonical?.PartnerType,
+            restoreCanonical
+                ? references?.IdentificationTypeId
+                    ?? throw new InvalidOperationException("Identification type reference is required.")
+                : null,
+            canonical?.IdentificationNumber,
+            canonical?.NormalizedIdentificationNumber,
+            canonical?.Email,
+            canonical?.Phone,
+            canonical?.SapCardCode,
+            canonical?.IsActive ?? true,
+            IsDeleted: false,
+            restoreCanonical ? references!.AddressesJson! : "[]",
+            restoreCanonical ? references!.ContactsJson! : "[]");
+    }
+
+    internal static BusinessPartnerSyncApplyResult MapCanonicalResult(ApplyResultRow row) =>
+        row.ResultCode switch
+        {
+            1 => new(true, false, row.BusinessPartnerId, "Canonico de socio aplicado."),
+            2 => new(true, true, row.BusinessPartnerId, "Canonico de socio ya aplicado."),
+            3 => new(true, true, row.BusinessPartnerId, "Canonico anterior ignorado.", Ignored: true),
+            4 => new(false, false, row.BusinessPartnerId, "El EventId ya pertenece a otro sobre.",
+                "BP_SYNC_EVENT_ID_COLLISION", Terminal: true),
+            5 => new(false, false, row.BusinessPartnerId, "El canonico contradice identidad inmutable local.",
+                "BP_SYNC_CANONICAL_IDENTITY_CONFLICT", Terminal: true),
+            _ => throw new InvalidOperationException($"Unexpected canonical apply result {row.ResultCode}.")
+        };
+
+    internal static BusinessPartnerSyncApplyResult? MapCanonicalPreflightResult(ApplyResultRow row) =>
+        row.ResultCode switch
+        {
+            0 => null,
+            2 => new(true, true, row.BusinessPartnerId, "Canonico de socio ya aplicado."),
+            3 => new(true, true, row.BusinessPartnerId, "Canonico anterior ignorado.", Ignored: true),
+            4 => new(false, false, row.BusinessPartnerId, "El EventId ya pertenece a otro sobre.",
+                "BP_SYNC_EVENT_ID_COLLISION", Terminal: true),
+            5 => new(false, false, row.BusinessPartnerId, "El evento ya fue cerrado en DeadLetter.",
+                "BP_SYNC_EVENT_ALREADY_TERMINAL", Terminal: true),
+            _ => throw new InvalidOperationException($"Unexpected canonical preflight result {row.ResultCode}.")
+        };
+
+    internal static BusinessPartnerSyncApplyResult MapProposalResult(ApplyResultRow row) =>
+        row.ResultCode switch
+        {
+            1 => new(true, false, row.BusinessPartnerId, "Resultado de propuesta aplicado."),
+            2 => new(true, true, row.BusinessPartnerId, "Resultado de propuesta ya aplicado."),
+            3 => new(true, true, row.BusinessPartnerId, "Resultado canonico anterior ignorado.", Ignored: true),
+            4 => new(false, false, row.BusinessPartnerId, "Resultado de propuesta no aplicable.",
+                "BP_SYNC_RESULT_INVALID", Terminal: true),
+            5 => new(false, false, row.BusinessPartnerId, "El resultado contradice identidad inmutable local.",
+                "BP_SYNC_RESULT_IDENTITY_CONFLICT", Terminal: true),
+            6 => new(false, false, row.BusinessPartnerId, "El EventId ya pertenece a otro sobre.",
+                "BP_SYNC_EVENT_ID_COLLISION", Terminal: true),
+            _ => throw new InvalidOperationException($"Unexpected proposal result apply result {row.ResultCode}.")
+        };
+
+    internal static BusinessPartnerSyncApplyResult? MapProposalResultPreflightResult(ApplyResultRow row) =>
+        row.ResultCode switch
+        {
+            0 => null,
+            2 => new(true, true, row.BusinessPartnerId, "Resultado de propuesta ya aplicado."),
+            3 => new(true, true, row.BusinessPartnerId, "Resultado canonico anterior ignorado.", Ignored: true),
+            4 => new(false, false, row.BusinessPartnerId, "El EventId ya pertenece a otro sobre.",
+                "BP_SYNC_EVENT_ID_COLLISION", Terminal: true),
+            5 => new(false, false, row.BusinessPartnerId, "El evento ya fue cerrado en DeadLetter.",
+                "BP_SYNC_EVENT_ALREADY_TERMINAL", Terminal: true),
+            _ => throw new InvalidOperationException($"Unexpected proposal result preflight result {row.ResultCode}.")
+        };
+
+    private async Task<CompanyConnectionInfo> ResolveBranchAsync(
+        int branchCompanyId,
+        CancellationToken cancellationToken)
+    {
+        var company = await companyResolver.ResolveByIdAsync(branchCompanyId, cancellationToken)
             ?? throw new InvalidOperationException($"No se encontro la sucursal destino {branchCompanyId}.");
+        if (company.IsMaster)
+            throw new InvalidOperationException($"La empresa {branchCompanyId} no es una sucursal.");
+        return company;
     }
 
-    private static SqlConnection CreateSqlConnection(CompanyConnectionInfo company)
-    {
-        return company.DatabaseEngine == DatabaseEngine.SqlServer
+    private static SqlConnection CreateSqlConnection(CompanyConnectionInfo company) =>
+        company.DatabaseEngine == DatabaseEngine.SqlServer
             ? new SqlConnection(company.ConnectionString)
-            : throw new NotSupportedException($"El motor {company.DatabaseEngine} todavia no esta implementado para Sync BusinessPartner.");
-    }
+            : throw new NotSupportedException(
+                $"El motor {company.DatabaseEngine} no esta implementado para Sync BusinessPartner.");
 
-    private static string NormalizeRequired(string value, string fieldName, int maxLength)
-    {
-        if (string.IsNullOrWhiteSpace(value))
+    private static BusinessPartnerCanonicalSnapshot SortSnapshot(BusinessPartnerCanonicalSnapshot snapshot) =>
+        snapshot with
         {
-            throw new InvalidOperationException($"El campo {fieldName} es requerido para sincronizar BusinessPartner.");
-        }
+            Addresses = snapshot.Addresses.OrderBy(item => item.GlobalId).ToArray(),
+            Contacts = snapshot.Contacts.OrderBy(item => item.GlobalId).ToArray()
+        };
 
-        var trimmed = value.Trim();
-        return trimmed[..Math.Min(trimmed.Length, maxLength)];
-    }
+    private static BusinessPartnerSyncApplyResult MissingReference() =>
+        new(false, false, null, "Una referencia estable requerida aun no existe en la sucursal.",
+            "BP_SYNC_REFERENCE_NOT_FOUND", Retryable: true);
 
-    private static string? NormalizeOptional(string? value, int maxLength)
+    internal sealed class ApplyResultRow
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        var trimmed = value.Trim();
-        return trimmed[..Math.Min(trimmed.Length, maxLength)];
+        public int ResultCode { get; init; }
+        public int? BusinessPartnerId { get; init; }
     }
 
-    private static string NormalizePartnerType(string partnerType)
-    {
-        return partnerType is "Customer" or "Supplier" or "Both"
-            ? partnerType
-            : "Customer";
-    }
+    internal sealed record StableReferenceResolution(
+        bool IsComplete,
+        int? IdentificationTypeId,
+        string? AddressesJson,
+        string? ContactsJson);
 
-    private sealed record InboxState(long Id, string Status);
+    internal sealed record PreflightParameters(
+        Guid EventId,
+        int SourceCompanyId,
+        string EntityName,
+        Guid EntityGlobalId,
+        string Operation,
+        string PayloadJson,
+        long CanonicalVersion,
+        bool CompareCanonicalVersion,
+        bool EqualVersionIsReplay);
+
+    internal sealed record CanonicalApplyParameters(
+        Guid EventId,
+        int SourceCompanyId,
+        Guid EntityGlobalId,
+        string Operation,
+        string PayloadJson,
+        string Code,
+        string Name,
+        string? CommercialName,
+        string PartnerType,
+        int IdentificationTypeId,
+        string IdentificationNumber,
+        string NormalizedIdentificationNumber,
+        string? Email,
+        string? Phone,
+        string? SapCardCode,
+        long CanonicalVersion,
+        bool IsActive,
+        bool IsDeleted,
+        string AddressesJson,
+        string ContactsJson);
+
+    internal sealed record ProposalResultApplyParameters(
+        Guid EventId,
+        int SourceCompanyId,
+        Guid EntityGlobalId,
+        string PayloadJson,
+        string Status,
+        string? Message,
+        long CanonicalVersion,
+        bool HasCanonical,
+        string? Code,
+        string? Name,
+        string? CommercialName,
+        string? PartnerType,
+        int? IdentificationTypeId,
+        string? IdentificationNumber,
+        string? NormalizedIdentificationNumber,
+        string? Email,
+        string? Phone,
+        string? SapCardCode,
+        bool IsActive,
+        bool IsDeleted,
+        string AddressesJson,
+        string ContactsJson);
 }

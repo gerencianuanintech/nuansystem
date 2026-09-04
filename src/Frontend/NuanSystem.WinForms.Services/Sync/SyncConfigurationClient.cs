@@ -147,6 +147,24 @@ public sealed class SyncConfigurationClient(INuanApiClient apiClient) : ISyncCon
             cancellationToken);
     }
 
+    public Task<BusinessPartnerSapCodePolicy> GetBusinessPartnerSapCodePolicyAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return apiClient.GetAsync<BusinessPartnerSapCodePolicy>(
+            "/api/sap/settings/business-partner-codes",
+            cancellationToken);
+    }
+
+    public Task<BusinessPartnerSapCodePolicy> UpdateBusinessPartnerSapCodePolicyAsync(
+        SaveBusinessPartnerSapCodePolicyRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return apiClient.PutAsync<SaveBusinessPartnerSapCodePolicyRequest, BusinessPartnerSapCodePolicy>(
+            "/api/sap/settings/business-partner-codes",
+            request,
+            cancellationToken);
+    }
+
     private sealed class QueryBuilder
     {
         private readonly StringBuilder builder = new();

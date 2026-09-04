@@ -1,8 +1,10 @@
 using System.Data;
 using System.Text.Json;
 using Dapper;
+using Microsoft.Data.SqlClient;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Features.BusinessPartners.Exceptions;
 
 namespace NuanSystem.Persistence.Repositories;
 
@@ -14,6 +16,7 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
     private const string CreateProcedure = "dbo.SP_NA_POST_BUSINESSPARTNERS_CREAR";
     private const string ExistsByCodeProcedure = "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORCODIGO";
     private const string ExistsByIdentificationProcedure = "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORIDENTIFICACION";
+    private const string IdentificationTypeCodeProcedure = "dbo.SP_NA_GET_BUSINESSPARTNER_IDENTIFICATIONTYPE_CODE";
     private const string UpdateProcedure = "dbo.SP_NA_PUT_BUSINESSPARTNERS_ACTUALIZAR";
     private const string ImportSupplierFromSapProcedure = "dbo.SP_NA_POST_BUSINESSPARTNERS_IMPORTARSAP";
     private const string DeleteProcedure = "dbo.SP_NA_DELETE_BUSINESSPARTNERS_ELIMINAR";
@@ -23,10 +26,10 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
     public async Task<IReadOnlyCollection<BusinessPartnerDto>> GetAllAsync(string? partnerType, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        var partners = await connection.QueryAsync<BusinessPartnerDto>(
-            new CommandDefinition(ListProcedure, new { PartnerType = partnerType }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
-
-        return partners.AsList();
+        return (await connection.QueryAsync<BusinessPartnerDto, BusinessPartnerCanonicalMetadataRow, BusinessPartnerDto>(
+            new CommandDefinition(ListProcedure, new { PartnerType = partnerType }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure),
+            MapCanonicalMetadata,
+            splitOn: "NormalizedIdentificationNumber")).AsList();
     }
 
     public async Task<BusinessPartnerDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -51,7 +54,11 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
         using var grid = await connection.QueryMultipleAsync(
             new CommandDefinition(GetByIdProcedure, new { Id = id }, transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
 
-        var partner = await grid.ReadSingleOrDefaultAsync<BusinessPartnerDto>();
+        var partner = grid
+            .Read<BusinessPartnerDto, BusinessPartnerCanonicalMetadataRow, BusinessPartnerDto>(
+                MapCanonicalMetadata,
+                splitOn: "NormalizedIdentificationNumber")
+            .SingleOrDefault();
         if (partner is null)
         {
             return null;
@@ -129,8 +136,7 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
         IDbConnection connection,
         IDbTransaction? transaction,
         CancellationToken cancellationToken) =>
-        connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(CreateProcedure, ToParameters(partner), transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        ExecuteMutationAsync(CreateProcedure, ToParameters(partner), connection, transaction, cancellationToken);
 
     public async Task<bool> ExistsByCodeAsync(string code, int? excludingId = null, CancellationToken cancellationToken = default)
     {
@@ -158,26 +164,28 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
         return count > 0;
     }
 
-    public async Task<bool> ExistsByIdentificationAsync(int identificationTypeId, string identificationNumber, int? excludingId = null, CancellationToken cancellationToken = default)
+    public async Task<bool> ExistsByIdentificationAsync(string partnerType, int identificationTypeId, string normalizedIdentificationNumber, int? excludingId = null, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
         return await ExistsByIdentificationCoreAsync(
-            identificationTypeId, identificationNumber, excludingId, connection, transaction: null, cancellationToken);
+            partnerType, identificationTypeId, normalizedIdentificationNumber, excludingId, connection, transaction: null, cancellationToken);
     }
 
     public Task<bool> ExistsByIdentificationAsync(
+        string partnerType,
         int identificationTypeId,
-        string identificationNumber,
+        string normalizedIdentificationNumber,
         int? excludingId,
         IDbConnection connection,
         IDbTransaction transaction,
         CancellationToken cancellationToken = default) =>
         ExistsByIdentificationCoreAsync(
-            identificationTypeId, identificationNumber, excludingId, connection, transaction, cancellationToken);
+            partnerType, identificationTypeId, normalizedIdentificationNumber, excludingId, connection, transaction, cancellationToken);
 
     private static async Task<bool> ExistsByIdentificationCoreAsync(
+        string partnerType,
         int identificationTypeId,
-        string identificationNumber,
+        string normalizedIdentificationNumber,
         int? excludingId,
         IDbConnection connection,
         IDbTransaction? transaction,
@@ -186,7 +194,7 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
         var count = await connection.ExecuteScalarAsync<int>(
             new CommandDefinition(
                 ExistsByIdentificationProcedure,
-                new { IdentificationTypeId = identificationTypeId, IdentificationNumber = identificationNumber, ExcluirId = excludingId },
+                new { PartnerType = partnerType, IdentificationTypeId = identificationTypeId, NormalizedIdentificationNumber = normalizedIdentificationNumber, ExcluirId = excludingId },
                 transaction,
                 cancellationToken: cancellationToken,
                 commandType: CommandType.StoredProcedure));
@@ -194,30 +202,94 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
         return count > 0;
     }
 
-    public async Task<bool> UpdateAsync(UpdateBusinessPartnerData partner, CancellationToken cancellationToken = default)
+    public Task<string?> GetIdentificationTypeCodeAsync(
+        int identificationTypeId,
+        IDbConnection connection,
+        IDbTransaction transaction,
+        CancellationToken cancellationToken = default) =>
+        connection.QuerySingleOrDefaultAsync<string?>(
+            new CommandDefinition(
+                IdentificationTypeCodeProcedure,
+                new { IdentificationTypeId = identificationTypeId },
+                transaction,
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
+
+    public async Task<int> UpdateAsync(UpdateBusinessPartnerData partner, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
         return await UpdateCoreAsync(partner, connection, transaction: null, cancellationToken);
     }
 
-    public Task<bool> UpdateAsync(
+    public Task<int> UpdateAsync(
         UpdateBusinessPartnerData partner,
         IDbConnection connection,
         IDbTransaction transaction,
         CancellationToken cancellationToken = default) =>
         UpdateCoreAsync(partner, connection, transaction, cancellationToken);
 
-    private static async Task<bool> UpdateCoreAsync(
+    private static Task<int> UpdateCoreAsync(
         UpdateBusinessPartnerData partner,
         IDbConnection connection,
         IDbTransaction? transaction,
         CancellationToken cancellationToken)
-    {
-        var affectedRows = await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(UpdateProcedure, ToParameters(partner), transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        => ExecuteMutationAsync(UpdateProcedure, ToParameters(partner), connection, transaction, cancellationToken);
 
-        return affectedRows > 0;
+    private static async Task<int> ExecuteMutationAsync(
+        string procedure,
+        object parameters,
+        IDbConnection connection,
+        IDbTransaction? transaction,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await connection.ExecuteScalarAsync<int>(
+                new CommandDefinition(procedure, parameters, transaction, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
+        }
+        catch (SqlException exception) when (
+            TryClassifyUniqueConflict(exception.Number, exception.Message, out var conflictKind))
+        {
+            throw new BusinessPartnerUniqueConflictException(conflictKind, exception);
+        }
     }
+
+    internal static bool TryClassifyUniqueConflict(
+        int errorNumber,
+        string message,
+        out BusinessPartnerUniqueConflictKind conflictKind)
+    {
+        conflictKind = default;
+        if (errorNumber is not (2601 or 2627))
+        {
+            return false;
+        }
+
+        if (ContainsExactIndexName(message, "UX_BusinessPartners_Identification_Active"))
+        {
+            conflictKind = BusinessPartnerUniqueConflictKind.Identification;
+            return true;
+        }
+
+        if (ContainsExactIndexName(message, "UX_BusinessPartners_Code_Active"))
+        {
+            conflictKind = BusinessPartnerUniqueConflictKind.Code;
+            return true;
+        }
+
+        if (ContainsExactIndexName(message, "UX_BusinessPartners_SapCardCode_Active"))
+        {
+            conflictKind = BusinessPartnerUniqueConflictKind.SapCardCode;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool ContainsExactIndexName(string message, string indexName) =>
+        message.Contains($"'{indexName}'", StringComparison.Ordinal)
+        || message.Contains($"\"{indexName}\"", StringComparison.Ordinal)
+        || message.Contains($"[{indexName}]", StringComparison.Ordinal);
 
     public async Task<BusinessPartnerSapImportResultData> ImportSupplierFromSapAsync(
         BusinessPartnerSapImportData supplier,
@@ -232,25 +304,21 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
                 commandType: CommandType.StoredProcedure));
     }
 
-    public async Task<bool> DeleteAsync(int id, int? deletedByUserId, string? deletedByUserName, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(DeleteBusinessPartnerData partner, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateConnection();
-        return await DeleteCoreAsync(id, deletedByUserId, deletedByUserName, connection, transaction: null, cancellationToken);
+        return await DeleteCoreAsync(partner, connection, transaction: null, cancellationToken);
     }
 
     public Task<bool> DeleteAsync(
-        int id,
-        int? deletedByUserId,
-        string? deletedByUserName,
+        DeleteBusinessPartnerData partner,
         IDbConnection connection,
         IDbTransaction transaction,
         CancellationToken cancellationToken = default) =>
-        DeleteCoreAsync(id, deletedByUserId, deletedByUserName, connection, transaction, cancellationToken);
+        DeleteCoreAsync(partner, connection, transaction, cancellationToken);
 
     private static async Task<bool> DeleteCoreAsync(
-        int id,
-        int? deletedByUserId,
-        string? deletedByUserName,
+        DeleteBusinessPartnerData partner,
         IDbConnection connection,
         IDbTransaction? transaction,
         CancellationToken cancellationToken)
@@ -258,7 +326,7 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
         var affectedRows = await connection.ExecuteScalarAsync<int>(
             new CommandDefinition(
                 DeleteProcedure,
-                new { Id = id, DeletedByUserId = deletedByUserId, DeletedByUserName = deletedByUserName },
+                partner,
                 transaction,
                 cancellationToken: cancellationToken,
                 commandType: CommandType.StoredProcedure));
@@ -270,12 +338,16 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
     {
         return new
         {
+            partner.GlobalId,
             partner.Code,
             partner.Name,
             partner.CommercialName,
             partner.PartnerType,
             partner.IdentificationTypeId,
             partner.IdentificationNumber,
+            partner.NormalizedIdentificationNumber,
+            partner.CanonicalVersion,
+            partner.MasterSyncStatus,
             partner.SupplierGroupId,
             partner.SupplierClassId,
             partner.EconomicActivityId,
@@ -357,17 +429,6 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
             partner.RequiresPurchaseOrder,
             partner.CreditStatus,
             partner.SapCardCode,
-            partner.SapCardType,
-            partner.SapSyncStatus,
-            partner.SapLastSyncAt,
-            partner.SapLastError,
-            partner.SapEnabled,
-            partner.SapMode,
-            partner.SapCompanyCode,
-            partner.SapRetryCount,
-            partner.SyncAsSupplier,
-            partner.AllowManualSapRetry,
-            partner.RequiresApprovalBeforeSapSync,
             AddressesJson = JsonSerializer.Serialize(partner.Addresses, JsonOptions),
             ContactsJson = JsonSerializer.Serialize(partner.Contacts, JsonOptions),
             BankAccountsJson = JsonSerializer.Serialize(partner.BankAccounts, JsonOptions),
@@ -385,12 +446,11 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
         return new
         {
             partner.Id,
-            partner.Code,
+            partner.ExpectedRowVersion,
             partner.Name,
             partner.CommercialName,
-            partner.PartnerType,
-            partner.IdentificationTypeId,
-            partner.IdentificationNumber,
+            partner.CanonicalVersion,
+            partner.MasterSyncStatus,
             partner.SupplierGroupId,
             partner.SupplierClassId,
             partner.EconomicActivityId,
@@ -471,18 +531,6 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
             partner.DeliveryToleranceDays,
             partner.RequiresPurchaseOrder,
             partner.CreditStatus,
-            partner.SapCardCode,
-            partner.SapCardType,
-            partner.SapSyncStatus,
-            partner.SapLastSyncAt,
-            partner.SapLastError,
-            partner.SapEnabled,
-            partner.SapMode,
-            partner.SapCompanyCode,
-            partner.SapRetryCount,
-            partner.SyncAsSupplier,
-            partner.AllowManualSapRetry,
-            partner.RequiresApprovalBeforeSapSync,
             AddressesJson = JsonSerializer.Serialize(partner.Addresses, JsonOptions),
             ContactsJson = JsonSerializer.Serialize(partner.Contacts, JsonOptions),
             BankAccountsJson = JsonSerializer.Serialize(partner.BankAccounts, JsonOptions),
@@ -493,5 +541,32 @@ public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectio
             partner.UpdatedByUserId,
             partner.UpdatedByUserName
         };
+    }
+
+    private sealed class BusinessPartnerCanonicalMetadataRow
+    {
+        public int Id { get; set; }
+        public string NormalizedIdentificationNumber { get; set; } = string.Empty;
+        public long CanonicalVersion { get; set; }
+        public string MasterSyncStatus { get; set; } = string.Empty;
+        public string? MasterSyncMessage { get; set; }
+        public byte[] RowVersion { get; set; } = [];
+    }
+
+    private static void ApplyCanonicalMetadata(BusinessPartnerDto partner, BusinessPartnerCanonicalMetadataRow metadata)
+    {
+        partner.NormalizedIdentificationNumber = metadata.NormalizedIdentificationNumber;
+        partner.CanonicalVersion = metadata.CanonicalVersion;
+        partner.MasterSyncStatus = metadata.MasterSyncStatus;
+        partner.MasterSyncMessage = metadata.MasterSyncMessage;
+        partner.RowVersion = Convert.ToBase64String(metadata.RowVersion);
+    }
+
+    private static BusinessPartnerDto MapCanonicalMetadata(
+        BusinessPartnerDto partner,
+        BusinessPartnerCanonicalMetadataRow metadata)
+    {
+        ApplyCanonicalMetadata(partner, metadata);
+        return partner;
     }
 }

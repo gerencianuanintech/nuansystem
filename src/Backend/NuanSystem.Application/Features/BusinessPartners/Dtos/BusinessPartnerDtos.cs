@@ -14,6 +14,11 @@ public sealed class BusinessPartnerDto
     public string? IdentificationTypeCode { get; set; }
     public string? IdentificationTypeName { get; set; }
     public string IdentificationNumber { get; set; } = string.Empty;
+    public string NormalizedIdentificationNumber { get; set; } = string.Empty;
+    public long CanonicalVersion { get; set; }
+    public string RowVersion { get; set; } = string.Empty;
+    public string MasterSyncStatus { get; set; } = "Accepted";
+    public string? MasterSyncMessage { get; set; }
     public int? SupplierGroupId { get; set; }
     public int? SupplierClassId { get; set; }
     public int? EconomicActivityId { get; set; }
@@ -132,41 +137,51 @@ public sealed class BusinessPartnerDto
     public IReadOnlyCollection<BusinessPartnerAttachmentDto> Attachments { get; set; } = [];
 }
 
-public sealed record BusinessPartnerAddressDto(
-    int Id,
-    int BusinessPartnerId,
-    int? CountryId,
-    int? ProvinceId,
-    int? CityId,
-    string AddressType,
-    string Line1,
-    string? Line2,
-    string? CountryCode,
-    string? Province,
-    string? City,
-    string? PostalCode,
-    decimal? Latitude,
-    decimal? Longitude,
-    bool IsPrimary,
-    bool IsActive);
+public sealed class BusinessPartnerAddressDto
+{
+    public int Id { get; set; }
+    public Guid GlobalId { get; set; }
+    public int BusinessPartnerId { get; set; }
+    public int? CountryId { get; set; }
+    public int? ProvinceId { get; set; }
+    public int? CityId { get; set; }
+    public string AddressType { get; set; } = string.Empty;
+    public string Line1 { get; set; } = string.Empty;
+    public string? Line2 { get; set; }
+    public string? CountryCode { get; set; }
+    public string? Province { get; set; }
+    public string? ProvinceCode { get; set; }
+    public string? City { get; set; }
+    public string? CityCode { get; set; }
+    public string? PostalCode { get; set; }
+    public decimal? Latitude { get; set; }
+    public decimal? Longitude { get; set; }
+    public bool IsPrimary { get; set; }
+    public bool IsActive { get; set; }
+}
 
-public sealed record BusinessPartnerContactDto(
-    int Id,
-    int BusinessPartnerId,
-    int? ContactTypeId,
-    int? ContactChannelId,
-    string Name,
-    string? Position,
-    string? Department,
-    string? Phone,
-    string? Extension,
-    string? Mobile,
-    string? Email,
-    string? Language,
-    bool ReceivesNotifications,
-    bool IsPrimary,
-    bool IsActive,
-    string? Notes);
+public sealed class BusinessPartnerContactDto
+{
+    public int Id { get; set; }
+    public Guid GlobalId { get; set; }
+    public int BusinessPartnerId { get; set; }
+    public int? ContactTypeId { get; set; }
+    public string? ContactTypeCode { get; set; }
+    public int? ContactChannelId { get; set; }
+    public string? ContactChannelCode { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Position { get; set; }
+    public string? Department { get; set; }
+    public string? Phone { get; set; }
+    public string? Extension { get; set; }
+    public string? Mobile { get; set; }
+    public string? Email { get; set; }
+    public string? Language { get; set; }
+    public bool ReceivesNotifications { get; set; }
+    public bool IsPrimary { get; set; }
+    public bool IsActive { get; set; }
+    public string? Notes { get; set; }
+}
 
 public sealed record BusinessPartnerBankAccountDto(
     int Id,
@@ -283,7 +298,13 @@ public sealed record BusinessPartnerLookupsDto(
     IReadOnlyCollection<BusinessPartnerLookupOptionDto> Departments,
     IReadOnlyCollection<BusinessPartnerLookupOptionDto> BusinessLines,
     IReadOnlyCollection<BusinessPartnerLookupOptionDto> CostCenters,
-    IReadOnlyCollection<BusinessPartnerLookupOptionDto> Projects);
+    IReadOnlyCollection<BusinessPartnerLookupOptionDto> Projects,
+    BusinessPartnerEditPolicyDto? EditPolicy = null);
+
+public sealed record BusinessPartnerEditPolicyDto(
+    bool IsSyncedBranch,
+    bool CanEditManagedFields,
+    IReadOnlyCollection<string> EditableFields);
 
 public sealed record BusinessPartnerSapImportData(
     string CardCode,
@@ -303,6 +324,7 @@ public sealed record BusinessPartnerSapImportResultData(
     string Message);
 
 public sealed record SaveBusinessPartnerAddressData(
+    Guid? GlobalId,
     int? CountryId,
     int? ProvinceId,
     int? CityId,
@@ -319,6 +341,7 @@ public sealed record SaveBusinessPartnerAddressData(
     bool IsActive);
 
 public sealed record SaveBusinessPartnerContactData(
+    Guid? GlobalId,
     int? ContactTypeId,
     int? ContactChannelId,
     string Name,
@@ -387,27 +410,17 @@ public sealed record SaveBusinessPartnerAttachmentData(
     long? FileSize,
     bool IsActive);
 
-public sealed record BusinessPartnerSyncPayload(
-    Guid GlobalId,
-    string Code,
-    string Name,
-    string? CommercialName,
-    string PartnerType,
-    string? IdentificationTypeCode,
-    string IdentificationNumber,
-    string? Email,
-    string? Phone,
-    bool IsActive,
-    string? ExternalSystem,
-    string? ExternalCode);
-
 public sealed record CreateBusinessPartnerData(
+    Guid GlobalId,
     string Code,
     string Name,
     string? CommercialName,
     string PartnerType,
     int IdentificationTypeId,
     string IdentificationNumber,
+    string NormalizedIdentificationNumber,
+    long CanonicalVersion,
+    string MasterSyncStatus,
     int? SupplierGroupId,
     int? SupplierClassId,
     int? EconomicActivityId,
@@ -512,12 +525,16 @@ public sealed record CreateBusinessPartnerData(
 
 public sealed record UpdateBusinessPartnerData(
     int Id,
+    byte[] ExpectedRowVersion,
     string Code,
     string Name,
     string? CommercialName,
     string PartnerType,
     int IdentificationTypeId,
     string IdentificationNumber,
+    string NormalizedIdentificationNumber,
+    long CanonicalVersion,
+    string MasterSyncStatus,
     int? SupplierGroupId,
     int? SupplierClassId,
     int? EconomicActivityId,
@@ -619,3 +636,11 @@ public sealed record UpdateBusinessPartnerData(
     IReadOnlyCollection<SaveBusinessPartnerAttachmentData>? Attachments,
     int? UpdatedByUserId,
     string? UpdatedByUserName);
+
+public sealed record DeleteBusinessPartnerData(
+    int Id,
+    byte[] ExpectedRowVersion,
+    long CanonicalVersion,
+    string MasterSyncStatus,
+    int? DeletedByUserId,
+    string? DeletedByUserName);

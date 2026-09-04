@@ -31,6 +31,7 @@ Solucion empresarial modular para API REST .NET, frontend Windows Forms con DevE
 - `docs/operations/SYNC-MASTER-BRANCH-DEPLOYMENT-CHECKLIST.md`: checklist de despliegue controlado para Sync Master/Sucursal.
 - `docs/operations/SYNC-MASTER-BRANCH-TROUBLESHOOTING.md`: diagnostico de eventos Pending, InProcess, Error, DeadLetter, duplicados y limites actuales.
 - `docs/operations/SAP-PURCHASE-ORDER-PILOT-PRODUCTION-RUNBOOK.md`: despliegue gradual, secretos, readiness, oleadas y rollback del flujo SAP Purchase Order hacia sucursales.
+- `docs/operations/BUSINESS-PARTNER-BIDIRECTIONAL-PILOT.md`: gates, activacion controlada, evidencia y rollback del piloto de clientes/proveedores Sucursal–central–sucursales, sin SAP.
 - `docs/FASE-1-BASE-TECNICA.md`: detalle de lo implementado en la Fase 1.
 - `docs/FASE-2-MULTIEMPRESA.md`: detalle de la arquitectura multiempresa y resolucion de tenant.
 - `docs/FASE-3-SEGURIDAD.md`: autenticacion JWT, roles, permisos y empresas por usuario.

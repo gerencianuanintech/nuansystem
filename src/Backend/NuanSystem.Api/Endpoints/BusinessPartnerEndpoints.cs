@@ -81,7 +81,7 @@ public static class BusinessPartnerEndpoints
             ISender sender,
             CancellationToken cancellationToken) =>
         {
-            var result = await sender.Send(new GetBusinessPartnerByIdQuery(id), cancellationToken);
+            var result = await sender.Send(new GetBusinessPartnerByIdQuery(id, "Customer"), cancellationToken);
             return result.ToHttpResult();
         })
         .RequireFormOperation("customers", "consult");
@@ -91,7 +91,7 @@ public static class BusinessPartnerEndpoints
             ISender sender,
             CancellationToken cancellationToken) =>
         {
-            var result = await sender.Send(new GetBusinessPartnerByIdQuery(id), cancellationToken);
+            var result = await sender.Send(new GetBusinessPartnerByIdQuery(id, "Supplier"), cancellationToken);
             return result.ToHttpResult();
         })
         .RequireFormOperation("suppliers", "consult");
@@ -140,7 +140,7 @@ public static class BusinessPartnerEndpoints
             CancellationToken cancellationToken) =>
         {
             var auditUser = user.GetAuditUser();
-            var result = await sender.Send(command with { Id = id, AuditUserId = auditUser.UserId, AuditUserName = auditUser.UserName }, cancellationToken);
+            var result = await sender.Send(command with { Id = id, AuditUserId = auditUser.UserId, AuditUserName = auditUser.UserName, ExpectedPartnerType = null }, cancellationToken);
             return result.ToHttpResult();
         })
         .RequirePermission(PermissionCodes.BusinessPartnersManage);
@@ -153,7 +153,7 @@ public static class BusinessPartnerEndpoints
             CancellationToken cancellationToken) =>
         {
             var auditUser = user.GetAuditUser();
-            var result = await sender.Send((command with { Id = id, PartnerType = command.PartnerType == "Both" ? "Both" : "Customer" }) with { AuditUserId = auditUser.UserId, AuditUserName = auditUser.UserName }, cancellationToken);
+            var result = await sender.Send(command with { Id = id, AuditUserId = auditUser.UserId, AuditUserName = auditUser.UserName, ExpectedPartnerType = "Customer" }, cancellationToken);
             return result.ToHttpResult();
         })
         .RequireFormOperation("customers", "update");
@@ -166,43 +166,46 @@ public static class BusinessPartnerEndpoints
             CancellationToken cancellationToken) =>
         {
             var auditUser = user.GetAuditUser();
-            var result = await sender.Send((command with { Id = id, PartnerType = command.PartnerType == "Both" ? "Both" : "Supplier" }) with { AuditUserId = auditUser.UserId, AuditUserName = auditUser.UserName }, cancellationToken);
+            var result = await sender.Send(command with { Id = id, AuditUserId = auditUser.UserId, AuditUserName = auditUser.UserName, ExpectedPartnerType = "Supplier" }, cancellationToken);
             return result.ToHttpResult();
         })
         .RequireFormOperation("suppliers", "update");
 
         app.MapDelete("/api/commercial/business-partners/{id:int}", async (
             int id,
+            DeleteBusinessPartnerRequest request,
             ISender sender,
             ClaimsPrincipal user,
             CancellationToken cancellationToken) =>
         {
             var auditUser = user.GetAuditUser();
-            var result = await sender.Send(new DeleteBusinessPartnerCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
+            var result = await sender.Send(new DeleteBusinessPartnerCommand(id, request.ExpectedRowVersion, auditUser.UserId, auditUser.UserName, ExpectedPartnerType: null), cancellationToken);
             return result.ToHttpResult();
         })
         .RequirePermission(PermissionCodes.BusinessPartnersManage);
 
         app.MapDelete("/api/commercial/customers/{id:int}", async (
             int id,
+            DeleteBusinessPartnerRequest request,
             ISender sender,
             ClaimsPrincipal user,
             CancellationToken cancellationToken) =>
         {
             var auditUser = user.GetAuditUser();
-            var result = await sender.Send(new DeleteBusinessPartnerCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
+            var result = await sender.Send(new DeleteBusinessPartnerCommand(id, request.ExpectedRowVersion, auditUser.UserId, auditUser.UserName, ExpectedPartnerType: "Customer"), cancellationToken);
             return result.ToHttpResult();
         })
         .RequireFormOperation("customers", "delete");
 
         app.MapDelete("/api/commercial/suppliers/{id:int}", async (
             int id,
+            DeleteBusinessPartnerRequest request,
             ISender sender,
             ClaimsPrincipal user,
             CancellationToken cancellationToken) =>
         {
             var auditUser = user.GetAuditUser();
-            var result = await sender.Send(new DeleteBusinessPartnerCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
+            var result = await sender.Send(new DeleteBusinessPartnerCommand(id, request.ExpectedRowVersion, auditUser.UserId, auditUser.UserName, ExpectedPartnerType: "Supplier"), cancellationToken);
             return result.ToHttpResult();
         })
         .RequireFormOperation("suppliers", "delete");
@@ -210,3 +213,5 @@ public static class BusinessPartnerEndpoints
         return app;
     }
 }
+
+public sealed record DeleteBusinessPartnerRequest(string ExpectedRowVersion);

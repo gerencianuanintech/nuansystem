@@ -38,7 +38,7 @@ partial class SyncProfileEditForm
     private LabelControl lblDescription;
     private MemoEdit memDescription;
     private LabelControl lblDirection;
-    private TextEdit txtDirection;
+    private ComboBoxEdit cboDirection;
     private LabelControl lblExecutionMode;
     private ComboBoxEdit cboExecutionMode;
     private LabelControl lblConflictStrategy;
@@ -56,6 +56,18 @@ partial class SyncProfileEditForm
     private LabelControl lblTimeoutUnit;
     private SeparatorControl sepStatus;
     private ToggleSwitch swIsActive;
+    private PanelControl pnlBusinessPartnerCodePolicy;
+    private LabelControl lblBusinessPartnerCodePolicyTitle;
+    private ToggleSwitch swSapCodePolicyEnabled;
+    private LabelControl lblSapCodePolicyEnabled;
+    private ComboBoxEdit cboSapPrefixMode;
+    private LabelControl lblSapPrefixMode;
+    private TextEdit txtPassportIdentificationTypeCode;
+    private LabelControl lblPassportIdentificationTypeCode;
+    private LabelControl lblCustomerNationalExample;
+    private LabelControl lblCustomerForeignExample;
+    private LabelControl lblSupplierNationalExample;
+    private LabelControl lblSupplierForeignExample;
     private LabelControl lblBranchesTitle;
     private SeparatorControl sepBranchesTitle;
     private NuanActionButton btnAddBranch;
@@ -190,7 +202,7 @@ partial class SyncProfileEditForm
         lblDescription = new LabelControl();
         memDescription = new MemoEdit();
         lblDirection = new LabelControl();
-        txtDirection = new TextEdit();
+        cboDirection = new ComboBoxEdit();
         lblExecutionMode = new LabelControl();
         cboExecutionMode = new ComboBoxEdit();
         lblConflictStrategy = new LabelControl();
@@ -208,6 +220,18 @@ partial class SyncProfileEditForm
         lblTimeoutUnit = new LabelControl();
         sepStatus = new SeparatorControl();
         swIsActive = new ToggleSwitch();
+        pnlBusinessPartnerCodePolicy = new PanelControl();
+        lblBusinessPartnerCodePolicyTitle = new LabelControl();
+        swSapCodePolicyEnabled = new ToggleSwitch();
+        lblSapCodePolicyEnabled = new LabelControl();
+        cboSapPrefixMode = new ComboBoxEdit();
+        lblSapPrefixMode = new LabelControl();
+        txtPassportIdentificationTypeCode = new TextEdit();
+        lblPassportIdentificationTypeCode = new LabelControl();
+        lblCustomerNationalExample = new LabelControl();
+        lblCustomerForeignExample = new LabelControl();
+        lblSupplierNationalExample = new LabelControl();
+        lblSupplierForeignExample = new LabelControl();
         pageBranches = new NavigationPage();
         lblBranchesTitle = new LabelControl();
         sepBranchesTitle = new SeparatorControl();
@@ -323,7 +347,7 @@ partial class SyncProfileEditForm
         ((System.ComponentModel.ISupportInitialize)txtCode.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtName.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)memDescription.Properties).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)txtDirection.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)cboDirection.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)cboExecutionMode.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)txtConflictStrategy.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)sepExecutionParameters).BeginInit();
@@ -333,6 +357,11 @@ partial class SyncProfileEditForm
         ((System.ComponentModel.ISupportInitialize)spnTimeoutMinutes.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)sepStatus).BeginInit();
         ((System.ComponentModel.ISupportInitialize)swIsActive.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)pnlBusinessPartnerCodePolicy).BeginInit();
+        pnlBusinessPartnerCodePolicy.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)swSapCodePolicyEnabled.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)cboSapPrefixMode.Properties).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)txtPassportIdentificationTypeCode.Properties).BeginInit();
         pageBranches.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)sepBranchesTitle).BeginInit();
         pageEntities.SuspendLayout();
@@ -355,9 +384,9 @@ partial class SyncProfileEditForm
         ((System.ComponentModel.ISupportInitialize)sepExecutionsTitle).BeginInit();
         ((System.ComponentModel.ISupportInitialize)cboExecutionsPageSize.Properties).BeginInit();
         SuspendLayout();
-        // 
+        //
         // btnCancelar
-        // 
+        //
         btnCancelar.Appearance.BackColor = Color.FromArgb(99, 110, 114);
         btnCancelar.Appearance.BorderColor = Color.FromArgb(99, 110, 114);
         btnCancelar.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -385,9 +414,9 @@ partial class SyncProfileEditForm
         btnCancelar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         btnCancelar.LookAndFeel.UseDefaultLookAndFeel = false;
         btnCancelar.TabIndex = 2;
-        // 
+        //
         // btnGuardar
-        // 
+        //
         btnGuardar.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnGuardar.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnGuardar.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -414,9 +443,9 @@ partial class SyncProfileEditForm
         btnGuardar.Location = new Point(832, 668);
         btnGuardar.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         btnGuardar.LookAndFeel.UseDefaultLookAndFeel = false;
-        // 
+        //
         // accordionNavigation
-        // 
+        //
         accordionNavigation.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
         accordionNavigation.Appearance.AccordionControl.BackColor = Color.White;
         accordionNavigation.Appearance.AccordionControl.Options.UseBackColor = true;
@@ -438,51 +467,51 @@ partial class SyncProfileEditForm
         accordionNavigation.ScrollBarMode = ScrollBarMode.Touch;
         accordionNavigation.Size = new Size(168, 637);
         accordionNavigation.TabIndex = 0;
-        // 
+        //
         // aceGeneral
-        // 
+        //
         aceGeneral.Name = "aceGeneral";
         aceGeneral.Style = ElementStyle.Item;
         aceGeneral.Text = "General";
-        // 
+        //
         // aceBranches
-        // 
+        //
         aceBranches.Name = "aceBranches";
         aceBranches.Style = ElementStyle.Item;
         aceBranches.Text = "Sucursales";
-        // 
+        //
         // aceEntities
-        // 
+        //
         aceEntities.Name = "aceEntities";
         aceEntities.Style = ElementStyle.Item;
         aceEntities.Text = "Entidades";
-        // 
+        //
         // aceDistribution
-        // 
+        //
         aceDistribution.Name = "aceDistribution";
         aceDistribution.Style = ElementStyle.Item;
         aceDistribution.Text = "Distribucion";
-        // 
+        //
         // aceSchedule
-        // 
+        //
         aceSchedule.Name = "aceSchedule";
         aceSchedule.Style = ElementStyle.Item;
         aceSchedule.Text = "Programacion";
-        // 
+        //
         // aceValidation
-        // 
+        //
         aceValidation.Name = "aceValidation";
         aceValidation.Style = ElementStyle.Item;
         aceValidation.Text = "Validacion";
-        // 
+        //
         // aceExecutions
-        // 
+        //
         aceExecutions.Name = "aceExecutions";
         aceExecutions.Style = ElementStyle.Item;
         aceExecutions.Text = "Ejecuciones";
-        // 
+        //
         // navigationFrame
-        // 
+        //
         navigationFrame.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         navigationFrame.Appearance.BackColor = Color.White;
         navigationFrame.Appearance.Font = new Font("Segoe UI", 9F);
@@ -502,9 +531,9 @@ partial class SyncProfileEditForm
         navigationFrame.Size = new Size(851, 637);
         navigationFrame.TabIndex = 3;
         navigationFrame.Text = "navigationFrame";
-        // 
+        //
         // pageGeneral
-        // 
+        //
         pageGeneral.Caption = "General";
         pageGeneral.Controls.Add(lblGeneralTitle);
         pageGeneral.Controls.Add(sepGeneralTitle);
@@ -517,7 +546,7 @@ partial class SyncProfileEditForm
         pageGeneral.Controls.Add(lblDescription);
         pageGeneral.Controls.Add(memDescription);
         pageGeneral.Controls.Add(lblDirection);
-        pageGeneral.Controls.Add(txtDirection);
+        pageGeneral.Controls.Add(cboDirection);
         pageGeneral.Controls.Add(lblExecutionMode);
         pageGeneral.Controls.Add(cboExecutionMode);
         pageGeneral.Controls.Add(lblConflictStrategy);
@@ -535,12 +564,13 @@ partial class SyncProfileEditForm
         pageGeneral.Controls.Add(lblTimeoutUnit);
         pageGeneral.Controls.Add(sepStatus);
         pageGeneral.Controls.Add(swIsActive);
+        pageGeneral.Controls.Add(pnlBusinessPartnerCodePolicy);
         pageGeneral.Font = new Font("Segoe UI", 9F);
         pageGeneral.Name = "pageGeneral";
         pageGeneral.Size = new Size(851, 637);
-        // 
+        //
         // lblGeneralTitle
-        // 
+        //
         lblGeneralTitle.Appearance.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
         lblGeneralTitle.Appearance.ForeColor = Color.FromArgb(0, 137, 111);
         lblGeneralTitle.Appearance.Options.UseFont = true;
@@ -550,18 +580,18 @@ partial class SyncProfileEditForm
         lblGeneralTitle.Size = new Size(109, 20);
         lblGeneralTitle.TabIndex = 0;
         lblGeneralTitle.Text = "Datos generales";
-        // 
+        //
         // sepGeneralTitle
-        // 
+        //
         sepGeneralTitle.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         sepGeneralTitle.LineColor = Color.FromArgb(0, 184, 148);
         sepGeneralTitle.Location = new Point(28, 54);
         sepGeneralTitle.Name = "sepGeneralTitle";
         sepGeneralTitle.Size = new Size(790, 18);
         sepGeneralTitle.TabIndex = 1;
-        // 
+        //
         // lblMasterCompany
-        // 
+        //
         lblMasterCompany.Appearance.Font = new Font("Segoe UI", 9F);
         lblMasterCompany.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblMasterCompany.Appearance.Options.UseFont = true;
@@ -571,9 +601,9 @@ partial class SyncProfileEditForm
         lblMasterCompany.Size = new Size(90, 15);
         lblMasterCompany.TabIndex = 2;
         lblMasterCompany.Text = "Empresa maestra";
-        // 
+        //
         // txtMasterCompany
-        // 
+        //
         txtMasterCompany.EditValue = "NuanSystem S.A.";
         txtMasterCompany.Location = new Point(230, 88);
         txtMasterCompany.Name = "txtMasterCompany";
@@ -582,9 +612,9 @@ partial class SyncProfileEditForm
         txtMasterCompany.Properties.ReadOnly = true;
         txtMasterCompany.Size = new Size(360, 22);
         txtMasterCompany.TabIndex = 3;
-        // 
+        //
         // lblCode
-        // 
+        //
         lblCode.Appearance.Font = new Font("Segoe UI", 9F);
         lblCode.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblCode.Appearance.Options.UseFont = true;
@@ -594,9 +624,9 @@ partial class SyncProfileEditForm
         lblCode.Size = new Size(39, 15);
         lblCode.TabIndex = 4;
         lblCode.Text = "Codigo";
-        // 
+        //
         // txtCode
-        // 
+        //
         txtCode.EditValue = "SYNC-001";
         txtCode.Location = new Point(230, 128);
         txtCode.Name = "txtCode";
@@ -604,9 +634,9 @@ partial class SyncProfileEditForm
         txtCode.Properties.Appearance.Options.UseFont = true;
         txtCode.Size = new Size(360, 22);
         txtCode.TabIndex = 5;
-        // 
+        //
         // lblName
-        // 
+        //
         lblName.Appearance.Font = new Font("Segoe UI", 9F);
         lblName.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblName.Appearance.Options.UseFont = true;
@@ -616,9 +646,9 @@ partial class SyncProfileEditForm
         lblName.Size = new Size(27, 15);
         lblName.TabIndex = 6;
         lblName.Text = "Perfil";
-        // 
+        //
         // txtName
-        // 
+        //
         txtName.EditValue = "Clientes y Proveedores";
         txtName.Location = new Point(230, 168);
         txtName.Name = "txtName";
@@ -626,9 +656,9 @@ partial class SyncProfileEditForm
         txtName.Properties.Appearance.Options.UseFont = true;
         txtName.Size = new Size(360, 22);
         txtName.TabIndex = 7;
-        // 
+        //
         // lblDescription
-        // 
+        //
         lblDescription.Appearance.Font = new Font("Segoe UI", 9F);
         lblDescription.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblDescription.Appearance.Options.UseFont = true;
@@ -638,9 +668,9 @@ partial class SyncProfileEditForm
         lblDescription.Size = new Size(62, 15);
         lblDescription.TabIndex = 8;
         lblDescription.Text = "Descripcion";
-        // 
+        //
         // memDescription
-        // 
+        //
         memDescription.EditValue = "Sincroniza informacion maestra desde la empresa principal hacia las sucursales.";
         memDescription.Location = new Point(230, 208);
         memDescription.Name = "memDescription";
@@ -648,9 +678,9 @@ partial class SyncProfileEditForm
         memDescription.Properties.Appearance.Options.UseFont = true;
         memDescription.Size = new Size(360, 84);
         memDescription.TabIndex = 9;
-        // 
+        //
         // lblDirection
-        // 
+        //
         lblDirection.Appearance.Font = new Font("Segoe UI", 9F);
         lblDirection.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblDirection.Appearance.Options.UseFont = true;
@@ -660,20 +690,21 @@ partial class SyncProfileEditForm
         lblDirection.Size = new Size(50, 15);
         lblDirection.TabIndex = 10;
         lblDirection.Text = "Direccion";
-        // 
-        // txtDirection
-        // 
-        txtDirection.EditValue = "MasterToBranch";
-        txtDirection.Location = new Point(230, 302);
-        txtDirection.Name = "txtDirection";
-        txtDirection.Properties.Appearance.Font = new Font("Segoe UI", 9F);
-        txtDirection.Properties.Appearance.Options.UseFont = true;
-        txtDirection.Properties.ReadOnly = true;
-        txtDirection.Size = new Size(360, 22);
-        txtDirection.TabIndex = 11;
-        // 
+        //
+        // cboDirection
+        //
+        cboDirection.EditValue = "Central origen → sucursales destino";
+        cboDirection.Location = new Point(230, 302);
+        cboDirection.Name = "cboDirection";
+        cboDirection.Properties.Appearance.Font = new Font("Segoe UI", 9F);
+        cboDirection.Properties.Appearance.Options.UseFont = true;
+        cboDirection.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        cboDirection.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
+        cboDirection.Size = new Size(360, 22);
+        cboDirection.TabIndex = 11;
+        //
         // lblExecutionMode
-        // 
+        //
         lblExecutionMode.Appearance.Font = new Font("Segoe UI", 9F);
         lblExecutionMode.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblExecutionMode.Appearance.Options.UseFont = true;
@@ -683,9 +714,9 @@ partial class SyncProfileEditForm
         lblExecutionMode.Size = new Size(32, 15);
         lblExecutionMode.TabIndex = 12;
         lblExecutionMode.Text = "Modo";
-        // 
+        //
         // cboExecutionMode
-        // 
+        //
         cboExecutionMode.EditValue = "Full";
         cboExecutionMode.Location = new Point(230, 338);
         cboExecutionMode.Name = "cboExecutionMode";
@@ -696,9 +727,9 @@ partial class SyncProfileEditForm
         cboExecutionMode.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
         cboExecutionMode.Size = new Size(360, 22);
         cboExecutionMode.TabIndex = 13;
-        // 
+        //
         // lblConflictStrategy
-        // 
+        //
         lblConflictStrategy.Appearance.Font = new Font("Segoe UI", 9F);
         lblConflictStrategy.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblConflictStrategy.Appearance.Options.UseFont = true;
@@ -708,9 +739,9 @@ partial class SyncProfileEditForm
         lblConflictStrategy.Size = new Size(117, 15);
         lblConflictStrategy.TabIndex = 14;
         lblConflictStrategy.Text = "Estrategia de conflicto";
-        // 
+        //
         // txtConflictStrategy
-        // 
+        //
         txtConflictStrategy.EditValue = "MasterWins";
         txtConflictStrategy.Location = new Point(230, 374);
         txtConflictStrategy.Name = "txtConflictStrategy";
@@ -719,18 +750,18 @@ partial class SyncProfileEditForm
         txtConflictStrategy.Properties.ReadOnly = true;
         txtConflictStrategy.Size = new Size(360, 22);
         txtConflictStrategy.TabIndex = 15;
-        // 
+        //
         // sepExecutionParameters
-        // 
+        //
         sepExecutionParameters.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         sepExecutionParameters.LineColor = Color.FromArgb(226, 232, 240);
         sepExecutionParameters.Location = new Point(28, 410);
         sepExecutionParameters.Name = "sepExecutionParameters";
         sepExecutionParameters.Size = new Size(790, 18);
         sepExecutionParameters.TabIndex = 16;
-        // 
+        //
         // lblBatchSize
-        // 
+        //
         lblBatchSize.Appearance.Font = new Font("Segoe UI", 9F);
         lblBatchSize.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblBatchSize.Appearance.Options.UseFont = true;
@@ -740,9 +771,9 @@ partial class SyncProfileEditForm
         lblBatchSize.Size = new Size(30, 15);
         lblBatchSize.TabIndex = 17;
         lblBatchSize.Text = "Batch";
-        // 
+        //
         // spnBatchSize
-        // 
+        //
         spnBatchSize.EditValue = new decimal(new int[] { 500, 0, 0, 0 });
         spnBatchSize.Location = new Point(230, 434);
         spnBatchSize.Name = "spnBatchSize";
@@ -755,9 +786,9 @@ partial class SyncProfileEditForm
         spnBatchSize.Properties.MinValue = new decimal(new int[] { 1, 0, 0, 0 });
         spnBatchSize.Size = new Size(120, 22);
         spnBatchSize.TabIndex = 18;
-        // 
+        //
         // lblMaxRetries
-        // 
+        //
         lblMaxRetries.Appearance.Font = new Font("Segoe UI", 9F);
         lblMaxRetries.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblMaxRetries.Appearance.Options.UseFont = true;
@@ -767,9 +798,9 @@ partial class SyncProfileEditForm
         lblMaxRetries.Size = new Size(107, 15);
         lblMaxRetries.TabIndex = 19;
         lblMaxRetries.Text = "Reintentos maximos";
-        // 
+        //
         // spnMaxRetries
-        // 
+        //
         spnMaxRetries.EditValue = new decimal(new int[] { 3, 0, 0, 0 });
         spnMaxRetries.Location = new Point(230, 470);
         spnMaxRetries.Name = "spnMaxRetries";
@@ -781,9 +812,9 @@ partial class SyncProfileEditForm
         spnMaxRetries.Properties.MaxValue = new decimal(new int[] { 10, 0, 0, 0 });
         spnMaxRetries.Size = new Size(120, 22);
         spnMaxRetries.TabIndex = 20;
-        // 
+        //
         // lblRetryDelay
-        // 
+        //
         lblRetryDelay.Appearance.Font = new Font("Segoe UI", 9F);
         lblRetryDelay.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblRetryDelay.Appearance.Options.UseFont = true;
@@ -793,9 +824,9 @@ partial class SyncProfileEditForm
         lblRetryDelay.Size = new Size(120, 15);
         lblRetryDelay.TabIndex = 21;
         lblRetryDelay.Text = "Espera entre reintentos";
-        // 
+        //
         // spnRetryDelaySeconds
-        // 
+        //
         spnRetryDelaySeconds.EditValue = new decimal(new int[] { 30, 0, 0, 0 });
         spnRetryDelaySeconds.Location = new Point(230, 506);
         spnRetryDelaySeconds.Name = "spnRetryDelaySeconds";
@@ -807,9 +838,9 @@ partial class SyncProfileEditForm
         spnRetryDelaySeconds.Properties.MaxValue = new decimal(new int[] { 3600, 0, 0, 0 });
         spnRetryDelaySeconds.Size = new Size(120, 22);
         spnRetryDelaySeconds.TabIndex = 22;
-        // 
+        //
         // lblRetryDelayUnit
-        // 
+        //
         lblRetryDelayUnit.Appearance.Font = new Font("Segoe UI", 9F);
         lblRetryDelayUnit.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblRetryDelayUnit.Appearance.Options.UseFont = true;
@@ -819,9 +850,9 @@ partial class SyncProfileEditForm
         lblRetryDelayUnit.Size = new Size(51, 15);
         lblRetryDelayUnit.TabIndex = 23;
         lblRetryDelayUnit.Text = "segundos";
-        // 
+        //
         // lblTimeout
-        // 
+        //
         lblTimeout.Appearance.Font = new Font("Segoe UI", 9F);
         lblTimeout.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblTimeout.Appearance.Options.UseFont = true;
@@ -831,9 +862,9 @@ partial class SyncProfileEditForm
         lblTimeout.Size = new Size(157, 15);
         lblTimeout.TabIndex = 24;
         lblTimeout.Text = "Tiempo maximo de ejecucion";
-        // 
+        //
         // spnTimeoutMinutes
-        // 
+        //
         spnTimeoutMinutes.EditValue = new decimal(new int[] { 30, 0, 0, 0 });
         spnTimeoutMinutes.Location = new Point(230, 542);
         spnTimeoutMinutes.Name = "spnTimeoutMinutes";
@@ -846,9 +877,9 @@ partial class SyncProfileEditForm
         spnTimeoutMinutes.Properties.MinValue = new decimal(new int[] { 1, 0, 0, 0 });
         spnTimeoutMinutes.Size = new Size(120, 22);
         spnTimeoutMinutes.TabIndex = 25;
-        // 
+        //
         // lblTimeoutUnit
-        // 
+        //
         lblTimeoutUnit.Appearance.Font = new Font("Segoe UI", 9F);
         lblTimeoutUnit.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblTimeoutUnit.Appearance.Options.UseFont = true;
@@ -858,18 +889,18 @@ partial class SyncProfileEditForm
         lblTimeoutUnit.Size = new Size(44, 15);
         lblTimeoutUnit.TabIndex = 26;
         lblTimeoutUnit.Text = "minutos";
-        // 
+        //
         // sepStatus
-        // 
+        //
         sepStatus.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         sepStatus.LineColor = Color.FromArgb(226, 232, 240);
         sepStatus.Location = new Point(28, 574);
         sepStatus.Name = "sepStatus";
         sepStatus.Size = new Size(790, 18);
         sepStatus.TabIndex = 27;
-        // 
+        //
         // swIsActive
-        // 
+        //
         swIsActive.EditValue = true;
         swIsActive.Location = new Point(633, 88);
         swIsActive.Name = "swIsActive";
@@ -879,9 +910,129 @@ partial class SyncProfileEditForm
         swIsActive.Properties.OnText = "Activo";
         swIsActive.Size = new Size(160, 20);
         swIsActive.TabIndex = 29;
-        // 
+        //
+        // pnlBusinessPartnerCodePolicy
+        //
+        pnlBusinessPartnerCodePolicy.Appearance.BackColor = Color.FromArgb(248, 250, 252);
+        pnlBusinessPartnerCodePolicy.Appearance.Options.UseBackColor = true;
+        pnlBusinessPartnerCodePolicy.Controls.Add(lblBusinessPartnerCodePolicyTitle);
+        pnlBusinessPartnerCodePolicy.Controls.Add(lblSapCodePolicyEnabled);
+        pnlBusinessPartnerCodePolicy.Controls.Add(swSapCodePolicyEnabled);
+        pnlBusinessPartnerCodePolicy.Controls.Add(lblSapPrefixMode);
+        pnlBusinessPartnerCodePolicy.Controls.Add(cboSapPrefixMode);
+        pnlBusinessPartnerCodePolicy.Controls.Add(lblPassportIdentificationTypeCode);
+        pnlBusinessPartnerCodePolicy.Controls.Add(txtPassportIdentificationTypeCode);
+        pnlBusinessPartnerCodePolicy.Controls.Add(lblCustomerNationalExample);
+        pnlBusinessPartnerCodePolicy.Controls.Add(lblCustomerForeignExample);
+        pnlBusinessPartnerCodePolicy.Controls.Add(lblSupplierNationalExample);
+        pnlBusinessPartnerCodePolicy.Controls.Add(lblSupplierForeignExample);
+        pnlBusinessPartnerCodePolicy.Location = new Point(610, 124);
+        pnlBusinessPartnerCodePolicy.Name = "pnlBusinessPartnerCodePolicy";
+        pnlBusinessPartnerCodePolicy.Padding = new Padding(14);
+        pnlBusinessPartnerCodePolicy.Size = new Size(208, 426);
+        pnlBusinessPartnerCodePolicy.TabIndex = 30;
+        pnlBusinessPartnerCodePolicy.Visible = false;
+        //
+        // lblBusinessPartnerCodePolicyTitle
+        //
+        lblBusinessPartnerCodePolicyTitle.Appearance.Font = new Font("Segoe UI Semibold", 10F, FontStyle.Bold);
+        lblBusinessPartnerCodePolicyTitle.Appearance.ForeColor = Color.FromArgb(0, 137, 111);
+        lblBusinessPartnerCodePolicyTitle.Appearance.Options.UseFont = true;
+        lblBusinessPartnerCodePolicyTitle.Appearance.Options.UseForeColor = true;
+        lblBusinessPartnerCodePolicyTitle.Location = new Point(14, 14);
+        lblBusinessPartnerCodePolicyTitle.Name = "lblBusinessPartnerCodePolicyTitle";
+        lblBusinessPartnerCodePolicyTitle.Size = new Size(143, 17);
+        lblBusinessPartnerCodePolicyTitle.TabIndex = 0;
+        lblBusinessPartnerCodePolicyTitle.Text = "Códigos SAP de socios";
+        //
+        // lblSapCodePolicyEnabled
+        //
+        lblSapCodePolicyEnabled.Location = new Point(14, 48);
+        lblSapCodePolicyEnabled.Name = "lblSapCodePolicyEnabled";
+        lblSapCodePolicyEnabled.Size = new Size(43, 15);
+        lblSapCodePolicyEnabled.TabIndex = 1;
+        lblSapCodePolicyEnabled.Text = "Política";
+        //
+        // swSapCodePolicyEnabled
+        //
+        swSapCodePolicyEnabled.Location = new Point(82, 45);
+        swSapCodePolicyEnabled.Name = "swSapCodePolicyEnabled";
+        swSapCodePolicyEnabled.Properties.OffText = "Inactiva";
+        swSapCodePolicyEnabled.Properties.OnText = "Activa";
+        swSapCodePolicyEnabled.Size = new Size(110, 20);
+        swSapCodePolicyEnabled.TabIndex = 2;
+        //
+        // lblSapPrefixMode
+        //
+        lblSapPrefixMode.Location = new Point(14, 82);
+        lblSapPrefixMode.Name = "lblSapPrefixMode";
+        lblSapPrefixMode.Size = new Size(89, 15);
+        lblSapPrefixMode.TabIndex = 3;
+        lblSapPrefixMode.Text = "Modo de prefijo";
+        //
+        // cboSapPrefixMode
+        //
+        cboSapPrefixMode.Location = new Point(14, 103);
+        cboSapPrefixMode.Name = "cboSapPrefixMode";
+        cboSapPrefixMode.Properties.Buttons.AddRange(new EditorButton[] { new EditorButton(ButtonPredefines.Combo) });
+        cboSapPrefixMode.Properties.Items.AddRange(new object[] { "NationalForeign", "RoleOnly" });
+        cboSapPrefixMode.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
+        cboSapPrefixMode.Size = new Size(178, 22);
+        cboSapPrefixMode.TabIndex = 4;
+        //
+        // lblPassportIdentificationTypeCode
+        //
+        lblPassportIdentificationTypeCode.Location = new Point(14, 140);
+        lblPassportIdentificationTypeCode.Name = "lblPassportIdentificationTypeCode";
+        lblPassportIdentificationTypeCode.Size = new Size(127, 15);
+        lblPassportIdentificationTypeCode.TabIndex = 5;
+        lblPassportIdentificationTypeCode.Text = "Tipo ID para extranjero";
+        //
+        // txtPassportIdentificationTypeCode
+        //
+        txtPassportIdentificationTypeCode.Location = new Point(14, 161);
+        txtPassportIdentificationTypeCode.Name = "txtPassportIdentificationTypeCode";
+        txtPassportIdentificationTypeCode.Size = new Size(178, 22);
+        txtPassportIdentificationTypeCode.TabIndex = 6;
+        //
+        // lblCustomerNationalExample
+        //
+        lblCustomerNationalExample.AutoSizeMode = LabelAutoSizeMode.None;
+        lblCustomerNationalExample.Location = new Point(14, 200);
+        lblCustomerNationalExample.Name = "lblCustomerNationalExample";
+        lblCustomerNationalExample.Size = new Size(178, 36);
+        lblCustomerNationalExample.TabIndex = 7;
+        lblCustomerNationalExample.Text = "Cliente nacional: —";
+        //
+        // lblCustomerForeignExample
+        //
+        lblCustomerForeignExample.AutoSizeMode = LabelAutoSizeMode.None;
+        lblCustomerForeignExample.Location = new Point(14, 242);
+        lblCustomerForeignExample.Name = "lblCustomerForeignExample";
+        lblCustomerForeignExample.Size = new Size(178, 36);
+        lblCustomerForeignExample.TabIndex = 8;
+        lblCustomerForeignExample.Text = "Cliente extranjero: —";
+        //
+        // lblSupplierNationalExample
+        //
+        lblSupplierNationalExample.AutoSizeMode = LabelAutoSizeMode.None;
+        lblSupplierNationalExample.Location = new Point(14, 284);
+        lblSupplierNationalExample.Name = "lblSupplierNationalExample";
+        lblSupplierNationalExample.Size = new Size(178, 36);
+        lblSupplierNationalExample.TabIndex = 9;
+        lblSupplierNationalExample.Text = "Proveedor nacional: —";
+        //
+        // lblSupplierForeignExample
+        //
+        lblSupplierForeignExample.AutoSizeMode = LabelAutoSizeMode.None;
+        lblSupplierForeignExample.Location = new Point(14, 326);
+        lblSupplierForeignExample.Name = "lblSupplierForeignExample";
+        lblSupplierForeignExample.Size = new Size(178, 50);
+        lblSupplierForeignExample.TabIndex = 10;
+        lblSupplierForeignExample.Text = "Proveedor extranjero: —";
+        //
         // pageBranches
-        // 
+        //
         pageBranches.Caption = "Sucursales";
         pageBranches.Controls.Add(lblBranchesTitle);
         pageBranches.Controls.Add(sepBranchesTitle);
@@ -896,9 +1047,9 @@ partial class SyncProfileEditForm
         pageBranches.Font = new Font("Segoe UI", 9F);
         pageBranches.Name = "pageBranches";
         pageBranches.Size = new Size(851, 637);
-        // 
+        //
         // lblBranchesTitle
-        // 
+        //
         lblBranchesTitle.Appearance.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
         lblBranchesTitle.Appearance.ForeColor = Color.FromArgb(0, 137, 111);
         lblBranchesTitle.Appearance.Options.UseFont = true;
@@ -908,18 +1059,18 @@ partial class SyncProfileEditForm
         lblBranchesTitle.Size = new Size(125, 20);
         lblBranchesTitle.TabIndex = 0;
         lblBranchesTitle.Text = "Sucursales destino";
-        // 
+        //
         // sepBranchesTitle
-        // 
+        //
         sepBranchesTitle.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         sepBranchesTitle.LineColor = Color.FromArgb(0, 184, 148);
         sepBranchesTitle.Location = new Point(28, 54);
         sepBranchesTitle.Name = "sepBranchesTitle";
         sepBranchesTitle.Size = new Size(790, 18);
         sepBranchesTitle.TabIndex = 1;
-        // 
+        //
         // btnAddBranch
-        // 
+        //
         btnAddBranch.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnAddBranch.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnAddBranch.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -955,9 +1106,9 @@ partial class SyncProfileEditForm
         btnAddBranch.Size = new Size(100, 26);
         btnAddBranch.TabIndex = 2;
         btnAddBranch.Text = "Agregar";
-        // 
+        //
         // btnEditBranch
-        // 
+        //
         btnEditBranch.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnEditBranch.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnEditBranch.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -993,9 +1144,9 @@ partial class SyncProfileEditForm
         btnEditBranch.Size = new Size(100, 26);
         btnEditBranch.TabIndex = 3;
         btnEditBranch.Text = "Editar";
-        // 
+        //
         // btnRemoveBranch
-        // 
+        //
         btnRemoveBranch.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnRemoveBranch.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnRemoveBranch.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1031,9 +1182,9 @@ partial class SyncProfileEditForm
         btnRemoveBranch.Size = new Size(100, 26);
         btnRemoveBranch.TabIndex = 4;
         btnRemoveBranch.Text = "Quitar";
-        // 
+        //
         // btnActivateBranch
-        // 
+        //
         btnActivateBranch.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnActivateBranch.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnActivateBranch.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1069,9 +1220,9 @@ partial class SyncProfileEditForm
         btnActivateBranch.Size = new Size(100, 26);
         btnActivateBranch.TabIndex = 5;
         btnActivateBranch.Text = "Activar";
-        // 
+        //
         // btnDeactivateBranch
-        // 
+        //
         btnDeactivateBranch.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnDeactivateBranch.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnDeactivateBranch.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1107,9 +1258,9 @@ partial class SyncProfileEditForm
         btnDeactivateBranch.Size = new Size(100, 26);
         btnDeactivateBranch.TabIndex = 6;
         btnDeactivateBranch.Text = "Desactivar";
-        // 
+        //
         // btnRefreshBranches
-        // 
+        //
         btnRefreshBranches.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnRefreshBranches.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnRefreshBranches.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1145,9 +1296,9 @@ partial class SyncProfileEditForm
         btnRefreshBranches.Size = new Size(100, 26);
         btnRefreshBranches.TabIndex = 7;
         btnRefreshBranches.Text = "Refrescar";
-        // 
+        //
         // grdBranches
-        // 
+        //
         grdBranches.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         grdBranches.FormKey = "sync-profile-branches";
         grdBranches.GridName = "BranchesGrid";
@@ -1156,9 +1307,9 @@ partial class SyncProfileEditForm
         grdBranches.ShowPagination = false;
         grdBranches.Size = new Size(790, 418);
         grdBranches.TabIndex = 8;
-        // 
+        //
         // lblBranchesTotal
-        // 
+        //
         lblBranchesTotal.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         lblBranchesTotal.Appearance.Font = new Font("Segoe UI", 9F);
         lblBranchesTotal.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
@@ -1169,9 +1320,9 @@ partial class SyncProfileEditForm
         lblBranchesTotal.Size = new Size(96, 15);
         lblBranchesTotal.TabIndex = 10;
         lblBranchesTotal.Text = "Total: 0 sucursales";
-        // 
+        //
         // pageEntities
-        // 
+        //
         pageEntities.Caption = "Entidades";
         pageEntities.Controls.Add(lblEntitiesTitle);
         pageEntities.Controls.Add(sepEntitiesTitle);
@@ -1188,9 +1339,9 @@ partial class SyncProfileEditForm
         pageEntities.Font = new Font("Segoe UI", 9F);
         pageEntities.Name = "pageEntities";
         pageEntities.Size = new Size(851, 637);
-        // 
+        //
         // lblEntitiesTitle
-        // 
+        //
         lblEntitiesTitle.Appearance.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
         lblEntitiesTitle.Appearance.ForeColor = Color.FromArgb(0, 137, 111);
         lblEntitiesTitle.Appearance.Options.UseFont = true;
@@ -1200,18 +1351,18 @@ partial class SyncProfileEditForm
         lblEntitiesTitle.Size = new Size(159, 20);
         lblEntitiesTitle.TabIndex = 0;
         lblEntitiesTitle.Text = "Entidades configuradas";
-        // 
+        //
         // sepEntitiesTitle
-        // 
+        //
         sepEntitiesTitle.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         sepEntitiesTitle.LineColor = Color.FromArgb(0, 184, 148);
         sepEntitiesTitle.Location = new Point(28, 54);
         sepEntitiesTitle.Name = "sepEntitiesTitle";
         sepEntitiesTitle.Size = new Size(790, 18);
         sepEntitiesTitle.TabIndex = 2;
-        // 
+        //
         // btnAddEntity
-        // 
+        //
         btnAddEntity.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnAddEntity.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnAddEntity.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1247,9 +1398,9 @@ partial class SyncProfileEditForm
         btnAddEntity.Size = new Size(100, 26);
         btnAddEntity.TabIndex = 3;
         btnAddEntity.Text = "Agregar";
-        // 
+        //
         // btnEditEntity
-        // 
+        //
         btnEditEntity.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnEditEntity.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnEditEntity.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1285,9 +1436,9 @@ partial class SyncProfileEditForm
         btnEditEntity.Size = new Size(100, 26);
         btnEditEntity.TabIndex = 4;
         btnEditEntity.Text = "Editar";
-        // 
+        //
         // btnRemoveEntity
-        // 
+        //
         btnRemoveEntity.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnRemoveEntity.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnRemoveEntity.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1323,9 +1474,9 @@ partial class SyncProfileEditForm
         btnRemoveEntity.Size = new Size(100, 26);
         btnRemoveEntity.TabIndex = 5;
         btnRemoveEntity.Text = "Quitar";
-        // 
+        //
         // btnMoveEntityUp
-        // 
+        //
         btnMoveEntityUp.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnMoveEntityUp.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnMoveEntityUp.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1361,9 +1512,9 @@ partial class SyncProfileEditForm
         btnMoveEntityUp.Size = new Size(100, 26);
         btnMoveEntityUp.TabIndex = 6;
         btnMoveEntityUp.Text = "Subir";
-        // 
+        //
         // btnMoveEntityDown
-        // 
+        //
         btnMoveEntityDown.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnMoveEntityDown.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnMoveEntityDown.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1399,9 +1550,9 @@ partial class SyncProfileEditForm
         btnMoveEntityDown.Size = new Size(100, 26);
         btnMoveEntityDown.TabIndex = 7;
         btnMoveEntityDown.Text = "Bajar";
-        // 
+        //
         // btnActivateEntity
-        // 
+        //
         btnActivateEntity.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnActivateEntity.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnActivateEntity.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1437,9 +1588,9 @@ partial class SyncProfileEditForm
         btnActivateEntity.Size = new Size(100, 26);
         btnActivateEntity.TabIndex = 8;
         btnActivateEntity.Text = "Activar";
-        // 
+        //
         // btnDeactivateEntity
-        // 
+        //
         btnDeactivateEntity.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnDeactivateEntity.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnDeactivateEntity.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1475,9 +1626,9 @@ partial class SyncProfileEditForm
         btnDeactivateEntity.Size = new Size(100, 26);
         btnDeactivateEntity.TabIndex = 9;
         btnDeactivateEntity.Text = "Desactivar";
-        // 
+        //
         // grdEntities
-        // 
+        //
         grdEntities.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         grdEntities.FormKey = "sync-profile-entities";
         grdEntities.GridName = "EntitiesGrid";
@@ -1486,9 +1637,9 @@ partial class SyncProfileEditForm
         grdEntities.ShowPagination = false;
         grdEntities.Size = new Size(790, 386);
         grdEntities.TabIndex = 10;
-        // 
+        //
         // lblEntitiesInfo
-        // 
+        //
         lblEntitiesInfo.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lblEntitiesInfo.Appearance.Font = new Font("Segoe UI", 8.5F);
         lblEntitiesInfo.Appearance.ForeColor = Color.FromArgb(100, 112, 132);
@@ -1500,9 +1651,9 @@ partial class SyncProfileEditForm
         lblEntitiesInfo.Size = new Size(790, 34);
         lblEntitiesInfo.TabIndex = 11;
         lblEntitiesInfo.Text = "Las entidades activas participan en la ejecución según el orden configurado. Use el diálogo para definir campos técnicos y capacidades.";
-        // 
+        //
         // lblEntitiesTotal
-        // 
+        //
         lblEntitiesTotal.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         lblEntitiesTotal.Appearance.Font = new Font("Segoe UI", 9F);
         lblEntitiesTotal.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
@@ -1513,9 +1664,9 @@ partial class SyncProfileEditForm
         lblEntitiesTotal.Size = new Size(93, 15);
         lblEntitiesTotal.TabIndex = 12;
         lblEntitiesTotal.Text = "Total: 0 entidades";
-        // 
+        //
         // pageDistribution
-        // 
+        //
         pageDistribution.Caption = "Distribución";
         pageDistribution.Controls.Add(lblDistributionTitle);
         pageDistribution.Controls.Add(sepDistributionTitle);
@@ -1530,9 +1681,9 @@ partial class SyncProfileEditForm
         pageDistribution.Font = new Font("Segoe UI", 9F);
         pageDistribution.Name = "pageDistribution";
         pageDistribution.Size = new Size(851, 637);
-        // 
+        //
         // lblDistributionTitle
-        // 
+        //
         lblDistributionTitle.Appearance.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
         lblDistributionTitle.Appearance.ForeColor = Color.FromArgb(0, 137, 111);
         lblDistributionTitle.Appearance.Options.UseFont = true;
@@ -1542,18 +1693,18 @@ partial class SyncProfileEditForm
         lblDistributionTitle.Size = new Size(174, 20);
         lblDistributionTitle.TabIndex = 0;
         lblDistributionTitle.Text = "Distribución de entidades";
-        // 
+        //
         // sepDistributionTitle
-        // 
+        //
         sepDistributionTitle.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         sepDistributionTitle.LineColor = Color.FromArgb(0, 184, 148);
         sepDistributionTitle.Location = new Point(28, 54);
         sepDistributionTitle.Name = "sepDistributionTitle";
         sepDistributionTitle.Size = new Size(790, 18);
         sepDistributionTitle.TabIndex = 2;
-        // 
+        //
         // btnEnableDistribution
-        // 
+        //
         btnEnableDistribution.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnEnableDistribution.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnEnableDistribution.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1589,9 +1740,9 @@ partial class SyncProfileEditForm
         btnEnableDistribution.Size = new Size(100, 26);
         btnEnableDistribution.TabIndex = 3;
         btnEnableDistribution.Text = "Habilitar";
-        // 
+        //
         // btnDisableDistribution
-        // 
+        //
         btnDisableDistribution.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnDisableDistribution.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnDisableDistribution.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1627,9 +1778,9 @@ partial class SyncProfileEditForm
         btnDisableDistribution.Size = new Size(106, 26);
         btnDisableDistribution.TabIndex = 4;
         btnDisableDistribution.Text = "Deshabilitar";
-        // 
+        //
         // btnConfigureDistributionBatch
-        // 
+        //
         btnConfigureDistributionBatch.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnConfigureDistributionBatch.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnConfigureDistributionBatch.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1665,9 +1816,9 @@ partial class SyncProfileEditForm
         btnConfigureDistributionBatch.Size = new Size(140, 26);
         btnConfigureDistributionBatch.TabIndex = 5;
         btnConfigureDistributionBatch.Text = "Configurar política";
-        // 
+        //
         // btnEnableAllDistributions
-        // 
+        //
         btnEnableAllDistributions.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnEnableAllDistributions.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnEnableAllDistributions.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1703,9 +1854,9 @@ partial class SyncProfileEditForm
         btnEnableAllDistributions.Size = new Size(112, 26);
         btnEnableAllDistributions.TabIndex = 6;
         btnEnableAllDistributions.Text = "Habilitar todos";
-        // 
+        //
         // btnDisableAllDistributions
-        // 
+        //
         btnDisableAllDistributions.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnDisableAllDistributions.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnDisableAllDistributions.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1741,9 +1892,9 @@ partial class SyncProfileEditForm
         btnDisableAllDistributions.Size = new Size(126, 26);
         btnDisableAllDistributions.TabIndex = 7;
         btnDisableAllDistributions.Text = "Deshabilitar todos";
-        // 
+        //
         // btnRefreshDistribution
-        // 
+        //
         btnRefreshDistribution.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnRefreshDistribution.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnRefreshDistribution.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -1779,9 +1930,9 @@ partial class SyncProfileEditForm
         btnRefreshDistribution.Size = new Size(100, 26);
         btnRefreshDistribution.TabIndex = 8;
         btnRefreshDistribution.Text = "Refrescar";
-        // 
+        //
         // grdDistribution
-        // 
+        //
         grdDistribution.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         grdDistribution.FormKey = "sync-profile-distribution";
         grdDistribution.GridName = "DistributionGrid";
@@ -1791,9 +1942,9 @@ partial class SyncProfileEditForm
         grdDistribution.ShowPagination = false;
         grdDistribution.Size = new Size(790, 420);
         grdDistribution.TabIndex = 9;
-        // 
+        //
         // lblDistributionInfo
-        // 
+        //
         lblDistributionInfo.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lblDistributionInfo.Appearance.Font = new Font("Segoe UI", 8.5F);
         lblDistributionInfo.Appearance.ForeColor = Color.FromArgb(100, 112, 132);
@@ -1805,9 +1956,9 @@ partial class SyncProfileEditForm
         lblDistributionInfo.Size = new Size(790, 34);
         lblDistributionInfo.TabIndex = 10;
         lblDistributionInfo.Text = "Seleccione una combinación entidad-sucursal y pulse Configurar política para editar modo, selección, regla y batch.";
-        // 
+        //
         // pageSchedule
-        // 
+        //
         pageSchedule.Caption = "Programacion";
         pageSchedule.Controls.Add(lblScheduleTitle);
         pageSchedule.Controls.Add(sepScheduleTitle);
@@ -1840,9 +1991,9 @@ partial class SyncProfileEditForm
         pageSchedule.Font = new Font("Segoe UI", 9F);
         pageSchedule.Name = "pageSchedule";
         pageSchedule.Size = new Size(851, 637);
-        // 
+        //
         // lblScheduleTitle
-        // 
+        //
         lblScheduleTitle.Appearance.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
         lblScheduleTitle.Appearance.ForeColor = Color.FromArgb(0, 161, 132);
         lblScheduleTitle.Appearance.Options.UseFont = true;
@@ -1852,18 +2003,18 @@ partial class SyncProfileEditForm
         lblScheduleTitle.Size = new Size(162, 20);
         lblScheduleTitle.TabIndex = 0;
         lblScheduleTitle.Text = "Programación del perfil";
-        // 
+        //
         // sepScheduleTitle
-        // 
+        //
         sepScheduleTitle.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         sepScheduleTitle.LineColor = Color.FromArgb(0, 184, 148);
         sepScheduleTitle.Location = new Point(28, 54);
         sepScheduleTitle.Name = "sepScheduleTitle";
         sepScheduleTitle.Size = new Size(790, 18);
         sepScheduleTitle.TabIndex = 2;
-        // 
+        //
         // lblScheduleConfigurationTitle
-        // 
+        //
         lblScheduleConfigurationTitle.Appearance.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
         lblScheduleConfigurationTitle.Appearance.ForeColor = Color.FromArgb(0, 161, 132);
         lblScheduleConfigurationTitle.Appearance.Options.UseFont = true;
@@ -1873,18 +2024,18 @@ partial class SyncProfileEditForm
         lblScheduleConfigurationTitle.Size = new Size(235, 20);
         lblScheduleConfigurationTitle.TabIndex = 3;
         lblScheduleConfigurationTitle.Text = "Configuración de la programación";
-        // 
+        //
         // sepScheduleConfiguration
-        // 
+        //
         sepScheduleConfiguration.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         sepScheduleConfiguration.LineColor = Color.FromArgb(221, 226, 240);
         sepScheduleConfiguration.Location = new Point(44, 117);
         sepScheduleConfiguration.Name = "sepScheduleConfiguration";
         sepScheduleConfiguration.Size = new Size(758, 12);
         sepScheduleConfiguration.TabIndex = 4;
-        // 
+        //
         // lblScheduleType
-        // 
+        //
         lblScheduleType.Appearance.Font = new Font("Segoe UI", 9F);
         lblScheduleType.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblScheduleType.Appearance.Options.UseFont = true;
@@ -1894,9 +2045,9 @@ partial class SyncProfileEditForm
         lblScheduleType.Size = new Size(118, 15);
         lblScheduleType.TabIndex = 5;
         lblScheduleType.Text = "Tipo de programación";
-        // 
+        //
         // cboScheduleType
-        // 
+        //
         cboScheduleType.EditValue = "Intervalo";
         cboScheduleType.Location = new Point(300, 135);
         cboScheduleType.Name = "cboScheduleType";
@@ -1907,9 +2058,9 @@ partial class SyncProfileEditForm
         cboScheduleType.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
         cboScheduleType.Size = new Size(360, 22);
         cboScheduleType.TabIndex = 6;
-        // 
+        //
         // lblScheduleInterval
-        // 
+        //
         lblScheduleInterval.Appearance.Font = new Font("Segoe UI", 9F);
         lblScheduleInterval.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblScheduleInterval.Appearance.Options.UseFont = true;
@@ -1919,9 +2070,9 @@ partial class SyncProfileEditForm
         lblScheduleInterval.Size = new Size(70, 15);
         lblScheduleInterval.TabIndex = 7;
         lblScheduleInterval.Text = "Ejecutar cada";
-        // 
+        //
         // spnScheduleIntervalMinutes
-        // 
+        //
         spnScheduleIntervalMinutes.EditValue = new decimal(new int[] { 60, 0, 0, 0 });
         spnScheduleIntervalMinutes.Location = new Point(300, 173);
         spnScheduleIntervalMinutes.Name = "spnScheduleIntervalMinutes";
@@ -1934,9 +2085,9 @@ partial class SyncProfileEditForm
         spnScheduleIntervalMinutes.Properties.MinValue = new decimal(new int[] { 1, 0, 0, 0 });
         spnScheduleIntervalMinutes.Size = new Size(280, 22);
         spnScheduleIntervalMinutes.TabIndex = 8;
-        // 
+        //
         // lblScheduleIntervalUnit
-        // 
+        //
         lblScheduleIntervalUnit.Appearance.Font = new Font("Segoe UI", 9F);
         lblScheduleIntervalUnit.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblScheduleIntervalUnit.Appearance.Options.UseFont = true;
@@ -1946,9 +2097,9 @@ partial class SyncProfileEditForm
         lblScheduleIntervalUnit.Size = new Size(44, 15);
         lblScheduleIntervalUnit.TabIndex = 9;
         lblScheduleIntervalUnit.Text = "minutos";
-        // 
+        //
         // lblScheduleExecutionTime
-        // 
+        //
         lblScheduleExecutionTime.Appearance.Font = new Font("Segoe UI", 9F);
         lblScheduleExecutionTime.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblScheduleExecutionTime.Appearance.Options.UseFont = true;
@@ -1958,9 +2109,9 @@ partial class SyncProfileEditForm
         lblScheduleExecutionTime.Size = new Size(96, 15);
         lblScheduleExecutionTime.TabIndex = 10;
         lblScheduleExecutionTime.Text = "Hora de ejecución";
-        // 
+        //
         // timScheduleExecutionTime
-        // 
+        //
         timScheduleExecutionTime.EditValue = new DateTime(2026, 7, 15, 23, 0, 0, 0);
         timScheduleExecutionTime.Enabled = false;
         timScheduleExecutionTime.Location = new Point(300, 211);
@@ -1975,9 +2126,9 @@ partial class SyncProfileEditForm
         timScheduleExecutionTime.Properties.MaskSettings.Set("mask", "HH:mm");
         timScheduleExecutionTime.Size = new Size(360, 22);
         timScheduleExecutionTime.TabIndex = 11;
-        // 
+        //
         // lblScheduleTimeZone
-        // 
+        //
         lblScheduleTimeZone.Appearance.Font = new Font("Segoe UI", 9F);
         lblScheduleTimeZone.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblScheduleTimeZone.Appearance.Options.UseFont = true;
@@ -1987,9 +2138,9 @@ partial class SyncProfileEditForm
         lblScheduleTimeZone.Size = new Size(67, 15);
         lblScheduleTimeZone.TabIndex = 12;
         lblScheduleTimeZone.Text = "Zona horaria";
-        // 
+        //
         // cboScheduleTimeZone
-        // 
+        //
         cboScheduleTimeZone.EditValue = "America/Guayaquil";
         cboScheduleTimeZone.Location = new Point(300, 249);
         cboScheduleTimeZone.Name = "cboScheduleTimeZone";
@@ -1999,9 +2150,9 @@ partial class SyncProfileEditForm
         cboScheduleTimeZone.Properties.Items.AddRange(new object[] { "America/Guayaquil" });
         cboScheduleTimeZone.Size = new Size(360, 22);
         cboScheduleTimeZone.TabIndex = 13;
-        // 
+        //
         // lblPreventConcurrentExecutions
-        // 
+        //
         lblPreventConcurrentExecutions.Appearance.Font = new Font("Segoe UI", 9F);
         lblPreventConcurrentExecutions.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblPreventConcurrentExecutions.Appearance.Options.UseFont = true;
@@ -2011,9 +2162,9 @@ partial class SyncProfileEditForm
         lblPreventConcurrentExecutions.Size = new Size(160, 15);
         lblPreventConcurrentExecutions.TabIndex = 14;
         lblPreventConcurrentExecutions.Text = "Evitar ejecuciones simultáneas";
-        // 
+        //
         // swPreventConcurrentExecutions
-        // 
+        //
         swPreventConcurrentExecutions.EditValue = true;
         swPreventConcurrentExecutions.Location = new Point(300, 285);
         swPreventConcurrentExecutions.Name = "swPreventConcurrentExecutions";
@@ -2025,9 +2176,9 @@ partial class SyncProfileEditForm
         swPreventConcurrentExecutions.Properties.OnText = "Activo";
         swPreventConcurrentExecutions.Size = new Size(150, 20);
         swPreventConcurrentExecutions.TabIndex = 15;
-        // 
+        //
         // lblScheduleIsActive
-        // 
+        //
         lblScheduleIsActive.Appearance.Font = new Font("Segoe UI", 9F);
         lblScheduleIsActive.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblScheduleIsActive.Appearance.Options.UseFont = true;
@@ -2037,9 +2188,9 @@ partial class SyncProfileEditForm
         lblScheduleIsActive.Size = new Size(109, 15);
         lblScheduleIsActive.TabIndex = 16;
         lblScheduleIsActive.Text = "Programación activa";
-        // 
+        //
         // swScheduleIsActive
-        // 
+        //
         swScheduleIsActive.EditValue = true;
         swScheduleIsActive.Location = new Point(300, 323);
         swScheduleIsActive.Name = "swScheduleIsActive";
@@ -2051,9 +2202,9 @@ partial class SyncProfileEditForm
         swScheduleIsActive.Properties.OnText = "Activo";
         swScheduleIsActive.Size = new Size(150, 20);
         swScheduleIsActive.TabIndex = 17;
-        // 
+        //
         // lblScheduleInfo
-        // 
+        //
         lblScheduleInfo.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         lblScheduleInfo.Appearance.BackColor = Color.FromArgb(247, 248, 252);
         lblScheduleInfo.Appearance.BorderColor = Color.FromArgb(221, 226, 240);
@@ -2071,9 +2222,9 @@ partial class SyncProfileEditForm
         lblScheduleInfo.Size = new Size(758, 38);
         lblScheduleInfo.TabIndex = 18;
         lblScheduleInfo.Text = "Cuando una ejecución anterior continúe en proceso, no se iniciará una nueva ejecución para este perfil.";
-        // 
+        //
         // lblScheduleStatusTitle
-        // 
+        //
         lblScheduleStatusTitle.Appearance.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
         lblScheduleStatusTitle.Appearance.ForeColor = Color.FromArgb(0, 161, 132);
         lblScheduleStatusTitle.Appearance.Options.UseFont = true;
@@ -2083,18 +2234,18 @@ partial class SyncProfileEditForm
         lblScheduleStatusTitle.Size = new Size(183, 20);
         lblScheduleStatusTitle.TabIndex = 19;
         lblScheduleStatusTitle.Text = "Estado de la programación";
-        // 
+        //
         // sepScheduleStatus
-        // 
+        //
         sepScheduleStatus.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         sepScheduleStatus.LineColor = Color.FromArgb(221, 226, 240);
         sepScheduleStatus.Location = new Point(44, 440);
         sepScheduleStatus.Name = "sepScheduleStatus";
         sepScheduleStatus.Size = new Size(758, 12);
         sepScheduleStatus.TabIndex = 20;
-        // 
+        //
         // lblScheduleNextExecution
-        // 
+        //
         lblScheduleNextExecution.Appearance.Font = new Font("Segoe UI", 9F);
         lblScheduleNextExecution.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblScheduleNextExecution.Appearance.Options.UseFont = true;
@@ -2104,9 +2255,9 @@ partial class SyncProfileEditForm
         lblScheduleNextExecution.Size = new Size(100, 15);
         lblScheduleNextExecution.TabIndex = 21;
         lblScheduleNextExecution.Text = "Próxima ejecución:";
-        // 
+        //
         // lblScheduleNextExecutionValue
-        // 
+        //
         lblScheduleNextExecutionValue.Appearance.Font = new Font("Segoe UI", 9F);
         lblScheduleNextExecutionValue.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblScheduleNextExecutionValue.Appearance.Options.UseFont = true;
@@ -2116,9 +2267,9 @@ partial class SyncProfileEditForm
         lblScheduleNextExecutionValue.Size = new Size(5, 15);
         lblScheduleNextExecutionValue.TabIndex = 22;
         lblScheduleNextExecutionValue.Text = "-";
-        // 
+        //
         // lblScheduleLastExecution
-        // 
+        //
         lblScheduleLastExecution.Appearance.Font = new Font("Segoe UI", 9F);
         lblScheduleLastExecution.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblScheduleLastExecution.Appearance.Options.UseFont = true;
@@ -2128,9 +2279,9 @@ partial class SyncProfileEditForm
         lblScheduleLastExecution.Size = new Size(199, 15);
         lblScheduleLastExecution.TabIndex = 23;
         lblScheduleLastExecution.Text = "Última ejecución programada exitosa:";
-        // 
+        //
         // lblScheduleLastExecutionValue
-        // 
+        //
         lblScheduleLastExecutionValue.Appearance.Font = new Font("Segoe UI", 9F);
         lblScheduleLastExecutionValue.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblScheduleLastExecutionValue.Appearance.Options.UseFont = true;
@@ -2140,9 +2291,9 @@ partial class SyncProfileEditForm
         lblScheduleLastExecutionValue.Size = new Size(5, 15);
         lblScheduleLastExecutionValue.TabIndex = 24;
         lblScheduleLastExecutionValue.Text = "-";
-        // 
+        //
         // lblScheduleEffectiveFrequency
-        // 
+        //
         lblScheduleEffectiveFrequency.Appearance.Font = new Font("Segoe UI", 9F);
         lblScheduleEffectiveFrequency.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblScheduleEffectiveFrequency.Appearance.Options.UseFont = true;
@@ -2152,9 +2303,9 @@ partial class SyncProfileEditForm
         lblScheduleEffectiveFrequency.Size = new Size(104, 15);
         lblScheduleEffectiveFrequency.TabIndex = 25;
         lblScheduleEffectiveFrequency.Text = "Frecuencia efectiva:";
-        // 
+        //
         // lblScheduleEffectiveFrequencyValue
-        // 
+        //
         lblScheduleEffectiveFrequencyValue.Appearance.Font = new Font("Segoe UI", 9F);
         lblScheduleEffectiveFrequencyValue.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblScheduleEffectiveFrequencyValue.Appearance.Options.UseFont = true;
@@ -2164,9 +2315,9 @@ partial class SyncProfileEditForm
         lblScheduleEffectiveFrequencyValue.Size = new Size(89, 15);
         lblScheduleEffectiveFrequencyValue.TabIndex = 26;
         lblScheduleEffectiveFrequencyValue.Text = "Cada 60 minutos";
-        // 
+        //
         // lblScheduleStatus
-        // 
+        //
         lblScheduleStatus.Appearance.Font = new Font("Segoe UI", 9F);
         lblScheduleStatus.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblScheduleStatus.Appearance.Options.UseFont = true;
@@ -2176,9 +2327,9 @@ partial class SyncProfileEditForm
         lblScheduleStatus.Size = new Size(38, 15);
         lblScheduleStatus.TabIndex = 27;
         lblScheduleStatus.Text = "Estado:";
-        // 
+        //
         // lblScheduleStatusValue
-        // 
+        //
         lblScheduleStatusValue.Appearance.BackColor = Color.FromArgb(236, 253, 245);
         lblScheduleStatusValue.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
         lblScheduleStatusValue.Appearance.ForeColor = Color.FromArgb(22, 163, 74);
@@ -2192,9 +2343,9 @@ partial class SyncProfileEditForm
         lblScheduleStatusValue.Size = new Size(105, 27);
         lblScheduleStatusValue.TabIndex = 28;
         lblScheduleStatusValue.Text = "Programada";
-        // 
+        //
         // pageValidation
-        // 
+        //
         pageValidation.Caption = "Validacion";
         pageValidation.Controls.Add(lblValidationTitle);
         pageValidation.Controls.Add(sepValidationTitle);
@@ -2213,9 +2364,9 @@ partial class SyncProfileEditForm
         pageValidation.Font = new Font("Segoe UI", 9F);
         pageValidation.Name = "pageValidation";
         pageValidation.Size = new Size(851, 637);
-        // 
+        //
         // lblValidationTitle
-        // 
+        //
         lblValidationTitle.Appearance.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
         lblValidationTitle.Appearance.ForeColor = Color.FromArgb(0, 161, 132);
         lblValidationTitle.Appearance.Options.UseFont = true;
@@ -2225,18 +2376,18 @@ partial class SyncProfileEditForm
         lblValidationTitle.Size = new Size(137, 20);
         lblValidationTitle.TabIndex = 0;
         lblValidationTitle.Text = "Validación del perfil";
-        // 
+        //
         // sepValidationTitle
-        // 
+        //
         sepValidationTitle.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         sepValidationTitle.LineColor = Color.FromArgb(0, 184, 148);
         sepValidationTitle.Location = new Point(28, 54);
         sepValidationTitle.Name = "sepValidationTitle";
         sepValidationTitle.Size = new Size(790, 18);
         sepValidationTitle.TabIndex = 2;
-        // 
+        //
         // btnValidateProfile
-        // 
+        //
         btnValidateProfile.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnValidateProfile.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnValidateProfile.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -2273,9 +2424,9 @@ partial class SyncProfileEditForm
         btnValidateProfile.TabIndex = 3;
         btnValidateProfile.Text = "Validar";
         btnValidateProfile.UseDefaultSize = true;
-        // 
+        //
         // lblValidationDescription
-        // 
+        //
         lblValidationDescription.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         lblValidationDescription.Appearance.Font = new Font("Segoe UI", 8.5F);
         lblValidationDescription.Appearance.ForeColor = Color.FromArgb(100, 112, 132);
@@ -2287,9 +2438,9 @@ partial class SyncProfileEditForm
         lblValidationDescription.Size = new Size(670, 36);
         lblValidationDescription.TabIndex = 4;
         lblValidationDescription.Text = "La validación revisa datos generales, sucursales, entidades, distribución, programación y conflictos de enrutamiento.";
-        // 
+        //
         // lblValidationResultCaption
-        // 
+        //
         lblValidationResultCaption.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
         lblValidationResultCaption.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblValidationResultCaption.Appearance.Options.UseFont = true;
@@ -2299,9 +2450,9 @@ partial class SyncProfileEditForm
         lblValidationResultCaption.Size = new Size(55, 15);
         lblValidationResultCaption.TabIndex = 6;
         lblValidationResultCaption.Text = "Resultado:";
-        // 
+        //
         // lblValidationResultValue
-        // 
+        //
         lblValidationResultValue.Appearance.BackColor = Color.FromArgb(247, 248, 252);
         lblValidationResultValue.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
         lblValidationResultValue.Appearance.ForeColor = Color.FromArgb(100, 112, 132);
@@ -2315,9 +2466,9 @@ partial class SyncProfileEditForm
         lblValidationResultValue.Size = new Size(152, 30);
         lblValidationResultValue.TabIndex = 7;
         lblValidationResultValue.Text = "Pendiente de validar";
-        // 
+        //
         // lblValidationErrorsCaption
-        // 
+        //
         lblValidationErrorsCaption.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
         lblValidationErrorsCaption.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblValidationErrorsCaption.Appearance.Options.UseFont = true;
@@ -2327,9 +2478,9 @@ partial class SyncProfileEditForm
         lblValidationErrorsCaption.Size = new Size(39, 15);
         lblValidationErrorsCaption.TabIndex = 8;
         lblValidationErrorsCaption.Text = "Errores:";
-        // 
+        //
         // lblValidationErrorsValue
-        // 
+        //
         lblValidationErrorsValue.Appearance.BackColor = Color.FromArgb(247, 248, 252);
         lblValidationErrorsValue.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
         lblValidationErrorsValue.Appearance.ForeColor = Color.FromArgb(100, 112, 132);
@@ -2342,9 +2493,9 @@ partial class SyncProfileEditForm
         lblValidationErrorsValue.Size = new Size(38, 30);
         lblValidationErrorsValue.TabIndex = 9;
         lblValidationErrorsValue.Text = "0";
-        // 
+        //
         // lblValidationWarningsCaption
-        // 
+        //
         lblValidationWarningsCaption.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
         lblValidationWarningsCaption.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblValidationWarningsCaption.Appearance.Options.UseFont = true;
@@ -2354,9 +2505,9 @@ partial class SyncProfileEditForm
         lblValidationWarningsCaption.Size = new Size(71, 15);
         lblValidationWarningsCaption.TabIndex = 10;
         lblValidationWarningsCaption.Text = "Advertencias:";
-        // 
+        //
         // lblValidationWarningsValue
-        // 
+        //
         lblValidationWarningsValue.Appearance.BackColor = Color.FromArgb(247, 248, 252);
         lblValidationWarningsValue.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
         lblValidationWarningsValue.Appearance.ForeColor = Color.FromArgb(100, 112, 132);
@@ -2369,9 +2520,9 @@ partial class SyncProfileEditForm
         lblValidationWarningsValue.Size = new Size(38, 30);
         lblValidationWarningsValue.TabIndex = 11;
         lblValidationWarningsValue.Text = "0";
-        // 
+        //
         // lblValidationResultsTitle
-        // 
+        //
         lblValidationResultsTitle.Appearance.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
         lblValidationResultsTitle.Appearance.ForeColor = Color.FromArgb(0, 161, 132);
         lblValidationResultsTitle.Appearance.Options.UseFont = true;
@@ -2381,9 +2532,9 @@ partial class SyncProfileEditForm
         lblValidationResultsTitle.Size = new Size(184, 20);
         lblValidationResultsTitle.TabIndex = 12;
         lblValidationResultsTitle.Text = "Resultados de la validación";
-        // 
+        //
         // grdValidationResults
-        // 
+        //
         grdValidationResults.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         grdValidationResults.FormKey = "sync-profile-validation";
         grdValidationResults.GridName = "ValidationResultsGrid";
@@ -2393,9 +2544,9 @@ partial class SyncProfileEditForm
         grdValidationResults.ShowPagination = false;
         grdValidationResults.Size = new Size(790, 282);
         grdValidationResults.TabIndex = 13;
-        // 
+        //
         // lblValidationInfo
-        // 
+        //
         lblValidationInfo.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lblValidationInfo.Appearance.BackColor = Color.FromArgb(247, 248, 252);
         lblValidationInfo.Appearance.BorderColor = Color.FromArgb(221, 226, 240);
@@ -2413,9 +2564,9 @@ partial class SyncProfileEditForm
         lblValidationInfo.Size = new Size(790, 42);
         lblValidationInfo.TabIndex = 14;
         lblValidationInfo.Text = "Los errores deben corregirse antes de activar o ejecutar el perfil. Las advertencias permiten continuar, pero deben revisarse.";
-        // 
+        //
         // lblValidationSummarySurface
-        // 
+        //
         lblValidationSummarySurface.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         lblValidationSummarySurface.Appearance.BackColor = Color.White;
         lblValidationSummarySurface.Appearance.BorderColor = Color.FromArgb(221, 226, 240);
@@ -2427,9 +2578,9 @@ partial class SyncProfileEditForm
         lblValidationSummarySurface.Name = "lblValidationSummarySurface";
         lblValidationSummarySurface.Size = new Size(790, 62);
         lblValidationSummarySurface.TabIndex = 5;
-        // 
+        //
         // pageExecutions
-        // 
+        //
         pageExecutions.Caption = "Ejecuciones";
         pageExecutions.Controls.Add(lblExecutionsTitle);
         pageExecutions.Controls.Add(sepExecutionsTitle);
@@ -2452,9 +2603,9 @@ partial class SyncProfileEditForm
         pageExecutions.Font = new Font("Segoe UI", 9F);
         pageExecutions.Name = "pageExecutions";
         pageExecutions.Size = new Size(851, 637);
-        // 
+        //
         // lblExecutionsTitle
-        // 
+        //
         lblExecutionsTitle.Appearance.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
         lblExecutionsTitle.Appearance.ForeColor = Color.FromArgb(0, 161, 132);
         lblExecutionsTitle.Appearance.Options.UseFont = true;
@@ -2464,18 +2615,18 @@ partial class SyncProfileEditForm
         lblExecutionsTitle.Size = new Size(144, 20);
         lblExecutionsTitle.TabIndex = 0;
         lblExecutionsTitle.Text = "Ejecuciones del perfil";
-        // 
+        //
         // sepExecutionsTitle
-        // 
+        //
         sepExecutionsTitle.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         sepExecutionsTitle.LineColor = Color.FromArgb(0, 184, 148);
         sepExecutionsTitle.Location = new Point(28, 54);
         sepExecutionsTitle.Name = "sepExecutionsTitle";
         sepExecutionsTitle.Size = new Size(790, 18);
         sepExecutionsTitle.TabIndex = 2;
-        // 
+        //
         // btnViewExecutionDetail
-        // 
+        //
         btnViewExecutionDetail.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnViewExecutionDetail.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnViewExecutionDetail.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -2511,9 +2662,9 @@ partial class SyncProfileEditForm
         btnViewExecutionDetail.Size = new Size(100, 26);
         btnViewExecutionDetail.TabIndex = 3;
         btnViewExecutionDetail.Text = "Ver detalle";
-        // 
+        //
         // btnCancelExecution
-        // 
+        //
         btnCancelExecution.Appearance.BackColor = Color.FromArgb(99, 110, 114);
         btnCancelExecution.Appearance.BorderColor = Color.FromArgb(99, 110, 114);
         btnCancelExecution.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -2549,9 +2700,9 @@ partial class SyncProfileEditForm
         btnCancelExecution.Size = new Size(100, 26);
         btnCancelExecution.TabIndex = 4;
         btnCancelExecution.Text = "Cancelar";
-        // 
+        //
         // btnRetryExecution
-        // 
+        //
         btnRetryExecution.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnRetryExecution.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnRetryExecution.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -2587,9 +2738,9 @@ partial class SyncProfileEditForm
         btnRetryExecution.Size = new Size(100, 26);
         btnRetryExecution.TabIndex = 5;
         btnRetryExecution.Text = "Reintentar";
-        // 
+        //
         // btnRefreshExecutions
-        // 
+        //
         btnRefreshExecutions.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnRefreshExecutions.Appearance.BorderColor = Color.FromArgb(0, 184, 148);
         btnRefreshExecutions.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
@@ -2625,9 +2776,9 @@ partial class SyncProfileEditForm
         btnRefreshExecutions.Size = new Size(100, 26);
         btnRefreshExecutions.TabIndex = 6;
         btnRefreshExecutions.Text = "Actualizar";
-        // 
+        //
         // lblExecutionsAutoRefresh
-        // 
+        //
         lblExecutionsAutoRefresh.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         lblExecutionsAutoRefresh.Appearance.Font = new Font("Segoe UI", 8.5F);
         lblExecutionsAutoRefresh.Appearance.ForeColor = Color.FromArgb(22, 163, 74);
@@ -2641,9 +2792,9 @@ partial class SyncProfileEditForm
         lblExecutionsAutoRefresh.Size = new Size(210, 20);
         lblExecutionsAutoRefresh.TabIndex = 7;
         lblExecutionsAutoRefresh.Text = "Actualización automática activa";
-        // 
+        //
         // lblExecutionsHistoryTitle
-        // 
+        //
         lblExecutionsHistoryTitle.Appearance.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
         lblExecutionsHistoryTitle.Appearance.ForeColor = Color.FromArgb(0, 161, 132);
         lblExecutionsHistoryTitle.Appearance.Options.UseFont = true;
@@ -2653,9 +2804,9 @@ partial class SyncProfileEditForm
         lblExecutionsHistoryTitle.Size = new Size(161, 20);
         lblExecutionsHistoryTitle.TabIndex = 8;
         lblExecutionsHistoryTitle.Text = "Historial de ejecuciones";
-        // 
+        //
         // grdExecutions
-        // 
+        //
         grdExecutions.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         grdExecutions.FormKey = "sync-profile-executions";
         grdExecutions.GridName = "ProfileExecutionsGrid";
@@ -2665,9 +2816,9 @@ partial class SyncProfileEditForm
         grdExecutions.ShowPagination = false;
         grdExecutions.Size = new Size(790, 326);
         grdExecutions.TabIndex = 9;
-        // 
+        //
         // btnExecutionsFirstPage
-        // 
+        //
         btnExecutionsFirstPage.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         btnExecutionsFirstPage.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
         btnExecutionsFirstPage.Appearance.Options.UseFont = true;
@@ -2676,9 +2827,9 @@ partial class SyncProfileEditForm
         btnExecutionsFirstPage.Size = new Size(36, 28);
         btnExecutionsFirstPage.TabIndex = 10;
         btnExecutionsFirstPage.Text = "|<";
-        // 
+        //
         // btnExecutionsPreviousPage
-        // 
+        //
         btnExecutionsPreviousPage.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         btnExecutionsPreviousPage.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
         btnExecutionsPreviousPage.Appearance.Options.UseFont = true;
@@ -2687,9 +2838,9 @@ partial class SyncProfileEditForm
         btnExecutionsPreviousPage.Size = new Size(36, 28);
         btnExecutionsPreviousPage.TabIndex = 11;
         btnExecutionsPreviousPage.Text = "<";
-        // 
+        //
         // lblExecutionsPageInfo
-        // 
+        //
         lblExecutionsPageInfo.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         lblExecutionsPageInfo.Appearance.Font = new Font("Segoe UI", 9F);
         lblExecutionsPageInfo.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
@@ -2700,9 +2851,9 @@ partial class SyncProfileEditForm
         lblExecutionsPageInfo.Size = new Size(70, 15);
         lblExecutionsPageInfo.TabIndex = 12;
         lblExecutionsPageInfo.Text = "Página 1 de 1";
-        // 
+        //
         // btnExecutionsNextPage
-        // 
+        //
         btnExecutionsNextPage.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         btnExecutionsNextPage.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
         btnExecutionsNextPage.Appearance.Options.UseFont = true;
@@ -2711,9 +2862,9 @@ partial class SyncProfileEditForm
         btnExecutionsNextPage.Size = new Size(36, 28);
         btnExecutionsNextPage.TabIndex = 13;
         btnExecutionsNextPage.Text = ">";
-        // 
+        //
         // btnExecutionsLastPage
-        // 
+        //
         btnExecutionsLastPage.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         btnExecutionsLastPage.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
         btnExecutionsLastPage.Appearance.Options.UseFont = true;
@@ -2722,9 +2873,9 @@ partial class SyncProfileEditForm
         btnExecutionsLastPage.Size = new Size(36, 28);
         btnExecutionsLastPage.TabIndex = 14;
         btnExecutionsLastPage.Text = ">|";
-        // 
+        //
         // lblExecutionsTotal
-        // 
+        //
         lblExecutionsTotal.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         lblExecutionsTotal.Appearance.Font = new Font("Segoe UI", 9F);
         lblExecutionsTotal.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
@@ -2735,9 +2886,9 @@ partial class SyncProfileEditForm
         lblExecutionsTotal.Size = new Size(104, 15);
         lblExecutionsTotal.TabIndex = 15;
         lblExecutionsTotal.Text = "Total: 0 ejecuciones";
-        // 
+        //
         // lblExecutionsPageSize
-        // 
+        //
         lblExecutionsPageSize.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         lblExecutionsPageSize.Appearance.Font = new Font("Segoe UI", 9F);
         lblExecutionsPageSize.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
@@ -2748,9 +2899,9 @@ partial class SyncProfileEditForm
         lblExecutionsPageSize.Size = new Size(111, 15);
         lblExecutionsPageSize.TabIndex = 16;
         lblExecutionsPageSize.Text = "Registros por página:";
-        // 
+        //
         // cboExecutionsPageSize
-        // 
+        //
         cboExecutionsPageSize.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         cboExecutionsPageSize.EditValue = "25";
         cboExecutionsPageSize.Location = new Point(764, 503);
@@ -2762,9 +2913,9 @@ partial class SyncProfileEditForm
         cboExecutionsPageSize.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
         cboExecutionsPageSize.Size = new Size(54, 22);
         cboExecutionsPageSize.TabIndex = 17;
-        // 
+        //
         // lblExecutionsInfo
-        // 
+        //
         lblExecutionsInfo.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lblExecutionsInfo.Appearance.BackColor = Color.FromArgb(247, 248, 252);
         lblExecutionsInfo.Appearance.BorderColor = Color.FromArgb(221, 226, 240);
@@ -2782,72 +2933,72 @@ partial class SyncProfileEditForm
         lblExecutionsInfo.Size = new Size(790, 42);
         lblExecutionsInfo.TabIndex = 18;
         lblExecutionsInfo.Text = "Las ejecuciones activas se actualizan automáticamente. Utilice Ver detalle para consultar el resultado por entidad.";
-        // 
+        //
         // colBranchCompanyCode
-        // 
+        //
         colBranchCompanyCode.Caption = "Código empresa";
         colBranchCompanyCode.FieldName = "BranchCompanyCode";
         colBranchCompanyCode.Name = "colBranchCompanyCode";
         colBranchCompanyCode.Visible = true;
         colBranchCompanyCode.VisibleIndex = 0;
         colBranchCompanyCode.Width = 115;
-        // 
+        //
         // colBranchCode
-        // 
+        //
         colBranchCode.Caption = "Código sucursal";
         colBranchCode.FieldName = "BranchCode";
         colBranchCode.Name = "colBranchCode";
         colBranchCode.Visible = true;
         colBranchCode.VisibleIndex = 1;
         colBranchCode.Width = 110;
-        // 
+        //
         // colBranchName
-        // 
+        //
         colBranchName.Caption = "Nombre sucursal";
         colBranchName.FieldName = "BranchCompanyName";
         colBranchName.Name = "colBranchName";
         colBranchName.Visible = true;
         colBranchName.VisibleIndex = 2;
         colBranchName.Width = 170;
-        // 
+        //
         // colBranchDatabaseName
-        // 
+        //
         colBranchDatabaseName.Caption = "Base de datos";
         colBranchDatabaseName.FieldName = "BranchDatabaseName";
         colBranchDatabaseName.Name = "colBranchDatabaseName";
         colBranchDatabaseName.Visible = true;
         colBranchDatabaseName.VisibleIndex = 3;
         colBranchDatabaseName.Width = 140;
-        // 
+        //
         // colBranchStatus
-        // 
+        //
         colBranchStatus.Caption = "Activo en perfil";
         colBranchStatus.FieldName = "StatusText";
         colBranchStatus.Name = "colBranchStatus";
         colBranchStatus.Visible = true;
         colBranchStatus.VisibleIndex = 4;
         colBranchStatus.Width = 115;
-        // 
+        //
         // colBranchBatchSize
-        // 
+        //
         colBranchBatchSize.Caption = "Batch";
         colBranchBatchSize.FieldName = "BatchSize";
         colBranchBatchSize.Name = "colBranchBatchSize";
         colBranchBatchSize.Visible = true;
         colBranchBatchSize.VisibleIndex = 5;
         colBranchBatchSize.Width = 70;
-        // 
+        //
         // colBranchMaxRetries
-        // 
+        //
         colBranchMaxRetries.Caption = "Reintentos";
         colBranchMaxRetries.FieldName = "MaxRetries";
         colBranchMaxRetries.Name = "colBranchMaxRetries";
         colBranchMaxRetries.Visible = true;
         colBranchMaxRetries.VisibleIndex = 6;
         colBranchMaxRetries.Width = 86;
-        // 
+        //
         // colBranchLastSynchronizationAt
-        // 
+        //
         colBranchLastSynchronizationAt.Caption = "Última sincronización";
         colBranchLastSynchronizationAt.DisplayFormat.FormatString = "dd/MM/yyyy HH:mm";
         colBranchLastSynchronizationAt.DisplayFormat.FormatType = DevExpress.Utils.FormatType.DateTime;
@@ -2856,9 +3007,9 @@ partial class SyncProfileEditForm
         colBranchLastSynchronizationAt.Visible = true;
         colBranchLastSynchronizationAt.VisibleIndex = 7;
         colBranchLastSynchronizationAt.Width = 150;
-        // 
+        //
         // SyncProfileEditForm
-        // 
+        //
         Appearance.BackColor = Color.White;
         Appearance.Options.UseBackColor = true;
         Appearance.Options.UseFont = true;
@@ -2885,7 +3036,7 @@ partial class SyncProfileEditForm
         ((System.ComponentModel.ISupportInitialize)txtCode.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtName.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)memDescription.Properties).EndInit();
-        ((System.ComponentModel.ISupportInitialize)txtDirection.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)cboDirection.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)cboExecutionMode.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)txtConflictStrategy.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)sepExecutionParameters).EndInit();
@@ -2895,6 +3046,12 @@ partial class SyncProfileEditForm
         ((System.ComponentModel.ISupportInitialize)spnTimeoutMinutes.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)sepStatus).EndInit();
         ((System.ComponentModel.ISupportInitialize)swIsActive.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)swSapCodePolicyEnabled.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)cboSapPrefixMode.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)txtPassportIdentificationTypeCode.Properties).EndInit();
+        ((System.ComponentModel.ISupportInitialize)pnlBusinessPartnerCodePolicy).EndInit();
+        pnlBusinessPartnerCodePolicy.ResumeLayout(false);
+        pnlBusinessPartnerCodePolicy.PerformLayout();
         pageBranches.ResumeLayout(false);
         pageBranches.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)sepBranchesTitle).EndInit();

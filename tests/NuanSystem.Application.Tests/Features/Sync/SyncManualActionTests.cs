@@ -2,8 +2,14 @@ using FluentAssertions;
 using NSubstitute;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
+using NuanSystem.Application.Abstractions.Common;
 using NuanSystem.Application.Features.Sync.Commands;
+using NuanSystem.Application.Features.Sync.Configuration.Dtos;
+using NuanSystem.Application.Features.Sync.Configuration.Services;
 using NuanSystem.Application.Features.Sync.Dtos;
+using NuanSystem.Application.Features.Sync.EntityDefinitions.Services;
+using NuanSystem.Application.Features.Sync.Execution.Dtos;
+using NuanSystem.Application.Features.Sync.Execution.Services;
 using NuanSystem.Domain.Tenancy;
 using NuanSystem.Shared.Sync;
 
@@ -164,6 +170,33 @@ public sealed class SyncManualActionTests
         actionMethods.Should().Contain("SyncAuditAction.Retried");
         actionMethods.Should().Contain("SyncAuditAction.RetriedFromDeadLetter");
         actionMethods.Should().Contain("SyncAuditAction.LockReleased");
+    }
+
+    [Fact]
+    public async Task ProfileExecution_BlocksBranchToMasterAdministrativeExecutionWithStableCode()
+    {
+        var profiles = Substitute.For<ISyncProfileRepository>();
+        var executions = Substitute.For<ISyncProfileExecutionRepository>();
+        profiles.GetByIdAsync(42, Arg.Any<CancellationToken>()).Returns(new SyncProfileDetailDto(
+            42, 1, "MST", "Matriz", "BP-PROPOSALS", "BP proposals", null,
+            "BranchToMaster", "Incremental", "CentralReview", 100, 3, 30, 30, true,
+            null, null, DateTime.UtcNow, null, null, null, [], [], [], null));
+        var service = new SyncProfileExecutionService(
+            profiles,
+            Substitute.For<ISyncProfileValidationService>(),
+            executions,
+            Array.Empty<ISyncFullEntitySource>(),
+            Substitute.For<ISyncEventPublisher>(),
+            Substitute.For<ISyncEntityCatalogService>(),
+            Substitute.For<ISystemClock>());
+
+        var result = await service.RequestExecutionAsync(
+            42,
+            new SyncProfileExecutionRequest { ExecutionType = "Manual" });
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "SYNC_BRANCH_TO_MASTER_INCREMENTAL_ONLY");
+        await executions.DidNotReceiveWithAnyArgs().CreateAsync(default!, default);
     }
 
     [Fact]

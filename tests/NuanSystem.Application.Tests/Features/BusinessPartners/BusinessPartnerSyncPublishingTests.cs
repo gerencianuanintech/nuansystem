@@ -3,10 +3,14 @@ using NSubstitute;
 using System.Data;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.BusinessPartners.Commands;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Features.BusinessPartners.Exceptions;
+using NuanSystem.Application.Features.BusinessPartners.Policies;
+using NuanSystem.Application.Features.BusinessPartners.Queries;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Application.Features.Sync.Services;
 using NuanSystem.Domain.Tenancy;
@@ -18,14 +22,16 @@ public sealed class BusinessPartnerSyncPublishingTests
 {
     private readonly IBusinessPartnerRepository _repository = Substitute.For<IBusinessPartnerRepository>();
     private readonly IBusinessPartnerLocalOutboxWriter _writer = Substitute.For<IBusinessPartnerLocalOutboxWriter>();
+    private readonly ICompanyContext _companyContext = Substitute.For<ICompanyContext>();
+    private readonly IBusinessPartnerSapCodePolicyRepository _sapPolicyRepository = Substitute.For<IBusinessPartnerSapCodePolicyRepository>();
     private readonly ImmediateTransactionRunner _transactionRunner = new();
 
     [Fact]
     public async Task Create_WritesLocalOutboxInsideTheSameTransaction()
     {
         var partner = CreatePartner();
-        _repository.ExistsByCodeAsync("CLI-001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
-        _repository.ExistsByIdentificationAsync(1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.ExistsByCodeAsync(Arg.Is<string>(value => value.StartsWith("BP-")), null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.ExistsByIdentificationAsync("Customer", 1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
         _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner.Id);
         _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
         var handler = CreateCreateHandler();
@@ -34,25 +40,32 @@ public sealed class BusinessPartnerSyncPublishingTests
 
         result.IsSuccess.Should().BeTrue();
         await _writer.Received(1).EnqueueAsync(
-            partner, SyncOperation.Created, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+            Arg.Is<BusinessPartnerOutboxWriteRequest>(write =>
+                write.Current == partner && write.Base == null && write.Operation == SyncOperation.Created
+                && write.OriginUserId == 7 && write.OriginUserName == "admin" && write.CausationEventId == null),
+            _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
         _transactionRunner.Committed.Should().BeTrue();
     }
 
     [Fact]
     public async Task Update_WritesLocalOutboxInsideTheSameTransaction()
     {
+        var current = CreatePartner(name: "Cliente Antes");
         var partner = CreatePartner(name: "Cliente Actualizado");
-        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
-        _repository.ExistsByCodeAsync("CLI-001", partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
-        _repository.ExistsByIdentificationAsync(1, "0999999999001", partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
-        _repository.UpdateAsync(Arg.Any<UpdateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
+        partner.GlobalId = current.GlobalId;
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
+            .Returns(current, partner);
+        _repository.UpdateAsync(Arg.Any<UpdateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(1);
         var handler = CreateUpdateHandler();
 
         var result = await handler.Handle(UpdateCommand(partner.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         await _writer.Received(1).EnqueueAsync(
-            partner, SyncOperation.Updated, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+            Arg.Is<BusinessPartnerOutboxWriteRequest>(write =>
+                write.Current == partner && write.Base == current && write.Current != write.Base
+                && write.Operation == SyncOperation.Updated && write.CausationEventId == null),
+            _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -60,25 +73,28 @@ public sealed class BusinessPartnerSyncPublishingTests
     {
         var partner = CreatePartner();
         _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
-        _repository.DeleteAsync(partner.Id, 7, "admin", _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
+        _repository.DeleteAsync(Arg.Any<DeleteBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
         var handler = CreateDeleteHandler();
 
-        var result = await handler.Handle(new DeleteBusinessPartnerCommand(partner.Id, 7, "admin"), CancellationToken.None);
+        var result = await handler.Handle(new DeleteBusinessPartnerCommand(partner.Id, partner.RowVersion, 7, "admin"), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         await _writer.Received(1).EnqueueAsync(
-            partner, SyncOperation.Deleted, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+            Arg.Is<BusinessPartnerOutboxWriteRequest>(write =>
+                write.Current == partner && write.Base == null && write.Operation == SyncOperation.Deleted
+                && write.OriginUserId == 7 && write.OriginUserName == "admin"),
+            _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task Create_RollsBackWhenLocalOutboxFails()
     {
         var partner = CreatePartner();
-        _repository.ExistsByCodeAsync("CLI-001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
-        _repository.ExistsByIdentificationAsync(1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.ExistsByCodeAsync(Arg.Is<string>(value => value.StartsWith("BP-")), null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.ExistsByIdentificationAsync("Customer", 1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
         _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner.Id);
         _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
-        _writer.EnqueueAsync(Arg.Any<BusinessPartnerDto>(), Arg.Any<SyncOperation>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>(), Arg.Any<CancellationToken>())
+        _writer.EnqueueAsync(Arg.Any<BusinessPartnerOutboxWriteRequest>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>(), Arg.Any<CancellationToken>())
             .Returns<Task<Guid?>>(_ => throw new InvalidOperationException("Controlled outbox failure"));
         var handler = CreateCreateHandler();
 
@@ -87,6 +103,522 @@ public sealed class BusinessPartnerSyncPublishingTests
         await action.Should().ThrowAsync<InvalidOperationException>().WithMessage("Controlled outbox failure");
         _transactionRunner.RolledBack.Should().BeTrue();
         _transactionRunner.Committed.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Create_GeneratesInternalCodeNormalizesIdentityAndAssignsChildGlobalIds()
+    {
+        CreateBusinessPartnerData? saved = null;
+        var command = CreateCommand() with
+        {
+            IdentificationNumber = " 09.999-999 99001 ",
+            Addresses = [new SaveBusinessPartnerAddressData(null, null, null, null, "Main", " Calle 1 ", null, null, null, null, null, null, null, true, true)],
+            Contacts = [new SaveBusinessPartnerContactData(null, null, null, " Contacto ", null, null, null, null, null, null, null, false, true, true, null)]
+        };
+        _repository.ExistsByIdentificationAsync("Customer", 1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.CreateAsync(Arg.Do<CreateBusinessPartnerData>(data => saved = data), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(25);
+        _repository.GetByIdAsync(25, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(CreatePartner());
+
+        var result = await CreateCreateHandler().Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        saved!.GlobalId.Should().NotBeEmpty();
+        saved.Code.Should().Be(BusinessPartnerIdentityPolicy.CreateInternalCode(saved.GlobalId));
+        saved.NormalizedIdentificationNumber.Should().Be("0999999999001");
+        saved.Addresses.Should().OnlyContain(item => item.GlobalId.HasValue && item.GlobalId != Guid.Empty);
+        saved.Contacts.Should().OnlyContain(item => item.GlobalId.HasValue && item.GlobalId != Guid.Empty);
+    }
+
+    [Fact]
+    public async Task Create_RejectsBothWithStableCodeBeforePersistence()
+    {
+        var result = await CreateCreateHandler().Handle(CreateCommand() with { PartnerType = "Both" }, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_ROLE_INVALID");
+        await _repository.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Create_RejectsIdentificationThatNormalizesToEmptyBeforePersistence()
+    {
+        var result = await CreateCreateHandler().Handle(
+            CreateCommand() with { IdentificationNumber = " -- .. " }, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_IDENTIFICATION_INVALID");
+        await _repository.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Create_UsesRoleAwareNormalizedUniqueness()
+    {
+        CreateBusinessPartnerData? saved = null;
+        _repository.ExistsByIdentificationAsync("Supplier", 1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.CreateAsync(Arg.Do<CreateBusinessPartnerData>(data => saved = data), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(25);
+        _repository.GetByIdAsync(25, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(WithPartnerType(CreatePartner(), "Supplier"));
+
+        var result = await CreateCreateHandler().Handle(CreateCommand() with { PartnerType = "Supplier" }, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        saved!.PartnerType.Should().Be("Supplier");
+        await _repository.Received(1).ExistsByIdentificationAsync("Supplier", 1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Create_BranchRejectsProtectedScalarBeforePersistence()
+    {
+        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(25);
+        _repository.GetByIdAsync(25, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(CreatePartner());
+
+        var result = await CreateCreateHandler(BranchCompany()).Handle(
+            BranchCreateCommand() with { Website = "https://branch.invalid" },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_PROTECTED_FIELD" && error.Field == "Website");
+        await _repository.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
+    }
+
+    [Theory]
+    [InlineData("SupplierGroupId")]
+    [InlineData("PaymentTermId")]
+    public async Task Create_BranchRejectsExplicitZeroForProtectedNullableNumeric(string protectedField)
+    {
+        var command = protectedField switch
+        {
+            "SupplierGroupId" => BranchCreateCommand() with { SupplierGroupId = 0 },
+            "PaymentTermId" => BranchCreateCommand() with { PaymentTermId = 0 },
+            _ => throw new ArgumentOutOfRangeException(nameof(protectedField))
+        };
+
+        var result = await CreateCreateHandler(BranchCompany()).Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_PROTECTED_FIELD" && error.Field == protectedField);
+        await _repository.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Create_BranchRejectsProtectedCollectionBeforePersistence()
+    {
+        var bankAccount = new SaveBusinessPartnerBankAccountData(
+            BankId: null,
+            BankAccountTypeId: null,
+            BankName: "Banco",
+            AccountType: "Checking",
+            AccountNumber: "001",
+            HolderName: null,
+            HolderIdentification: null,
+            CurrencyCode: null,
+            SwiftCode: null,
+            AbaRoutingCode: null,
+            Iban: null,
+            BankCountry: null,
+            BankCity: null,
+            Notes: null,
+            IsPrimary: false,
+            IsActive: true);
+        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(25);
+        _repository.GetByIdAsync(25, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(CreatePartner());
+
+        var result = await CreateCreateHandler(BranchCompany()).Handle(
+            BranchCreateCommand() with { BankAccounts = [bankAccount] },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_PROTECTED_FIELD" && error.Field == "BankAccounts");
+        await _repository.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Create_BranchWithoutParentReturnsStableErrorBeforePersistence()
+    {
+        var result = await CreateCreateHandler(BranchCompany(parentCompanyId: null))
+            .Handle(BranchCreateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_BRANCH_PARENT_REQUIRED");
+        await _repository.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
+        await _writer.DidNotReceiveWithAnyArgs().EnqueueAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Create_BranchAllowsAddressesAndContacts()
+    {
+        CreateBusinessPartnerData? saved = null;
+        var command = BranchCreateCommand() with
+        {
+            Addresses = [new SaveBusinessPartnerAddressData(null, null, null, null, "Main", "Calle 1", null, null, null, null, null, null, null, true, true)],
+            Contacts = [new SaveBusinessPartnerContactData(null, null, null, "Contacto", null, null, null, null, null, "contacto@example.test", null, false, true, true, null)]
+        };
+        _repository.CreateAsync(Arg.Do<CreateBusinessPartnerData>(data => saved = data), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(25);
+        _repository.GetByIdAsync(25, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(CreatePartner());
+
+        var result = await CreateCreateHandler(BranchCompany()).Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        saved!.Addresses.Should().ContainSingle();
+        saved.Contacts.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task Create_InactiveCandidateDoesNotConflictWithActiveIdentification()
+    {
+        _repository.ExistsByIdentificationAsync("Customer", 1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
+        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(25);
+        _repository.GetByIdAsync(25, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(CreatePartner());
+
+        var result = await CreateCreateHandler().Handle(
+            CreateCommand() with { IsActive = false },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Create_BranchOmissionSentinelStillPrechecksIntendedActiveIdentification()
+    {
+        _repository.ExistsByIdentificationAsync("Customer", 1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await CreateCreateHandler(BranchCompany()).Handle(
+            BranchCreateCommand(),
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_IDENTIFICATION_ALREADY_EXISTS");
+        await _repository.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Create_ActiveCandidateAllowsAnInactiveExistingIdentification()
+    {
+        _repository.ExistsByIdentificationAsync("Customer", 1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(25);
+        _repository.GetByIdAsync(25, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(CreatePartner());
+
+        var result = await CreateCreateHandler().Handle(CreateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(-1, "BP_IDENTIFICATION_ALREADY_EXISTS")]
+    [InlineData(-2, "BusinessPartnerCodeAlreadyExists")]
+    [InlineData(-3, "BP_SAP_CARD_CODE_ALREADY_EXISTS")]
+    public async Task Create_MapsStoredProcedurePrecheckResults(int persistenceResult, string expectedCode)
+    {
+        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(persistenceResult);
+
+        var result = await CreateCreateHandler().Handle(CreateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == expectedCode);
+    }
+
+    [Theory]
+    [InlineData(BusinessPartnerUniqueConflictKind.Identification, "BP_IDENTIFICATION_ALREADY_EXISTS")]
+    [InlineData(BusinessPartnerUniqueConflictKind.Code, "BusinessPartnerCodeAlreadyExists")]
+    [InlineData(BusinessPartnerUniqueConflictKind.SapCardCode, "BP_SAP_CARD_CODE_ALREADY_EXISTS")]
+    public async Task Create_MapsUniqueRaceOnlyAfterTransactionRollback(
+        BusinessPartnerUniqueConflictKind conflictKind,
+        string expectedCode)
+    {
+        _repository.CreateAsync(
+                Arg.Any<CreateBusinessPartnerData>(),
+                _transactionRunner.Connection,
+                _transactionRunner.Transaction,
+                Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ => throw new BusinessPartnerUniqueConflictException(conflictKind));
+
+        var result = await CreateCreateHandler().Handle(CreateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == expectedCode);
+        _transactionRunner.RolledBack.Should().BeTrue();
+        _transactionRunner.Committed.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Create_CentralEnabledPolicyCalculatesSapCodeButBranchNeverDoes()
+    {
+        var central = Company(syncEnabled: true);
+        _companyContext.HasActiveCompany.Returns(true);
+        _companyContext.CurrentCompany.Returns(central);
+        _sapPolicyRepository.GetByCompanyIdAsync(central.CompanyId, Arg.Any<CancellationToken>())
+            .Returns(new BusinessPartnerSapCodePolicyRecord(central.CompanyId, true, "RoleOnly", "PASS", [1, 2, 3, 4, 5, 6, 7, 8]));
+        _repository.GetIdentificationTypeCodeAsync(1, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns("NATIONAL");
+        CreateBusinessPartnerData? centralSaved = null;
+        _repository.CreateAsync(Arg.Do<CreateBusinessPartnerData>(data => centralSaved = data), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(25);
+        _repository.GetByIdAsync(25, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(CreatePartner(sapCardCode: "C0999999999001"));
+
+        var centralResult = await new CreateBusinessPartnerCommandHandler(_repository, _transactionRunner, _writer, _companyContext, _sapPolicyRepository)
+            .Handle(CreateCommand(), CancellationToken.None);
+
+        centralResult.IsSuccess.Should().BeTrue();
+        centralSaved!.SapCardCode.Should().Be("C0999999999001");
+        centralSaved.CanonicalVersion.Should().Be(1);
+        centralSaved.MasterSyncStatus.Should().Be("Accepted");
+
+        _companyContext.CurrentCompany.Returns(BranchCompany());
+        CreateBusinessPartnerData? branchSaved = null;
+        _repository.CreateAsync(Arg.Do<CreateBusinessPartnerData>(data => branchSaved = data), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(26);
+        _repository.GetByIdAsync(26, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(CreatePartner());
+
+        var branchResult = await new CreateBusinessPartnerCommandHandler(_repository, _transactionRunner, _writer, _companyContext, _sapPolicyRepository)
+            .Handle(BranchCreateCommand(), CancellationToken.None);
+
+        branchResult.IsSuccess.Should().BeTrue();
+        branchSaved!.SapCardCode.Should().BeNull();
+        branchSaved.CanonicalVersion.Should().Be(0);
+        branchSaved.MasterSyncStatus.Should().Be("PendingMaster");
+        await _sapPolicyRepository.Received(1).GetByCompanyIdAsync(central.CompanyId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Update_MapsZeroRowsToConcurrencyConflictAndDecodesExpectedVersion()
+    {
+        var partner = CreatePartner();
+        UpdateBusinessPartnerData? saved = null;
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+        _repository.UpdateAsync(Arg.Do<UpdateBusinessPartnerData>(data => saved = data), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(0);
+
+        var result = await CreateUpdateHandler().Handle(UpdateCommand(partner.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_CONCURRENCY_CONFLICT");
+        saved!.ExpectedRowVersion.Should().Equal([1, 2, 3, 4, 5, 6, 7, 8]);
+        saved.Code.Should().Be(partner.Code);
+        saved.PartnerType.Should().Be(partner.PartnerType);
+        saved.IdentificationNumber.Should().Be(partner.IdentificationNumber);
+    }
+
+    [Fact]
+    public async Task Update_ReactivationRejectsAnActiveIdentificationCompetitor()
+    {
+        var partner = CreatePartner();
+        partner.IsActive = false;
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+        _repository.ExistsByIdentificationAsync(partner.PartnerType, partner.IdentificationTypeId, partner.NormalizedIdentificationNumber, partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
+        _repository.UpdateAsync(Arg.Any<UpdateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(1);
+
+        var result = await CreateUpdateHandler().Handle(
+            UpdateCommand(partner.Id) with { IsActive = true },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_IDENTIFICATION_ALREADY_EXISTS");
+    }
+
+    [Fact]
+    public async Task Update_MapsStoredProcedureReactivationPrecheckResult()
+    {
+        var partner = CreatePartner();
+        partner.IsActive = false;
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+        _repository.UpdateAsync(Arg.Any<UpdateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(-1);
+
+        var result = await CreateUpdateHandler().Handle(
+            UpdateCommand(partner.Id) with { IsActive = true },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_IDENTIFICATION_ALREADY_EXISTS");
+    }
+
+    [Fact]
+    public async Task Update_MapsUniqueRaceOnlyAfterTransactionRollback()
+    {
+        var partner = CreatePartner();
+        partner.IsActive = false;
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+        _repository.UpdateAsync(
+                Arg.Any<UpdateBusinessPartnerData>(),
+                _transactionRunner.Connection,
+                _transactionRunner.Transaction,
+                Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ => throw new BusinessPartnerUniqueConflictException(BusinessPartnerUniqueConflictKind.Identification));
+
+        var result = await CreateUpdateHandler().Handle(
+            UpdateCommand(partner.Id) with { IsActive = true },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_IDENTIFICATION_ALREADY_EXISTS");
+        _transactionRunner.RolledBack.Should().BeTrue();
+        _transactionRunner.Committed.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("PendingMaster", "BP_MASTER_PROPOSAL_IN_FLIGHT")]
+    [InlineData("Conflict", "BP_MASTER_PROPOSAL_IN_FLIGHT")]
+    [InlineData("LegacyReview", "BP_LEGACY_REVIEW_REQUIRED")]
+    public async Task Update_BranchBlocksInFlightAndLegacyReview(string status, string code)
+    {
+        var partner = CreatePartner();
+        partner.MasterSyncStatus = status;
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+
+        var result = await CreateUpdateHandler(BranchCompany()).Handle(UpdateCommand(partner.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == code);
+        await _repository.DidNotReceiveWithAnyArgs().UpdateAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Update_BranchAllowsOnlyEditableFieldsAndPreservesBaseVersion()
+    {
+        var partner = CreatePartner();
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+        UpdateBusinessPartnerData? saved = null;
+        _repository.UpdateAsync(Arg.Do<UpdateBusinessPartnerData>(data => saved = data), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(1);
+
+        var allowed = await CreateUpdateHandler(BranchCompany()).Handle(UpdateCommand(partner.Id) with { Name = "Cliente Editado" }, CancellationToken.None);
+
+        allowed.IsSuccess.Should().BeTrue();
+        saved!.CanonicalVersion.Should().Be(partner.CanonicalVersion);
+        saved.MasterSyncStatus.Should().Be("PendingMaster");
+
+        var protectedResult = await CreateUpdateHandler(BranchCompany()).Handle(UpdateCommand(partner.Id) with { Website = "https://branch.invalid" }, CancellationToken.None);
+        protectedResult.IsSuccess.Should().BeFalse();
+        protectedResult.Errors.Should().Contain(error => error.Code == "BP_PROTECTED_FIELD" && error.Field == "Website");
+    }
+
+    [Fact]
+    public async Task Update_RejectedBranchCreatePublishesCreatedWithoutBaseAndPreservesIdentity()
+    {
+        var current = CreatePartner();
+        current.CanonicalVersion = 0;
+        current.MasterSyncStatus = "Rejected";
+        var updated = CreatePartner(name: "Cliente corregido");
+        updated.GlobalId = current.GlobalId;
+        updated.Code = current.Code;
+        updated.CanonicalVersion = 0;
+        updated.MasterSyncStatus = "PendingMaster";
+        _repository.GetByIdAsync(current.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
+            .Returns(current, updated);
+        _repository.UpdateAsync(Arg.Any<UpdateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(1);
+
+        var result = await CreateUpdateHandler(BranchCompany()).Handle(
+            UpdateCommand(current.Id) with { Name = "Cliente corregido" },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        await _writer.Received(1).EnqueueAsync(
+            Arg.Is<BusinessPartnerOutboxWriteRequest>(write =>
+                write.Operation == SyncOperation.Created && write.Base == null &&
+                write.Current.GlobalId == current.GlobalId && write.Current.Code == current.Code),
+            _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Update_CanonicalBranchPartnerStillPublishesUpdatedWithBase()
+    {
+        var current = CreatePartner(name: "Cliente antes");
+        current.CanonicalVersion = 4;
+        var updated = CreatePartner(name: "Cliente despues");
+        updated.GlobalId = current.GlobalId;
+        updated.Code = current.Code;
+        updated.CanonicalVersion = 4;
+        _repository.GetByIdAsync(current.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
+            .Returns(current, updated);
+        _repository.UpdateAsync(Arg.Any<UpdateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(1);
+
+        var result = await CreateUpdateHandler(BranchCompany()).Handle(
+            UpdateCommand(current.Id) with { Name = "Cliente despues" }, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        await _writer.Received(1).EnqueueAsync(
+            Arg.Is<BusinessPartnerOutboxWriteRequest>(write =>
+                write.Operation == SyncOperation.Updated && write.Base == current),
+            _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Update_StandaloneAllowsManagedFieldsWithoutDistributionVersionIncrement()
+    {
+        var partner = CreatePartner();
+        partner.CanonicalVersion = 7;
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+        UpdateBusinessPartnerData? saved = null;
+        _repository.UpdateAsync(Arg.Do<UpdateBusinessPartnerData>(data => saved = data), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(1);
+
+        var result = await CreateUpdateHandler().Handle(UpdateCommand(partner.Id) with { Website = "https://standalone.example" }, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        saved!.CanonicalVersion.Should().Be(7);
+        saved.MasterSyncStatus.Should().Be("Accepted");
+        saved.SapCardCode.Should().Be(partner.SapCardCode);
+    }
+
+    [Fact]
+    public async Task Delete_BranchIsRejectedAndZeroRowsMapsToConcurrencyConflict()
+    {
+        var partner = CreatePartner();
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+        var branch = await CreateDeleteHandler(BranchCompany()).Handle(new DeleteBusinessPartnerCommand(partner.Id, partner.RowVersion), CancellationToken.None);
+        branch.Errors.Should().ContainSingle(error => error.Code == "BP_SYNC_DELETE_NOT_SUPPORTED");
+
+        _repository.DeleteAsync(Arg.Any<DeleteBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        var stale = await CreateDeleteHandler().Handle(new DeleteBusinessPartnerCommand(partner.Id, partner.RowVersion), CancellationToken.None);
+        stale.Errors.Should().ContainSingle(error => error.Code == "BP_CONCURRENCY_CONFLICT");
+    }
+
+    [Theory]
+    [InlineData("Supplier", "Customer")]
+    [InlineData("Customer", "Supplier")]
+    public async Task TypedConsult_HidesPartnerFromTheOtherRole(string actualRole, string expectedRole)
+    {
+        var partner = WithPartnerType(CreatePartner(), actualRole);
+        _repository.GetByIdAsync(partner.Id, Arg.Any<CancellationToken>()).Returns(partner);
+
+        var result = await new GetBusinessPartnerByIdQueryHandler(_repository)
+            .Handle(new GetBusinessPartnerByIdQuery(partner.Id, expectedRole), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BusinessPartnerNotFound");
+    }
+
+    [Theory]
+    [InlineData("Supplier", "Customer")]
+    [InlineData("Customer", "Supplier")]
+    public async Task TypedUpdate_HidesPartnerFromTheOtherRoleBeforeMutation(string actualRole, string expectedRole)
+    {
+        var partner = WithPartnerType(CreatePartner(), actualRole);
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+
+        var result = await CreateUpdateHandler().Handle(
+            UpdateCommand(partner.Id) with { ExpectedPartnerType = expectedRole }, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BusinessPartnerNotFound");
+        await _repository.DidNotReceiveWithAnyArgs().UpdateAsync(default!, default!, default!, default);
+    }
+
+    [Theory]
+    [InlineData("Supplier", "Customer")]
+    [InlineData("Customer", "Supplier")]
+    public async Task TypedDelete_HidesPartnerFromTheOtherRoleBeforeMutation(string actualRole, string expectedRole)
+    {
+        var partner = WithPartnerType(CreatePartner(), actualRole);
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+
+        var result = await CreateDeleteHandler().Handle(
+            new DeleteBusinessPartnerCommand(partner.Id, partner.RowVersion, ExpectedPartnerType: expectedRole), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BusinessPartnerNotFound");
+        await _repository.DidNotReceiveWithAnyArgs().DeleteAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public void EditPolicy_IsDerivedFromTrustedCompanyContextShape()
+    {
+        BusinessPartnerWritePolicy.GetEditPolicy(BranchCompany()).Should().BeEquivalentTo(
+            new BusinessPartnerEditPolicyDto(true, false, ["Name", "CommercialName", "Phone", "Email", "Addresses", "Contacts"]));
+        BusinessPartnerWritePolicy.GetEditPolicy(Company(syncEnabled: false)).Should().BeEquivalentTo(
+            new BusinessPartnerEditPolicyDto(false, true, []));
     }
 
     [Fact]
@@ -100,7 +632,8 @@ public sealed class BusinessPartnerSyncPublishingTests
         var writer = new BusinessPartnerLocalOutboxWriter(companyContext, new SyncEventPayloadFactory(), localOutbox);
 
         var eventId = await writer.EnqueueAsync(
-            partner, SyncOperation.Created, _transactionRunner.Connection, _transactionRunner.Transaction);
+            new BusinessPartnerOutboxWriteRequest(partner, null, SyncOperation.Created, 7, "admin", null),
+            _transactionRunner.Connection, _transactionRunner.Transaction);
 
         eventId.Should().BeNull();
         await localOutbox.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
@@ -124,31 +657,40 @@ public sealed class BusinessPartnerSyncPublishingTests
         var writer = new BusinessPartnerLocalOutboxWriter(companyContext, new SyncEventPayloadFactory(), localOutbox);
 
         var eventId = await writer.EnqueueAsync(
-            partner, SyncOperation.Created, _transactionRunner.Connection, _transactionRunner.Transaction);
+            new BusinessPartnerOutboxWriteRequest(partner, null, SyncOperation.Created, 7, "admin", null),
+            _transactionRunner.Connection, _transactionRunner.Transaction);
 
         eventId.Should().NotBeNull().And.NotBe(Guid.Empty);
         captured.Should().NotBeNull();
         captured!.EventId.Should().Be(eventId!.Value);
         captured.EntityGlobalId.Should().Be(partner.GlobalId);
         captured.EntityName.Should().Be("BusinessPartner");
+        captured.TargetCompanyId.Should().BeNull();
+        captured.CausationEventId.Should().BeNull();
         captured.PayloadJson.Should().Contain("\"operation\":\"Created\"")
-            .And.NotContain("SapCardCode")
-            .And.NotContain("S0001");
+            .And.Contain("\"schemaVersion\":2")
+            .And.Contain("\"sapCardCode\":\"S0001\"");
     }
 
-    private CreateBusinessPartnerCommandHandler CreateCreateHandler()
+    private CreateBusinessPartnerCommandHandler CreateCreateHandler(CompanyConnectionInfo? company = null)
     {
-        return new CreateBusinessPartnerCommandHandler(_repository, _transactionRunner, _writer);
+        _companyContext.CurrentCompany.Returns(company ?? Company(syncEnabled: false));
+        _companyContext.HasActiveCompany.Returns(true);
+        return new CreateBusinessPartnerCommandHandler(_repository, _transactionRunner, _writer, _companyContext, _sapPolicyRepository);
     }
 
-    private UpdateBusinessPartnerCommandHandler CreateUpdateHandler()
+    private UpdateBusinessPartnerCommandHandler CreateUpdateHandler(CompanyConnectionInfo? company = null)
     {
-        return new UpdateBusinessPartnerCommandHandler(_repository, _transactionRunner, _writer);
+        _companyContext.CurrentCompany.Returns(company ?? Company(syncEnabled: false));
+        _companyContext.HasActiveCompany.Returns(true);
+        return new UpdateBusinessPartnerCommandHandler(_repository, _transactionRunner, _writer, _companyContext);
     }
 
-    private DeleteBusinessPartnerCommandHandler CreateDeleteHandler()
+    private DeleteBusinessPartnerCommandHandler CreateDeleteHandler(CompanyConnectionInfo? company = null)
     {
-        return new DeleteBusinessPartnerCommandHandler(_repository, _transactionRunner, _writer);
+        _companyContext.CurrentCompany.Returns(company ?? Company(syncEnabled: false));
+        _companyContext.HasActiveCompany.Returns(true);
+        return new DeleteBusinessPartnerCommandHandler(_repository, _transactionRunner, _writer, _companyContext);
     }
 
     private static CompanyConnectionInfo Company(bool syncEnabled) =>
@@ -163,6 +705,20 @@ public sealed class BusinessPartnerSyncPublishingTests
             IsMaster: true,
             SyncEnabled: syncEnabled);
 
+    private static CompanyConnectionInfo BranchCompany(int? parentCompanyId = 10) =>
+        new(
+            CompanyId: 20,
+            CompanyCode: "BRANCH",
+            CommercialName: "Sucursal",
+            DatabaseEngine: DatabaseEngine.SqlServer,
+            ConnectionString: "Server=(local);Database=NuanSystem_Branch;",
+            SapIntegrationMode: SapIntegrationMode.None,
+            OperationMode: CompanyOperationMode.Standalone,
+            IsMaster: false,
+            ParentCompanyId: parentCompanyId,
+            BranchCode: "B20",
+            SyncEnabled: true);
+
     private static BusinessPartnerDto CreatePartner(string name = "Cliente Uno", string? sapCardCode = null)
     {
         return new BusinessPartnerDto
@@ -174,20 +730,32 @@ public sealed class BusinessPartnerSyncPublishingTests
             CommercialName = "Cliente Comercial",
             PartnerType = "Customer",
             IdentificationTypeId = 1,
+            IdentificationTypeCode = "RUC",
             IdentificationNumber = "0999999999001",
+            NormalizedIdentificationNumber = "0999999999001",
+            CanonicalVersion = 0,
+            RowVersion = "AQIDBAUGBwg=",
+            MasterSyncStatus = "Accepted",
             Email = "cliente@nuansystem.local",
             Phone = "0999999999",
+            CountryCode = "EC",
             IsActive = true,
+            AllowsPartialPayments = true,
             ExternalSystem = "ExternalApi",
             ExternalCode = "EXT-001",
             SapCardCode = sapCardCode
         };
     }
 
+    private static BusinessPartnerDto WithPartnerType(BusinessPartnerDto partner, string partnerType)
+    {
+        partner.PartnerType = partnerType;
+        return partner;
+    }
+
     private static CreateBusinessPartnerCommand CreateCommand(string? sapCardCode = null)
     {
         return new CreateBusinessPartnerCommand(
-            Code: "CLI-001",
             Name: "Cliente Uno",
             CommercialName: "Cliente Comercial",
             PartnerType: "Customer",
@@ -273,18 +841,6 @@ public sealed class BusinessPartnerSyncPublishingTests
             DeliveryToleranceDays: 0,
             RequiresPurchaseOrder: false,
             CreditStatus: "Normal",
-            SapCardCode: sapCardCode,
-            SapCardType: null,
-            SapSyncStatus: null,
-            SapLastSyncAt: null,
-            SapLastError: null,
-            SapEnabled: false,
-            SapMode: null,
-            SapCompanyCode: null,
-            SapRetryCount: 0,
-            SyncAsSupplier: false,
-            AllowManualSapRetry: false,
-            RequiresApprovalBeforeSapSync: false,
             Addresses: null,
             Contacts: null,
             BankAccounts: null,
@@ -296,17 +852,23 @@ public sealed class BusinessPartnerSyncPublishingTests
             AuditUserName: "admin");
     }
 
+    private static CreateBusinessPartnerCommand BranchCreateCommand() =>
+        CreateCommand() with
+        {
+            IsActive = false,
+            CountryCode = null,
+            AllowsPartialPayments = false,
+            CreditStatus = null
+        };
+
     private static UpdateBusinessPartnerCommand UpdateCommand(int id)
     {
         var create = CreateCommand();
         return new UpdateBusinessPartnerCommand(
             id,
-            create.Code,
+            "AQIDBAUGBwg=",
             create.Name,
             create.CommercialName,
-            create.PartnerType,
-            create.IdentificationTypeId,
-            create.IdentificationNumber,
             create.SupplierGroupId,
             create.SupplierClassId,
             create.EconomicActivityId,
@@ -387,18 +949,6 @@ public sealed class BusinessPartnerSyncPublishingTests
             create.DeliveryToleranceDays,
             create.RequiresPurchaseOrder,
             create.CreditStatus,
-            create.SapCardCode,
-            create.SapCardType,
-            create.SapSyncStatus,
-            create.SapLastSyncAt,
-            create.SapLastError,
-            create.SapEnabled,
-            create.SapMode,
-            create.SapCompanyCode,
-            create.SapRetryCount,
-            create.SyncAsSupplier,
-            create.AllowManualSapRetry,
-            create.RequiresApprovalBeforeSapSync,
             create.Addresses,
             create.Contacts,
             create.BankAccounts,

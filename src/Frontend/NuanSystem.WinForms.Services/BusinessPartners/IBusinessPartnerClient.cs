@@ -9,5 +9,5 @@ public interface IBusinessPartnerClient
     Task<BusinessPartnerLookups> GetLookupsAsync(string formKey, CancellationToken cancellationToken = default);
     Task<BusinessPartnerItem> CreateAsync(string formKey, SaveBusinessPartnerRequest request, CancellationToken cancellationToken = default);
     Task<BusinessPartnerItem> UpdateAsync(string formKey, int id, SaveBusinessPartnerRequest request, CancellationToken cancellationToken = default);
-    Task DeleteAsync(string formKey, int id, CancellationToken cancellationToken = default);
+    Task DeleteAsync(string formKey, int id, string expectedRowVersion, CancellationToken cancellationToken = default);
 }

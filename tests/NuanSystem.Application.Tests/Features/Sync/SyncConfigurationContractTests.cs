@@ -296,6 +296,7 @@ public sealed class SyncConfigurationContractTests
         SyncMasterBranchEntityCodes.IsKnown(SyncMasterBranchEntityCodes.Countries).Should().BeTrue();
         SyncMasterBranchEntityCodes.Find(" warehouse ")?.EntityCode.Should().Be(SyncMasterBranchEntityCodes.Warehouse);
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.BusinessPartner).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.BusinessPartnerProposal).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Countries).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Provinces).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Cities).Should().BeTrue();
@@ -308,6 +309,7 @@ public sealed class SyncConfigurationContractTests
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.ReplenishmentMethods).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.StorageConditions).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.BusinessPartnerPaymentTerms).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.BusinessPartnerProposalResult).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Carrier).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative("CustomCatalog").Should().BeFalse();
         SyncMasterBranchEntityCodes.InitialCatalog.Select(item => item.EntityCode).Should().BeEquivalentTo(
@@ -325,6 +327,8 @@ public sealed class SyncConfigurationContractTests
             "Zones",
             "SupplyMethods",
             "BusinessPartner",
+            "BusinessPartnerProposal",
+            "BusinessPartnerProposalResult",
             "ItemGroups",
             "ItemFamilies",
             "ItemSubgroups",
@@ -343,12 +347,20 @@ public sealed class SyncConfigurationContractTests
         SyncMasterBranchEntityCodes.InitialCatalog.Should().OnlyContain(item => item.ExistsInModel);
         SyncMasterBranchEntityCodes.InitialCatalog
             .Where(item => item.IsOperative)
+            .Where(item => item.EntityCode is not SyncMasterBranchEntityCodes.BusinessPartnerProposal
+                and not SyncMasterBranchEntityCodes.BusinessPartnerProposalResult)
             .Should()
             .OnlyContain(item => item.HasProducer && item.HasApplier && item.SupportsInsert && item.SupportsUpdate && item.SupportsDeactivate);
         SyncMasterBranchEntityCodes.InitialCatalog
             .Where(item => !item.IsOperative)
+            .Where(item => item.EntityCode is not SyncMasterBranchEntityCodes.BusinessPartnerProposal
+                and not SyncMasterBranchEntityCodes.BusinessPartnerProposalResult)
             .Should()
             .OnlyContain(item => !item.HasProducer && !item.HasApplier);
+        SyncMasterBranchEntityCodes.Find(SyncMasterBranchEntityCodes.BusinessPartnerProposal).Should().Match<SyncMasterBranchEntityCatalogItem>(
+            item => item.HasProducer && item.HasApplier && item.SupportsInsert && item.SupportsUpdate && !item.SupportsDeactivate);
+        SyncMasterBranchEntityCodes.Find(SyncMasterBranchEntityCodes.BusinessPartnerProposalResult).Should().Match<SyncMasterBranchEntityCatalogItem>(
+            item => item.HasProducer && item.HasApplier && !item.SupportsInsert && item.SupportsUpdate && !item.SupportsDeactivate);
     }
 
     [Fact]
@@ -373,6 +385,7 @@ public sealed class SyncConfigurationContractTests
             ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "CitySyncEventApplier.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "CurrencySyncEventApplier.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "BusinessPartnerSyncEventApplier.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "BusinessPartnerProposalResultSyncEventApplier.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "ItemGroupSyncEventApplier.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "ItemSyncEventApplier.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "WarehouseSyncEventApplier.cs"));
@@ -401,6 +414,7 @@ public sealed class SyncConfigurationContractTests
         appliers.Should().Contain("SyncMasterBranchEntityCodes.Cities");
         appliers.Should().Contain("SyncMasterBranchEntityCodes.Currencies");
         appliers.Should().Contain("SyncMasterBranchEntityCodes.BusinessPartner");
+        appliers.Should().Contain("SyncMasterBranchEntityCodes.BusinessPartnerProposalResult");
         appliers.Should().Contain("SyncMasterBranchEntityCodes.ItemGroups");
         appliers.Should().Contain("SyncMasterBranchEntityCodes.Item");
         appliers.Should().Contain("SyncMasterBranchEntityCodes.Warehouse");
@@ -660,6 +674,162 @@ public sealed class SyncConfigurationContractTests
         script.Should().Contain("20260718.099");
         script.Should().NotContain("SyncEntityConfigurations");
         script.Should().NotContain("EntityOwnershipConfigurations");
+    }
+
+    [Fact]
+    public void BusinessPartnerBidirectionalGovernance_ExtendsProfileDirectionsWithoutActivatingRoutes()
+    {
+        var script = ReadDatabaseScript("229_master_business_partner_bidirectional_governance.sql");
+
+        script.Should().Contain("CHECK (Direction IN (N'MasterToBranch',N'BranchToMaster'))")
+            .And.Contain("CK_SyncProfiles_ConflictStrategy CHECK (ConflictStrategy IN (N'MasterWins',N'CentralReview'))")
+            .And.Contain("Direction=N'BranchToMaster' AND ConflictStrategy=N'CentralReview' AND ExecutionMode=N'Incremental'")
+            .And.Contain("@Direction NOT IN (N'MasterToBranch',N'BranchToMaster')")
+            .And.Contain("SP_NA_POST_SYNCPROFILECREAR")
+            .And.Contain("SP_NA_PUT_SYNCPROFILEACTUALIZAR")
+            .And.Contain("SP_NA_PATCH_SYNCPROFILEACTIVAR")
+            .And.Contain("BusinessPartnerSapCodePolicies")
+            .And.NotContain("N'BUSINESS-PARTNER-BIDIRECTIONAL'")
+            .And.NotContain("SET IsActive=1 WHERE Id");
+    }
+
+    [Fact]
+    public void BusinessPartnerBidirectionalRouting_ClosesProposalAndResultTopology()
+    {
+        var script = ReadDatabaseScript("229_master_business_partner_bidirectional_governance.sql");
+        var procedure = ExtractProcedure(script, "SP_NA_GET_SYNCROUTINGTARGETS");
+
+        procedure.Should().ContainAll(
+                "@TargetCompanyId int=NULL",
+                "profile.Direction=N'BranchToMaster'",
+                "profile.ConflictStrategy=N'CentralReview'",
+                "sourceCompany.ParentCompanyId=profile.CompanyId",
+                "profileBranch.BranchCompanyId=@SourceCompanyId",
+                "profile.CompanyId AS BranchCompanyId",
+                "@NormalizedEntityCode=N'BusinessPartnerProposal'",
+                "profile.Direction=N'MasterToBranch'",
+                "branchCompany.ParentCompanyId=profile.CompanyId",
+                "branchCompany.Id=@TargetCompanyId",
+                "@NormalizedEntityCode=N'BusinessPartnerProposalResult'",
+                "@TargetCompanyId IS NOT NULL")
+            .And.NotContain("profile.Direction=N'BranchToMaster' OR profile.Direction=N'MasterToBranch'");
+    }
+
+    [Fact]
+    public void BusinessPartnerBidirectionalRouting_PreservesThe093RepositoryAndDistributionContract()
+    {
+        var script = ReadDatabaseScript("229_master_business_partner_bidirectional_governance.sql");
+        var procedure = ExtractProcedure(script, "SP_NA_GET_SYNCROUTINGTARGETS");
+        var repository = ReadSourceFile(
+            "src", "Backend", "NuanSystem.Persistence", "Repositories", "Sync", "SyncRoutingRepository.cs");
+
+        procedure.Should().ContainAll(
+            "@RequireTargetBranchMatch bit=0,",
+            "@EntityGlobalId uniqueidentifier=NULL,",
+            "@TargetCompanyId int=NULL",
+            "profile.Id AS SyncProfileId",
+            "entity.Id AS SyncProfileEntityId",
+            "profile.Code AS SyncProfileCode",
+            "AS SourceCompanyId",
+            "AS BranchCompanyId",
+            "entity.EntityCode",
+            "AS BatchSize",
+            "AS MaxRetries",
+            "profile.RetryDelaySeconds",
+            "profile.TimeoutMinutes",
+            "entity.AllowInsert",
+            "entity.AllowUpdate",
+            "entity.AllowDeactivate",
+            "entity.ContinueOnError",
+            "matrix.Id AS SyncProfileEntityBranchId",
+            "matrix.DistributionMode",
+            "matrix.OnNoMatch",
+            "matrix.RuleExpressionJson",
+            "matrix.RuleVersion",
+            "FROM dbo.SyncDistributionSelections selection",
+            "selection.SyncProfileEntityBranchId=matrix.Id",
+            "selection.EntityGlobalId=@EntityGlobalId",
+            "selection.IsDeleted=0",
+            "THEN 1 ELSE 0 END) AS IsSelected");
+
+        procedure.IndexOf("@EntityGlobalId uniqueidentifier=NULL", StringComparison.Ordinal)
+            .Should().BeLessThan(procedure.IndexOf("@TargetCompanyId int=NULL", StringComparison.Ordinal));
+        procedure.Should().NotContain("matrix.DistributionMode=N'All'")
+            .And.NotContain("matrix.DistributionMode IN (N'All'");
+        repository.Should().ContainAll(
+            "context.RequireTargetBranchMatch",
+            "context.EntityGlobalId");
+    }
+
+    [Fact]
+    public void BusinessPartnerProposalActivation_IsGuardedAtomicallyInsideCreatePutAndPatch()
+    {
+        var script = ReadDatabaseScript("229_master_business_partner_bidirectional_governance.sql");
+        var create = ExtractProcedure(script, "SP_NA_POST_SYNCPROFILECREAR");
+        var update = ExtractProcedure(script, "SP_NA_PUT_SYNCPROFILEACTUALIZAR");
+        var activate = ExtractProcedure(script, "SP_NA_PATCH_SYNCPROFILEACTIVAR");
+
+        create.Should().ContainAll(
+            "BEGIN TRANSACTION",
+            "OPENJSON(ISNULL(@EntitiesJson,N'[]'))",
+            "EntityCode=N'BusinessPartnerProposal'",
+            "IsActive=1",
+            "company.IsMaster=1",
+            "company.IsActive=1",
+            "company.IsDeleted=0",
+            "AND NOT EXISTS",
+            "policy.CompanyId=@CompanyId",
+            "policy.IsEnabled=1",
+            "WITH (UPDLOCK,HOLDLOCK)",
+            "THROW 52233");
+        update.Should().ContainAll(
+            "BEGIN TRANSACTION",
+            "EntityCode=N'BusinessPartnerProposal'",
+            "IsActive=1",
+            "company.IsMaster=1",
+            "company.IsActive=1",
+            "company.IsDeleted=0",
+            "AND NOT EXISTS",
+            "policy.CompanyId=@CompanyId",
+            "policy.IsEnabled=1",
+            "WITH (UPDLOCK,HOLDLOCK)",
+            "THROW 52233");
+        activate.Should().ContainAll(
+            "BEGIN TRANSACTION",
+            "profile.Id=@Id",
+            "entity.EntityCode=N'BusinessPartnerProposal'",
+            "entity.IsActive=1",
+            "company.Id=profile.CompanyId",
+            "company.IsMaster=1",
+            "company.IsActive=1",
+            "company.IsDeleted=0",
+            "AND NOT EXISTS",
+            "policy.CompanyId=profile.CompanyId",
+            "policy.IsEnabled=1",
+            "WITH (UPDLOCK,HOLDLOCK)",
+            "COMMIT TRANSACTION",
+            "ROLLBACK TRANSACTION",
+            "THROW 52233");
+
+        create.IndexOf("THROW 52233", StringComparison.Ordinal)
+            .Should().BeLessThan(create.IndexOf("INSERT INTO dbo.SyncProfiles", StringComparison.Ordinal));
+        update.IndexOf("THROW 52233", StringComparison.Ordinal)
+            .Should().BeLessThan(update.IndexOf("UPDATE dbo.SyncProfiles", StringComparison.Ordinal));
+        activate.IndexOf("THROW 52233", StringComparison.Ordinal)
+            .Should().BeLessThan(activate.IndexOf("UPDATE dbo.SyncProfiles", StringComparison.Ordinal));
+        create.Should().Contain("SELECT @ProfileId;");
+        update.Should().ContainAll("IF @SuppressResult=0 SELECT 0;", "IF @SuppressResult=0 SELECT 1;");
+        activate.Should().Contain("SELECT @Affected;");
+    }
+
+    private static string ExtractProcedure(string sql, string name)
+    {
+        var marker = $"CREATE OR ALTER PROCEDURE dbo.{name}";
+        var start = sql.IndexOf(marker, StringComparison.Ordinal);
+        start.Should().BeGreaterThanOrEqualTo(0);
+        var end = sql.IndexOf("\nGO", start, StringComparison.Ordinal);
+        end.Should().BeGreaterThan(start);
+        return sql[start..end];
     }
 
     private static string ReadDatabaseScript(string scriptName)

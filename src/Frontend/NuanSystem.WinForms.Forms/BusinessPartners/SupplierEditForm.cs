@@ -59,6 +59,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
 
         BindLookups();
         LoadPartner();
+        ApplyEditState();
         LoadContacts();
         LoadAddresses();
         LoadPurchaseSettings();
@@ -85,8 +86,7 @@ public sealed partial class SupplierEditForm : BaseEditForm
 
     protected override bool ValidateForm()
     {
-        var isValid = Validator.RequireText(txtSupplierCode, "Código es requerido.")
-            & Validator.RequireText(txtBusinessName, "Razón social es requerida.")
+        var isValid = Validator.RequireText(txtBusinessName, "Razón social es requerida.")
             & Validator.RequireText(txtDocumentNumber, "RUC / Identificación es requerido.")
             & RequireLookup(lueDocumentType, "Tipo de documento es requerido.");
 
@@ -160,7 +160,6 @@ public sealed partial class SupplierEditForm : BaseEditForm
         var (province, city) = SplitProvinceCity(txtProvinceCity.Text);
         var request = EmptyRequest() with
         {
-            Code = txtSupplierCode.Text.Trim(),
             Name = txtBusinessName.Text.Trim(),
             CommercialName = NullIfEmpty(txtTradeName.Text),
             PartnerType = "Supplier",
@@ -251,10 +250,15 @@ public sealed partial class SupplierEditForm : BaseEditForm
                 PaymentNotes: NullIfEmpty(memShortObservation.Text),
                 OperationalAlert: tglBlocked.IsOn ? "Proveedor bloqueado" : null),
             SapFieldMappings = SupplierBusinessPartnerMapper.ToSapFieldMappingRequests(partner),
-            Attachments = SupplierBusinessPartnerMapper.ToAttachmentRequests(attachments)
+            Attachments = SupplierBusinessPartnerMapper.ToAttachmentRequests(attachments),
+            ExpectedRowVersion = partner is { Id: > 0 } ? partner.RowVersion : null
         };
 
-        Request = SupplierBusinessPartnerMapper.ApplyAccountingFields(request, accountingAccounts, lookups);
+        request = SupplierBusinessPartnerMapper.ApplyAccountingFields(request, accountingAccounts, lookups);
+        Request = SupplierBusinessPartnerMapper.ProjectRequest(
+            request,
+            partner,
+            BusinessPartnerEditPolicy.From(lookups.EditPolicy));
     }
 
     private void BindLookups()
@@ -318,6 +322,76 @@ public sealed partial class SupplierEditForm : BaseEditForm
         lueSupplierType.EditValue = useDesignData ? "Bienes" : null;
         lueInternalClassification.EditValue = useDesignData ? "PROV. NACIONALES" : null;
         lueSupplierSegment.EditValue = useDesignData ? "A - Proveedores Estratégicos" : null;
+    }
+
+    private void ApplyEditState()
+    {
+        var editPolicy = BusinessPartnerEditPolicy.From(lookups.EditPolicy);
+        var state = BusinessPartnerFormEditStatePolicy.Evaluate(partner, editPolicy);
+
+        txtSupplierCode.Text = state.CodeText;
+        txtSupplierCode.Properties.ReadOnly = true;
+        txtSupplierCode.Properties.NullValuePrompt = state.CodeHint;
+        txtSupplierCode.Properties.ShowNullValuePromptWhenFocused = true;
+        lueDocumentType.Properties.ReadOnly = !state.IdentificationEditable;
+        txtDocumentNumber.Properties.ReadOnly = !state.IdentificationEditable;
+        btnSave.Enabled = state.CanSave;
+
+        lblMasterSyncStatus.Text = state.SyncPresentation.Caption;
+        ApplySyncBadge(lblMasterSyncStatus, state.SyncPresentation.BadgeKind);
+        lblMasterSyncMessage.Text = state.SyncPresentation.Message;
+        lblMasterSyncMessage.Visible = !string.IsNullOrWhiteSpace(state.SyncPresentation.Message);
+
+        if (!editPolicy.IsSyncedBranch)
+        {
+            return;
+        }
+
+        SetReadOnly(this, true);
+        lueDocumentType.Properties.ReadOnly = !state.IdentificationEditable;
+        txtDocumentNumber.Properties.ReadOnly = !state.IdentificationEditable;
+        txtBusinessName.Properties.ReadOnly = !state.NameEditable;
+        txtTradeName.Properties.ReadOnly = !state.CommercialNameEditable;
+        txtPhone.Properties.ReadOnly = !state.PhoneEditable;
+        txtEmail.Properties.ReadOnly = !state.EmailEditable;
+        tabContacts.PageEnabled = state.ContactsEditable;
+        tabAddresses.PageEnabled = state.AddressesEditable;
+
+        foreach (var page in new[] { tabPurchases, tabBanks, tabWithholdings, tabAccounting, tabSap, tabAttachments })
+        {
+            page.PageEnabled = false;
+        }
+
+        btnSave.Enabled = state.CanSave;
+        btnCancel.Enabled = true;
+    }
+
+    private static void SetReadOnly(Control parent, bool readOnly)
+    {
+        foreach (Control control in parent.Controls)
+        {
+            if (control is BaseEdit editor)
+            {
+                editor.Properties.ReadOnly = readOnly;
+            }
+
+            if (control.HasChildren)
+            {
+                SetReadOnly(control, readOnly);
+            }
+        }
+    }
+
+    private static void ApplySyncBadge(LabelControl label, string badgeKind)
+    {
+        (label.Appearance.BackColor, label.Appearance.ForeColor) = badgeKind switch
+        {
+            "Success" => (Color.FromArgb(220, 252, 231), Color.FromArgb(22, 101, 52)),
+            "Warning" => (Color.FromArgb(254, 243, 199), Color.FromArgb(146, 64, 14)),
+            _ => (Color.FromArgb(254, 226, 226), Color.FromArgb(153, 27, 27))
+        };
+        label.Appearance.Options.UseBackColor = true;
+        label.Appearance.Options.UseForeColor = true;
     }
 
     private void LoadContacts()
@@ -1556,7 +1630,6 @@ public sealed partial class SupplierEditForm : BaseEditForm
     private static SaveBusinessPartnerRequest EmptyRequest()
     {
         return new SaveBusinessPartnerRequest(
-            Code: string.Empty,
             Name: string.Empty,
             CommercialName: null,
             PartnerType: "Supplier",
@@ -1660,7 +1733,8 @@ public sealed partial class SupplierEditForm : BaseEditForm
             RetentionSettings: Array.Empty<SaveBusinessPartnerRetentionSettingRequest>(),
             Notes: null,
             SapFieldMappings: Array.Empty<SaveBusinessPartnerSapFieldMappingRequest>(),
-            Attachments: Array.Empty<SaveBusinessPartnerAttachmentRequest>());
+            Attachments: Array.Empty<SaveBusinessPartnerAttachmentRequest>(),
+            ExpectedRowVersion: null);
     }
 
     private static BusinessPartnerLookups CreateDesignLookups()

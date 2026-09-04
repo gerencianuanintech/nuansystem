@@ -100,14 +100,22 @@ public sealed class GetSyncConfigurationCatalogQueryHandler(
                     company.DatabaseName))
                 .ToArray(),
             Entities = entityDefinitions.Select(SyncEntityDefinitionMapper.ToProfileCatalogItem).ToArray(),
-            Directions = [new LookupItemDto("MasterToBranch", "Maestro a sucursal")],
+            Directions =
+            [
+                new LookupItemDto("MasterToBranch", "Maestro a sucursal"),
+                new LookupItemDto("BranchToMaster", "Sucursal a maestro")
+            ],
             ExecutionModes =
             [
                 new LookupItemDto("Incremental", "Incremental"),
                 new LookupItemDto("Full", "Completa"),
                 new LookupItemDto("Manual", "Manual")
             ],
-            ConflictStrategies = [new LookupItemDto("MasterWins", "Prevalece maestro")],
+            ConflictStrategies =
+            [
+                new LookupItemDto("MasterWins", "Prevalece maestro"),
+                new LookupItemDto("CentralReview", "Revision central")
+            ],
             ScheduleTypes =
             [
                 new LookupItemDto("Manual", "Manual"),

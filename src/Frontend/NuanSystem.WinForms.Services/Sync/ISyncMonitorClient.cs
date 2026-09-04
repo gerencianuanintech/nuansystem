@@ -21,6 +21,18 @@ public interface ISyncMonitorClient
     Task<SyncManualActionResult> RetryDeadLetterAsync(long id, RetryDeadLetterRequest request, CancellationToken cancellationToken = default);
 
     Task<SyncManualActionResult> ReleaseExpiredLockAsync(long id, ReleaseExpiredLockRequest request, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<BusinessPartnerSyncConflict>> GetBusinessPartnerConflictsAsync(
+        string status = "Open",
+        CancellationToken cancellationToken = default)
+        => throw new NotSupportedException("El cliente no implementa consulta de conflictos de socios de negocio.");
+
+    Task<BusinessPartnerSyncConflict> ResolveBusinessPartnerConflictAsync(
+        long id,
+        ResolveBusinessPartnerSyncConflictRequest request,
+        CancellationToken cancellationToken = default)
+        => throw new NotSupportedException("El cliente no implementa resolución de conflictos de socios de negocio.");
+
     Task<RetrySyncOutboxBatchResult> RetryBatchAsync(RetrySyncOutboxBatchRequest request,CancellationToken cancellationToken=default)
         => throw new NotSupportedException("El cliente no implementa reintento por lote.");
 }

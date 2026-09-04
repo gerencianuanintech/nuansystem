@@ -3,6 +3,16 @@ using System.Runtime.CompilerServices;
 
 namespace NuanSystem.WinForms.ViewModels.BusinessPartners.Suppliers;
 
+public sealed record CustomerContactDetailViewModel(
+    string Name,
+    string Position,
+    string Phone,
+    string Mobile,
+    string Email,
+    bool IsPrimary,
+    bool IsActive,
+    string Notes);
+
 public sealed class SupplierContactViewModel : INotifyPropertyChanged
 {
     private bool isPrimary;
@@ -11,6 +21,7 @@ public sealed class SupplierContactViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid? GlobalId { get; set; }
     public string Treatment { get; set; } = string.Empty;
     public int? ContactTypeId { get; set; }
     public string ContactTypeCode { get; set; } = string.Empty;
@@ -27,6 +38,8 @@ public sealed class SupplierContactViewModel : INotifyPropertyChanged
     public string Extension { get; set; } = string.Empty;
     public string Mobile { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string? Language { get; set; }
+    public bool ReceivesNotifications { get; set; }
     public DateTime? Birthday { get; set; }
     public string Notes { get; set; } = string.Empty;
 
@@ -47,6 +60,7 @@ public sealed class SupplierContactViewModel : INotifyPropertyChanged
         return new SupplierContactViewModel
         {
             Id = Id,
+            GlobalId = GlobalId,
             Treatment = Treatment,
             ContactTypeId = ContactTypeId,
             ContactTypeCode = ContactTypeCode,
@@ -62,6 +76,8 @@ public sealed class SupplierContactViewModel : INotifyPropertyChanged
             Extension = Extension,
             Mobile = Mobile,
             Email = Email,
+            Language = Language,
+            ReceivesNotifications = ReceivesNotifications,
             Birthday = Birthday,
             IsPrimary = IsPrimary,
             IsActive = IsActive,
@@ -71,6 +87,7 @@ public sealed class SupplierContactViewModel : INotifyPropertyChanged
 
     public void CopyFrom(SupplierContactViewModel source)
     {
+        GlobalId = source.GlobalId;
         Treatment = source.Treatment;
         ContactTypeId = source.ContactTypeId;
         ContactTypeCode = source.ContactTypeCode;
@@ -86,6 +103,8 @@ public sealed class SupplierContactViewModel : INotifyPropertyChanged
         Extension = source.Extension;
         Mobile = source.Mobile;
         Email = source.Email;
+        Language = source.Language;
+        ReceivesNotifications = source.ReceivesNotifications;
         Birthday = source.Birthday;
         Notes = source.Notes;
         IsPrimary = source.IsPrimary;

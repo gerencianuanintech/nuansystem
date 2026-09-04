@@ -1,4 +1,5 @@
 using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.Application.Features.Sync.Configuration.Dtos;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Application.Features.Sync.EntityDefinitions.Dtos;
@@ -9,7 +10,8 @@ namespace NuanSystem.Application.Features.Sync.Configuration.Services;
 public sealed class SyncProfileValidationService(
     ISyncProfileRepository repository,
     ISyncRoutingRepository routingRepository,
-    ISyncEntityCatalogService entityCatalogService) : ISyncProfileValidationService
+    ISyncEntityCatalogService entityCatalogService,
+    IBusinessPartnerSapCodePolicyRepository? sapCodePolicyRepository = null) : ISyncProfileValidationService
 {
     private static readonly HashSet<string> SupportedExecutionModes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -42,8 +44,19 @@ public sealed class SyncProfileValidationService(
         await ValidateDuplicateCodeAsync(request, profileId, errors, cancellationToken);
         ValidateBranches(request, companyById, errors, warnings);
         ValidateEntities(request, entityCatalog, errors, warnings);
+        ValidateDirectionalEntities(request, errors);
         ValidateMatrix(request, errors, warnings);
         ValidateSchedule(request.Schedule, errors, warnings);
+        if (string.Equals(request.Direction, "BranchToMaster", StringComparison.OrdinalIgnoreCase)
+            && (request.Schedule is null
+                || !string.Equals(request.Schedule.ScheduleType, "Manual", StringComparison.OrdinalIgnoreCase)))
+        {
+            errors.Add(Message(
+                "SyncBranchToMasterManualScheduleOnly",
+                nameof(request.Schedule.ScheduleType),
+                "BranchToMaster solo admite programacion Manual para autorizar la ruta incremental."));
+        }
+        await ValidateProposalCodePolicyAsync(request, companyById, errors, cancellationToken);
         await ValidateActiveRoutingConflictsAsync(request, profileId, errors, cancellationToken);
 
         if (!request.IsActive)
@@ -176,14 +189,17 @@ public sealed class SyncProfileValidationService(
             }
         }
 
-        if (!string.Equals(request.Direction, "MasterToBranch", StringComparison.OrdinalIgnoreCase))
+        var masterToBranch = string.Equals(request.Direction, "MasterToBranch", StringComparison.OrdinalIgnoreCase);
+        var branchToMaster = string.Equals(request.Direction, "BranchToMaster", StringComparison.OrdinalIgnoreCase);
+        if (!masterToBranch && !branchToMaster)
         {
-            errors.Add(Message("SyncDirectionNotSupported", nameof(request.Direction), "Solo se soporta MasterToBranch."));
+            errors.Add(Message("SyncDirectionNotSupported", nameof(request.Direction), "Solo se soportan MasterToBranch y BranchToMaster."));
         }
 
-        if (!string.Equals(request.ConflictStrategy, "MasterWins", StringComparison.OrdinalIgnoreCase))
+        var expectedStrategy = branchToMaster ? "CentralReview" : "MasterWins";
+        if (!string.Equals(request.ConflictStrategy, expectedStrategy, StringComparison.OrdinalIgnoreCase))
         {
-            errors.Add(Message("SyncConflictStrategyNotSupported", nameof(request.ConflictStrategy), "Solo se soporta MasterWins."));
+            errors.Add(Message("SyncConflictStrategyNotSupported", nameof(request.ConflictStrategy), $"La direccion {request.Direction} requiere {expectedStrategy}."));
         }
 
         if (!SupportedExecutionModes.Contains(request.ExecutionMode))
@@ -193,6 +209,11 @@ public sealed class SyncProfileValidationService(
         else if (string.Equals(request.ExecutionMode, "Full", StringComparison.OrdinalIgnoreCase))
         {
             warnings.Add(Message("SyncExecutionModeFull", nameof(request.ExecutionMode), "El modo Full puede procesar mas datos que Incremental."));
+        }
+
+        if (branchToMaster && !string.Equals(request.ExecutionMode, "Incremental", StringComparison.OrdinalIgnoreCase))
+        {
+            errors.Add(Message("SyncBranchToMasterIncrementalOnly", nameof(request.ExecutionMode), "BranchToMaster solo admite ejecucion Incremental por relay."));
         }
 
         ValidateRange(request.BatchSize, 1, 10000, nameof(request.BatchSize), "SyncBatchSizeInvalid", errors);
@@ -306,7 +327,15 @@ public sealed class SyncProfileValidationService(
             {
                 if (entity.IsActive && !catalogItem.IsActive)
                 {
-                    errors.Add(Message("SyncEntityDefinitionInactive", nameof(entity.EntityCode), $"La entidad {entity.EntityCode} esta inactiva en el catalogo."));
+                    var message = Message("SyncEntityDefinitionInactive", nameof(entity.EntityCode), $"La entidad {entity.EntityCode} esta inactiva en el catalogo.");
+                    if (request.IsActive)
+                    {
+                        errors.Add(message);
+                    }
+                    else
+                    {
+                        warnings.Add(message);
+                    }
                 }
 
                 ValidateEntityOperability(request, entity, catalogItem, errors, warnings);
@@ -445,6 +474,88 @@ public sealed class SyncProfileValidationService(
             {
                 warnings.Add(Message("SyncBranchFewEntities", nameof(request.Branches), $"La sucursal {branch.BranchCompanyId} solo tiene una entidad habilitada."));
             }
+        }
+    }
+
+    private static void ValidateDirectionalEntities(
+        SaveSyncProfileRequest request,
+        List<SyncValidationMessageDto> errors)
+    {
+        var masterToBranch = string.Equals(request.Direction, "MasterToBranch", StringComparison.OrdinalIgnoreCase);
+        var branchToMaster = string.Equals(request.Direction, "BranchToMaster", StringComparison.OrdinalIgnoreCase);
+
+        foreach (var entity in request.Entities.Where(entity => entity.IsActive))
+        {
+            var isProposal = string.Equals(
+                entity.EntityCode,
+                SyncMasterBranchEntityCodes.BusinessPartnerProposal,
+                StringComparison.OrdinalIgnoreCase);
+            var isProposalResult = string.Equals(
+                entity.EntityCode,
+                SyncMasterBranchEntityCodes.BusinessPartnerProposalResult,
+                StringComparison.OrdinalIgnoreCase);
+            if ((isProposal && !branchToMaster) || (isProposalResult && !masterToBranch))
+            {
+                errors.Add(Message(
+                    "SyncEntityDirectionNotSupported",
+                    nameof(entity.EntityCode),
+                    $"La entidad {entity.EntityCode} no esta permitida en la direccion {request.Direction}."));
+            }
+
+            if (!branchToMaster)
+            {
+                continue;
+            }
+
+            if (!isProposal)
+            {
+                errors.Add(Message(
+                    "SyncBranchToMasterEntityNotSupported",
+                    nameof(entity.EntityCode),
+                    "BranchToMaster solo autoriza BusinessPartnerProposal."));
+            }
+
+            if (!string.Equals(entity.SyncMode, "Incremental", StringComparison.OrdinalIgnoreCase))
+            {
+                errors.Add(Message(
+                    "SyncBranchToMasterIncrementalOnly",
+                    nameof(entity.SyncMode),
+                    "BusinessPartnerProposal solo admite modo Incremental."));
+            }
+        }
+    }
+
+    private async Task ValidateProposalCodePolicyAsync(
+        SaveSyncProfileRequest request,
+        IReadOnlyDictionary<int, SyncCompanyLookupRecord> companyById,
+        List<SyncValidationMessageDto> errors,
+        CancellationToken cancellationToken)
+    {
+        if (!request.IsActive
+            || !string.Equals(request.Direction, "BranchToMaster", StringComparison.OrdinalIgnoreCase)
+            || !request.Entities.Any(entity => entity.IsActive
+                && string.Equals(entity.EntityCode, SyncMasterBranchEntityCodes.BusinessPartnerProposal, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        if (!companyById.TryGetValue(request.CompanyId, out var company)
+            || !company.IsMaster
+            || !company.IsActive
+            || !company.SyncEnabled)
+        {
+            return;
+        }
+
+        var policy = sapCodePolicyRepository is null
+            ? null
+            : await sapCodePolicyRepository.GetByCompanyIdAsync(request.CompanyId, cancellationToken);
+        if (policy is not { IsEnabled: true })
+        {
+            errors.Add(Message(
+                "SyncBusinessPartnerSapCodePolicyRequired",
+                nameof(request.CompanyId),
+                "La politica de codigo SAP de socios debe estar habilitada antes de activar propuestas."));
         }
     }
 

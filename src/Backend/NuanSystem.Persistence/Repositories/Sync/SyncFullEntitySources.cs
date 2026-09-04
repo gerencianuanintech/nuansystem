@@ -4,6 +4,7 @@ using Microsoft.Data.SqlClient;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Features.BusinessPartners.Sync;
 using NuanSystem.Application.Features.FinancialCatalogs.Catalogs.Dtos;
 using NuanSystem.Application.Features.Definitions.Inventory.ItemFamilies.Dtos;
 using NuanSystem.Application.Features.Definitions.Inventory.ItemBrands.Dtos;
@@ -316,7 +317,27 @@ public sealed class BusinessPartnerFullEntitySource(ICompanyResolver companyReso
         CancellationToken cancellationToken = default)
     {
         const string sql = """
+            DECLARE @Page TABLE
+            (
+                Id int NOT NULL PRIMARY KEY,
+                GlobalId uniqueidentifier NOT NULL,
+                Code nvarchar(50) NOT NULL,
+                Name nvarchar(200) NOT NULL,
+                CommercialName nvarchar(200) NULL,
+                PartnerType nvarchar(20) NOT NULL,
+                IdentificationTypeCode nvarchar(30) NOT NULL,
+                IdentificationNumber nvarchar(50) NOT NULL,
+                NormalizedIdentificationNumber nvarchar(50) NOT NULL,
+                Email nvarchar(256) NULL,
+                Phone nvarchar(50) NULL,
+                SapCardCode nvarchar(50) NULL,
+                CanonicalVersion bigint NOT NULL,
+                IsActive bit NOT NULL
+            );
+
+            INSERT @Page
             SELECT TOP (@Take)
+                bp.Id,
                 bp.GlobalId,
                 bp.Code,
                 bp.Name,
@@ -324,57 +345,215 @@ public sealed class BusinessPartnerFullEntitySource(ICompanyResolver companyReso
                 bp.PartnerType,
                 it.Code AS IdentificationTypeCode,
                 bp.IdentificationNumber,
+                bp.NormalizedIdentificationNumber,
                 bp.Email,
                 bp.Phone,
-                bp.IsActive,
-                bp.ExternalSystem,
-                bp.ExternalCode
+                mapping.SapCardCode,
+                bp.CanonicalVersion,
+                bp.IsActive
             FROM dbo.BusinessPartners bp
-            LEFT JOIN dbo.BusinessPartnerIdentificationTypes it ON it.Id = bp.IdentificationTypeId
+            INNER JOIN dbo.BusinessPartnerIdentificationTypes it ON it.Id = bp.IdentificationTypeId
+            LEFT JOIN dbo.BusinessPartnerSapMapping mapping ON mapping.BusinessPartnerId = bp.Id
             WHERE bp.IsDeleted = 0
+              AND bp.MasterSyncStatus = 'Accepted'
+              AND bp.CanonicalVersion > 0
               AND (@LastKey IS NULL OR bp.Code > @LastKey)
             ORDER BY bp.Code;
+
+            SELECT
+                GlobalId,
+                Code,
+                Name,
+                CommercialName,
+                PartnerType,
+                IdentificationTypeCode,
+                IdentificationNumber,
+                NormalizedIdentificationNumber,
+                Email,
+                Phone,
+                SapCardCode,
+                CanonicalVersion,
+                IsActive
+            FROM @Page
+            ORDER BY Code;
+
+            SELECT
+                page.GlobalId AS BusinessPartnerGlobalId,
+                addressItem.GlobalId,
+                addressItem.AddressType,
+                addressItem.Line1,
+                addressItem.Line2,
+                COALESCE(country.Code, addressItem.CountryCode) AS CountryCode,
+                province.Code AS ProvinceCode,
+                city.Code AS CityCode,
+                addressItem.PostalCode,
+                addressItem.Latitude,
+                addressItem.Longitude,
+                addressItem.IsPrimary,
+                addressItem.IsActive
+            FROM dbo.BusinessPartnerAddresses addressItem
+            INNER JOIN @Page page ON page.Id = addressItem.BusinessPartnerId
+            LEFT JOIN dbo.Countries country ON country.CountryId = addressItem.CountryId
+            LEFT JOIN dbo.Provinces province ON province.ProvinceId = addressItem.ProvinceId
+            LEFT JOIN dbo.Cities city ON city.CityId = addressItem.CityId
+            WHERE addressItem.IsDeleted = 0
+            ORDER BY page.Code, addressItem.GlobalId;
+
+            SELECT
+                page.GlobalId AS BusinessPartnerGlobalId,
+                contactItem.GlobalId,
+                contactType.Code AS ContactTypeCode,
+                contactChannel.Code AS ContactChannelCode,
+                contactItem.Name,
+                contactItem.Position,
+                contactItem.Department,
+                contactItem.Phone,
+                contactItem.Extension,
+                contactItem.Mobile,
+                contactItem.Email,
+                contactItem.[Language],
+                contactItem.ReceivesNotifications,
+                contactItem.IsPrimary,
+                contactItem.IsActive,
+                contactItem.Notes
+            FROM dbo.BusinessPartnerContacts contactItem
+            INNER JOIN @Page page ON page.Id = contactItem.BusinessPartnerId
+            LEFT JOIN dbo.ContactTypes contactType ON contactType.ContactTypeId = contactItem.ContactTypeId
+            LEFT JOIN dbo.ContactChannels contactChannel ON contactChannel.ContactChannelId = contactItem.ContactChannelId
+            WHERE contactItem.IsDeleted = 0
+            ORDER BY page.Code, contactItem.GlobalId;
             """;
 
         var company = await SyncFullEntitySourceHelpers.ResolveSqlServerCompanyAsync(companyResolver, context.CompanyId, cancellationToken);
         await using var connection = new SqlConnection(company.ConnectionString);
-        var rows = (await connection.QueryAsync<BusinessPartnerSourceRow>(
-            new CommandDefinition(sql, SyncFullEntitySourceHelpers.ReadParameters(context), cancellationToken: cancellationToken))).AsList();
+        using var grid = await connection.QueryMultipleAsync(
+            new CommandDefinition(sql, SyncFullEntitySourceHelpers.ReadParameters(context), cancellationToken: cancellationToken));
+        var rows = (await grid.ReadAsync<BusinessPartnerSourceRow>()).AsList();
+        var addresses = (await grid.ReadAsync<BusinessPartnerAddressSourceRow>()).ToLookup(row => row.BusinessPartnerGlobalId);
+        var contacts = (await grid.ReadAsync<BusinessPartnerContactSourceRow>()).ToLookup(row => row.BusinessPartnerGlobalId);
 
-        var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context)).Select(row => new SyncSourceRecord(
-            row.GlobalId,
-            row.Code,
-            row.IsActive,
-            new BusinessPartnerSyncPayload(
-                row.GlobalId,
-                row.Code,
-                row.Name,
-                row.CommercialName,
-                row.PartnerType,
-                row.IdentificationTypeCode,
-                row.IdentificationNumber,
-                row.Email,
-                row.Phone,
-                row.IsActive,
-                row.ExternalSystem,
-                row.ExternalCode))).ToArray();
+        var limited = rows.Take(SyncFullEntitySourceHelpers.GetPageLimit(context))
+            .Select(row => CreateRecord(row, addresses[row.GlobalId], contacts[row.GlobalId]))
+            .ToArray();
 
         return new SyncSourcePage(limited, limited.LastOrDefault()?.EntityKey, rows.Count > SyncFullEntitySourceHelpers.GetPageLimit(context));
     }
 
-    private sealed record BusinessPartnerSourceRow(
+    internal static SyncSourceRecord CreateRecord(
+        BusinessPartnerSourceRow row,
+        IEnumerable<BusinessPartnerAddressSourceRow> addresses,
+        IEnumerable<BusinessPartnerContactSourceRow> contacts)
+    {
+        var addressSnapshots = addresses
+            .OrderBy(item => item.GlobalId)
+            .Select(item => new BusinessPartnerAddressSnapshot(
+                item.GlobalId,
+                item.AddressType,
+                item.Line1,
+                item.Line2,
+                item.CountryCode,
+                item.ProvinceCode,
+                item.CityCode,
+                item.PostalCode,
+                item.Latitude,
+                item.Longitude,
+                item.IsPrimary,
+                item.IsActive))
+            .ToArray();
+        var contactSnapshots = contacts
+            .OrderBy(item => item.GlobalId)
+            .Select(item => new BusinessPartnerContactSnapshot(
+                item.GlobalId,
+                item.ContactTypeCode,
+                item.ContactChannelCode,
+                item.Name,
+                item.Position,
+                item.Department,
+                item.Phone,
+                item.Extension,
+                item.Mobile,
+                item.Email,
+                item.Language,
+                item.ReceivesNotifications,
+                item.IsPrimary,
+                item.IsActive,
+                item.Notes))
+            .ToArray();
+        var snapshot = new BusinessPartnerCanonicalSnapshot(
+            row.GlobalId,
+            row.Code,
+            row.Name,
+            row.CommercialName,
+            row.PartnerType,
+            row.IdentificationTypeCode,
+            row.IdentificationNumber,
+            row.NormalizedIdentificationNumber,
+            row.Email,
+            row.Phone,
+            row.SapCardCode,
+            row.IsActive,
+            addressSnapshots,
+            contactSnapshots);
+
+        return new SyncSourceRecord(
+            row.GlobalId,
+            row.Code,
+            row.IsActive,
+            new BusinessPartnerCanonicalPayloadV2(
+                BusinessPartnerSyncSchemaVersions.Canonical,
+                row.CanonicalVersion,
+                OriginCompanyId: null,
+                CausationEventId: null,
+                snapshot));
+    }
+
+    internal sealed record BusinessPartnerSourceRow(
         Guid GlobalId,
         string Code,
         string Name,
         string? CommercialName,
         string PartnerType,
-        string? IdentificationTypeCode,
+        string IdentificationTypeCode,
         string IdentificationNumber,
+        string NormalizedIdentificationNumber,
         string? Email,
         string? Phone,
+        string? SapCardCode,
+        long CanonicalVersion,
+        bool IsActive);
+
+    internal sealed record BusinessPartnerAddressSourceRow(
+        Guid BusinessPartnerGlobalId,
+        Guid GlobalId,
+        string AddressType,
+        string Line1,
+        string? Line2,
+        string? CountryCode,
+        string? ProvinceCode,
+        string? CityCode,
+        string? PostalCode,
+        decimal? Latitude,
+        decimal? Longitude,
+        bool IsPrimary,
+        bool IsActive);
+
+    internal sealed record BusinessPartnerContactSourceRow(
+        Guid BusinessPartnerGlobalId,
+        Guid GlobalId,
+        string? ContactTypeCode,
+        string? ContactChannelCode,
+        string Name,
+        string? Position,
+        string? Department,
+        string? Phone,
+        string? Extension,
+        string? Mobile,
+        string? Email,
+        string? Language,
+        bool ReceivesNotifications,
+        bool IsPrimary,
         bool IsActive,
-        string? ExternalSystem,
-        string? ExternalCode);
+        string? Notes);
 }
 
 public sealed class ItemGroupFullEntitySource(ICompanyResolver companyResolver) : ISyncFullEntitySource

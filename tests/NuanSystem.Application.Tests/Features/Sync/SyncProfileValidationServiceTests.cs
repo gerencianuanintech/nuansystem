@@ -1,5 +1,6 @@
 using FluentAssertions;
 using NuanSystem.Application.Abstractions.Sync;
+using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.Application.Features.Sync.Configuration;
 using NuanSystem.Application.Features.Sync.Configuration.Dtos;
 using NuanSystem.Application.Features.Sync.Configuration.Services;
@@ -248,6 +249,147 @@ public sealed class SyncProfileValidationServiceTests
         result.Errors.Select(error => error.Code).Should().Contain("SyncRoutingActiveConflict");
     }
 
+    [Fact]
+    public async Task ValidateAsync_AcceptsInactiveBranchToMasterProposalWithInactiveDefinitionWarning()
+    {
+        var service = CreateService(policyEnabled: false);
+        var request = BranchToMasterRequest() with { IsActive = false };
+
+        var result = await service.ValidateAsync(request, null, userId: 1);
+
+        result.Errors.Should().BeEmpty(string.Join(" | ", result.Errors.Select(error => $"{error.Code}:{error.Message}")));
+        result.IsValid.Should().BeTrue();
+        result.Warnings.Should().Contain(error => error.Code == "SyncEntityDefinitionInactive");
+        result.Warnings.Should().NotContain(error => error.Code == "SyncEntityDraftOnly");
+    }
+
+    [Fact]
+    public async Task ValidateAsync_AcceptsInactiveMasterToBranchProposalResultWithInactiveDefinitionWarning()
+    {
+        var service = CreateService(policyEnabled: true);
+        var request = ValidRequest() with
+        {
+            IsActive = false,
+            Entities = [Entity("BusinessPartnerProposalResult", 10, [2]) with { AllowDeactivate = false }]
+        };
+
+        var result = await service.ValidateAsync(request, null, userId: 1);
+
+        result.IsValid.Should().BeTrue();
+        result.Errors.Should().BeEmpty();
+        result.Warnings.Should().Contain(error => error.Code == "SyncEntityDefinitionInactive");
+        result.Warnings.Should().NotContain(error => error.Code == "SyncEntityDraftOnly");
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ActivationFailsClosedWhileProposalDefinitionRemainsInactive()
+    {
+        var service = CreateService(policyEnabled: true);
+
+        var result = await service.ValidateAsync(BranchToMasterRequest(), null, userId: 1);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(error => error.Code == "SyncEntityDefinitionInactive");
+        result.Errors.Should().NotContain(error => error.Code == "SyncEntityNotOperative");
+        result.Errors.Should().NotContain(error => error.Code == "SyncBusinessPartnerSapCodePolicyRequired");
+    }
+
+    [Theory]
+    [InlineData("Full", "CentralReview", "BusinessPartnerProposal", "Manual", "SyncBranchToMasterIncrementalOnly")]
+    [InlineData("Incremental", "MasterWins", "BusinessPartnerProposal", "Manual", "SyncConflictStrategyNotSupported")]
+    [InlineData("Incremental", "CentralReview", "Warehouse", "Manual", "SyncBranchToMasterEntityNotSupported")]
+    [InlineData("Incremental", "CentralReview", "BusinessPartnerProposal", "Interval", "SyncBranchToMasterManualScheduleOnly")]
+    public async Task ValidateAsync_RejectsInvalidBranchToMasterShapes(
+        string executionMode,
+        string conflictStrategy,
+        string entityCode,
+        string scheduleType,
+        string expectedCode)
+    {
+        var service = CreateService(policyEnabled: true);
+        var schedule = scheduleType == "Interval"
+            ? new SaveSyncScheduleRequest { ScheduleType = "Interval", IntervalMinutes = 30 }
+            : new SaveSyncScheduleRequest { ScheduleType = "Manual" };
+        var request = BranchToMasterRequest() with
+        {
+            ExecutionMode = executionMode,
+            ConflictStrategy = conflictStrategy,
+            Entities = [Entity(entityCode, 10, [2]) with { SyncMode = executionMode, AllowDeactivate = false }],
+            Schedule = schedule
+        };
+
+        var result = await service.ValidateAsync(request, null, userId: 1);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(error => error.Code == expectedCode);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_RejectsActiveProposalWhenCodePolicyIsDisabled()
+    {
+        var service = CreateService(policyEnabled: false);
+
+        var result = await service.ValidateAsync(BranchToMasterRequest(), null, userId: 1);
+
+        result.Errors.Should().Contain(error => error.Code == "SyncBusinessPartnerSapCodePolicyRequired");
+    }
+
+    [Fact]
+    public async Task ValidateAsync_DoesNotQueryProposalPolicyForUnknownCompany()
+    {
+        var policyRepository = new FakeBusinessPartnerSapCodePolicyRepository(enabled: true);
+        var service = CreateService(policyRepository: policyRepository);
+
+        var result = await service.ValidateAsync(
+            BranchToMasterRequest() with { CompanyId = 999 },
+            null,
+            userId: 1);
+
+        result.Errors.Should().Contain(error => error.Code == "SyncMasterCompanyNotFound");
+        policyRepository.GetCalls.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_RejectsBranchToMasterWithoutManualSchedule()
+    {
+        var service = CreateService(policyEnabled: true);
+
+        var result = await service.ValidateAsync(
+            BranchToMasterRequest() with { Schedule = null },
+            null,
+            userId: 1);
+
+        result.Errors.Should().Contain(error => error.Code == "SyncBranchToMasterManualScheduleOnly");
+    }
+
+    [Theory]
+    [InlineData("BusinessPartnerProposal", "MasterToBranch", true)]
+    [InlineData("BusinessPartnerProposal", "MasterToBranch", false)]
+    [InlineData("BusinessPartnerProposalResult", "BranchToMaster", true)]
+    [InlineData("BusinessPartnerProposalResult", "BranchToMaster", false)]
+    public async Task ValidateAsync_RejectsDirectionalBusinessPartnerEntityInWrongDirection_ForActiveAndDraftProfiles(
+        string entityCode,
+        string direction,
+        bool isActive)
+    {
+        var service = CreateService(policyEnabled: true);
+        var request = direction == "BranchToMaster"
+            ? BranchToMasterRequest()
+            : ValidRequest();
+        request = request with
+        {
+            IsActive = isActive,
+            Entities = [Entity(entityCode, 10, [2]) with { AllowDeactivate = false }]
+        };
+
+        var result = await service.ValidateAsync(request, null, userId: 1);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(error =>
+            error.Code == "SyncEntityDirectionNotSupported"
+            && error.Field == nameof(SaveSyncProfileEntityRequest.EntityCode));
+    }
+
     public static TheoryData<SaveSyncProfileRequest, string> InvalidRequests()
     {
         var data = new TheoryData<SaveSyncProfileRequest, string>
@@ -280,13 +422,26 @@ public sealed class SyncProfileValidationServiceTests
         return data;
     }
 
-    private static SyncProfileValidationService CreateService(bool duplicatedCode = false)
+    private static SyncProfileValidationService CreateService(
+        bool duplicatedCode = false,
+        bool policyEnabled = true,
+        FakeBusinessPartnerSapCodePolicyRepository? policyRepository = null)
     {
         return new SyncProfileValidationService(
             new FakeSyncProfileRepository { DuplicatedCode = duplicatedCode },
             new FakeSyncRoutingRepository(),
-            new FakeSyncEntityCatalogService());
+            new FakeSyncEntityCatalogService(),
+            policyRepository ?? new FakeBusinessPartnerSapCodePolicyRepository(policyEnabled));
     }
+
+    private static SaveSyncProfileRequest BranchToMasterRequest() => ValidRequest() with
+    {
+        Direction = "BranchToMaster",
+        ExecutionMode = "Incremental",
+        ConflictStrategy = "CentralReview",
+        Entities = [Entity("BusinessPartnerProposal", 10, [2]) with { AllowDeactivate = false }],
+        Schedule = new SaveSyncScheduleRequest { ScheduleType = "Manual" }
+    };
 
     private static SaveSyncProfileRequest ValidRequest()
     {
@@ -420,7 +575,8 @@ public sealed class SyncProfileValidationServiceTests
                     item.DefaultKeyField,
                     item.DefaultModifiedAtField,
                     true,
-                    true,
+                    item.EntityCode is not SyncMasterBranchEntityCodes.BusinessPartnerProposal
+                        and not SyncMasterBranchEntityCodes.BusinessPartnerProposalResult,
                     item.HasProducer,
                     item.HasApplier,
                     item.Dependencies ?? []))
@@ -428,5 +584,24 @@ public sealed class SyncProfileValidationServiceTests
                 .ToArray();
             return Task.FromResult<IReadOnlyCollection<SyncEntityDefinitionLookupDto>>(definitions);
         }
+    }
+
+    private sealed class FakeBusinessPartnerSapCodePolicyRepository(bool enabled)
+        : IBusinessPartnerSapCodePolicyRepository
+    {
+        public int GetCalls { get; private set; }
+
+        public Task<BusinessPartnerSapCodePolicyRecord?> GetByCompanyIdAsync(
+            int companyId,
+            CancellationToken cancellationToken = default)
+        {
+            GetCalls++;
+            return Task.FromResult<BusinessPartnerSapCodePolicyRecord?>(
+                new BusinessPartnerSapCodePolicyRecord(companyId, enabled, "None", "PASSPORT", new byte[8]));
+        }
+
+        public Task<BusinessPartnerSapCodePolicyWriteResult> SaveAsync(
+            SaveBusinessPartnerSapCodePolicyData policy,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 }

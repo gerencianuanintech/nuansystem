@@ -1180,6 +1180,9 @@ END;
 
         scriptPath = FindDatabaseScriptPath("227_master_definitions_inventory_sales_channels_navigation.sql");
         if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("229_master_business_partner_bidirectional_governance.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
     }
 
     private static async Task ExecuteScriptFileAsync(

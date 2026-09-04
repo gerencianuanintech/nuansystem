@@ -73,6 +73,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IAuthService, SqlServerAuthService>();
         services.AddScoped<IUserSecurityStateService, UserSecurityStateService>();
         services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
+        services.AddScoped<IBusinessPartnerSapCodePolicyRepository, BusinessPartnerSapCodePolicyRepository>();
         services.AddScoped<ICarrierRepository, CarrierRepository>();
         services.AddScoped<ISriDocumentQueueRepository, SriDocumentQueueRepository>();
         services.AddScoped<ISriTxtImportRepository, SriTxtImportRepository>();
@@ -178,6 +179,8 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ISyncFullEntitySource, ItemFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, WarehouseFullEntitySource>();
         services.AddScoped<IBusinessPartnerSyncApplyRepository, BusinessPartnerSyncApplyRepository>();
+        services.AddScoped<IBusinessPartnerProposalApplyRepository, BusinessPartnerProposalApplyRepository>();
+        services.AddScoped<IBusinessPartnerSyncConflictRepository, BusinessPartnerSyncConflictRepository>();
         services.AddScoped<IItemSyncApplyRepository, ItemSyncApplyRepository>();
         services.AddScoped<IWarehouseSyncApplyRepository, WarehouseSyncApplyRepository>();
         services.AddScoped<ICountrySyncApplyRepository, CountrySyncApplyRepository>();
