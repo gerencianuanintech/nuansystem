@@ -42,6 +42,28 @@ public sealed class BusinessPartnerProposalSyncEventApplierTests
         await repository.DidNotReceiveWithAnyArgs().ApplyAsync(default, default!, default!, default);
     }
 
+    [Theory]
+    [InlineData("[]")]
+    [InlineData("null")]
+    [InlineData("\"text\"")]
+    [InlineData("123")]
+    [InlineData("true")]
+    public async Task Apply_NonObjectJsonRoot_IsInvalidAndDoesNotReachRepository(string json)
+    {
+        var applier = CreateApplier(out var repository, out _);
+        var context = Context(Payload()) with { PayloadJson = json };
+
+        var result = await applier.ApplyAsync(context);
+
+        result.Should().BeEquivalentTo(new SyncEventApplyResult(
+            false,
+            "Payload de propuesta de socio no es JSON valido.",
+            "SYNC_PAYLOAD_INVALID",
+            Retryable: false,
+            Terminal: true));
+        await repository.DidNotReceiveWithAnyArgs().ApplyAsync(default, default!, default!, default);
+    }
+
     [Fact]
     public async Task Apply_UnsupportedSchema_IsTerminal()
     {

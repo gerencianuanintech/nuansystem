@@ -142,7 +142,8 @@ public sealed class BusinessPartnerProposalSyncEventApplier(
     private static BusinessPartnerProposalPayloadV1 ReadPayload(string payloadJson)
     {
         using var document = JsonDocument.Parse(payloadJson);
-        if (!document.RootElement.TryGetProperty("payload", out var payloadElement))
+        if (document.RootElement.ValueKind != JsonValueKind.Object ||
+            !document.RootElement.TryGetProperty("payload", out var payloadElement))
         {
             throw new JsonException("El evento no contiene payload.");
         }
