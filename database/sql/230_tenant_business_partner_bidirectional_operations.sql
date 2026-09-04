@@ -337,9 +337,6 @@ BEGIN
         THROW 52030, 'CanonicalVersion must be positive.', 1;
     IF NULLIF(@NormalizedIdentificationNumber, N'') IS NULL
         THROW 52030, 'Normalized identification is required.', 1;
-    IF DATALENGTH(@SapCardCode) > 30
-        THROW 52030, 'SapCardCode cannot exceed 15 characters.', 1;
-
     DECLARE @ExpectedNormalizedIdentificationNumber nvarchar(50) = REPLACE(
         TRANSLATE(
             UPPER(LTRIM(RTRIM(@IdentificationNumber)) COLLATE Latin1_General_100_BIN2),
@@ -399,6 +396,10 @@ BEGIN
            AND @ExistingSapCardCode COLLATE Latin1_General_100_BIN2<>@SapCardCode COLLATE Latin1_General_100_BIN2
             THROW 52032, 'Confirmed SapCardCode conflict requires reconciliation.', 1;
     END;
+
+    IF NULLIF(LTRIM(RTRIM(@ExistingSapCardCode)),N'') IS NULL
+       AND DATALENGTH(@SapCardCode) > 30
+        THROW 52030, 'SapCardCode cannot exceed 15 characters.', 1;
 
     IF @BusinessPartnerId IS NULL
     BEGIN
@@ -471,6 +472,105 @@ BEGIN
 END;
 GO
 
+CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_BUSINESSPARTNER_STABLE_REFERENCES_RESOLVE
+    @IdentificationTypeCode nvarchar(30),
+    @AddressesJson nvarchar(max),
+    @ContactsJson nvarchar(max)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @@TRANCOUNT = 0
+        THROW 52030, 'Stable BusinessPartner references require an ambient transaction.', 1;
+    IF ISJSON(@AddressesJson) <> 1 OR ISJSON(@ContactsJson) <> 1
+        THROW 52030, 'Stable BusinessPartner reference inputs must be valid JSON arrays.', 1;
+
+    SELECT MIN(Id) AS IdentificationTypeId,
+           CONVERT(int,COUNT_BIG(1)) AS MatchCount
+    FROM dbo.BusinessPartnerIdentificationTypes WITH (UPDLOCK,HOLDLOCK)
+    WHERE Code COLLATE Latin1_General_100_BIN2=@IdentificationTypeCode COLLATE Latin1_General_100_BIN2
+      AND IsDeleted=0 AND IsActive=1;
+
+    ;WITH AddressCodes AS
+    (
+        SELECT GlobalId,CountryCode,ProvinceCode,CityCode
+        FROM OPENJSON(@AddressesJson)
+        WITH
+        (
+            GlobalId uniqueidentifier '$.globalId',
+            CountryCode nvarchar(10) '$.countryCode',
+            ProvinceCode nvarchar(20) '$.provinceCode',
+            CityCode nvarchar(20) '$.cityCode'
+        )
+    )
+    SELECT addressCode.GlobalId,
+           countryMatch.CountryId,countryMatch.MatchCount AS CountryMatchCount,
+           provinceMatch.ProvinceId,provinceMatch.MatchCount AS ProvinceMatchCount,
+           cityMatch.CityId,cityMatch.MatchCount AS CityMatchCount
+    FROM AddressCodes AS addressCode
+    OUTER APPLY
+    (
+        SELECT MIN(CountryId) AS CountryId,CONVERT(int,COUNT_BIG(1)) AS MatchCount
+        FROM dbo.Countries WITH (UPDLOCK,HOLDLOCK)
+        WHERE addressCode.CountryCode IS NOT NULL
+          AND Code COLLATE Latin1_General_100_BIN2=addressCode.CountryCode COLLATE Latin1_General_100_BIN2
+          AND IsDeleted=0 AND IsActive=1
+    ) AS countryMatch
+    OUTER APPLY
+    (
+        SELECT MIN(ProvinceId) AS ProvinceId,CONVERT(int,COUNT_BIG(1)) AS MatchCount
+        FROM dbo.Provinces WITH (UPDLOCK,HOLDLOCK)
+        WHERE addressCode.ProvinceCode IS NOT NULL
+          AND CountryId=countryMatch.CountryId
+          AND Code COLLATE Latin1_General_100_BIN2=addressCode.ProvinceCode COLLATE Latin1_General_100_BIN2
+          AND IsDeleted=0 AND IsActive=1
+    ) AS provinceMatch
+    OUTER APPLY
+    (
+        SELECT MIN(CityId) AS CityId,CONVERT(int,COUNT_BIG(1)) AS MatchCount
+        FROM dbo.Cities WITH (UPDLOCK,HOLDLOCK)
+        WHERE addressCode.CityCode IS NOT NULL
+          AND CountryId=countryMatch.CountryId AND ProvinceId=provinceMatch.ProvinceId
+          AND Code COLLATE Latin1_General_100_BIN2=addressCode.CityCode COLLATE Latin1_General_100_BIN2
+          AND IsDeleted=0 AND IsActive=1
+    ) AS cityMatch
+    ORDER BY addressCode.GlobalId;
+
+    ;WITH ContactCodes AS
+    (
+        SELECT GlobalId,ContactTypeCode,ContactChannelCode
+        FROM OPENJSON(@ContactsJson)
+        WITH
+        (
+            GlobalId uniqueidentifier '$.globalId',
+            ContactTypeCode nvarchar(50) '$.contactTypeCode',
+            ContactChannelCode nvarchar(50) '$.contactChannelCode'
+        )
+    )
+    SELECT contactCode.GlobalId,
+           contactTypeMatch.ContactTypeId,contactTypeMatch.MatchCount AS ContactTypeMatchCount,
+           contactChannelMatch.ContactChannelId,contactChannelMatch.MatchCount AS ContactChannelMatchCount
+    FROM ContactCodes AS contactCode
+    OUTER APPLY
+    (
+        SELECT MIN(ContactTypeId) AS ContactTypeId,CONVERT(int,COUNT_BIG(1)) AS MatchCount
+        FROM dbo.ContactTypes WITH (UPDLOCK,HOLDLOCK)
+        WHERE contactCode.ContactTypeCode IS NOT NULL
+          AND Code COLLATE Latin1_General_100_BIN2=contactCode.ContactTypeCode COLLATE Latin1_General_100_BIN2
+          AND IsDeleted=0 AND IsActive=1
+    ) AS contactTypeMatch
+    OUTER APPLY
+    (
+        SELECT MIN(ContactChannelId) AS ContactChannelId,CONVERT(int,COUNT_BIG(1)) AS MatchCount
+        FROM dbo.ContactChannels WITH (UPDLOCK,HOLDLOCK)
+        WHERE contactCode.ContactChannelCode IS NOT NULL
+          AND Code COLLATE Latin1_General_100_BIN2=contactCode.ContactChannelCode COLLATE Latin1_General_100_BIN2
+          AND IsDeleted=0 AND IsActive=1
+    ) AS contactChannelMatch
+    ORDER BY contactCode.GlobalId;
+END;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.SP_NA_GET_BUSINESSPARTNER_CANONICAL_FORUPDATE
     @GlobalId uniqueidentifier
 AS
@@ -481,6 +581,7 @@ BEGIN
            bp.ExternalSystem AS ExternalSystem,bp.ExternalCode AS ExternalCode,
            bp.CommercialName AS CommercialName,bp.PartnerType AS PartnerType,
            bp.IdentificationTypeId AS IdentificationTypeId,
+           identificationType.Code AS IdentificationTypeCode,
            bp.IdentificationNumber AS IdentificationNumber,
            bp.NormalizedIdentificationNumber AS NormalizedIdentificationNumber,
            bp.SupplierGroupId AS SupplierGroupId,bp.SupplierClassId AS SupplierClassId,
@@ -496,6 +597,8 @@ BEGIN
            bp.DeletedAt AS DeletedAt,bp.RowVersion AS RowVersion,
            mapping.SapCardCode AS SapCardCode
     FROM dbo.BusinessPartners AS bp WITH (UPDLOCK, HOLDLOCK)
+    LEFT JOIN dbo.BusinessPartnerIdentificationTypes AS identificationType WITH (UPDLOCK, HOLDLOCK)
+        ON identificationType.Id=bp.IdentificationTypeId
     LEFT JOIN dbo.BusinessPartnerSapMapping AS mapping WITH (UPDLOCK, HOLDLOCK)
         ON mapping.BusinessPartnerId = bp.Id
     WHERE bp.GlobalId = @GlobalId;
@@ -565,17 +668,27 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_BUSINESSPARTNER_PROPOSAL_ACCEPT
     @ContactsJson nvarchar(max),
     @CanonicalEventId uniqueidentifier,
     @CanonicalPayloadJson nvarchar(max),
+    @BaseCanonicalVersion bigint,
+    @BaseSnapshotJson nvarchar(max) = NULL,
+    @ProposedSnapshotJson nvarchar(max),
+    @CurrentCanonicalSnapshotJson nvarchar(max) = NULL,
+    @ResultEventId uniqueidentifier,
+    @ResultPayloadJson nvarchar(max),
     @AuditUserId int = NULL,
     @AuditUserName nvarchar(120) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
-    IF DATALENGTH(@SapCardCode) > 30
-        THROW 52030, 'SapCardCode cannot exceed 15 characters.', 1;
-    BEGIN TRY
+    DECLARE @StartedTransaction bit = 0;
+    IF @@TRANCOUNT = 0
+    BEGIN
+        SET @StartedTransaction = 1;
         BEGIN TRANSACTION;
-
+    END
+    ELSE
+        SAVE TRANSACTION BpProposalAcceptSavepoint;
+    BEGIN TRY
         DECLARE @InboxId bigint,@InboxStatus nvarchar(30),@InboxEnvelopeResult int,
                 @OutboxId bigint,@OutboxEnvelopeResult int,@BusinessPartnerId int,
                 @LiveCode nvarchar(50),@LivePartnerType nvarchar(20),
@@ -592,7 +705,7 @@ BEGIN
 
         IF @InboxEnvelopeResult=4
         BEGIN
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 4 AS ResultCode,CAST(NULL AS int) AS BusinessPartnerId,
                    CAST(NULL AS bigint) AS CanonicalVersion;
             RETURN;
@@ -600,9 +713,11 @@ BEGIN
 
         IF @InboxStatus = N'Applied'
         BEGIN
-            SELECT @BusinessPartnerId = Id FROM dbo.BusinessPartners WHERE GlobalId = @BusinessPartnerGlobalId;
-            COMMIT TRANSACTION;
-            SELECT 2 AS ResultCode, @BusinessPartnerId AS BusinessPartnerId, @CanonicalVersion AS CanonicalVersion;
+            SELECT @BusinessPartnerId=Id,@LiveCanonicalVersion=CanonicalVersion
+            FROM dbo.BusinessPartners WHERE GlobalId=@BusinessPartnerGlobalId;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
+            SELECT 2 AS ResultCode,@BusinessPartnerId AS BusinessPartnerId,
+                   @LiveCanonicalVersion AS CanonicalVersion;
             RETURN;
         END;
 
@@ -640,14 +755,32 @@ BEGIN
                      CreatedByUserId,CreatedByUserName)
                 VALUES
                     (@ProposalEventId,@BusinessPartnerId,@BusinessPartnerGlobalId,@SourceCompanyId,
-                     @LiveCanonicalVersion,@LiveCanonicalVersion,@LiveBusinessPartnerRowVersion,NULL,@ProposalPayloadJson,
-                     @CanonicalPayloadJson,N'["immutableIdentityRoleSapOrVersion"]',
+                     @BaseCanonicalVersion,@LiveCanonicalVersion,@LiveBusinessPartnerRowVersion,
+                     @BaseSnapshotJson,@ProposedSnapshotJson,
+                     @CurrentCanonicalSnapshotJson,N'["immutableIdentityRoleSapOrVersion"]',
                      @AuditUserId,@AuditUserName);
+            EXEC dbo.SP_NA_POST_BUSINESSPARTNER_LOCALOUTBOX_ENSURE
+                @EventId=@ResultEventId,@CompanyId=@CompanyId,@TargetCompanyId=@SourceCompanyId,
+                @CausationEventId=@ProposalEventId,@EntityName=N'BusinessPartnerProposalResult',
+                @EntityGlobalId=@BusinessPartnerGlobalId,@EntityCode=NULL,
+                @Operation=N'Updated',@PayloadJson=@ResultPayloadJson,
+                @OutboxId=@OutboxId OUTPUT,@EnvelopeResult=@OutboxEnvelopeResult OUTPUT;
+            IF @OutboxEnvelopeResult=4
+            BEGIN
+                UPDATE dbo.SyncInbox
+                SET Status=N'DeadLetter',ErrorMessage=N'Outbound EventId collision.',
+                    LastErrorMessage=N'Outbound EventId collision.',NextRetryAt=NULL
+                WHERE Id=@InboxId;
+                IF @StartedTransaction = 1 COMMIT TRANSACTION;
+                SELECT 4 AS ResultCode,CAST(NULL AS int) AS BusinessPartnerId,
+                       CAST(NULL AS bigint) AS CanonicalVersion;
+                RETURN;
+            END;
             UPDATE dbo.SyncInbox
             SET Status=N'Applied',AppliedAt=SYSUTCDATETIME(),ErrorMessage=NULL,
                 LastErrorMessage=N'Proposal moved to BusinessPartner conflict workflow.',NextRetryAt=NULL
             WHERE Id=@InboxId;
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 5 AS ResultCode,@BusinessPartnerId AS BusinessPartnerId,
                    @LiveCanonicalVersion AS CanonicalVersion;
             RETURN;
@@ -665,7 +798,7 @@ BEGIN
             SET Status=N'DeadLetter',ErrorMessage=N'Outbound EventId collision.',
                 LastErrorMessage=N'Outbound EventId collision.',NextRetryAt=NULL
             WHERE Id=@InboxId;
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 4 AS ResultCode,CAST(NULL AS int) AS BusinessPartnerId,
                    CAST(NULL AS bigint) AS CanonicalVersion;
             RETURN;
@@ -698,11 +831,14 @@ BEGIN
             ResolvedAt=SYSUTCDATETIME()
         WHERE ProposalEventId=@ProposalEventId AND Status='Open';
 
-        COMMIT TRANSACTION;
+        IF @StartedTransaction = 1 COMMIT TRANSACTION;
         SELECT 1 AS ResultCode, @BusinessPartnerId AS BusinessPartnerId, @CanonicalVersion AS CanonicalVersion;
     END TRY
     BEGIN CATCH
-        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        IF @StartedTransaction = 1 AND XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+        ELSE IF XACT_STATE() = 1
+            ROLLBACK TRANSACTION BpProposalAcceptSavepoint;
         THROW;
     END CATCH;
 END;
@@ -714,6 +850,8 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_BUSINESSPARTNER_PROPOSAL_CONFLICT
     @SourceCompanyId int,
     @BusinessPartnerId int = NULL,
     @BusinessPartnerGlobalId uniqueidentifier,
+    @Operation nvarchar(30),
+    @ProposalPayloadJson nvarchar(max),
     @BaseCanonicalVersion bigint,
     @CurrentCanonicalVersion bigint,
     @BaseSnapshotJson nvarchar(max) = NULL,
@@ -728,27 +866,33 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
-    BEGIN TRY
+    DECLARE @StartedTransaction bit = 0;
+    IF @@TRANCOUNT = 0
+    BEGIN
+        SET @StartedTransaction = 1;
         BEGIN TRANSACTION;
-
+    END
+    ELSE
+        SAVE TRANSACTION BpProposalConflictSavepoint;
+    BEGIN TRY
         DECLARE @InboxId bigint,@InboxStatus nvarchar(30),@InboxEnvelopeResult int,
                 @OutboxId bigint,@OutboxEnvelopeResult int,
                 @PresentedBusinessPartnerRowVersion binary(8),@LiveCurrentCanonicalVersion bigint;
         EXEC dbo.SP_NA_POST_BUSINESSPARTNER_SYNCINBOX_ENSURE
             @EventId=@ProposalEventId,@SourceCompanyId=@SourceCompanyId,
             @EntityName=N'BusinessPartnerProposal',@EntityGlobalId=@BusinessPartnerGlobalId,
-            @Operation=N'Updated',@PayloadJson=@ProposedSnapshotJson,
+            @Operation=@Operation,@PayloadJson=@ProposalPayloadJson,
             @InboxId=@InboxId OUTPUT,@InboxStatus=@InboxStatus OUTPUT,
             @EnvelopeResult=@InboxEnvelopeResult OUTPUT;
         IF @InboxEnvelopeResult=4
         BEGIN
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 4 AS ResultCode;
             RETURN;
         END;
         IF @InboxStatus=N'Applied'
         BEGIN
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 2 AS ResultCode;
             RETURN;
         END;
@@ -764,7 +908,7 @@ BEGIN
             SET Status=N'DeadLetter',ErrorMessage=N'Outbound EventId collision.',
                 LastErrorMessage=N'Outbound EventId collision.',NextRetryAt=NULL
             WHERE Id=@InboxId;
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 4 AS ResultCode;
             RETURN;
         END;
@@ -800,11 +944,14 @@ BEGIN
         SET Status=N'Applied',AppliedAt=SYSUTCDATETIME(),ErrorMessage=NULL,LastErrorMessage=NULL,NextRetryAt=NULL
         WHERE Id=@InboxId;
 
-        COMMIT TRANSACTION;
+        IF @StartedTransaction = 1 COMMIT TRANSACTION;
         SELECT 1 AS ResultCode;
     END TRY
     BEGIN CATCH
-        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        IF @StartedTransaction = 1 AND XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+        ELSE IF XACT_STATE() = 1
+            ROLLBACK TRANSACTION BpProposalConflictSavepoint;
         THROW;
     END CATCH;
 END;
@@ -815,6 +962,7 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_BUSINESSPARTNER_PROPOSAL_REJECT
     @CompanyId int,
     @SourceCompanyId int,
     @BusinessPartnerGlobalId uniqueidentifier,
+    @Operation nvarchar(30),
     @ProposalPayloadJson nvarchar(max),
     @ResultEventId uniqueidentifier,
     @ResultPayloadJson nvarchar(max)
@@ -822,25 +970,32 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
-    BEGIN TRY
+    DECLARE @StartedTransaction bit = 0;
+    IF @@TRANCOUNT = 0
+    BEGIN
+        SET @StartedTransaction = 1;
         BEGIN TRANSACTION;
+    END
+    ELSE
+        SAVE TRANSACTION BpProposalRejectSavepoint;
+    BEGIN TRY
         DECLARE @InboxId bigint,@InboxStatus nvarchar(30),@InboxEnvelopeResult int,
                 @OutboxId bigint,@OutboxEnvelopeResult int;
         EXEC dbo.SP_NA_POST_BUSINESSPARTNER_SYNCINBOX_ENSURE
             @EventId=@ProposalEventId,@SourceCompanyId=@SourceCompanyId,
             @EntityName=N'BusinessPartnerProposal',@EntityGlobalId=@BusinessPartnerGlobalId,
-            @Operation=N'Updated',@PayloadJson=@ProposalPayloadJson,
+            @Operation=@Operation,@PayloadJson=@ProposalPayloadJson,
             @InboxId=@InboxId OUTPUT,@InboxStatus=@InboxStatus OUTPUT,
             @EnvelopeResult=@InboxEnvelopeResult OUTPUT;
         IF @InboxEnvelopeResult=4
         BEGIN
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 4 AS ResultCode;
             RETURN;
         END;
         IF @InboxStatus=N'Applied'
         BEGIN
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 2 AS ResultCode;
             RETURN;
         END;
@@ -856,7 +1011,7 @@ BEGIN
             SET Status=N'DeadLetter',ErrorMessage=N'Outbound EventId collision.',
                 LastErrorMessage=N'Outbound EventId collision.',NextRetryAt=NULL
             WHERE Id=@InboxId;
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 4 AS ResultCode;
             RETURN;
         END;
@@ -864,11 +1019,14 @@ BEGIN
         SET Status=N'Applied',AppliedAt=SYSUTCDATETIME(),ErrorMessage=NULL,LastErrorMessage=NULL,NextRetryAt=NULL
         WHERE Id=@InboxId;
 
-        COMMIT TRANSACTION;
+        IF @StartedTransaction = 1 COMMIT TRANSACTION;
         SELECT 1 AS ResultCode;
     END TRY
     BEGIN CATCH
-        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        IF @StartedTransaction = 1 AND XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+        ELSE IF XACT_STATE() = 1
+            ROLLBACK TRANSACTION BpProposalRejectSavepoint;
         THROW;
     END CATCH;
 END;
@@ -2160,7 +2318,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SELECT COUNT(1)
-    FROM dbo.BusinessPartners
+    FROM dbo.BusinessPartners WITH (UPDLOCK,HOLDLOCK)
     WHERE PartnerType=@PartnerType
       AND IdentificationTypeId=@IdentificationTypeId
       AND NormalizedIdentificationNumber=@NormalizedIdentificationNumber

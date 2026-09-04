@@ -296,6 +296,7 @@ public sealed class SyncConfigurationContractTests
         SyncMasterBranchEntityCodes.IsKnown(SyncMasterBranchEntityCodes.Countries).Should().BeTrue();
         SyncMasterBranchEntityCodes.Find(" warehouse ")?.EntityCode.Should().Be(SyncMasterBranchEntityCodes.Warehouse);
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.BusinessPartner).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.BusinessPartnerProposal).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Countries).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Provinces).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Cities).Should().BeTrue();
@@ -345,6 +346,7 @@ public sealed class SyncConfigurationContractTests
         SyncMasterBranchEntityCodes.InitialCatalog.Should().OnlyContain(item => item.ExistsInModel);
         SyncMasterBranchEntityCodes.InitialCatalog
             .Where(item => item.IsOperative)
+            .Where(item => item.EntityCode is not SyncMasterBranchEntityCodes.BusinessPartnerProposal)
             .Should()
             .OnlyContain(item => item.HasProducer && item.HasApplier && item.SupportsInsert && item.SupportsUpdate && item.SupportsDeactivate);
         SyncMasterBranchEntityCodes.InitialCatalog
@@ -354,9 +356,9 @@ public sealed class SyncConfigurationContractTests
             .Should()
             .OnlyContain(item => !item.HasProducer && !item.HasApplier);
         SyncMasterBranchEntityCodes.Find(SyncMasterBranchEntityCodes.BusinessPartnerProposal).Should().Match<SyncMasterBranchEntityCatalogItem>(
-            item => item.HasProducer && !item.HasApplier && !item.SupportsInsert && !item.SupportsUpdate && !item.SupportsDeactivate);
+            item => item.HasProducer && item.HasApplier && item.SupportsInsert && item.SupportsUpdate && !item.SupportsDeactivate);
         SyncMasterBranchEntityCodes.Find(SyncMasterBranchEntityCodes.BusinessPartnerProposalResult).Should().Match<SyncMasterBranchEntityCatalogItem>(
-            item => !item.HasProducer && !item.HasApplier && !item.SupportsInsert && !item.SupportsUpdate && !item.SupportsDeactivate);
+            item => item.HasProducer && !item.HasApplier && !item.SupportsInsert && !item.SupportsUpdate && !item.SupportsDeactivate);
     }
 
     [Fact]

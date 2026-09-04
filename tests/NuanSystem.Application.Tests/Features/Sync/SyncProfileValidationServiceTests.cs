@@ -250,7 +250,7 @@ public sealed class SyncProfileValidationServiceTests
     }
 
     [Fact]
-    public async Task ValidateAsync_AcceptsInactiveBranchToMasterProposalDraft()
+    public async Task ValidateAsync_AcceptsInactiveBranchToMasterProposalWithInactiveDefinitionWarning()
     {
         var service = CreateService(policyEnabled: false);
         var request = BranchToMasterRequest() with { IsActive = false };
@@ -260,7 +260,7 @@ public sealed class SyncProfileValidationServiceTests
         result.Errors.Should().BeEmpty(string.Join(" | ", result.Errors.Select(error => $"{error.Code}:{error.Message}")));
         result.IsValid.Should().BeTrue();
         result.Warnings.Should().Contain(error => error.Code == "SyncEntityDefinitionInactive");
-        result.Warnings.Should().Contain(error => error.Code == "SyncEntityDraftOnly");
+        result.Warnings.Should().NotContain(error => error.Code == "SyncEntityDraftOnly");
     }
 
     [Fact]
@@ -282,7 +282,7 @@ public sealed class SyncProfileValidationServiceTests
     }
 
     [Fact]
-    public async Task ValidateAsync_ActivationFailsClosedUntilProposalApplierExists()
+    public async Task ValidateAsync_ActivationFailsClosedWhileProposalDefinitionRemainsInactive()
     {
         var service = CreateService(policyEnabled: true);
 
@@ -290,7 +290,7 @@ public sealed class SyncProfileValidationServiceTests
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(error => error.Code == "SyncEntityDefinitionInactive");
-        result.Errors.Should().Contain(error => error.Code == "SyncEntityNotOperative");
+        result.Errors.Should().NotContain(error => error.Code == "SyncEntityNotOperative");
         result.Errors.Should().NotContain(error => error.Code == "SyncBusinessPartnerSapCodePolicyRequired");
     }
 

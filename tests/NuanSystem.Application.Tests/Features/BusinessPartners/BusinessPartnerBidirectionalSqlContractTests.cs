@@ -184,6 +184,112 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
     }
 
     [Fact]
+    public void ProposalTerminalProcedures_PreserveCallerTransactionWithNamedSavepoints()
+    {
+        var procedures = new Dictionary<string, string>
+        {
+            ["SP_NA_POST_BUSINESSPARTNER_PROPOSAL_ACCEPT"] = "BpProposalAcceptSavepoint",
+            ["SP_NA_POST_BUSINESSPARTNER_PROPOSAL_CONFLICT"] = "BpProposalConflictSavepoint",
+            ["SP_NA_POST_BUSINESSPARTNER_PROPOSAL_REJECT"] = "BpProposalRejectSavepoint"
+        };
+
+        foreach (var (procedureName, savepointName) in procedures)
+        {
+            var procedure = Procedure(procedureName);
+            procedure.Should().Contain("DECLARE @StartedTransaction bit = 0")
+                .And.Contain("IF @@TRANCOUNT = 0")
+                .And.Contain("SET @StartedTransaction = 1")
+                .And.Contain($"SAVE TRANSACTION {savepointName}")
+                .And.Contain("IF @StartedTransaction = 1 COMMIT TRANSACTION")
+                .And.Contain("IF @StartedTransaction = 1 AND XACT_STATE() <> 0")
+                .And.Contain("ELSE IF XACT_STATE() = 1")
+                .And.Contain($"ROLLBACK TRANSACTION {savepointName}")
+                .And.NotContain("IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;");
+        }
+    }
+
+    [Fact]
+    public void ProposalTerminalProcedures_KeepOriginalEnvelopeSeparateFromConflictSnapshots()
+    {
+        var conflict = Procedure("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_CONFLICT");
+        conflict.Should().Contain("@Operation nvarchar(30)")
+            .And.Contain("@ProposalPayloadJson nvarchar(max)")
+            .And.Contain("@Operation=@Operation,@PayloadJson=@ProposalPayloadJson")
+            .And.Contain("@ProposedSnapshotJson,@CanonicalSnapshotJson,@ConflictFieldsJson");
+
+        var reject = Procedure("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_REJECT");
+        reject.Should().Contain("@Operation nvarchar(30)")
+            .And.Contain("@Operation=@Operation,@PayloadJson=@ProposalPayloadJson");
+    }
+
+    [Fact]
+    public void ProposalAccept_DefensiveConflictPersistsSnapshotsAndPublishesOriginResultBeforeInboxApplied()
+    {
+        var accept = Procedure("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_ACCEPT");
+        accept.Should().ContainAll(
+                "@BaseSnapshotJson nvarchar(max)",
+                "@ProposedSnapshotJson nvarchar(max)",
+                "@CurrentCanonicalSnapshotJson nvarchar(max)",
+                "@ResultEventId uniqueidentifier",
+                "@ResultPayloadJson nvarchar(max)",
+                "@BaseSnapshotJson,@ProposedSnapshotJson",
+                "@CurrentCanonicalSnapshotJson",
+                "@EventId=@ResultEventId,@CompanyId=@CompanyId,@TargetCompanyId=@SourceCompanyId",
+                "@CausationEventId=@ProposalEventId,@EntityName=N'BusinessPartnerProposalResult'",
+                "@PayloadJson=@ResultPayloadJson")
+            .And.NotContain("@ProposalPayloadJson,\r\n                     @CanonicalPayloadJson,N'[\"immutableIdentityRoleSapOrVersion\"]'");
+
+        accept.IndexOf("@EventId=@ResultEventId", StringComparison.Ordinal)
+            .Should().BeLessThan(accept.IndexOf("SET Status=N'Applied'", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_ACCEPT")]
+    [InlineData("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_CONFLICT")]
+    [InlineData("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_REJECT")]
+    public void ProposalTerminalProcedures_CreateDurableOutputBeforeInboxApplied(string procedureName)
+    {
+        var procedure = Procedure(procedureName);
+
+        procedure.IndexOf("EXEC dbo.SP_NA_POST_BUSINESSPARTNER_LOCALOUTBOX_ENSURE", StringComparison.Ordinal)
+            .Should().BeGreaterThan(-1)
+            .And.BeLessThan(procedure.IndexOf("SET Status=N'Applied'", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void StableReferenceResolver_IsLockedCodeBasedAndFailClosedForEverySupportedReference()
+    {
+        var resolver = Procedure("SP_NA_GET_BUSINESSPARTNER_STABLE_REFERENCES_RESOLVE");
+
+        resolver.Should().ContainAll(
+                "@IdentificationTypeCode nvarchar(30)",
+                "@AddressesJson nvarchar(max)",
+                "@ContactsJson nvarchar(max)",
+                "BusinessPartnerIdentificationTypes WITH (UPDLOCK,HOLDLOCK)",
+                "Countries WITH (UPDLOCK,HOLDLOCK)",
+                "Provinces WITH (UPDLOCK,HOLDLOCK)",
+                "Cities WITH (UPDLOCK,HOLDLOCK)",
+                "ContactTypes WITH (UPDLOCK,HOLDLOCK)",
+                "ContactChannels WITH (UPDLOCK,HOLDLOCK)",
+                "MatchCount")
+            .And.Contain("OPENJSON(@AddressesJson)")
+            .And.Contain("OPENJSON(@ContactsJson)");
+    }
+
+    [Fact]
+    public void ProposalIdentificationCheck_LocksOnlyActiveSameRoleCandidateRangeAndExcludesCurrent()
+    {
+        var procedure = Procedure("SP_NA_GET_BUSINESSPARTNERS_BUSCARPORIDENTIFICACION");
+
+        procedure.Should().Contain("FROM dbo.BusinessPartners WITH (UPDLOCK,HOLDLOCK)")
+            .And.Contain("PartnerType=@PartnerType")
+            .And.Contain("IdentificationTypeId=@IdentificationTypeId")
+            .And.Contain("NormalizedIdentificationNumber=@NormalizedIdentificationNumber")
+            .And.Contain("IsDeleted=0 AND IsActive=1")
+            .And.Contain("@ExcluirId IS NULL OR Id<>@ExcluirId");
+    }
+
+    [Fact]
     public void EventEnvelopeGuards_RejectMissingRequiredValuesAndCompareEveryFieldNullSafely()
     {
         var inboxGuard = Procedure("SP_NA_POST_BUSINESSPARTNER_SYNCINBOX_ENSURE");
@@ -342,7 +448,7 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
     }
 
     [Fact]
-    public void SapCardCodeInputs_AreWideAndValidatedBeforeCanonicalPersistence()
+    public void SapCardCodeInputs_AreWideAndPreserveExistingConfirmedMappings()
     {
         string[] procedures =
         [
@@ -355,9 +461,18 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
         foreach (var name in procedures)
         {
             var procedure = Procedure(name);
-            procedure.Should().Contain("@SapCardCode nvarchar(50)")
-                .And.Contain("DATALENGTH(@SapCardCode) > 30");
+            procedure.Should().Contain("@SapCardCode nvarchar(50)");
         }
+
+        Procedure("SP_NA_POST_BUSINESSPARTNER_CANONICAL_UPSERT")
+            .Should().Contain("NULLIF(LTRIM(RTRIM(@ExistingSapCardCode)),N'') IS NULL")
+            .And.Contain("DATALENGTH(@SapCardCode) > 30");
+        Procedure("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_ACCEPT")
+            .Should().NotContain("IF DATALENGTH(@SapCardCode) > 30");
+        Procedure("SP_NA_POST_BUSINESSPARTNER_CANONICAL_APPLY")
+            .Should().Contain("DATALENGTH(@SapCardCode) > 30");
+        Procedure("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_RESULT_APPLY")
+            .Should().Contain("DATALENGTH(@SapCardCode) > 30");
     }
 
     [Fact]

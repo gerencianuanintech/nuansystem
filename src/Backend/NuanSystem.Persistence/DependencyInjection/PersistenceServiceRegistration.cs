@@ -179,6 +179,7 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ISyncFullEntitySource, ItemFullEntitySource>();
         services.AddScoped<ISyncFullEntitySource, WarehouseFullEntitySource>();
         services.AddScoped<IBusinessPartnerSyncApplyRepository, BusinessPartnerSyncApplyRepository>();
+        services.AddScoped<IBusinessPartnerProposalApplyRepository, BusinessPartnerProposalApplyRepository>();
         services.AddScoped<IItemSyncApplyRepository, ItemSyncApplyRepository>();
         services.AddScoped<IWarehouseSyncApplyRepository, WarehouseSyncApplyRepository>();
         services.AddScoped<ICountrySyncApplyRepository, CountrySyncApplyRepository>();
