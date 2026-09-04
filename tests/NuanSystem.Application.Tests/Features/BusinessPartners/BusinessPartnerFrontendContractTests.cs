@@ -346,6 +346,211 @@ public sealed class BusinessPartnerFrontendContractTests
     }
 
     [Fact]
+    public void CustomerCentralUpdateComposition_OverlaysFormEditsWithoutErasingLoadedAggregate()
+    {
+        var loadedRequest = CreatePopulated<SaveBusinessPartnerRequest>(new Dictionary<string, object?>
+        {
+            ["Name"] = "Nombre cargado",
+            ["CommercialName"] = "Comercial cargado",
+            ["PartnerType"] = "Customer",
+            ["IdentificationTypeId"] = 9,
+            ["IdentificationNumber"] = "1790012345001",
+            ["Addresses"] = new[] { CreatePopulated<SaveBusinessPartnerAddressRequest>() },
+            ["Contacts"] = new[] { CreatePopulated<SaveBusinessPartnerContactRequest>() }
+        });
+        var loaded = JsonSerializer.Deserialize<BusinessPartnerItem>(JsonSerializer.Serialize(loadedRequest))!;
+        loaded.Id = 42;
+        loaded.RowVersion = "AQIDBAUGBwg=";
+        var editedAddress = CreatePopulated<SaveBusinessPartnerAddressRequest>(new Dictionary<string, object?>
+        {
+            ["GlobalId"] = Guid.Parse("11111111-2222-3333-4444-555555555555"),
+            ["AddressType"] = "Other",
+            ["Line1"] = "Direccion editada"
+        });
+        var editedContact = CreatePopulated<SaveBusinessPartnerContactRequest>(new Dictionary<string, object?>
+        {
+            ["GlobalId"] = Guid.Parse("66666666-7777-8888-9999-aaaaaaaaaaaa"),
+            ["Name"] = "Contacto editado"
+        });
+        var formDraft = CreatePopulated<SaveBusinessPartnerRequest>(new Dictionary<string, object?>
+        {
+            ["Name"] = "Nombre editado",
+            ["CommercialName"] = "Comercial editado",
+            ["PartnerType"] = "Customer",
+            ["IdentificationTypeId"] = 77,
+            ["IdentificationNumber"] = "identidad-ignorada-en-update",
+            ["Email"] = "editado@example.com",
+            ["Phone"] = "0999999999",
+            ["Remarks"] = "Observacion editada",
+            ["IsActive"] = false,
+            ["TaxpayerType"] = "Sociedad editada",
+            ["IsAccountingRequired"] = false,
+            ["AppliesRetention"] = false,
+            ["FiscalRegime"] = "Regimen editado",
+            ["CountryCode"] = "PE",
+            ["Province"] = "Lima",
+            ["City"] = "Miraflores",
+            ["CustomerAccountId"] = 501,
+            ["CustomerAdvanceAccountId"] = 502,
+            ["RetentionAccountId"] = 503,
+            ["CostCenterCode"] = "CC-EDIT",
+            ["PaymentTermId"] = 504,
+            ["CreditLimit"] = 999.25m,
+            ["PriceListCode"] = "PL-EDIT",
+            ["AssignedSellerCode"] = "SELLER-EDIT",
+            ["CreditStatus"] = "Blocked",
+            ["SapCardCode"] = "C-EDIT",
+            ["SapSyncStatus"] = "Synced",
+            ["Addresses"] = new[] { editedAddress },
+            ["Contacts"] = new[] { editedContact }
+        }, populated: false);
+        var expected = loadedRequest with
+        {
+            Name = formDraft.Name,
+            CommercialName = formDraft.CommercialName,
+            Email = formDraft.Email,
+            Phone = formDraft.Phone,
+            Remarks = formDraft.Remarks,
+            IsActive = formDraft.IsActive,
+            TaxpayerType = formDraft.TaxpayerType,
+            IsAccountingRequired = formDraft.IsAccountingRequired,
+            AppliesRetention = formDraft.AppliesRetention,
+            FiscalRegime = formDraft.FiscalRegime,
+            CountryCode = formDraft.CountryCode,
+            Province = formDraft.Province,
+            City = formDraft.City,
+            CustomerAccountId = formDraft.CustomerAccountId,
+            CustomerAdvanceAccountId = formDraft.CustomerAdvanceAccountId,
+            RetentionAccountId = formDraft.RetentionAccountId,
+            CostCenterCode = formDraft.CostCenterCode,
+            PaymentTermId = formDraft.PaymentTermId,
+            CreditLimit = formDraft.CreditLimit,
+            PriceListCode = formDraft.PriceListCode,
+            AssignedSellerCode = formDraft.AssignedSellerCode,
+            CreditStatus = formDraft.CreditStatus,
+            SapCardCode = formDraft.SapCardCode,
+            SapSyncStatus = formDraft.SapSyncStatus,
+            Addresses = formDraft.Addresses,
+            Contacts = formDraft.Contacts,
+            ExpectedRowVersion = loaded.RowVersion
+        };
+
+        var composed = ComposeCustomerRequest(
+            formDraft,
+            loaded,
+            new BusinessPartnerEditPolicy(false, true, []));
+
+        composed.Should().BeEquivalentTo(expected);
+        composed.BankAccounts.Should().NotBeEmpty();
+        composed.RetentionSettings.Should().NotBeEmpty();
+        composed.Notes.Should().NotBeNull();
+        composed.SapFieldMappings.Should().NotBeEmpty();
+        composed.Attachments.Should().NotBeEmpty();
+        composed.IdentificationTypeId.Should().Be(loaded.IdentificationTypeId);
+        composed.IdentificationNumber.Should().Be(loaded.IdentificationNumber);
+        Read("src", "Frontend", "NuanSystem.WinForms.Forms", "BusinessPartners", "CustomerEditForm.cs")
+            .Should().Contain("Request = SupplierBusinessPartnerMapper.ComposeCustomerRequest(");
+    }
+
+    [Fact]
+    public void CustomerBranchUpdateComposition_RetainsExactBackendWritePolicyProjection()
+    {
+        var original = CreatePopulated<SaveBusinessPartnerRequest>(new Dictionary<string, object?>
+        {
+            ["Name"] = "Nombre central",
+            ["CommercialName"] = "Comercial central",
+            ["PartnerType"] = "Customer",
+            ["IdentificationTypeId"] = 9,
+            ["IdentificationNumber"] = "1790012345001"
+        });
+        var current = JsonSerializer.Deserialize<BusinessPartnerItem>(JsonSerializer.Serialize(original))!;
+        current.Id = 42;
+        current.RowVersion = "AQIDBAUGBwg=";
+        var formDraft = CreatePopulated<SaveBusinessPartnerRequest>(new Dictionary<string, object?>
+        {
+            ["Name"] = "Nombre sucursal",
+            ["CommercialName"] = "Comercial sucursal",
+            ["PartnerType"] = "Customer",
+            ["IdentificationTypeId"] = 77,
+            ["IdentificationNumber"] = "identidad-no-autorizada",
+            ["Email"] = "sucursal@example.com",
+            ["Phone"] = "0999999999",
+            ["Remarks"] = "cambio no autorizado"
+        }, populated: false);
+        var branchPolicy = new BusinessPartnerEditPolicy(
+            true,
+            false,
+            BusinessPartnerWritePolicy.BranchEditableFields);
+
+        var composed = ComposeCustomerRequest(formDraft, current, branchPolicy);
+        var expected = ProjectRequest(formDraft, current, branchPolicy);
+
+        composed.Should().BeEquivalentTo(expected);
+        composed.Name.Should().Be(formDraft.Name);
+        composed.Email.Should().Be(formDraft.Email);
+        composed.Remarks.Should().Be(current.Remarks);
+        composed.IdentificationNumber.Should().Be(current.IdentificationNumber);
+    }
+
+    [Theory]
+    [InlineData("Billing", false)]
+    [InlineData("Shipping", false)]
+    [InlineData("Main", true)]
+    [InlineData("Other", true)]
+    public void AddressRoundTrip_PreservesApiTypeIndependentOfPrimary(string apiType, bool isPrimary)
+    {
+        var partner = new BusinessPartnerItem
+        {
+            Addresses = [new(1, Guid.NewGuid(), 42, null, null, null, apiType, "Calle 1", null, null, null, null, null, null, null, isPrimary, true)]
+        };
+        var lookups = CreatePopulated<BusinessPartnerLookups>(populated: false);
+
+        var request = SupplierBusinessPartnerMapper.ToAddressRequests(
+            SupplierBusinessPartnerMapper.ToAddressViewModels(partner),
+            lookups).Single();
+
+        request.AddressType.Should().Be(apiType);
+        request.IsPrimary.Should().Be(isPrimary);
+    }
+
+    [Fact]
+    public void CustomerContactDetailPresentation_MapsPrimaryActiveAndNotesAndClearsSelection()
+    {
+        var contact = new SupplierContactViewModel
+        {
+            FirstName = "Ana",
+            LastName = "Ruiz",
+            Position = "Gerente",
+            Phone = "2200000",
+            Mobile = "0999999999",
+            Email = "ana@example.com",
+            IsPrimary = true,
+            IsActive = false,
+            Notes = "Preferente"
+        };
+
+        var populated = CustomerContactDetail(contact);
+        var empty = CustomerContactDetail(null);
+
+        populated.GetType().GetProperty("Name")!.GetValue(populated).Should().Be("Ana Ruiz");
+        populated.GetType().GetProperty("Position")!.GetValue(populated).Should().Be("Gerente");
+        populated.GetType().GetProperty("Phone")!.GetValue(populated).Should().Be("2200000");
+        populated.GetType().GetProperty("Mobile")!.GetValue(populated).Should().Be("0999999999");
+        populated.GetType().GetProperty("Email")!.GetValue(populated).Should().Be("ana@example.com");
+        populated.GetType().GetProperty("IsPrimary")!.GetValue(populated).Should().Be(true);
+        populated.GetType().GetProperty("IsActive")!.GetValue(populated).Should().Be(false);
+        populated.GetType().GetProperty("Notes")!.GetValue(populated).Should().Be("Preferente");
+        empty.GetType().GetProperty("Name")!.GetValue(empty).Should().Be(string.Empty);
+        empty.GetType().GetProperty("Position")!.GetValue(empty).Should().Be(string.Empty);
+        empty.GetType().GetProperty("Phone")!.GetValue(empty).Should().Be(string.Empty);
+        empty.GetType().GetProperty("Mobile")!.GetValue(empty).Should().Be(string.Empty);
+        empty.GetType().GetProperty("Email")!.GetValue(empty).Should().Be(string.Empty);
+        empty.GetType().GetProperty("IsPrimary")!.GetValue(empty).Should().Be(false);
+        empty.GetType().GetProperty("IsActive")!.GetValue(empty).Should().Be(false);
+        empty.GetType().GetProperty("Notes")!.GetValue(empty).Should().Be(string.Empty);
+    }
+
+    [Fact]
     public void CustomerChildRoundTrip_PreservesGlobalIdsAndAllCanonicalFields()
     {
         var addressGlobalId = Guid.Parse("11111111-2222-3333-4444-555555555555");
@@ -535,7 +740,11 @@ public sealed class BusinessPartnerFrontendContractTests
         customer.Should().Contain("txtCustomerCode.Properties.ReadOnly = true;")
             .And.Contain("Se asigna al guardar")
             .And.Contain("lblMasterSyncStatus")
-            .And.Contain("lblMasterSyncMessage");
+            .And.Contain("lblMasterSyncMessage")
+            .And.Contain("txtContactName.Properties.ReadOnly = true;")
+            .And.Contain("tsPrimaryContact.Properties.ReadOnly = true;")
+            .And.Contain("tsActiveContact.Properties.ReadOnly = true;")
+            .And.Contain("memContactNotes.Properties.ReadOnly = true;");
         supplier.Should().Contain("txtSupplierCode.Properties.ReadOnly = true;")
             .And.Contain("Se asigna al guardar")
             .And.Contain("lblMasterSyncStatus")
@@ -572,6 +781,27 @@ public sealed class BusinessPartnerFrontendContractTests
             BindingFlags.Public | BindingFlags.Static);
         method.Should().NotBeNull("forms need one shared projection that follows backend write policy");
         return (SaveBusinessPartnerRequest)method!.Invoke(null, [proposed, current, policy])!;
+    }
+
+    private static SaveBusinessPartnerRequest ComposeCustomerRequest(
+        SaveBusinessPartnerRequest formDraft,
+        BusinessPartnerItem? current,
+        BusinessPartnerEditPolicy policy)
+    {
+        var method = typeof(SupplierBusinessPartnerMapper).GetMethod(
+            "ComposeCustomerRequest",
+            BindingFlags.Public | BindingFlags.Static);
+        method.Should().NotBeNull("CustomerEditForm needs a lossless production composition seam");
+        return (SaveBusinessPartnerRequest)method!.Invoke(null, [formDraft, current, policy])!;
+    }
+
+    private static object CustomerContactDetail(SupplierContactViewModel? contact)
+    {
+        var method = typeof(SupplierBusinessPartnerMapper).GetMethod(
+            "ToCustomerContactDetail",
+            BindingFlags.Public | BindingFlags.Static);
+        method.Should().NotBeNull("the selected Customer contact detail must map every displayed value");
+        return method!.Invoke(null, [contact])!;
     }
 
     private static T CreatePopulated<T>(

@@ -3,6 +3,16 @@ using System.Runtime.CompilerServices;
 
 namespace NuanSystem.WinForms.ViewModels.BusinessPartners.Suppliers;
 
+public sealed record CustomerContactDetailViewModel(
+    string Name,
+    string Position,
+    string Phone,
+    string Mobile,
+    string Email,
+    bool IsPrimary,
+    bool IsActive,
+    string Notes);
+
 public sealed class SupplierContactViewModel : INotifyPropertyChanged
 {
     private bool isPrimary;

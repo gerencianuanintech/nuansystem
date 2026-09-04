@@ -69,13 +69,13 @@ public sealed partial class CustomerEditForm : BaseEditForm
             null,
             null,
             null,
-            NullIfEmpty(lueTaxpayerType.Text),
+            LookupTextOrValue(lueTaxpayerType),
             tsAccountingRequired.IsOn,
             tsWithholdingAgent.IsOn || tsSubjectToWithholding.IsOn,
-            NullIfEmpty(lueFiscalRegime.Text),
-            NullIfEmpty(lueFiscalCountry.Text),
-            NullIfEmpty(lueFiscalProvince.Text),
-            NullIfEmpty(lueFiscalCity.Text),
+            LookupTextOrValue(lueFiscalRegime),
+            LookupTextOrValue(lueFiscalCountry),
+            LookupTextOrValue(lueFiscalProvince),
+            LookupTextOrValue(lueFiscalCity),
             ToNullableInt(sluReceivableAccount.EditValue),
             null,
             ToNullableInt(sluCustomerAdvanceAccount.EditValue),
@@ -86,7 +86,7 @@ public sealed partial class CustomerEditForm : BaseEditForm
             null,
             null,
             null,
-            NullIfEmpty(lueCostCenter.Text),
+            LookupTextOrValue(lueCostCenter),
             null,
             null,
             null,
@@ -118,13 +118,13 @@ public sealed partial class CustomerEditForm : BaseEditForm
             0,
             false,
             null,
-            NullIfEmpty(luePriceList.Text),
-            NullIfEmpty(lueSalesPerson.Text),
+            LookupTextOrValue(luePriceList),
+            LookupTextOrValue(lueSalesPerson),
             null,
-            "Normal",
+            tsCreditBlocked.IsOn ? "Blocked" : "Normal",
             NullIfEmpty(txtSapCardCode.Text),
             "C",
-            NullIfEmpty(lueSapStatus.Text) ?? "Pending",
+            LookupTextOrValue(lueSapStatus) ?? "Pending",
             null,
             null,
             false,
@@ -141,7 +141,7 @@ public sealed partial class CustomerEditForm : BaseEditForm
             null,
             Array.Empty<SaveBusinessPartnerSapFieldMappingRequest>(),
             ExpectedRowVersion: partner is { Id: > 0 } ? partner.RowVersion : null);
-        Request = SupplierBusinessPartnerMapper.ProjectRequest(
+        Request = SupplierBusinessPartnerMapper.ComposeCustomerRequest(
             proposed,
             partner,
             BusinessPartnerEditPolicy.From(lookups.EditPolicy));
@@ -225,10 +225,23 @@ public sealed partial class CustomerEditForm : BaseEditForm
         txtPhone.Text = partner.Phone;
         txtEmail.Text = partner.Email;
         memObservations.Text = partner.Remarks;
+        lueTaxpayerType.EditValue = partner.TaxpayerType;
+        tsAccountingRequired.IsOn = partner.IsAccountingRequired;
+        tsWithholdingAgent.IsOn = partner.AppliesRetention;
+        tsSubjectToWithholding.IsOn = partner.AppliesRetention;
+        lueFiscalRegime.EditValue = partner.FiscalRegime;
+        lueFiscalCountry.EditValue = partner.CountryCode;
+        lueFiscalProvince.EditValue = partner.Province;
+        lueFiscalCity.EditValue = partner.City;
         luePaymentTerm.EditValue = partner.PaymentTermId;
         spnCreditLimit.Value = partner.CreditLimit;
+        luePriceList.EditValue = partner.PriceListCode;
         lueSalesPerson.EditValue = partner.AssignedSellerCode;
+        tsCreditBlocked.IsOn = string.Equals(partner.CreditStatus, "Blocked", StringComparison.OrdinalIgnoreCase);
         sluReceivableAccount.EditValue = partner.CustomerAccountId;
+        sluCustomerAdvanceAccount.EditValue = partner.CustomerAdvanceAccountId;
+        sluIncomeWithholding.EditValue = partner.RetentionAccountId;
+        lueCostCenter.EditValue = partner.CostCenterCode;
         txtSapCardCode.Text = partner.SapCardCode;
         lueSapStatus.EditValue = partner.SapSyncStatus;
         lueStatus.EditValue = partner.IsActive ? "Activo" : "Inactivo";
@@ -287,12 +300,7 @@ public sealed partial class CustomerEditForm : BaseEditForm
             lueAddressCity,
             txtPostalCode,
             txtAddressReference,
-            tsPrimaryAddress,
-            txtContactName,
-            txtContactPosition,
-            txtContactPhone,
-            txtContactMobile,
-            txtContactEmail
+            tsPrimaryAddress
         })
         {
             editor.Properties.ReadOnly = true;
@@ -552,12 +560,15 @@ public sealed partial class CustomerEditForm : BaseEditForm
 
     private void ShowSelectedContact()
     {
-        var contact = SelectedContact();
-        txtContactName.Text = contact?.FullName ?? string.Empty;
-        txtContactPosition.Text = contact?.Position ?? string.Empty;
-        txtContactPhone.Text = contact?.Phone ?? string.Empty;
-        txtContactMobile.Text = contact?.Mobile ?? string.Empty;
-        txtContactEmail.Text = contact?.Email ?? string.Empty;
+        var detail = SupplierBusinessPartnerMapper.ToCustomerContactDetail(SelectedContact());
+        txtContactName.Text = detail.Name;
+        txtContactPosition.Text = detail.Position;
+        txtContactPhone.Text = detail.Phone;
+        txtContactMobile.Text = detail.Mobile;
+        txtContactEmail.Text = detail.Email;
+        tsPrimaryContact.IsOn = detail.IsPrimary;
+        tsActiveContact.IsOn = detail.IsActive;
+        memContactNotes.Text = detail.Notes;
     }
 
     private string CreateAddressCode()
@@ -681,6 +692,11 @@ public sealed partial class CustomerEditForm : BaseEditForm
     private static string? NullIfEmpty(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string? LookupTextOrValue(BaseEdit editor)
+    {
+        return NullIfEmpty(editor.Text) ?? NullIfEmpty(Convert.ToString(editor.EditValue));
     }
 
     private static SaveBusinessPartnerRequest EmptyRequest()

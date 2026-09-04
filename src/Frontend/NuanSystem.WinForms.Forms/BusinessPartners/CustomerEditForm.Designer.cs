@@ -2833,6 +2833,7 @@ partial class CustomerEditForm
         txtContactName.Properties.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         txtContactName.Properties.Appearance.Options.UseFont = true;
         txtContactName.Properties.Appearance.Options.UseForeColor = true;
+        txtContactName.Properties.ReadOnly = true;
         txtContactName.Size = new Size(240, 22);
         txtContactName.TabIndex = 1;
         //
@@ -2844,6 +2845,7 @@ partial class CustomerEditForm
         txtContactPosition.Properties.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         txtContactPosition.Properties.Appearance.Options.UseFont = true;
         txtContactPosition.Properties.Appearance.Options.UseForeColor = true;
+        txtContactPosition.Properties.ReadOnly = true;
         txtContactPosition.Size = new Size(240, 22);
         txtContactPosition.TabIndex = 2;
         //
@@ -2855,6 +2857,7 @@ partial class CustomerEditForm
         txtContactPhone.Properties.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         txtContactPhone.Properties.Appearance.Options.UseFont = true;
         txtContactPhone.Properties.Appearance.Options.UseForeColor = true;
+        txtContactPhone.Properties.ReadOnly = true;
         txtContactPhone.Size = new Size(240, 22);
         txtContactPhone.TabIndex = 3;
         //
@@ -2866,6 +2869,7 @@ partial class CustomerEditForm
         txtContactMobile.Properties.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         txtContactMobile.Properties.Appearance.Options.UseFont = true;
         txtContactMobile.Properties.Appearance.Options.UseForeColor = true;
+        txtContactMobile.Properties.ReadOnly = true;
         txtContactMobile.Size = new Size(240, 22);
         txtContactMobile.TabIndex = 4;
         //
@@ -2877,6 +2881,7 @@ partial class CustomerEditForm
         txtContactEmail.Properties.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         txtContactEmail.Properties.Appearance.Options.UseFont = true;
         txtContactEmail.Properties.Appearance.Options.UseForeColor = true;
+        txtContactEmail.Properties.ReadOnly = true;
         txtContactEmail.Size = new Size(240, 22);
         txtContactEmail.TabIndex = 5;
         //
@@ -2890,6 +2895,7 @@ partial class CustomerEditForm
         tsPrimaryContact.Properties.Appearance.Options.UseForeColor = true;
         tsPrimaryContact.Properties.OffText = "";
         tsPrimaryContact.Properties.OnText = "";
+        tsPrimaryContact.Properties.ReadOnly = true;
         tsPrimaryContact.Size = new Size(95, 20);
         tsPrimaryContact.TabIndex = 6;
         //
@@ -2903,6 +2909,7 @@ partial class CustomerEditForm
         tsActiveContact.Properties.Appearance.Options.UseForeColor = true;
         tsActiveContact.Properties.OffText = "";
         tsActiveContact.Properties.OnText = "";
+        tsActiveContact.Properties.ReadOnly = true;
         tsActiveContact.Size = new Size(95, 20);
         tsActiveContact.TabIndex = 7;
         //
@@ -2914,6 +2921,7 @@ partial class CustomerEditForm
         memContactNotes.Properties.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         memContactNotes.Properties.Appearance.Options.UseFont = true;
         memContactNotes.Properties.Appearance.Options.UseForeColor = true;
+        memContactNotes.Properties.ReadOnly = true;
         memContactNotes.Size = new Size(360, 70);
         memContactNotes.TabIndex = 8;
         //

@@ -68,7 +68,7 @@ public static class SupplierBusinessPartnerMapper
             Longitude = address.Longitude,
             IsPrimary = address.IsPrimary,
             IsDefaultBilling = string.Equals(address.AddressType, "Billing", StringComparison.OrdinalIgnoreCase),
-            IsDefaultDelivery = string.Equals(address.AddressType, "Shipping", StringComparison.OrdinalIgnoreCase) || address.IsPrimary,
+            IsDefaultDelivery = string.Equals(address.AddressType, "Shipping", StringComparison.OrdinalIgnoreCase),
             IsActive = address.IsActive
         }).ToArray();
     }
@@ -348,6 +348,57 @@ public static class SupplierBusinessPartnerMapper
             ? ProjectBranchCreate(proposed)
             : ProjectBranchUpdate(proposed, current);
     }
+
+    public static SaveBusinessPartnerRequest ComposeCustomerRequest(
+        SaveBusinessPartnerRequest formDraft,
+        BusinessPartnerItem? current,
+        BusinessPartnerEditPolicy policy)
+    {
+        ArgumentNullException.ThrowIfNull(formDraft);
+        ArgumentNullException.ThrowIfNull(policy);
+
+        if (current is null || current.Id <= 0)
+        {
+            return ProjectRequest(formDraft, current, policy);
+        }
+
+        var completeRequest = ProjectBranchUpdate(formDraft, current) with
+        {
+            Remarks = formDraft.Remarks,
+            IsActive = formDraft.IsActive,
+            TaxpayerType = formDraft.TaxpayerType,
+            IsAccountingRequired = formDraft.IsAccountingRequired,
+            AppliesRetention = formDraft.AppliesRetention,
+            FiscalRegime = formDraft.FiscalRegime,
+            CountryCode = formDraft.CountryCode,
+            Province = formDraft.Province,
+            City = formDraft.City,
+            CustomerAccountId = formDraft.CustomerAccountId,
+            CustomerAdvanceAccountId = formDraft.CustomerAdvanceAccountId,
+            RetentionAccountId = formDraft.RetentionAccountId,
+            CostCenterCode = formDraft.CostCenterCode,
+            PaymentTermId = formDraft.PaymentTermId,
+            CreditLimit = formDraft.CreditLimit,
+            PriceListCode = formDraft.PriceListCode,
+            AssignedSellerCode = formDraft.AssignedSellerCode,
+            CreditStatus = formDraft.CreditStatus,
+            SapCardCode = formDraft.SapCardCode,
+            SapSyncStatus = formDraft.SapSyncStatus
+        };
+
+        return ProjectRequest(completeRequest, current, policy);
+    }
+
+    public static CustomerContactDetailViewModel ToCustomerContactDetail(SupplierContactViewModel? contact) =>
+        new(
+            contact?.FullName ?? string.Empty,
+            contact?.Position ?? string.Empty,
+            contact?.Phone ?? string.Empty,
+            contact?.Mobile ?? string.Empty,
+            contact?.Email ?? string.Empty,
+            contact?.IsPrimary == true,
+            contact?.IsActive == true,
+            contact?.Notes ?? string.Empty);
 
     private static SaveBusinessPartnerRequest ProjectBranchCreate(SaveBusinessPartnerRequest proposed)
     {
@@ -703,17 +754,27 @@ public static class SupplierBusinessPartnerMapper
 
     private static string ToApiAddressType(SupplierAddressViewModel address)
     {
-        if (address.IsDefaultBilling || Contains(address.AddressType, "fact"))
+        if (Contains(address.AddressType, "fact") || Contains(address.AddressType, "billing"))
         {
             return "Billing";
         }
 
-        if (address.IsDefaultDelivery || Contains(address.AddressType, "entrega"))
+        if (Contains(address.AddressType, "entrega") || Contains(address.AddressType, "shipping"))
         {
             return "Shipping";
         }
 
-        return Contains(address.AddressType, "fiscal") || address.IsPrimary ? "Main" : "Other";
+        if (Contains(address.AddressType, "fiscal") || Contains(address.AddressType, "main"))
+        {
+            return "Main";
+        }
+
+        if (Contains(address.AddressType, "otro") || Contains(address.AddressType, "other"))
+        {
+            return "Other";
+        }
+
+        return "Other";
     }
 
     private static string FromApiAddressType(string value)
