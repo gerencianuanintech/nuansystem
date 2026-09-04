@@ -5,6 +5,7 @@ using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraGrid.Views.Grid;
 using NuanSystem.WinForms.Forms.Common;
 using NuanSystem.WinForms.Services.BusinessPartners.Models;
+using NuanSystem.WinForms.ViewModels.BusinessPartners.Suppliers;
 
 namespace NuanSystem.WinForms.Forms.BusinessPartners;
 
@@ -12,6 +13,8 @@ public sealed partial class CustomerEditForm : BaseEditForm
 {
     private readonly BusinessPartnerLookups lookups;
     private readonly BusinessPartnerItem? partner;
+    private readonly BindingList<SupplierAddressViewModel> addresses = new();
+    private readonly BindingList<SupplierContactViewModel> contacts = new();
 
     public CustomerEditForm()
         : this(null, CreateDesignLookups())
@@ -26,9 +29,11 @@ public sealed partial class CustomerEditForm : BaseEditForm
         FormStyler.ApplyPanelInheritedBackColor(this);
         WireEvents();
         BindLookups();
+        ConfigureChildDetailEditors();
         LoadPartner();
+        LoadChildren();
         ApplyEditState();
-        LoadDemoTables();
+        LoadSapTable();
     }
 
     [Browsable(false)]
@@ -45,7 +50,7 @@ public sealed partial class CustomerEditForm : BaseEditForm
 
     protected override void BuildRequest()
     {
-        Request = new SaveBusinessPartnerRequest(
+        var proposed = new SaveBusinessPartnerRequest(
             txtCustomerName.Text.Trim(),
             NullIfEmpty(txtCustomerCommercialName.Text),
             "Customer",
@@ -129,18 +134,33 @@ public sealed partial class CustomerEditForm : BaseEditForm
             false,
             false,
             false,
-            MapAddresses(),
-            MapContacts(),
+            SupplierBusinessPartnerMapper.ToAddressRequests(addresses, lookups),
+            SupplierBusinessPartnerMapper.ToContactRequests(contacts),
             Array.Empty<SaveBusinessPartnerBankAccountRequest>(),
             Array.Empty<SaveBusinessPartnerRetentionSettingRequest>(),
             null,
             Array.Empty<SaveBusinessPartnerSapFieldMappingRequest>(),
             ExpectedRowVersion: partner is { Id: > 0 } ? partner.RowVersion : null);
+        Request = SupplierBusinessPartnerMapper.ProjectRequest(
+            proposed,
+            partner,
+            BusinessPartnerEditPolicy.From(lookups.EditPolicy));
     }
 
     private void WireEvents()
     {
         btnSave.Click += (_, _) => Save();
+        btnAddAddress.Click += (_, _) => AddAddress();
+        btnEditAddress.Click += (_, _) => EditSelectedAddress();
+        btnDeleteAddress.Click += (_, _) => DeleteSelectedAddress();
+        btnSetPrimaryAddress.Click += (_, _) => SetPrimaryAddress();
+        grvCustomerAddresses.DoubleClick += (_, _) => EditSelectedAddress();
+        grvCustomerAddresses.FocusedRowChanged += (_, _) => ShowSelectedAddress();
+        btnAddContact.Click += (_, _) => AddContact();
+        btnEditContact.Click += (_, _) => EditSelectedContact();
+        btnDeleteContact.Click += (_, _) => DeleteSelectedContact();
+        grvCustomerContactList.DoubleClick += (_, _) => EditSelectedContact();
+        grvCustomerContactList.FocusedRowChanged += (_, _) => ShowSelectedContact();
     }
 
     private void BindLookups()
@@ -178,6 +198,9 @@ public sealed partial class CustomerEditForm : BaseEditForm
         AddItems(lueSapStatus, "Pending", "Synced", "Error");
         AddItems(lueAccountingCurrency, "USD - Dolar estadounidense", "PEN - Soles");
         AddItems(lueValidationStatus, "Valido", "Pendiente", "Observado");
+        grdCustomerAddresses.DataSource = addresses;
+        grdCustomerContactList.DataSource = contacts;
+        grdCustomerContacts.DataSource = contacts;
     }
 
     private void LoadPartner()
@@ -249,6 +272,46 @@ public sealed partial class CustomerEditForm : BaseEditForm
         txtEmail.Properties.ReadOnly = !state.EmailEditable;
         xtpAddresses.PageEnabled = state.AddressesEditable;
         xtpContacts.PageEnabled = state.ContactsEditable;
+        SetAddressActionsEnabled(state.AddressesEditable && state.CanSave);
+        SetContactActionsEnabled(state.ContactsEditable && state.CanSave);
+    }
+
+    private void ConfigureChildDetailEditors()
+    {
+        foreach (var editor in new BaseEdit[]
+        {
+            lueAddressType,
+            memAddress,
+            lueAddressCountry,
+            lueAddressProvince,
+            lueAddressCity,
+            txtPostalCode,
+            txtAddressReference,
+            tsPrimaryAddress,
+            txtContactName,
+            txtContactPosition,
+            txtContactPhone,
+            txtContactMobile,
+            txtContactEmail
+        })
+        {
+            editor.Properties.ReadOnly = true;
+        }
+    }
+
+    private void SetAddressActionsEnabled(bool enabled)
+    {
+        btnAddAddress.Enabled = enabled;
+        btnEditAddress.Enabled = enabled;
+        btnDeleteAddress.Enabled = enabled;
+        btnSetPrimaryAddress.Enabled = enabled;
+    }
+
+    private void SetContactActionsEnabled(bool enabled)
+    {
+        btnAddContact.Enabled = enabled;
+        btnEditContact.Enabled = enabled;
+        btnDeleteContact.Enabled = enabled;
     }
 
     private static void SetReadOnly(Control parent, bool readOnly)
@@ -279,59 +342,26 @@ public sealed partial class CustomerEditForm : BaseEditForm
         label.Appearance.Options.UseForeColor = true;
     }
 
-    private IReadOnlyCollection<SaveBusinessPartnerAddressRequest> MapAddresses() =>
-        partner?.Addresses.Select(address => new SaveBusinessPartnerAddressRequest(
-            address.GlobalId == Guid.Empty ? null : address.GlobalId,
-            address.CountryId,
-            address.ProvinceId,
-            address.CityId,
-            address.AddressType,
-            address.Line1,
-            address.Line2,
-            address.CountryCode,
-            address.Province,
-            address.City,
-            address.PostalCode,
-            address.Latitude,
-            address.Longitude,
-            address.IsPrimary,
-            address.IsActive)).ToArray() ?? [];
-
-    private IReadOnlyCollection<SaveBusinessPartnerContactRequest> MapContacts() =>
-        partner?.Contacts.Select(contact => new SaveBusinessPartnerContactRequest(
-            contact.GlobalId == Guid.Empty ? null : contact.GlobalId,
-            contact.ContactTypeId,
-            contact.ContactChannelId,
-            contact.Name,
-            contact.Position,
-            contact.Department,
-            contact.Phone,
-            contact.Extension,
-            contact.Mobile,
-            contact.Email,
-            contact.Language,
-            contact.ReceivesNotifications,
-            contact.IsPrimary,
-            contact.IsActive,
-            contact.Notes)).ToArray() ?? [];
-
-    private void LoadDemoTables()
+    private void LoadChildren()
     {
-        grdCustomerContacts.DataSource = CreateTable(
-            ("Nombre", typeof(string)),
-            ("Cargo", typeof(string)),
-            ("Telefono", typeof(string)),
-            ("Correo", typeof(string)),
-            ("DireccionPrincipal", typeof(string)),
-            ("EsPrincipal", typeof(bool)));
+        addresses.Clear();
+        foreach (var address in SupplierBusinessPartnerMapper.ToAddressViewModels(partner))
+        {
+            addresses.Add(address);
+        }
 
-        grdCustomerAddresses.DataSource = CreateTable(
-            ("TipoDireccion", typeof(string)),
-            ("Direccion", typeof(string)),
-            ("Ciudad", typeof(string)),
-            ("Provincia", typeof(string)),
-            ("Principal", typeof(bool)));
+        contacts.Clear();
+        foreach (var contact in SupplierBusinessPartnerMapper.ToContactViewModels(partner, lookups))
+        {
+            contacts.Add(contact);
+        }
 
+        ShowSelectedAddress();
+        ShowSelectedContact();
+    }
+
+    private void LoadSapTable()
+    {
         grdCustomerSapLog.DataSource = CreateTable(
             ("FechaHora", typeof(DateTime)),
             ("Evento", typeof(string)),
@@ -339,6 +369,216 @@ public sealed partial class CustomerEditForm : BaseEditForm
             ("Usuario", typeof(string)),
             ("Resultado", typeof(string)));
     }
+
+    private void AddAddress()
+    {
+        using var dialog = new SupplierAddressEditDialog(CreateAddressCode());
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        var address = dialog.Address;
+        ApplyPrimaryAddress(address);
+        addresses.Add(address);
+        RefreshAddressData();
+    }
+
+    private void EditSelectedAddress()
+    {
+        var address = SelectedAddress();
+        if (address is null)
+        {
+            ShowSelectionRequired("una direccion");
+            return;
+        }
+
+        using var dialog = new SupplierAddressEditDialog(address);
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        var edited = dialog.Address;
+        ApplyPrimaryAddress(edited, address.Id);
+        address.CopyFrom(edited);
+        RefreshAddressData();
+    }
+
+    private void DeleteSelectedAddress()
+    {
+        var address = SelectedAddress();
+        if (address is null)
+        {
+            ShowSelectionRequired("una direccion");
+            return;
+        }
+
+        if (ConfirmDelete($"la direccion {address.Code}"))
+        {
+            addresses.Remove(address);
+            RefreshAddressData();
+        }
+    }
+
+    private void SetPrimaryAddress()
+    {
+        var address = SelectedAddress();
+        if (address is null)
+        {
+            ShowSelectionRequired("una direccion");
+            return;
+        }
+
+        foreach (var item in addresses)
+        {
+            item.IsPrimary = item.Id == address.Id;
+        }
+
+        RefreshAddressData();
+    }
+
+    private void AddContact()
+    {
+        using var dialog = new SupplierContactEditDialog(lookups.ContactTypes, lookups.ContactChannels);
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        var contact = dialog.Contact;
+        ApplyPrimaryContact(contact);
+        contacts.Add(contact);
+        RefreshContactData();
+    }
+
+    private void EditSelectedContact()
+    {
+        var contact = SelectedContact();
+        if (contact is null)
+        {
+            ShowSelectionRequired("un contacto");
+            return;
+        }
+
+        using var dialog = new SupplierContactEditDialog(contact, lookups.ContactTypes, lookups.ContactChannels);
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        var edited = dialog.Contact;
+        ApplyPrimaryContact(edited, contact.Id);
+        contact.CopyFrom(edited);
+        RefreshContactData();
+    }
+
+    private void DeleteSelectedContact()
+    {
+        var contact = SelectedContact();
+        if (contact is null)
+        {
+            ShowSelectionRequired("un contacto");
+            return;
+        }
+
+        if (ConfirmDelete($"el contacto {contact.FullName}"))
+        {
+            contacts.Remove(contact);
+            RefreshContactData();
+        }
+    }
+
+    private SupplierAddressViewModel? SelectedAddress() =>
+        grvCustomerAddresses.GetFocusedRow() as SupplierAddressViewModel;
+
+    private SupplierContactViewModel? SelectedContact() =>
+        grvCustomerContactList.GetFocusedRow() as SupplierContactViewModel;
+
+    private void ApplyPrimaryAddress(SupplierAddressViewModel address, Guid? exceptId = null)
+    {
+        address.IsPrimary = address.IsPrimary || address.IsDefaultBilling || address.IsDefaultDelivery;
+        if (!address.IsPrimary)
+        {
+            return;
+        }
+
+        foreach (var item in addresses.Where(item => !exceptId.HasValue || item.Id != exceptId.Value))
+        {
+            item.IsPrimary = false;
+        }
+    }
+
+    private void ApplyPrimaryContact(SupplierContactViewModel contact, Guid? exceptId = null)
+    {
+        if (!contact.IsPrimary)
+        {
+            return;
+        }
+
+        foreach (var item in contacts.Where(item => !exceptId.HasValue || item.Id != exceptId.Value))
+        {
+            item.IsPrimary = false;
+        }
+    }
+
+    private void RefreshAddressData()
+    {
+        grdCustomerAddresses.RefreshDataSource();
+        grvCustomerAddresses.RefreshData();
+        ShowSelectedAddress();
+    }
+
+    private void RefreshContactData()
+    {
+        grdCustomerContactList.RefreshDataSource();
+        grdCustomerContacts.RefreshDataSource();
+        grvCustomerContactList.RefreshData();
+        ShowSelectedContact();
+    }
+
+    private void ShowSelectedAddress()
+    {
+        var address = SelectedAddress();
+        lueAddressType.EditValue = address?.AddressType;
+        memAddress.Text = address?.FullAddress ?? string.Empty;
+        lueAddressCountry.EditValue = address?.Country;
+        lueAddressProvince.EditValue = address?.Province;
+        lueAddressCity.EditValue = address?.City;
+        txtPostalCode.Text = address?.PostalCode ?? string.Empty;
+        txtAddressReference.Text = address?.Reference ?? string.Empty;
+        tsPrimaryAddress.IsOn = address?.IsPrimary == true;
+    }
+
+    private void ShowSelectedContact()
+    {
+        var contact = SelectedContact();
+        txtContactName.Text = contact?.FullName ?? string.Empty;
+        txtContactPosition.Text = contact?.Position ?? string.Empty;
+        txtContactPhone.Text = contact?.Phone ?? string.Empty;
+        txtContactMobile.Text = contact?.Mobile ?? string.Empty;
+        txtContactEmail.Text = contact?.Email ?? string.Empty;
+    }
+
+    private string CreateAddressCode()
+    {
+        var next = addresses.Count + 1;
+        string code;
+        do
+        {
+            code = $"DIR-{next++:000}";
+        }
+        while (addresses.Any(item => string.Equals(item.Code, code, StringComparison.OrdinalIgnoreCase)));
+
+        return code;
+    }
+
+    private void ShowSelectionRequired(string item) =>
+        XtraMessageBox.Show(this, $"Seleccione {item}.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+    private bool ConfirmDelete(string item) =>
+        XtraMessageBox.Show(this, $"Desea eliminar {item}?", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+        == DialogResult.Yes;
 
     private void BindIdentificationTypes()
     {

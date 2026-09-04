@@ -111,6 +111,9 @@ public sealed class SyncEntityDefinitionUseCaseTests
             && entity.Code == "CustomCatalog"
             && !entity.HasProducer
             && !entity.HasApplier);
+        result.Value.Directions.Select(item => item.Code).Should().Equal("MasterToBranch", "BranchToMaster");
+        result.Value.ConflictStrategies.Select(item => item.Code).Should().Equal("MasterWins", "CentralReview");
+        result.Value.Directions.Should().NotContain(item => item.Code == "Bidirectional");
     }
 
     [Fact]

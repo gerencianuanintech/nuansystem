@@ -1,11 +1,17 @@
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using FluentAssertions;
 using NSubstitute;
+using NuanSystem.Application.Features.BusinessPartners.Commands;
+using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Features.BusinessPartners.Policies;
 using NuanSystem.WinForms.Services.BusinessPartners;
 using NuanSystem.WinForms.Services.BusinessPartners.Models;
 using NuanSystem.WinForms.Services.Sync;
 using NuanSystem.WinForms.Services.Sync.Models;
 using NuanSystem.WinForms.ViewModels.BusinessPartners;
+using NuanSystem.WinForms.ViewModels.BusinessPartners.Suppliers;
 using NuanSystem.WinForms.ViewModels.Sync;
 
 namespace NuanSystem.Application.Tests.Features.BusinessPartners;
@@ -217,6 +223,194 @@ public sealed class BusinessPartnerFrontendContractTests
     }
 
     [Fact]
+    public void BranchCreateProjection_UsesExactBackendApprovedDefaults()
+    {
+        var address = CreatePopulated<SaveBusinessPartnerAddressRequest>();
+        var contact = CreatePopulated<SaveBusinessPartnerContactRequest>();
+        var proposed = CreatePopulated<SaveBusinessPartnerRequest>(new Dictionary<string, object?>
+        {
+            ["Name"] = "Nombre editable",
+            ["CommercialName"] = "Comercial editable",
+            ["PartnerType"] = "Customer",
+            ["IdentificationTypeId"] = 9,
+            ["IdentificationNumber"] = "1790012345001",
+            ["Email"] = "cliente@example.com",
+            ["Phone"] = "0999999999",
+            ["Addresses"] = new[] { address },
+            ["Contacts"] = new[] { contact }
+        });
+        var branchPolicy = new BusinessPartnerEditPolicy(true, false, BusinessPartnerWritePolicy.BranchEditableFields);
+
+        var projected = ProjectRequest(proposed, null, branchPolicy);
+        var backend = JsonSerializer.Deserialize<CreateBusinessPartnerCommand>(JsonSerializer.Serialize(projected));
+        var copyDraft = JsonSerializer.Deserialize<BusinessPartnerItem>(JsonSerializer.Serialize(proposed))!;
+        copyDraft.Id = 0;
+        var projectedCopy = ProjectRequest(proposed, copyDraft, branchPolicy);
+        var backendCopy = JsonSerializer.Deserialize<CreateBusinessPartnerCommand>(JsonSerializer.Serialize(projectedCopy));
+
+        backend.Should().NotBeNull();
+        BusinessPartnerWritePolicy.GetNonDefaultProtectedPaths(backend!).Should().BeEmpty();
+        BusinessPartnerWritePolicy.GetNonDefaultProtectedPaths(backendCopy!).Should().BeEmpty();
+        projected.Should().BeEquivalentTo(proposed, options => options.Including(request => request.Name)
+            .Including(request => request.CommercialName)
+            .Including(request => request.PartnerType)
+            .Including(request => request.IdentificationTypeId)
+            .Including(request => request.IdentificationNumber)
+            .Including(request => request.Email)
+            .Including(request => request.Phone)
+            .Including(request => request.Addresses)
+            .Including(request => request.Contacts));
+    }
+
+    [Fact]
+    public void BranchUpdateProjection_PreservesEveryProtectedAggregateField()
+    {
+        var original = CreatePopulated<SaveBusinessPartnerRequest>(new Dictionary<string, object?>
+        {
+            ["Name"] = "Nombre original",
+            ["CommercialName"] = "Comercial original",
+            ["PartnerType"] = "Customer",
+            ["IdentificationTypeId"] = 9,
+            ["IdentificationNumber"] = "1790012345001",
+            ["Email"] = "original@example.com",
+            ["Phone"] = "022222222",
+            ["Addresses"] = new[] { CreatePopulated<SaveBusinessPartnerAddressRequest>() },
+            ["Contacts"] = new[] { CreatePopulated<SaveBusinessPartnerContactRequest>() }
+        });
+        var current = JsonSerializer.Deserialize<BusinessPartnerItem>(JsonSerializer.Serialize(original))!;
+        current.Id = 42;
+        current.GlobalId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        current.Code = "BP-0042";
+        current.RowVersion = "AQIDBAUGBwg=";
+        current.CanonicalVersion = 7;
+        current.MasterSyncStatus = "Accepted";
+        var changedAddress = CreatePopulated<SaveBusinessPartnerAddressRequest>(new Dictionary<string, object?>
+        {
+            ["GlobalId"] = Guid.Parse("11111111-2222-3333-4444-555555555555"),
+            ["Line1"] = "Nueva direccion"
+        });
+        var proposed = original with
+        {
+            Name = "Nombre cambiado",
+            Email = "nuevo@example.com",
+            Website = "https://no-autorizado.example",
+            BankAccounts = [],
+            Addresses = [changedAddress]
+        };
+        var branchPolicy = new BusinessPartnerEditPolicy(true, false, BusinessPartnerWritePolicy.BranchEditableFields);
+
+        var projected = ProjectRequest(proposed, current, branchPolicy);
+        var currentDto = JsonSerializer.Deserialize<BusinessPartnerDto>(JsonSerializer.Serialize(current))!;
+        var node = JsonNode.Parse(JsonSerializer.Serialize(projected))!.AsObject();
+        node["Id"] = current.Id;
+        var command = node.Deserialize<UpdateBusinessPartnerCommand>()!;
+        var toUpdateData = typeof(UpdateBusinessPartnerCommandHandler).GetMethod(
+            "ToUpdateData",
+            BindingFlags.NonPublic | BindingFlags.Static)!;
+        var updateData = toUpdateData.Invoke(null,
+        [
+            command,
+            currentDto,
+            Convert.FromBase64String(current.RowVersion),
+            current.CanonicalVersion,
+            "PendingMaster"
+        ])!;
+        var protectedPaths = BusinessPartnerWritePolicy.GetChangedProtectedPaths(
+            currentDto,
+            (UpdateBusinessPartnerData)updateData);
+
+        protectedPaths.Should().BeEmpty();
+        projected.Name.Should().Be("Nombre cambiado");
+        projected.Email.Should().Be("nuevo@example.com");
+        projected.Addresses.Should().ContainSingle().Which.Should().Be(changedAddress);
+        projected.ExpectedRowVersion.Should().Be(current.RowVersion);
+        projected.Should().BeEquivalentTo(original, options => options
+            .Excluding(request => request.Name)
+            .Excluding(request => request.CommercialName)
+            .Excluding(request => request.Email)
+            .Excluding(request => request.Phone)
+            .Excluding(request => request.Addresses)
+            .Excluding(request => request.Contacts)
+            .Excluding(request => request.ExpectedRowVersion));
+    }
+
+    [Fact]
+    public void CentralProjection_RetainsFullRequestWithoutSanitization()
+    {
+        var proposed = CreatePopulated<SaveBusinessPartnerRequest>();
+        var centralPolicy = new BusinessPartnerEditPolicy(false, true, []);
+
+        var projected = ProjectRequest(proposed, null, centralPolicy);
+
+        projected.Should().BeSameAs(proposed);
+    }
+
+    [Fact]
+    public void CustomerChildRoundTrip_PreservesGlobalIdsAndAllCanonicalFields()
+    {
+        var addressGlobalId = Guid.Parse("11111111-2222-3333-4444-555555555555");
+        var contactGlobalId = Guid.Parse("66666666-7777-8888-9999-aaaaaaaaaaaa");
+        var partner = new BusinessPartnerItem
+        {
+            Addresses = [new(1, addressGlobalId, 42, 10, 20, 30, "Billing", "Calle Uno 12", "Piso 3", "EC", "Pichincha", "Quito", "170101", -0.1m, -78.5m, true, false)],
+            Contacts = [new(2, contactGlobalId, 42, 40, 50, "Ana Ruiz", "Gerente", "Ventas", "2200000", "101", "0999999999", "ana@example.com", "es-EC", false, true, true, "Preferente")]
+        };
+        var lookups = CreatePopulated<BusinessPartnerLookups>(new Dictionary<string, object?>
+        {
+            ["Countries"] = new[] { new BusinessPartnerLookupOption(10, "EC", "Ecuador") },
+            ["Provinces"] = new[] { new BusinessPartnerGeoLookupOption(20, "P", "Pichincha") },
+            ["Cities"] = new[] { new BusinessPartnerGeoLookupOption(30, "Q", "Quito") },
+            ["ContactTypes"] = new[] { new BusinessPartnerLookupOption(40, "ADM", "Administrativo") },
+            ["ContactChannels"] = new[] { new BusinessPartnerLookupOption(50, "MAIL", "Correo") }
+        }, populated: false);
+
+        var addresses = SupplierBusinessPartnerMapper.ToAddressRequests(
+            SupplierBusinessPartnerMapper.ToAddressViewModels(partner), lookups);
+        var contacts = SupplierBusinessPartnerMapper.ToContactRequests(
+            SupplierBusinessPartnerMapper.ToContactViewModels(partner, lookups));
+
+        addresses.Should().ContainSingle().Which.Should().BeEquivalentTo(partner.Addresses.Single(),
+            options => options.ExcludingMissingMembers());
+        contacts.Should().ContainSingle().Which.Should().BeEquivalentTo(partner.Contacts.Single(),
+            options => options.ExcludingMissingMembers());
+    }
+
+    [Fact]
+    public void BranchToMasterProfile_RoundTripsWithCentralReview()
+    {
+        var catalog = new SyncConfigurationCatalog
+        {
+            Directions = [new("MasterToBranch", "M2B"), new("BranchToMaster", "B2M")],
+            ConflictStrategies = [new("MasterWins", "Master"), new("CentralReview", "Review")]
+        };
+        var detail = new SyncProfileDetail
+        {
+            Id = 12,
+            Code = "B2M",
+            Name = "Sucursales",
+            Direction = "BranchToMaster",
+            ConflictStrategy = "CentralReview"
+        };
+
+        var loaded = SyncProfileEditorState.FromDetail(detail, catalog).ToRequest();
+        var forced = new SyncProfileEditorState
+        {
+            Direction = "BranchToMaster",
+            ConflictStrategy = "MasterWins"
+        }.ToRequest();
+        var created = SyncProfileEditorState.CreateNew(catalog with
+        {
+            Directions = [new("BranchToMaster", "B2M")]
+        });
+
+        loaded.Direction.Should().Be("BranchToMaster");
+        loaded.ConflictStrategy.Should().Be("CentralReview");
+        forced.ConflictStrategy.Should().Be("CentralReview");
+        created.Direction.Should().Be("BranchToMaster");
+        created.ConflictStrategy.Should().Be("CentralReview");
+    }
+
+    [Fact]
     public void MonitorContracts_ExposeSafeConflictDifferencesAndResolutionLifecycle()
     {
         var conflict = typeof(SyncDashboard).Assembly.GetType(
@@ -367,6 +561,74 @@ public sealed class BusinessPartnerFrontendContractTests
         type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Select(property => property.Name)
             .ToArray();
+
+    private static SaveBusinessPartnerRequest ProjectRequest(
+        SaveBusinessPartnerRequest proposed,
+        BusinessPartnerItem? current,
+        BusinessPartnerEditPolicy policy)
+    {
+        var method = typeof(SupplierBusinessPartnerMapper).GetMethod(
+            "ProjectRequest",
+            BindingFlags.Public | BindingFlags.Static);
+        method.Should().NotBeNull("forms need one shared projection that follows backend write policy");
+        return (SaveBusinessPartnerRequest)method!.Invoke(null, [proposed, current, policy])!;
+    }
+
+    private static T CreatePopulated<T>(
+        IReadOnlyDictionary<string, object?>? overrides = null,
+        bool populated = true)
+    {
+        var constructor = typeof(T).GetConstructors()
+            .OrderByDescending(candidate => candidate.GetParameters().Length)
+            .First();
+        var values = constructor.GetParameters()
+            .Select(parameter => overrides?.TryGetValue(parameter.Name!, out var value) == true
+                ? value
+                : SampleValue(parameter.ParameterType, populated))
+            .ToArray();
+        return (T)constructor.Invoke(values);
+    }
+
+    private static object? SampleValue(Type type, bool populated)
+    {
+        var nullable = Nullable.GetUnderlyingType(type);
+        if (nullable is not null)
+        {
+            return populated ? SampleValue(nullable, true) : null;
+        }
+
+        if (type == typeof(string)) return populated ? "VALOR" : string.Empty;
+        if (type == typeof(bool)) return populated;
+        if (type == typeof(int)) return populated ? 7 : 0;
+        if (type == typeof(long)) return populated ? 7L : 0L;
+        if (type == typeof(decimal)) return populated ? 7.5m : 0m;
+        if (type == typeof(DateTime)) return populated ? new DateTime(2026, 9, 4) : default(DateTime);
+        if (type == typeof(Guid)) return populated ? Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee") : Guid.Empty;
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IReadOnlyCollection<>))
+        {
+            var itemType = type.GetGenericArguments()[0];
+            var array = Array.CreateInstance(itemType, populated ? 1 : 0);
+            if (populated)
+            {
+                var method = typeof(BusinessPartnerFrontendContractTests)
+                    .GetMethod(nameof(CreatePopulated), BindingFlags.NonPublic | BindingFlags.Static)!
+                    .MakeGenericMethod(itemType);
+                array.SetValue(method.Invoke(null, [null, true]), 0);
+            }
+
+            return array;
+        }
+
+        if (!type.IsValueType)
+        {
+            var method = typeof(BusinessPartnerFrontendContractTests)
+                .GetMethod(nameof(CreatePopulated), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(type);
+            return method.Invoke(null, [null, populated]);
+        }
+
+        return Activator.CreateInstance(type);
+    }
 
     private static string Read(params string[] segments)
     {

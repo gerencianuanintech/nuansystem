@@ -71,6 +71,7 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
         WireEntityActions();
         WireDistributionActions();
         WireValidationInvalidation();
+        cboDirection.SelectedIndexChanged += (_, _) => RefreshConflictStrategyForDirection();
     }
 
     public SyncProfileEditForm(
@@ -279,6 +280,7 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
             .OfType<SyncProfileDirectionOption>()
             .FirstOrDefault(option => string.Equals(option.Code, state.Direction, StringComparison.OrdinalIgnoreCase));
         cboExecutionMode.EditValue = state.ExecutionMode;
+        state.ConflictStrategy = SyncProfileDirectionPolicy.RequiredConflictStrategy(state.Direction);
         txtConflictStrategy.EditValue = state.ConflictStrategy;
         spnBatchSize.EditValue = state.BatchSize;
         spnMaxRetries.EditValue = state.MaxRetries;
@@ -370,12 +372,21 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
             ? direction.Code
             : string.Empty;
         state.ExecutionMode = Convert.ToString(cboExecutionMode.EditValue)?.Trim() ?? string.Empty;
-        state.ConflictStrategy = txtConflictStrategy.Text.Trim();
+        state.ConflictStrategy = SyncProfileDirectionPolicy.RequiredConflictStrategy(state.Direction);
+        txtConflictStrategy.EditValue = state.ConflictStrategy;
         state.BatchSize = Convert.ToInt32(spnBatchSize.Value);
         state.MaxRetries = Convert.ToInt32(spnMaxRetries.Value);
         state.RetryDelaySeconds = Convert.ToInt32(spnRetryDelaySeconds.Value);
         state.TimeoutMinutes = Convert.ToInt32(spnTimeoutMinutes.Value);
         state.IsActive = swIsActive.IsOn;
+    }
+
+    private void RefreshConflictStrategyForDirection()
+    {
+        var direction = cboDirection.SelectedItem is SyncProfileDirectionOption option
+            ? option.Code
+            : Convert.ToString(cboDirection.EditValue);
+        txtConflictStrategy.EditValue = SyncProfileDirectionPolicy.RequiredConflictStrategy(direction);
     }
 
     private bool ValidateRange(SpinEdit control, int minimum, int maximum, string message)

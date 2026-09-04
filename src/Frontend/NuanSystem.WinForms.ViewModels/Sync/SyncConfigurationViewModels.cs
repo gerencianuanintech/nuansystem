@@ -192,6 +192,11 @@ public sealed record SyncProfileDirectionOption(string Code, string Label)
 
 public static class SyncProfileDirectionPolicy
 {
+    public static string RequiredConflictStrategy(string? direction) =>
+        string.Equals(direction, "BranchToMaster", StringComparison.OrdinalIgnoreCase)
+            ? "CentralReview"
+            : "MasterWins";
+
     public static IReadOnlyCollection<SyncProfileDirectionOption> Build(
         IReadOnlyCollection<LookupItem> directions)
     {
@@ -350,9 +355,9 @@ public sealed class SyncProfileEditorState
         {
             Direction = catalog?.Directions.FirstOrDefault()?.Code ?? "MasterToBranch",
             ExecutionMode = catalog?.ExecutionModes.FirstOrDefault()?.Code ?? "Incremental",
-            ConflictStrategy = catalog?.ConflictStrategies.FirstOrDefault()?.Code ?? "MasterWins",
             CompanyId = catalog?.MasterCompanies.FirstOrDefault(company => company.IsActive)?.Id ?? 0
         };
+        state.ConflictStrategy = SyncProfileDirectionPolicy.RequiredConflictStrategy(state.Direction);
 
         state.Schedule.ScheduleType = catalog?.ScheduleTypes.FirstOrDefault()?.Code ?? "Manual";
         state.Schedule.TimeZoneId = catalog?.DefaultTimeZoneId ?? "America/Guayaquil";
@@ -458,7 +463,7 @@ public sealed class SyncProfileEditorState
             CompanyId = CompanyId,
             Direction = Direction,
             ExecutionMode = ExecutionMode,
-            ConflictStrategy = ConflictStrategy,
+            ConflictStrategy = SyncProfileDirectionPolicy.RequiredConflictStrategy(Direction),
             BatchSize = BatchSize,
             MaxRetries = MaxRetries,
             RetryDelaySeconds = RetryDelaySeconds,

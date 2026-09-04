@@ -254,7 +254,11 @@ public sealed partial class SupplierEditForm : BaseEditForm
             ExpectedRowVersion = partner is { Id: > 0 } ? partner.RowVersion : null
         };
 
-        Request = SupplierBusinessPartnerMapper.ApplyAccountingFields(request, accountingAccounts, lookups);
+        request = SupplierBusinessPartnerMapper.ApplyAccountingFields(request, accountingAccounts, lookups);
+        Request = SupplierBusinessPartnerMapper.ProjectRequest(
+            request,
+            partner,
+            BusinessPartnerEditPolicy.From(lookups.EditPolicy));
     }
 
     private void BindLookups()
