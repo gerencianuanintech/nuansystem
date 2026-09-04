@@ -289,16 +289,19 @@ internal static class BusinessPartnerSyncConflictPaths
         {
             return string.Join(" | ", new[]
             {
-                item.AddressType,
-                item.Line1,
-                item.Line2,
-                item.CountryCode,
-                item.ProvinceCode,
-                item.CityCode,
-                item.PostalCode,
-                item.IsPrimary ? "Primary" : null,
-                item.IsActive ? "Active" : "Inactive"
-            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+                $"GlobalId={item.GlobalId:D}",
+                $"AddressType={DisplayString(item.AddressType)}",
+                $"Line1={DisplayString(item.Line1)}",
+                $"Line2={DisplayString(item.Line2)}",
+                $"CountryCode={DisplayString(item.CountryCode)}",
+                $"ProvinceCode={DisplayString(item.ProvinceCode)}",
+                $"CityCode={DisplayString(item.CityCode)}",
+                $"PostalCode={DisplayString(item.PostalCode)}",
+                $"Latitude={DisplayDecimal(item.Latitude)}",
+                $"Longitude={DisplayDecimal(item.Longitude)}",
+                $"IsPrimary={DisplayBoolean(item.IsPrimary)}",
+                $"IsActive={DisplayBoolean(item.IsActive)}"
+            });
         }
 
         return parts[2] switch
@@ -329,15 +332,22 @@ internal static class BusinessPartnerSyncConflictPaths
         {
             return string.Join(" | ", new[]
             {
-                item.Name,
-                item.Position,
-                item.Department,
-                item.Phone,
-                item.Mobile,
-                item.Email,
-                item.IsPrimary ? "Primary" : null,
-                item.IsActive ? "Active" : "Inactive"
-            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+                $"GlobalId={item.GlobalId:D}",
+                $"ContactTypeCode={DisplayString(item.ContactTypeCode)}",
+                $"ContactChannelCode={DisplayString(item.ContactChannelCode)}",
+                $"Name={DisplayString(item.Name)}",
+                $"Position={DisplayString(item.Position)}",
+                $"Department={DisplayString(item.Department)}",
+                $"Phone={DisplayString(item.Phone)}",
+                $"Extension={DisplayString(item.Extension)}",
+                $"Mobile={DisplayString(item.Mobile)}",
+                $"Email={DisplayString(item.Email)}",
+                $"Language={DisplayString(item.Language)}",
+                $"ReceivesNotifications={DisplayBoolean(item.ReceivesNotifications)}",
+                $"IsPrimary={DisplayBoolean(item.IsPrimary)}",
+                $"IsActive={DisplayBoolean(item.IsActive)}",
+                $"Notes={DisplayString(item.Notes)}"
+            });
         }
 
         return parts[2] switch
@@ -359,4 +369,15 @@ internal static class BusinessPartnerSyncConflictPaths
             _ => null
         };
     }
+
+    private static string DisplayString(string? value) => value switch
+    {
+        null => "<null>",
+        "" => "<empty>",
+        _ => value
+    };
+
+    private static string DisplayDecimal(decimal? value) => value?.ToString(CultureInfo.InvariantCulture) ?? "<null>";
+
+    private static string DisplayBoolean(bool value) => value ? "true" : "false";
 }

@@ -281,7 +281,7 @@ public sealed class BusinessPartnerProposalApplyRepository(
             $"Unexpected SyncInbox guard result {result.EnvelopeResult}/{result.InboxStatus}.");
     }
 
-    private static async Task<BusinessPartnerProposalCentralState?> LoadCentralStateAsync(
+    internal static async Task<BusinessPartnerProposalCentralState?> LoadCentralStateAsync(
         SqlConnection connection,
         SqlTransaction transaction,
         Guid globalId,
@@ -355,7 +355,8 @@ public sealed class BusinessPartnerProposalApplyRepository(
         return new BusinessPartnerProposalCentralState(
             partner.Id,
             partner.CanonicalVersion,
-            snapshot);
+            snapshot,
+            partner.RowVersion);
     }
 
     private static async Task<StableReferenceResolution> ResolveStableReferencesAsync(
@@ -901,6 +902,7 @@ public sealed class BusinessPartnerProposalApplyRepository(
         public string? Phone { get; init; }
         public string? SapCardCode { get; init; }
         public long CanonicalVersion { get; init; }
+        public byte[] RowVersion { get; init; } = [];
         public bool IsActive { get; init; }
         public bool IsDeleted { get; init; }
     }

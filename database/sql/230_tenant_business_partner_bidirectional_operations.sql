@@ -1513,6 +1513,9 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_BUSINESSPARTNER_SYNCCONFLICT_RESOLVER
     @ResolutionReason nvarchar(500),
     @ExpectedRowVersion binary(8),
     @CompanyId int,
+    @ExpectedBusinessPartnerId int,
+    @ExpectedCanonicalVersion bigint,
+    @ExpectedBusinessPartnerRowVersion binary(8),
     @IdentificationTypeId int = NULL,
     @ResolvedSnapshotJson nvarchar(max) = NULL,
     @AddressesJson nvarchar(max) = N'[]',
@@ -1533,6 +1536,9 @@ BEGIN
         THROW 52030, 'Conflict resolution reason is required.', 1;
     IF @ExpectedRowVersion IS NULL
         THROW 52030, 'Expected conflict row version is required.', 1;
+    IF @ExpectedBusinessPartnerId IS NULL OR @ExpectedCanonicalVersion IS NULL
+       OR @ExpectedBusinessPartnerRowVersion IS NULL
+        THROW 52030, 'Expected live BusinessPartner state is required.', 1;
     DECLARE @StartedTransaction bit = 0;
     IF @@TRANCOUNT = 0
     BEGIN
@@ -1543,14 +1549,11 @@ BEGIN
         SAVE TRANSACTION BpConflictResolveSavepoint;
     BEGIN TRY
         DECLARE @ProposalEventId uniqueidentifier,@BusinessPartnerId int,@GlobalId uniqueidentifier,
-                @OriginCompanyId int,@CurrentVersion bigint,@Status varchar(20),
-                @ActualRowVersion binary(8),@PresentedBusinessPartnerRowVersion binary(8),
+                @OriginCompanyId int,@Status varchar(20),@ActualRowVersion binary(8),
                 @LiveBusinessPartnerRowVersion binary(8),@LiveCanonicalVersion bigint,@LiveBusinessPartnerId int,
                 @OutboxId bigint,@OutboxEnvelopeResult int,@ResolvedTargetCompanyId int;
         SELECT @ProposalEventId=ProposalEventId,@BusinessPartnerId=BusinessPartnerId,
                @GlobalId=BusinessPartnerGlobalId,@OriginCompanyId=OriginCompanyId,
-               @CurrentVersion=CurrentCanonicalVersion,
-               @PresentedBusinessPartnerRowVersion=PresentedBusinessPartnerRowVersion,
                @Status=Status,@ActualRowVersion=RowVersion
         FROM dbo.BusinessPartnerSyncConflicts WITH (UPDLOCK,HOLDLOCK)
         WHERE Id=@Id;
@@ -1572,17 +1575,16 @@ BEGIN
                @LiveBusinessPartnerRowVersion=RowVersion
         FROM dbo.BusinessPartners WITH (UPDLOCK,HOLDLOCK)
         WHERE GlobalId=@GlobalId;
-        IF (@LiveBusinessPartnerId IS NULL AND @BusinessPartnerId IS NOT NULL)
-           OR (@BusinessPartnerId IS NOT NULL AND @LiveBusinessPartnerId<>@BusinessPartnerId)
-           OR (@LiveBusinessPartnerId IS NOT NULL AND @LiveCanonicalVersion <> @CurrentVersion)
-           OR (@LiveBusinessPartnerId IS NOT NULL AND @PresentedBusinessPartnerRowVersion IS NULL)
-           OR (@LiveBusinessPartnerId IS NOT NULL AND @LiveBusinessPartnerRowVersion<>@PresentedBusinessPartnerRowVersion)
+        IF @LiveBusinessPartnerId IS NULL
+           OR @LiveBusinessPartnerId<>@ExpectedBusinessPartnerId
+           OR @LiveCanonicalVersion<>@ExpectedCanonicalVersion
+           OR @LiveBusinessPartnerRowVersion<>@ExpectedBusinessPartnerRowVersion
         BEGIN
             IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 4 AS ResultCode,@Id AS ConflictId;
             RETURN;
         END;
-        SET @LiveCanonicalVersion=COALESCE(@LiveCanonicalVersion,0);
+        SET @BusinessPartnerId=@LiveBusinessPartnerId;
         IF (@Resolution='AcceptBranch' AND
             (@OutboundEntityName COLLATE Latin1_General_100_BIN2<>N'BusinessPartner'
              OR @TargetCompanyId IS NOT NULL))
@@ -1624,7 +1626,7 @@ BEGIN
                 @Email=JSON_VALUE(@ResolvedSnapshotJson,'$.email'),
                 @Phone=JSON_VALUE(@ResolvedSnapshotJson,'$.phone'),
                 @SapCardCode=JSON_VALUE(@ResolvedSnapshotJson,'$.sapCardCode'),
-                @CanonicalVersion=@LiveCanonicalVersion+1,
+                @CanonicalVersion=@ExpectedCanonicalVersion+1,
                 @IsActive=ISNULL(TRY_CONVERT(bit,JSON_VALUE(@ResolvedSnapshotJson,'$.isActive')),1),
                 @IsDeleted=ISNULL(TRY_CONVERT(bit,JSON_VALUE(@ResolvedSnapshotJson,'$.isDeleted')),0),
                 @AddressesJson=@AddressesJson,@ContactsJson=@ContactsJson,

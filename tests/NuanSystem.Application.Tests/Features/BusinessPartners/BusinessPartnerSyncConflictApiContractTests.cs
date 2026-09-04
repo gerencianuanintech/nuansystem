@@ -13,6 +13,7 @@ using NSubstitute;
 using NuanSystem.Api.Endpoints;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Common.Models;
+using NuanSystem.Application.DependencyInjection;
 using NuanSystem.Application.Features.BusinessPartners.SyncConflicts;
 using NuanSystem.Application.Features.BusinessPartners.Sync;
 using NuanSystem.Persistence.DependencyInjection;
@@ -105,6 +106,14 @@ public sealed class BusinessPartnerSyncConflictApiContractTests
             "dbo.SP_NA_POST_BUSINESSPARTNER_SYNCCONFLICT_RESOLVER");
         BusinessPartnerSyncConflictRepository.StableReferencesProcedure.Should().Be(
             "dbo.SP_NA_GET_BUSINESSPARTNER_STABLE_REFERENCES_RESOLVE");
+        BusinessPartnerProposalApplyRepository.CanonicalForUpdateProcedure.Should().Be(
+            "dbo.SP_NA_GET_BUSINESSPARTNER_CANONICAL_FORUPDATE");
+
+        var applicationServices = new ServiceCollection();
+        applicationServices.AddApplicationServices();
+        applicationServices.Should().Contain(descriptor =>
+            descriptor.ServiceType == typeof(IBusinessPartnerSyncConflictResolutionPlanner)
+            && descriptor.ImplementationType == typeof(BusinessPartnerSyncConflictResolutionPlanner));
     }
 
     [Fact]

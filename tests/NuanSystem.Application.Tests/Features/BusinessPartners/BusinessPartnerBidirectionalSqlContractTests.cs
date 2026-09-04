@@ -218,16 +218,22 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
     }
 
     [Fact]
-    public void ConflictResolver_RequiresConflictTokenAndRejectsAStaleLivePartner()
+    public void ConflictResolver_RequiresConflictTokenAndRevalidatesTheExactLockedLivePartner()
     {
         var procedure = Procedure("SP_NA_POST_BUSINESSPARTNER_SYNCCONFLICT_RESOLVER");
 
         procedure.Should().Contain("IF @ExpectedRowVersion IS NULL")
+            .And.Contain("@ExpectedBusinessPartnerId int")
+            .And.Contain("@ExpectedCanonicalVersion bigint")
+            .And.Contain("@ExpectedBusinessPartnerRowVersion binary(8)")
             .And.Contain("FROM dbo.BusinessPartners WITH (UPDLOCK,HOLDLOCK)")
-            .And.Contain("@LiveCanonicalVersion <> @CurrentVersion")
-            .And.Contain("@LiveBusinessPartnerRowVersion<>@PresentedBusinessPartnerRowVersion")
+            .And.Contain("@LiveBusinessPartnerId<>@ExpectedBusinessPartnerId")
+            .And.Contain("@LiveCanonicalVersion<>@ExpectedCanonicalVersion")
+            .And.Contain("@LiveBusinessPartnerRowVersion<>@ExpectedBusinessPartnerRowVersion")
             .And.Contain("SELECT 4 AS ResultCode")
-            .And.Contain("@CanonicalVersion=@LiveCanonicalVersion+1")
+            .And.Contain("@CanonicalVersion=@ExpectedCanonicalVersion+1")
+            .And.NotContain("@LiveCanonicalVersion <> @CurrentVersion")
+            .And.NotContain("@LiveBusinessPartnerRowVersion<>@PresentedBusinessPartnerRowVersion")
             .And.NotContain("@CanonicalVersion=@CurrentVersion+1");
     }
 

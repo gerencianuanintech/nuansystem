@@ -21,7 +21,8 @@ public sealed record BusinessPartnerProposalApplyResult(
 public sealed record BusinessPartnerProposalCentralState(
     int BusinessPartnerId,
     long CanonicalVersion,
-    BusinessPartnerCanonicalSnapshot Snapshot);
+    BusinessPartnerCanonicalSnapshot Snapshot,
+    byte[]? RowVersion = null);
 
 public sealed record BusinessPartnerProposalDecision(
     BusinessPartnerProposalApplyOutcome Outcome,

@@ -4,7 +4,6 @@ using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Features.BusinessPartners.Sync;
 using NuanSystem.Application.Features.BusinessPartners.SyncConflicts;
-using NuanSystem.Application.Features.Sync.Configuration;
 using NuanSystem.Domain.Tenancy;
 
 namespace NuanSystem.Application.Tests.Features.BusinessPartners;
@@ -47,7 +46,7 @@ public sealed class BusinessPartnerSyncConflictUseCaseTests
     }
 
     [Fact]
-    public async Task Resolve_RequiresCentralCompanyAndDoesNotLoadConflictFromBranch()
+    public async Task Resolve_RequiresCentralCompanyAndDoesNotStartResolutionFromBranch()
     {
         companyContext.HasActiveCompany.Returns(true);
         companyContext.CurrentCompany.Returns(BranchCompany());
@@ -59,7 +58,7 @@ public sealed class BusinessPartnerSyncConflictUseCaseTests
 
         result.IsSuccess.Should().BeFalse();
         result.Errors.Should().ContainSingle(error => error.Code == "BP_SYNC_CONFLICT_MASTER_REQUIRED");
-        await repository.DidNotReceiveWithAnyArgs().GetByIdAsync(default, default, default);
+        await repository.DidNotReceiveWithAnyArgs().ResolveAsync(default!, default);
     }
 
     [Theory]
@@ -108,12 +107,11 @@ public sealed class BusinessPartnerSyncConflictUseCaseTests
     }
 
     [Fact]
-    public async Task AcceptBranch_AppliesOnlyRecordedPathsAndEmitsIncrementedCanonical()
+    public async Task Resolve_DelegatesNormalizedIntentWithoutLoadingHistoricalCanonicalOutsideTransaction()
     {
         companyContext.HasActiveCompany.Returns(true);
         companyContext.CurrentCompany.Returns(MasterCompany());
-        var conflict = Conflict(conflictFields: ["Name", $"Contacts/{ContactId:N}/Phone"]);
-        repository.GetByIdAsync(10, conflict.Id, Arg.Any<CancellationToken>()).Returns(conflict);
+        var conflict = Conflict() with { Status = "Resolved", Resolution = "AcceptBranch" };
         BusinessPartnerSyncConflictResolutionData? captured = null;
         repository.ResolveAsync(
                 Arg.Do<BusinessPartnerSyncConflictResolutionData>(data => captured = data),
@@ -131,36 +129,29 @@ public sealed class BusinessPartnerSyncConflictUseCaseTests
         captured.Should().NotBeNull();
         captured!.CompanyId.Should().Be(10);
         captured.Reason.Should().Be("aprobado por negocio");
-        captured.ResolvedSnapshot!.Name.Should().Be("Branch name");
-        captured.ResolvedSnapshot.CommercialName.Should().Be("Central commercial");
-        captured.ResolvedSnapshot.Contacts.Single().Phone.Should().Be("branch-phone");
-        captured.ResolvedSnapshot.Contacts.Single().Email.Should().Be("central@example.com");
-        captured.OutboundEvent.TargetCompanyId.Should().BeNull();
-        captured.OutboundEvent.CausationEventId.Should().Be(conflict.ProposalEventId);
-        captured.OutboundEvent.PublishRequest.EntityName.Should().Be(SyncMasterBranchEntityCodes.BusinessPartner);
-        captured.OutboundEvent.PublishRequest.Payload.Should().BeEquivalentTo(
-            new BusinessPartnerCanonicalPayloadV2(
-                BusinessPartnerSyncSchemaVersions.Canonical,
-                6,
-                20,
-                conflict.ProposalEventId,
-                captured.ResolvedSnapshot));
+        captured.Resolution.Should().Be("AcceptBranch");
+        captured.ExpectedRowVersion.Should().Equal(1, 2, 3, 4, 5, 6, 7, 8);
+        captured.AuditUserId.Should().Be(7);
+        captured.AuditUserName.Should().Be("admin");
+        await repository.DidNotReceiveWithAnyArgs().GetByIdAsync(default, default, default);
     }
 
     [Fact]
-    public async Task KeepCentral_LeavesCanonicalUntouchedAndEmitsRejectedResultToExactOrigin()
+    public async Task Resolve_ReturnsTheLiveCanonicalProjectionProducedInsideTheTransaction()
     {
         companyContext.HasActiveCompany.Returns(true);
         companyContext.CurrentCompany.Returns(MasterCompany());
-        var conflict = Conflict();
-        repository.GetByIdAsync(10, conflict.Id, Arg.Any<CancellationToken>()).Returns(conflict);
-        BusinessPartnerSyncConflictResolutionData? captured = null;
-        repository.ResolveAsync(
-                Arg.Do<BusinessPartnerSyncConflictResolutionData>(data => captured = data),
-                Arg.Any<CancellationToken>())
+        var conflict = Conflict() with
+        {
+            Status = "Resolved",
+            Resolution = "KeepCentral",
+            CurrentCanonicalVersion = 12,
+            Canonical = Snapshot("Live central", "Live changed", "live-phone", "live@example.com")
+        };
+        repository.ResolveAsync(Arg.Any<BusinessPartnerSyncConflictResolutionData>(), Arg.Any<CancellationToken>())
             .Returns(new BusinessPartnerSyncConflictResolutionResult(
                 BusinessPartnerSyncConflictResolutionOutcome.Resolved,
-                conflict with { Status = "Resolved", Resolution = "KeepCentral" }));
+                conflict));
         var handler = new ResolveBusinessPartnerSyncConflictCommandHandler(companyContext, repository);
 
         var result = await handler.Handle(
@@ -168,21 +159,8 @@ public sealed class BusinessPartnerSyncConflictUseCaseTests
             CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        captured!.ResolvedSnapshot.Should().BeNull();
-        captured.OutboundEvent.TargetCompanyId.Should().Be(20);
-        captured.OutboundEvent.CausationEventId.Should().Be(conflict.ProposalEventId);
-        captured.OutboundEvent.PublishRequest.EntityName.Should().Be(
-            SyncMasterBranchEntityCodes.BusinessPartnerProposalResult);
-        captured.OutboundEvent.PublishRequest.Payload.Should().BeEquivalentTo(
-            new BusinessPartnerProposalResultPayloadV1(
-                BusinessPartnerSyncSchemaVersions.ProposalResult,
-                PartnerId,
-                conflict.ProposalEventId,
-                20,
-                "Rejected",
-                "central prevalece",
-                5,
-                conflict.Canonical));
+        result.Value!.CurrentCanonicalVersion.Should().Be(12);
+        result.Value.Differences.Single().CentralValue.Should().Be("Live central");
     }
 
     [Fact]
@@ -196,7 +174,10 @@ public sealed class BusinessPartnerSyncConflictUseCaseTests
             Resolution = "KeepCentral",
             ResolutionReason = "previous"
         };
-        repository.GetByIdAsync(10, resolved.Id, Arg.Any<CancellationToken>()).Returns(resolved);
+        repository.ResolveAsync(Arg.Any<BusinessPartnerSyncConflictResolutionData>(), Arg.Any<CancellationToken>())
+            .Returns(new BusinessPartnerSyncConflictResolutionResult(
+                BusinessPartnerSyncConflictResolutionOutcome.AlreadyResolved,
+                resolved));
         var handler = new ResolveBusinessPartnerSyncConflictCommandHandler(companyContext, repository);
 
         var result = await handler.Handle(
@@ -205,7 +186,9 @@ public sealed class BusinessPartnerSyncConflictUseCaseTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Resolution.Should().Be("KeepCentral");
-        await repository.DidNotReceiveWithAnyArgs().ResolveAsync(default!, default);
+        await repository.Received(1).ResolveAsync(
+            Arg.Any<BusinessPartnerSyncConflictResolutionData>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -213,8 +196,6 @@ public sealed class BusinessPartnerSyncConflictUseCaseTests
     {
         companyContext.HasActiveCompany.Returns(true);
         companyContext.CurrentCompany.Returns(MasterCompany());
-        var conflict = Conflict();
-        repository.GetByIdAsync(10, conflict.Id, Arg.Any<CancellationToken>()).Returns(conflict);
         repository.ResolveAsync(Arg.Any<BusinessPartnerSyncConflictResolutionData>(), Arg.Any<CancellationToken>())
             .Returns(new BusinessPartnerSyncConflictResolutionResult(
                 BusinessPartnerSyncConflictResolutionOutcome.ConcurrencyConflict,
@@ -236,8 +217,6 @@ public sealed class BusinessPartnerSyncConflictUseCaseTests
     {
         companyContext.HasActiveCompany.Returns(true);
         companyContext.CurrentCompany.Returns(MasterCompany());
-        var conflict = Conflict();
-        repository.GetByIdAsync(10, conflict.Id, Arg.Any<CancellationToken>()).Returns(conflict);
         repository.ResolveAsync(Arg.Any<BusinessPartnerSyncConflictResolutionData>(), Arg.Any<CancellationToken>())
             .Returns(new BusinessPartnerSyncConflictResolutionResult(
                 BusinessPartnerSyncConflictResolutionOutcome.OutboundEventCollision,
@@ -257,8 +236,10 @@ public sealed class BusinessPartnerSyncConflictUseCaseTests
     {
         companyContext.HasActiveCompany.Returns(true);
         companyContext.CurrentCompany.Returns(MasterCompany());
-        var conflict = Conflict(conflictFields: ["SapCardCode"]);
-        repository.GetByIdAsync(10, conflict.Id, Arg.Any<CancellationToken>()).Returns(conflict);
+        repository.ResolveAsync(Arg.Any<BusinessPartnerSyncConflictResolutionData>(), Arg.Any<CancellationToken>())
+            .Returns(new BusinessPartnerSyncConflictResolutionResult(
+                BusinessPartnerSyncConflictResolutionOutcome.InvalidConflictPath,
+                null));
         var handler = new ResolveBusinessPartnerSyncConflictCommandHandler(companyContext, repository);
 
         var result = await handler.Handle(
@@ -267,7 +248,9 @@ public sealed class BusinessPartnerSyncConflictUseCaseTests
 
         result.IsSuccess.Should().BeFalse();
         result.Errors.Should().ContainSingle(error => error.Code == "BP_SYNC_CONFLICT_PATH_INVALID");
-        await repository.DidNotReceiveWithAnyArgs().ResolveAsync(default!, default);
+        await repository.Received(1).ResolveAsync(
+            Arg.Any<BusinessPartnerSyncConflictResolutionData>(),
+            Arg.Any<CancellationToken>());
     }
 
     private static ResolveBusinessPartnerSyncConflictCommand Command(

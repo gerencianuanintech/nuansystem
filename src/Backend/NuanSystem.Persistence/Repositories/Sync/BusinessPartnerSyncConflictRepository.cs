@@ -10,7 +10,8 @@ namespace NuanSystem.Persistence.Repositories.Sync;
 
 public sealed class BusinessPartnerSyncConflictRepository(
     ITenantConnectionFactory connectionFactory,
-    ISyncEventPayloadFactory payloadFactory) : IBusinessPartnerSyncConflictRepository
+    ISyncEventPayloadFactory payloadFactory,
+    IBusinessPartnerSyncConflictResolutionPlanner resolutionPlanner) : IBusinessPartnerSyncConflictRepository
 {
     internal const string ListProcedure =
         "dbo.SP_NA_GET_BUSINESSPARTNER_SYNCCONFLICTS_LISTAR";
@@ -20,7 +21,6 @@ public sealed class BusinessPartnerSyncConflictRepository(
         "dbo.SP_NA_POST_BUSINESSPARTNER_SYNCCONFLICT_RESOLVER";
     internal const string StableReferencesProcedure =
         "dbo.SP_NA_GET_BUSINESSPARTNER_STABLE_REFERENCES_RESOLVE";
-
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public async Task<IReadOnlyCollection<BusinessPartnerSyncConflictRecord>> ListAsync(
@@ -102,12 +102,44 @@ public sealed class BusinessPartnerSyncConflictRepository(
                         null);
                 }
 
-                var references = resolution.ResolvedSnapshot is null
+                var current = await BusinessPartnerProposalApplyRepository.LoadCentralStateAsync(
+                    connection,
+                    transaction,
+                    lockedConflict.BusinessPartnerGlobalId,
+                    cancellationToken);
+                if (current?.RowVersion is not { Length: 8 })
+                {
+                    await transaction.CommitAsync(cancellationToken);
+                    return new BusinessPartnerSyncConflictResolutionResult(
+                        BusinessPartnerSyncConflictResolutionOutcome.ConcurrencyConflict,
+                        null);
+                }
+
+                var live = new BusinessPartnerSyncConflictLiveCanonicalState(
+                    current.BusinessPartnerId,
+                    current.CanonicalVersion,
+                    current.RowVersion,
+                    current.Snapshot);
+                var plan = resolutionPlanner.CreatePlan(
+                    resolution.CompanyId,
+                    lockedConflict,
+                    live,
+                    resolution.Resolution,
+                    resolution.Reason);
+                if (plan is null)
+                {
+                    await transaction.CommitAsync(cancellationToken);
+                    return new BusinessPartnerSyncConflictResolutionResult(
+                        BusinessPartnerSyncConflictResolutionOutcome.InvalidConflictPath,
+                        null);
+                }
+
+                var references = plan.ResolvedSnapshot is null
                     ? null
                     : await ResolveStableReferencesAsync(
                         connection,
                         transaction,
-                        resolution.ResolvedSnapshot,
+                        plan.ResolvedSnapshot,
                         cancellationToken);
                 if (references is { IsComplete: false })
                 {
@@ -126,15 +158,18 @@ public sealed class BusinessPartnerSyncConflictRepository(
                         ResolutionReason = resolution.Reason,
                         resolution.ExpectedRowVersion,
                         resolution.CompanyId,
+                        plan.ExpectedBusinessPartnerId,
+                        plan.ExpectedCanonicalVersion,
+                        plan.ExpectedBusinessPartnerRowVersion,
                         IdentificationTypeId = references?.IdentificationTypeId,
-                        ResolvedSnapshotJson = SerializeSnapshot(resolution.ResolvedSnapshot),
+                        ResolvedSnapshotJson = SerializeSnapshot(plan.ResolvedSnapshot),
                         AddressesJson = references?.AddressesJson ?? "[]",
                         ContactsJson = references?.ContactsJson ?? "[]",
-                        OutboundEventId = resolution.OutboundEvent.EventId,
-                        OutboundEntityName = resolution.OutboundEvent.PublishRequest.EntityName,
+                        OutboundEventId = plan.OutboundEvent.EventId,
+                        OutboundEntityName = plan.OutboundEvent.PublishRequest.EntityName,
                         OutboundPayloadJson = payloadFactory.CreatePayloadJson(
-                            resolution.OutboundEvent.PublishRequest),
-                        resolution.OutboundEvent.TargetCompanyId,
+                            plan.OutboundEvent.PublishRequest),
+                        plan.OutboundEvent.TargetCompanyId,
                         resolution.AuditUserId,
                         resolution.AuditUserName
                     },
@@ -175,7 +210,7 @@ public sealed class BusinessPartnerSyncConflictRepository(
                     sqlResult.ResultCode == 1
                         ? BusinessPartnerSyncConflictResolutionOutcome.Resolved
                         : BusinessPartnerSyncConflictResolutionOutcome.AlreadyResolved,
-                    savedRow is null ? null : ToRecord(savedRow));
+                    savedRow is null ? null : ProjectResolvedRecord(ToRecord(savedRow), live, plan));
             }
             catch
             {
@@ -245,6 +280,25 @@ public sealed class BusinessPartnerSyncConflictRepository(
         row.RowVersion,
         row.Code,
         row.Name);
+
+    internal static BusinessPartnerSyncConflictRecord ProjectResolvedRecord(
+        BusinessPartnerSyncConflictRecord persisted,
+        BusinessPartnerSyncConflictLiveCanonicalState live,
+        BusinessPartnerSyncConflictResolutionPlan plan)
+    {
+        var canonical = plan.ResolvedSnapshot ?? live.Snapshot;
+        var canonicalVersion = plan.ResolvedSnapshot is null
+            ? live.CanonicalVersion
+            : checked(live.CanonicalVersion + 1);
+        return persisted with
+        {
+            BusinessPartnerId = live.BusinessPartnerId,
+            CurrentCanonicalVersion = canonicalVersion,
+            Canonical = canonical,
+            Code = canonical.Code,
+            Name = canonical.Name
+        };
+    }
 
     private static BusinessPartnerCanonicalSnapshot DeserializeRequiredSnapshot(
         string json,

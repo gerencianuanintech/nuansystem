@@ -51,14 +51,35 @@ public sealed record BusinessPartnerSyncConflictOutboundEvent(
     Guid CausationEventId,
     SyncPublishRequest PublishRequest);
 
+public sealed record BusinessPartnerSyncConflictLiveCanonicalState(
+    int BusinessPartnerId,
+    long CanonicalVersion,
+    byte[] RowVersion,
+    BusinessPartnerCanonicalSnapshot Snapshot);
+
+public sealed record BusinessPartnerSyncConflictResolutionPlan(
+    int ExpectedBusinessPartnerId,
+    long ExpectedCanonicalVersion,
+    byte[] ExpectedBusinessPartnerRowVersion,
+    BusinessPartnerCanonicalSnapshot? ResolvedSnapshot,
+    BusinessPartnerSyncConflictOutboundEvent OutboundEvent);
+
+public interface IBusinessPartnerSyncConflictResolutionPlanner
+{
+    BusinessPartnerSyncConflictResolutionPlan? CreatePlan(
+        int companyId,
+        BusinessPartnerSyncConflictRecord conflict,
+        BusinessPartnerSyncConflictLiveCanonicalState live,
+        string resolution,
+        string reason);
+}
+
 public sealed record BusinessPartnerSyncConflictResolutionData(
     int CompanyId,
     long ConflictId,
     string Resolution,
     string Reason,
     byte[] ExpectedRowVersion,
-    BusinessPartnerCanonicalSnapshot? ResolvedSnapshot,
-    BusinessPartnerSyncConflictOutboundEvent OutboundEvent,
     int? AuditUserId,
     string? AuditUserName);
 
@@ -69,6 +90,7 @@ public enum BusinessPartnerSyncConflictResolutionOutcome
     ConcurrencyConflict,
     OutboundEventCollision,
     ReferenceNotFound,
+    InvalidConflictPath,
     NotFound
 }
 
