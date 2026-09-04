@@ -264,7 +264,7 @@ public sealed class SyncProfileValidationServiceTests
     }
 
     [Fact]
-    public async Task ValidateAsync_AcceptsInactiveMasterToBranchProposalResultDraft()
+    public async Task ValidateAsync_AcceptsInactiveMasterToBranchProposalResultWithInactiveDefinitionWarning()
     {
         var service = CreateService(policyEnabled: true);
         var request = ValidRequest() with
@@ -278,7 +278,7 @@ public sealed class SyncProfileValidationServiceTests
         result.IsValid.Should().BeTrue();
         result.Errors.Should().BeEmpty();
         result.Warnings.Should().Contain(error => error.Code == "SyncEntityDefinitionInactive");
-        result.Warnings.Should().Contain(error => error.Code == "SyncEntityDraftOnly");
+        result.Warnings.Should().NotContain(error => error.Code == "SyncEntityDraftOnly");
     }
 
     [Fact]

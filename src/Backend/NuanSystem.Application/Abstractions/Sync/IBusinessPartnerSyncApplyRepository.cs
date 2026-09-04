@@ -1,28 +1,20 @@
-using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Features.BusinessPartners.Sync;
 using NuanSystem.Application.Features.Sync.Dtos;
-using NuanSystem.Shared.Sync;
 
 namespace NuanSystem.Application.Abstractions.Sync;
 
 public interface IBusinessPartnerSyncApplyRepository
 {
-    Task<bool> ExistsByGlobalIdAsync(
-        int branchCompanyId,
-        Guid globalId,
-        CancellationToken cancellationToken = default);
-
-    Task<BusinessPartnerSyncApplyResult> UpsertFromSyncAsync(
+    Task<BusinessPartnerSyncApplyResult> ApplyCanonicalAsync(
         int branchCompanyId,
         SyncEventApplyContext context,
-        BusinessPartnerSyncPayload payload,
-        SyncOperation operation,
+        BusinessPartnerCanonicalPayloadV2 payload,
         CancellationToken cancellationToken = default);
 
-    Task<BusinessPartnerSyncApplyResult> DisableFromSyncAsync(
+    Task<BusinessPartnerSyncApplyResult> ApplyProposalResultAsync(
         int branchCompanyId,
         SyncEventApplyContext context,
-        BusinessPartnerSyncPayload payload,
-        bool markDeleted,
+        BusinessPartnerProposalResultPayloadV1 payload,
         CancellationToken cancellationToken = default);
 }
 
@@ -30,4 +22,8 @@ public sealed record BusinessPartnerSyncApplyResult(
     bool Applied,
     bool AlreadyApplied,
     int? BusinessPartnerId,
-    string Message);
+    string Message,
+    string? ErrorCode = null,
+    bool Retryable = false,
+    bool Terminal = false,
+    bool Ignored = false);

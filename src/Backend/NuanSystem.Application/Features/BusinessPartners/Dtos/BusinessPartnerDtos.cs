@@ -410,20 +410,6 @@ public sealed record SaveBusinessPartnerAttachmentData(
     long? FileSize,
     bool IsActive);
 
-public sealed record BusinessPartnerSyncPayload(
-    Guid GlobalId,
-    string Code,
-    string Name,
-    string? CommercialName,
-    string PartnerType,
-    string? IdentificationTypeCode,
-    string IdentificationNumber,
-    string? Email,
-    string? Phone,
-    bool IsActive,
-    string? ExternalSystem,
-    string? ExternalCode);
-
 public sealed record CreateBusinessPartnerData(
     Guid GlobalId,
     string Code,

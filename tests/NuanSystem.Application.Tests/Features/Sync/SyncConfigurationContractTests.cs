@@ -309,6 +309,7 @@ public sealed class SyncConfigurationContractTests
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.ReplenishmentMethods).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.StorageConditions).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.BusinessPartnerPaymentTerms).Should().BeTrue();
+        SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.BusinessPartnerProposalResult).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative(SyncMasterBranchEntityCodes.Carrier).Should().BeTrue();
         SyncMasterBranchEntityCodes.IsOperative("CustomCatalog").Should().BeFalse();
         SyncMasterBranchEntityCodes.InitialCatalog.Select(item => item.EntityCode).Should().BeEquivalentTo(
@@ -346,7 +347,8 @@ public sealed class SyncConfigurationContractTests
         SyncMasterBranchEntityCodes.InitialCatalog.Should().OnlyContain(item => item.ExistsInModel);
         SyncMasterBranchEntityCodes.InitialCatalog
             .Where(item => item.IsOperative)
-            .Where(item => item.EntityCode is not SyncMasterBranchEntityCodes.BusinessPartnerProposal)
+            .Where(item => item.EntityCode is not SyncMasterBranchEntityCodes.BusinessPartnerProposal
+                and not SyncMasterBranchEntityCodes.BusinessPartnerProposalResult)
             .Should()
             .OnlyContain(item => item.HasProducer && item.HasApplier && item.SupportsInsert && item.SupportsUpdate && item.SupportsDeactivate);
         SyncMasterBranchEntityCodes.InitialCatalog
@@ -358,7 +360,7 @@ public sealed class SyncConfigurationContractTests
         SyncMasterBranchEntityCodes.Find(SyncMasterBranchEntityCodes.BusinessPartnerProposal).Should().Match<SyncMasterBranchEntityCatalogItem>(
             item => item.HasProducer && item.HasApplier && item.SupportsInsert && item.SupportsUpdate && !item.SupportsDeactivate);
         SyncMasterBranchEntityCodes.Find(SyncMasterBranchEntityCodes.BusinessPartnerProposalResult).Should().Match<SyncMasterBranchEntityCatalogItem>(
-            item => item.HasProducer && !item.HasApplier && !item.SupportsInsert && !item.SupportsUpdate && !item.SupportsDeactivate);
+            item => item.HasProducer && item.HasApplier && !item.SupportsInsert && item.SupportsUpdate && !item.SupportsDeactivate);
     }
 
     [Fact]
@@ -383,6 +385,7 @@ public sealed class SyncConfigurationContractTests
             ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "CitySyncEventApplier.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "CurrencySyncEventApplier.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "BusinessPartnerSyncEventApplier.cs"),
+            ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "BusinessPartnerProposalResultSyncEventApplier.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "ItemGroupSyncEventApplier.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "ItemSyncEventApplier.cs"),
             ReadSourceFile("src", "Backend", "NuanSystem.MasterBranchSyncWorker", "Services", "WarehouseSyncEventApplier.cs"));
@@ -411,6 +414,7 @@ public sealed class SyncConfigurationContractTests
         appliers.Should().Contain("SyncMasterBranchEntityCodes.Cities");
         appliers.Should().Contain("SyncMasterBranchEntityCodes.Currencies");
         appliers.Should().Contain("SyncMasterBranchEntityCodes.BusinessPartner");
+        appliers.Should().Contain("SyncMasterBranchEntityCodes.BusinessPartnerProposalResult");
         appliers.Should().Contain("SyncMasterBranchEntityCodes.ItemGroups");
         appliers.Should().Contain("SyncMasterBranchEntityCodes.Item");
         appliers.Should().Contain("SyncMasterBranchEntityCodes.Warehouse");

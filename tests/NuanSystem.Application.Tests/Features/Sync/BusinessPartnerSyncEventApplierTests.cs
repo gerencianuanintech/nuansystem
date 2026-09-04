@@ -1,350 +1,223 @@
 using System.Text.Json;
 using FluentAssertions;
-using Microsoft.Extensions.Options;
 using NSubstitute;
 using NuanSystem.Application.Abstractions.Sync;
-using NuanSystem.Application.Features.BusinessPartners.Dtos;
+using NuanSystem.Application.Abstractions.Tenancy;
+using NuanSystem.Application.Features.BusinessPartners.Sync;
 using NuanSystem.Application.Features.Sync.Dtos;
-using NuanSystem.MasterBranchSyncWorker.Options;
+using NuanSystem.Application.Features.Sync.Services;
+using NuanSystem.Domain.Tenancy;
 using NuanSystem.MasterBranchSyncWorker.Services;
+using NuanSystem.Persistence.Repositories.Sync;
 using NuanSystem.Shared.Sync;
 
 namespace NuanSystem.Application.Tests.Features.Sync;
 
 public sealed class BusinessPartnerSyncEventApplierTests
 {
+    private static readonly Guid PartnerId = Guid.Parse("10000000-0000-0000-0000-000000000009");
+
     [Fact]
-    public async Task BusinessPartnerApplier_Created_UpsertsByGlobalId()
+    public void CanApply_AcceptsOnlyCanonicalBusinessPartnerEntity()
     {
-        var repository = Substitute.For<IBusinessPartnerSyncApplyRepository>();
-        var payload = CreatePayload();
-        var context = CreateContext(payload, SyncOperation.Created);
-        repository.UpsertFromSyncAsync(2, context, payload, SyncOperation.Created, Arg.Any<CancellationToken>())
-            .Returns(new BusinessPartnerSyncApplyResult(true, false, 100, "Creado."));
-        var applier = new BusinessPartnerSyncEventApplier(repository);
+        var applier = CreateApplier(out _, out _);
+        applier.CanApply("BusinessPartner").Should().BeTrue();
+        applier.CanApply("businesspartner").Should().BeTrue();
+        applier.CanApply("BusinessPartnerProposalResult").Should().BeFalse();
+    }
 
-        var result = await applier.ApplyAsync(context, CancellationToken.None);
-
-        result.Applied.Should().BeTrue();
-        await repository.Received(1).UpsertFromSyncAsync(
-            2,
-            context,
-            Arg.Is<BusinessPartnerSyncPayload>(value =>
-                value.GlobalId == payload.GlobalId &&
-                value.Code == payload.Code &&
-                value.IdentificationTypeCode == payload.IdentificationTypeCode),
-            SyncOperation.Created,
-            Arg.Any<CancellationToken>());
+    [Theory]
+    [InlineData("[]")]
+    [InlineData("null")]
+    [InlineData("42")]
+    [InlineData("{invalid")]
+    public async Task Apply_InvalidEnvelopeIsTerminal(string json)
+    {
+        var applier = CreateApplier(out var repository, out _);
+        var context = Context(Canonical()) with { PayloadJson = json };
+        var result = await applier.ApplyAsync(context);
+        result.Should().BeEquivalentTo(new SyncEventApplyResult(false,
+            "Payload canonico de socio no es JSON valido.", "SYNC_PAYLOAD_INVALID", false, true));
+        await repository.DidNotReceiveWithAnyArgs().ApplyCanonicalAsync(default, default!, default!, default);
     }
 
     [Fact]
-    public async Task BusinessPartnerApplier_Updated_UpdatesExistingByGlobalId()
+    public async Task Apply_LegacyOrUnsupportedSchemaIsTerminal()
     {
-        var repository = Substitute.For<IBusinessPartnerSyncApplyRepository>();
-        var payload = CreatePayload(name: "Cliente actualizado");
-        var context = CreateContext(payload, SyncOperation.Updated);
-        repository.UpsertFromSyncAsync(2, context, payload, SyncOperation.Updated, Arg.Any<CancellationToken>())
-            .Returns(new BusinessPartnerSyncApplyResult(true, false, 100, "Actualizado."));
-        var applier = new BusinessPartnerSyncEventApplier(repository);
-
-        var result = await applier.ApplyAsync(context, CancellationToken.None);
-
-        result.Applied.Should().BeTrue();
-        await repository.Received(1).UpsertFromSyncAsync(
-            2,
-            context,
-            Arg.Is<BusinessPartnerSyncPayload>(value =>
-                value.GlobalId == payload.GlobalId &&
-                value.Name == "Cliente actualizado"),
-            SyncOperation.Updated,
-            Arg.Any<CancellationToken>());
+        var applier = CreateApplier(out var repository, out _);
+        var result = await applier.ApplyAsync(Context(Canonical() with { SchemaVersion = 1 }));
+        result.Terminal.Should().BeTrue();
+        result.ErrorCode.Should().Be("BP_SYNC_LEGACY_PAYLOAD_UNSUPPORTED");
+        await repository.DidNotReceiveWithAnyArgs().ApplyCanonicalAsync(default, default!, default!, default);
     }
 
     [Fact]
-    public async Task BusinessPartnerApplier_Disabled_DisablesWithoutSapIdentity()
+    public async Task Apply_EntityAndPayloadGlobalIdsMustMatch()
     {
-        var repository = Substitute.For<IBusinessPartnerSyncApplyRepository>();
-        var payload = CreatePayload(isActive: false);
-        var context = CreateContext(payload, SyncOperation.Disabled);
-        repository.DisableFromSyncAsync(2, context, payload, false, Arg.Any<CancellationToken>())
-            .Returns(new BusinessPartnerSyncApplyResult(true, false, 100, "Desactivado."));
-        var applier = new BusinessPartnerSyncEventApplier(repository);
-
-        var result = await applier.ApplyAsync(context, CancellationToken.None);
-
-        result.Applied.Should().BeTrue();
-        await repository.Received(1).DisableFromSyncAsync(
-            2,
-            context,
-            Arg.Is<BusinessPartnerSyncPayload>(value => value.GlobalId == payload.GlobalId && value.IsActive == false),
-            markDeleted: false,
-            Arg.Any<CancellationToken>());
+        var applier = CreateApplier(out var repository, out _);
+        var result = await applier.ApplyAsync(Context(Canonical()) with { EntityGlobalId = Guid.NewGuid() });
+        result.Terminal.Should().BeTrue();
+        result.ErrorCode.Should().Be("BP_SYNC_GLOBAL_ID_MISMATCH");
+        await repository.DidNotReceiveWithAnyArgs().ApplyCanonicalAsync(default, default!, default!, default);
     }
 
-    [Fact]
-    public async Task BusinessPartnerApplier_ReapplyingSameEventId_IsIdempotentAndDoesNotDuplicate()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Apply_DuplicateChildGlobalIdsAreTerminal(bool addresses)
     {
-        var repository = new InMemoryBusinessPartnerSyncApplyRepository();
-        var payload = CreatePayload();
-        var eventId = Guid.NewGuid();
-        var context = CreateContext(payload, SyncOperation.Created, eventId);
-        var applier = new BusinessPartnerSyncEventApplier(repository);
-
-        var firstResult = await applier.ApplyAsync(context, CancellationToken.None);
-        var secondResult = await applier.ApplyAsync(context, CancellationToken.None);
-
-        firstResult.Applied.Should().BeTrue();
-        secondResult.Applied.Should().BeTrue();
-        secondResult.Message.Should().Contain("ya aplicado");
-        repository.BusinessPartnerCount.Should().Be(1);
-        repository.SyncInboxCount.Should().Be(1);
-        repository.BusinessPartnerWriteCount.Should().Be(1);
-        repository.GetBusinessPartnerName(payload.GlobalId).Should().Be(payload.Name);
-        repository.GetSyncInboxStatus(eventId).Should().Be(SyncEventStatus.Applied);
-        repository.UsedLocalIdAsIdentity.Should().BeFalse();
-        repository.TouchedSapMapping.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task Dispatcher_IgnoresUnsupportedEntityWithoutThrowing()
-    {
-        var dispatcher = new SyncEventApplierDispatcher(
-            new StaticOptionsMonitor<MasterBranchSyncWorkerOptions>(new MasterBranchSyncWorkerOptions
+        var childId = Guid.Parse("20000000-0000-0000-0000-000000000099");
+        var snapshot = addresses
+            ? Snapshot() with
             {
-                SkeletonMode = false,
-                EnabledEntityAppliers = ["BusinessPartner"]
-            }),
-            []);
-
-        var result = await dispatcher.ApplyAsync(
-            new SyncEventApplyContext(
-                Guid.NewGuid(),
-                SourceCompanyId: 1,
-                EntityName: "Items",
-                EntityGlobalId: Guid.NewGuid(),
-                Operation: SyncOperation.Created.ToString(),
-                PayloadJson: "{}",
-                TargetCompanyId: 2,
-                TargetId: 10),
-            CancellationToken.None);
-
-        result.Applied.Should().BeFalse();
-        result.ErrorCode.Should().Be("SYNC_ENTITY_APPLIER_DISABLED");
-    }
-
-    [Fact]
-    public async Task Dispatcher_DoesNotApply_WhenSkeletonModeIsEnabled()
-    {
-        var entityApplier = Substitute.For<ISyncEntityEventApplier>();
-        var dispatcher = new SyncEventApplierDispatcher(
-            new StaticOptionsMonitor<MasterBranchSyncWorkerOptions>(new MasterBranchSyncWorkerOptions
-            {
-                SkeletonMode = true,
-                EnabledEntityAppliers = ["BusinessPartner"]
-            }),
-            new[] { entityApplier });
-
-        var result = await dispatcher.ApplyAsync(CreateContext(CreatePayload(), SyncOperation.Created), CancellationToken.None);
-
-        result.Applied.Should().BeFalse();
-        result.Message.Should().Contain("SkeletonMode");
-        await entityApplier.DidNotReceiveWithAnyArgs().ApplyAsync(default!, default);
-    }
-
-    [Fact]
-    public async Task Dispatcher_AppliesOnlyWhenBusinessPartnerIsEnabled()
-    {
-        var entityApplier = Substitute.For<ISyncEntityEventApplier>();
-        entityApplier.CanApply("BusinessPartner").Returns(true);
-        entityApplier.ApplyAsync(Arg.Any<SyncEventApplyContext>(), Arg.Any<CancellationToken>())
-            .Returns(new SyncEventApplyResult(true, "Aplicado."));
-        var dispatcher = new SyncEventApplierDispatcher(
-            new StaticOptionsMonitor<MasterBranchSyncWorkerOptions>(new MasterBranchSyncWorkerOptions
-            {
-                SkeletonMode = false,
-                EnabledEntityAppliers = ["BusinessPartner"]
-            }),
-            new[] { entityApplier });
-
-        var result = await dispatcher.ApplyAsync(CreateContext(CreatePayload(), SyncOperation.Created), CancellationToken.None);
-
-        result.Applied.Should().BeTrue();
-        await entityApplier.Received(1).ApplyAsync(Arg.Any<SyncEventApplyContext>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public void BusinessPartnerSyncPath_DoesNotUseSapCardCode()
-    {
-        var applier = ReadSourceFile(
-            "src",
-            "Backend",
-            "NuanSystem.MasterBranchSyncWorker",
-            "Services",
-            "BusinessPartnerSyncEventApplier.cs");
-        var repository = ReadSourceFile(
-            "src",
-            "Backend",
-            "NuanSystem.Persistence",
-            "Repositories",
-            "Sync",
-            "BusinessPartnerSyncApplyRepository.cs");
-
-        applier.Should().NotContain("SapCardCode");
-        repository.Should().NotContain("SapCardCode");
-        repository.Should().Contain("WHERE GlobalId = @GlobalId");
-        repository.Should().Contain("EventId = @EventId");
-        repository.Should().Contain("Status = N'Applied'");
-    }
-
-    private static SyncEventApplyContext CreateContext(
-        BusinessPartnerSyncPayload payload,
-        SyncOperation operation,
-        Guid? eventId = null)
-    {
-        return new SyncEventApplyContext(
-            eventId ?? Guid.NewGuid(),
-            SourceCompanyId: 1,
-            EntityName: "BusinessPartner",
-            EntityGlobalId: payload.GlobalId,
-            Operation: operation.ToString(),
-            PayloadJson: CreatePayloadJson(payload, operation),
-            TargetCompanyId: 2,
-            TargetId: 10);
-    }
-
-    private static BusinessPartnerSyncPayload CreatePayload(
-        string name = "Cliente Uno",
-        bool isActive = true)
-    {
-        return new BusinessPartnerSyncPayload(
-            GlobalId: Guid.NewGuid(),
-            Code: "CLI-001",
-            Name: name,
-            CommercialName: null,
-            PartnerType: "Customer",
-            IdentificationTypeCode: "RUC",
-            IdentificationNumber: "0999999999001",
-            Email: "cliente@nuan.local",
-            Phone: "0999999999",
-            IsActive: isActive,
-            ExternalSystem: null,
-            ExternalCode: null);
-    }
-
-    private static string CreatePayloadJson(BusinessPartnerSyncPayload payload, SyncOperation operation)
-    {
-        var wrapper = new
-        {
-            entityName = "BusinessPartner",
-            globalId = payload.GlobalId,
-            code = payload.Code,
-            operation = operation.ToString(),
-            payload
-        };
-
-        return JsonSerializer.Serialize(wrapper, new JsonSerializerOptions(JsonSerializerDefaults.Web));
-    }
-
-    private static string ReadSourceFile(params string[] pathParts)
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            var scriptPath = Path.Combine(new[] { directory.FullName }.Concat(pathParts).ToArray());
-            if (File.Exists(scriptPath))
-            {
-                return File.ReadAllText(scriptPath);
+                Addresses =
+                [
+                    new(childId, "Billing", "One", null, "EC", null, null, null, null, null, true, true),
+                    new(childId, "Shipping", "Two", null, "EC", null, null, null, null, null, false, true)
+                ]
             }
-
-            directory = directory.Parent;
-        }
-
-        throw new FileNotFoundException($"No se encontro el archivo {Path.Combine(pathParts)}.");
-    }
-
-    private sealed class StaticOptionsMonitor<T>(T currentValue) : IOptionsMonitor<T>
-    {
-        public T CurrentValue { get; } = currentValue;
-
-        public T Get(string? name) => CurrentValue;
-
-        public IDisposable? OnChange(Action<T, string?> listener) => null;
-    }
-
-    private sealed class InMemoryBusinessPartnerSyncApplyRepository : IBusinessPartnerSyncApplyRepository
-    {
-        private readonly Dictionary<Guid, BusinessPartnerSyncPayload> _businessPartnersByGlobalId = [];
-        private readonly Dictionary<Guid, SyncEventStatus> _syncInboxByEventId = [];
-
-        public int BusinessPartnerCount => _businessPartnersByGlobalId.Count;
-
-        public int SyncInboxCount => _syncInboxByEventId.Count;
-
-        public int BusinessPartnerWriteCount { get; private set; }
-
-        public bool UsedLocalIdAsIdentity { get; private set; }
-
-        public bool TouchedSapMapping { get; private set; }
-
-        public Task<bool> ExistsByGlobalIdAsync(
-            int branchCompanyId,
-            Guid globalId,
-            CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(_businessPartnersByGlobalId.ContainsKey(globalId));
-        }
-
-        public Task<BusinessPartnerSyncApplyResult> UpsertFromSyncAsync(
-            int branchCompanyId,
-            SyncEventApplyContext context,
-            BusinessPartnerSyncPayload payload,
-            SyncOperation operation,
-            CancellationToken cancellationToken = default)
-        {
-            if (_syncInboxByEventId.TryGetValue(context.EventId, out var status) &&
-                status == SyncEventStatus.Applied)
+            : Snapshot() with
             {
-                return Task.FromResult(new BusinessPartnerSyncApplyResult(
-                    true,
-                    true,
-                    BusinessPartnerId: null,
-                    "Evento ya aplicado en SyncInbox."));
-            }
+                Contacts =
+                [
+                    new(childId, "OWNER", "EMAIL", "One", null, null, null, null, null, null, null, true, true, true, null),
+                    new(childId, "BUYER", "MOBILE", "Two", null, null, null, null, null, null, null, false, false, true, null)
+                ]
+            };
+        var applier = CreateApplier(out var repository, out _);
 
-            _syncInboxByEventId[context.EventId] = SyncEventStatus.Pending;
-            _businessPartnersByGlobalId[payload.GlobalId] = payload;
-            BusinessPartnerWriteCount++;
-            _syncInboxByEventId[context.EventId] = SyncEventStatus.Applied;
+        var result = await applier.ApplyAsync(Context(Canonical() with { Partner = snapshot }));
 
-            return Task.FromResult(new BusinessPartnerSyncApplyResult(
-                true,
-                false,
-                BusinessPartnerId: 1,
-                "BusinessPartner sincronizado por GlobalId."));
-        }
-
-        public Task<BusinessPartnerSyncApplyResult> DisableFromSyncAsync(
-            int branchCompanyId,
-            SyncEventApplyContext context,
-            BusinessPartnerSyncPayload payload,
-            bool markDeleted,
-            CancellationToken cancellationToken = default)
-        {
-            return UpsertFromSyncAsync(branchCompanyId, context, payload with { IsActive = false }, SyncOperation.Disabled, cancellationToken);
-        }
-
-        public string? GetBusinessPartnerName(Guid globalId)
-        {
-            return _businessPartnersByGlobalId.TryGetValue(globalId, out var payload)
-                ? payload.Name
-                : null;
-        }
-
-        public SyncEventStatus? GetSyncInboxStatus(Guid eventId)
-        {
-            return _syncInboxByEventId.TryGetValue(eventId, out var status)
-                ? status
-                : null;
-        }
+        result.Terminal.Should().BeTrue();
+        result.ErrorCode.Should().Be("SYNC_PAYLOAD_INVALID");
+        await repository.DidNotReceiveWithAnyArgs().ApplyCanonicalAsync(default, default!, default!, default);
     }
+
+    [Theory]
+    [InlineData(21)]
+    [InlineData(22)]
+    public async Task Apply_CentralCanonicalFansOutToOriginAndSiblingBranch(int targetCompanyId)
+    {
+        var applier = CreateApplier(out var repository, out var companies);
+        companies.ResolveByIdAsync(targetCompanyId, Arg.Any<CancellationToken>())
+            .Returns(Branch(targetCompanyId, 10));
+        var context = Context(Canonical(), targetCompanyId);
+        repository.ApplyCanonicalAsync(targetCompanyId, context, Arg.Any<BusinessPartnerCanonicalPayloadV2>(), Arg.Any<CancellationToken>())
+            .Returns(new BusinessPartnerSyncApplyResult(true, false, 80, "Aplicado."));
+        var result = await applier.ApplyAsync(context);
+        result.Applied.Should().BeTrue();
+        await repository.Received(1).ApplyCanonicalAsync(targetCompanyId, context,
+            Arg.Is<BusinessPartnerCanonicalPayloadV2>(value => value.SchemaVersion == 2 &&
+                value.CanonicalVersion == 7 && value.Partner.GlobalId == PartnerId),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(false, true, true, "BP_SYNC_SOURCE_CENTRAL_REQUIRED")]
+    [InlineData(true, false, true, "BP_SYNC_TARGET_BRANCH_REQUIRED")]
+    [InlineData(true, true, false, "BP_SYNC_PARENT_MISMATCH")]
+    public async Task Apply_RequiresCentralToDirectChildTopology(
+        bool sourceIsCentral, bool targetIsBranch, bool parentMatches, string expectedCode)
+    {
+        var applier = CreateApplier(out var repository, out var companies);
+        companies.ResolveByIdAsync(10, Arg.Any<CancellationToken>())
+            .Returns(sourceIsCentral ? Central(10) : Branch(10, 99));
+        companies.ResolveByIdAsync(21, Arg.Any<CancellationToken>())
+            .Returns(targetIsBranch ? Branch(21, parentMatches ? 10 : 99) : Central(21));
+        var result = await applier.ApplyAsync(Context(Canonical()));
+        result.Terminal.Should().BeTrue();
+        result.ErrorCode.Should().Be(expectedCode);
+        await repository.DidNotReceiveWithAnyArgs().ApplyCanonicalAsync(default, default!, default!, default);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task Apply_RequiresSyncEnabledAtBothEnds(bool sourceEnabled, bool targetEnabled)
+    {
+        var applier = CreateApplier(out var repository, out var companies);
+        companies.ResolveByIdAsync(10, Arg.Any<CancellationToken>()).Returns(Central(10, sourceEnabled));
+        companies.ResolveByIdAsync(21, Arg.Any<CancellationToken>()).Returns(Branch(21, 10, targetEnabled));
+        var result = await applier.ApplyAsync(Context(Canonical()));
+        result.Terminal.Should().BeTrue();
+        result.ErrorCode.Should().Be("BP_SYNC_DISABLED");
+        await repository.DidNotReceiveWithAnyArgs().ApplyCanonicalAsync(default, default!, default!, default);
+    }
+
+    [Theory]
+    [InlineData(1, true, false, false)]
+    [InlineData(2, true, true, false)]
+    [InlineData(3, true, true, true)]
+    [InlineData(4, false, false, false)]
+    [InlineData(5, false, false, false)]
+    public void CanonicalProcedureResult_ClosesApplyEqualStaleAndTerminalOutcomes(
+        int resultCode, bool applied, bool alreadyApplied, bool ignored)
+    {
+        var result = BusinessPartnerSyncApplyRepository.MapCanonicalResult(
+            new BusinessPartnerSyncApplyRepository.ApplyResultRow
+            {
+                ResultCode = resultCode,
+                BusinessPartnerId = 80
+            });
+        result.Applied.Should().Be(applied);
+        result.AlreadyApplied.Should().Be(alreadyApplied);
+        result.Ignored.Should().Be(ignored);
+        result.Terminal.Should().Be(resultCode is 4 or 5);
+    }
+
+    [Fact]
+    public void CanonicalParameters_KeepSapCodeReadOnlyAndReplaceChildrenByGlobalId()
+    {
+        var addressId = Guid.Parse("20000000-0000-0000-0000-000000000009");
+        var contactId = Guid.Parse("30000000-0000-0000-0000-000000000009");
+        var payload = Canonical() with { Partner = Snapshot() with
+        {
+            SapCardCode = "CN0999999999001",
+            Addresses = [new(addressId, "Billing", "Street", null, "EC", "P01", "C01", null, null, null, true, true)],
+            Contacts = [new(contactId, "SALE", "EMAIL", "Ana", null, null, null, null, null, "a@b.ec", null, true, true, true, null)]
+        }};
+        var references = new BusinessPartnerSyncApplyRepository.StableReferenceResolution(true, 7,
+            JsonSerializer.Serialize(new[] { new { globalId = addressId, countryId = 1, provinceId = 2, cityId = 3 } }),
+            JsonSerializer.Serialize(new[] { new { globalId = contactId, contactTypeId = 4, contactChannelId = 5 } }));
+        var parameters = BusinessPartnerSyncApplyRepository.CreateCanonicalParameters(Context(payload), payload, references);
+        parameters.SapCardCode.Should().Be("CN0999999999001");
+        parameters.AddressesJson.Should().Contain(addressId.ToString()).And.Contain("countryId");
+        parameters.ContactsJson.Should().Contain(contactId.ToString()).And.Contain("contactTypeId");
+        typeof(BusinessPartnerSyncApplyRepository).GetConstructors().Single().GetParameters()
+            .Should().ContainSingle(parameter => parameter.ParameterType == typeof(ICompanyResolver));
+    }
+
+    private static BusinessPartnerSyncEventApplier CreateApplier(
+        out IBusinessPartnerSyncApplyRepository repository, out ICompanyResolver companies)
+    {
+        repository = Substitute.For<IBusinessPartnerSyncApplyRepository>();
+        companies = Substitute.For<ICompanyResolver>();
+        companies.ResolveByIdAsync(10, Arg.Any<CancellationToken>()).Returns(Central(10));
+        companies.ResolveByIdAsync(21, Arg.Any<CancellationToken>()).Returns(Branch(21, 10));
+        companies.ResolveByIdAsync(22, Arg.Any<CancellationToken>()).Returns(Branch(22, 10));
+        return new BusinessPartnerSyncEventApplier(repository, companies);
+    }
+
+    private static SyncEventApplyContext Context(BusinessPartnerCanonicalPayloadV2 payload, int target = 21)
+    {
+        var json = new SyncEventPayloadFactory().CreatePayloadJson(new SyncPublishRequest(10, "BusinessPartner",
+            payload.Partner.GlobalId, payload.Partner.Code, SyncOperation.Updated, payload, null, null));
+        return new SyncEventApplyContext(Guid.Parse("90000000-0000-0000-0000-000000000009"), 10,
+            "BusinessPartner", payload.Partner.GlobalId, "Updated", json, target, 81);
+    }
+
+    private static BusinessPartnerCanonicalPayloadV2 Canonical() =>
+        new(2, 7, 21, Guid.Parse("80000000-0000-0000-0000-000000000009"), Snapshot());
+
+    private static BusinessPartnerCanonicalSnapshot Snapshot() =>
+        new(PartnerId, "BP-10000000000000000000000000000009", "Partner", null, "Customer", "RUC",
+            "09.999-999 99001", "0999999999001", null, null, null, true, [], []);
+
+    private static CompanyConnectionInfo Central(int id, bool enabled = true) =>
+        new(id, $"C{id}", "Central", DatabaseEngine.SqlServer, "Server=central;", SapIntegrationMode.None,
+            CompanyOperationMode.Standalone, true, null, null, enabled);
+
+    private static CompanyConnectionInfo Branch(int id, int parentId, bool enabled = true) =>
+        new(id, $"B{id}", "Branch", DatabaseEngine.SqlServer, "Server=branch;", SapIntegrationMode.None,
+            CompanyOperationMode.Standalone, false, parentId, $"B{id}", enabled);
 }

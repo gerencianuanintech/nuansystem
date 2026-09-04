@@ -119,16 +119,58 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
     }
 
     [Fact]
-    public void ProposalResultApply_UsesLockedHigherEqualAndLowerVersionOutcomes()
+    public void ProposalResultApply_UsesLockedStaleAndStatusSpecificVersionOutcomes()
     {
         var procedure = Procedure("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_RESULT_APPLY");
 
         procedure.Should().Contain("FROM dbo.BusinessPartners WITH (UPDLOCK,HOLDLOCK)")
-            .And.Contain("@CurrentVersion > @CanonicalVersion")
-            .And.Contain("@CurrentVersion = @CanonicalVersion")
-            .And.Contain("@CurrentVersion < @CanonicalVersion")
+            .And.Contain("@HasCanonical=1 AND @CurrentVersion > @CanonicalVersion")
+            .And.Contain("IF @Status='Rejected' AND @HasCanonical=1")
             .And.Contain("SELECT 3 AS ResultCode")
+            .And.NotContain("IF @HasCanonical=1 AND @CurrentVersion = @CanonicalVersion")
             .And.NotContain("CanonicalVersion=CASE");
+    }
+
+    [Fact]
+    public void ProposalResultApply_PreservesConflictRestoresRejectedAndConsumesAcceptedWithoutMutation()
+    {
+        var procedure = Procedure("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_RESULT_APPLY");
+
+        var acceptedGuard = procedure.IndexOf("IF @Status='Accepted'", StringComparison.Ordinal);
+        var staleGuard = procedure.IndexOf(
+            "IF @HasCanonical=1 AND @CurrentVersion > @CanonicalVersion",
+            StringComparison.Ordinal);
+        var conflictGuard = procedure.IndexOf("IF @Status='Conflict'", StringComparison.Ordinal);
+        var rejectedRestoreGuard = procedure.IndexOf(
+            "IF @Status='Rejected' AND @HasCanonical=1",
+            StringComparison.Ordinal);
+        var canonicalUpsert = procedure.IndexOf(
+            "EXEC dbo.SP_NA_POST_BUSINESSPARTNER_CANONICAL_UPSERT",
+            StringComparison.Ordinal);
+
+        acceptedGuard.Should().BeGreaterThan(0).And.BeLessThan(staleGuard);
+        conflictGuard.Should().BeGreaterThan(staleGuard).And.BeLessThan(rejectedRestoreGuard);
+        rejectedRestoreGuard.Should().BeGreaterThan(conflictGuard).And.BeLessThan(canonicalUpsert);
+        procedure.Should().Contain("IF @Status='Rejected' AND @HasCanonical=0 AND @BusinessPartnerId IS NULL")
+            .And.Contain("MasterSyncStatus='Conflict',MasterSyncMessage=@Message")
+            .And.Contain("MasterSyncStatus='Rejected',MasterSyncMessage=@Message")
+            .And.NotContain("IF @HasCanonical=1 AND @CurrentVersion = @CanonicalVersion")
+            .And.NotContain("IF @HasCanonical=1\n        BEGIN");
+    }
+
+    [Theory]
+    [InlineData("SP_NA_POST_BUSINESSPARTNER_CANONICAL_APPLY", "BpCanonicalApplySavepoint")]
+    [InlineData("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_RESULT_APPLY", "BpProposalResultSavepoint")]
+    public void BranchApplyProcedures_PreserveCallerOwnedTransactions(string procedureName, string savepoint)
+    {
+        var procedure = Procedure(procedureName);
+
+        procedure.Should().Contain("DECLARE @StartedTransaction bit = 0")
+            .And.Contain("IF @@TRANCOUNT = 0")
+            .And.Contain($"SAVE TRANSACTION {savepoint}")
+            .And.Contain("IF @StartedTransaction = 1 COMMIT TRANSACTION")
+            .And.Contain($"ROLLBACK TRANSACTION {savepoint}")
+            .And.NotContain("IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;");
     }
 
     [Fact]

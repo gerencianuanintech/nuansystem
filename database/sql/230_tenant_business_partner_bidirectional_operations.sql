@@ -1059,8 +1059,15 @@ BEGIN
     SET XACT_ABORT ON;
     IF DATALENGTH(@SapCardCode) > 30
         THROW 52030, 'SapCardCode cannot exceed 15 characters.', 1;
-    BEGIN TRY
+    DECLARE @StartedTransaction bit = 0;
+    IF @@TRANCOUNT = 0
+    BEGIN
+        SET @StartedTransaction = 1;
         BEGIN TRANSACTION;
+    END
+    ELSE
+        SAVE TRANSACTION BpCanonicalApplySavepoint;
+    BEGIN TRY
         DECLARE @InboxId bigint,@InboxStatus nvarchar(30),@InboxEnvelopeResult int,
                 @CurrentVersion bigint,@BusinessPartnerId int,@LiveCode nvarchar(50),
                 @LivePartnerType nvarchar(20),@LiveIdentificationTypeId int,
@@ -1074,13 +1081,13 @@ BEGIN
             @EnvelopeResult=@InboxEnvelopeResult OUTPUT;
         IF @InboxEnvelopeResult=4
         BEGIN
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 4 AS ResultCode;
             RETURN;
         END;
         IF @InboxStatus=N'Applied'
         BEGIN
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 2 AS ResultCode;
             RETURN;
         END;
@@ -1097,7 +1104,7 @@ BEGIN
         IF @CurrentVersion > @CanonicalVersion
         BEGIN
             UPDATE dbo.SyncInbox SET Status=N'Applied',AppliedAt=SYSUTCDATETIME(),ErrorMessage=NULL,LastErrorMessage=NULL,NextRetryAt=NULL WHERE Id=@InboxId;
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 3 AS ResultCode;
             RETURN;
         END;
@@ -1105,7 +1112,7 @@ BEGIN
         IF @CurrentVersion = @CanonicalVersion
         BEGIN
             UPDATE dbo.SyncInbox SET Status=N'Applied',AppliedAt=SYSUTCDATETIME(),ErrorMessage=NULL,LastErrorMessage=NULL,NextRetryAt=NULL WHERE Id=@InboxId;
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 2 AS ResultCode;
             RETURN;
         END;
@@ -1128,7 +1135,7 @@ BEGIN
             SET Status=N'DeadLetter',ErrorMessage=N'Canonical event conflicts with immutable BusinessPartner state.',
                 LastErrorMessage=N'Canonical event conflicts with immutable BusinessPartner state.',NextRetryAt=NULL
             WHERE Id=@InboxId;
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 5 AS ResultCode;
             RETURN;
         END;
@@ -1148,11 +1155,14 @@ BEGIN
         UPDATE dbo.SyncInbox
         SET Status=N'Applied',AppliedAt=SYSUTCDATETIME(),ErrorMessage=NULL,LastErrorMessage=NULL,NextRetryAt=NULL
         WHERE Id=@InboxId;
-        COMMIT TRANSACTION;
+        IF @StartedTransaction = 1 COMMIT TRANSACTION;
         SELECT 1 AS ResultCode;
     END TRY
     BEGIN CATCH
-        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        IF @StartedTransaction = 1 AND XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+        ELSE IF XACT_STATE() = 1
+            ROLLBACK TRANSACTION BpCanonicalApplySavepoint;
         THROW;
     END CATCH;
 END;
@@ -1189,8 +1199,15 @@ BEGIN
         THROW 52030, 'Proposal result status is invalid.', 1;
     IF DATALENGTH(@SapCardCode) > 30
         THROW 52030, 'SapCardCode cannot exceed 15 characters.', 1;
-    BEGIN TRY
+    DECLARE @StartedTransaction bit = 0;
+    IF @@TRANCOUNT = 0
+    BEGIN
+        SET @StartedTransaction = 1;
         BEGIN TRANSACTION;
+    END
+    ELSE
+        SAVE TRANSACTION BpProposalResultSavepoint;
+    BEGIN TRY
         DECLARE @InboxId bigint,@InboxStatus nvarchar(30),@InboxEnvelopeResult int,
                 @BusinessPartnerId int,@CurrentVersion bigint,@LiveCode nvarchar(50),
                 @LivePartnerType nvarchar(20),@LiveIdentificationTypeId int,
@@ -1204,13 +1221,13 @@ BEGIN
             @EnvelopeResult=@InboxEnvelopeResult OUTPUT;
         IF @InboxEnvelopeResult=4
         BEGIN
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 4 AS ResultCode;
             RETURN;
         END;
         IF @InboxStatus=N'Applied'
         BEGIN
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 2 AS ResultCode;
             RETURN;
         END;
@@ -1226,39 +1243,65 @@ BEGIN
             FROM dbo.BusinessPartnerSapMapping WITH (UPDLOCK,HOLDLOCK)
             WHERE BusinessPartnerId=@BusinessPartnerId;
 
-        IF @CurrentVersion > @CanonicalVersion
+        IF @Status='Accepted'
+        BEGIN
+            UPDATE dbo.SyncInbox
+            SET Status=N'Applied',AppliedAt=SYSUTCDATETIME(),ErrorMessage=NULL,
+                LastErrorMessage=NULL,NextRetryAt=NULL
+            WHERE Id=@InboxId;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
+            SELECT 1 AS ResultCode;
+            RETURN;
+        END;
+
+        IF @HasCanonical=1 AND @CurrentVersion > @CanonicalVersion
         BEGIN
             UPDATE dbo.SyncInbox
             SET Status=N'Ignored',AppliedAt=SYSUTCDATETIME(),
                 ErrorMessage=NULL,LastErrorMessage=N'Stale canonical proposal result ignored.',NextRetryAt=NULL
             WHERE Id=@InboxId;
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 3 AS ResultCode;
             RETURN;
         END;
 
-        IF @HasCanonical=1 AND @CurrentVersion = @CanonicalVersion
+        IF @Status='Conflict'
         BEGIN
+            IF @BusinessPartnerId IS NULL
+            BEGIN
+                UPDATE dbo.SyncInbox
+                SET Status=N'DeadLetter',ErrorMessage=N'Conflict result has no local proposal.',
+                    LastErrorMessage=N'Conflict result has no local proposal.',NextRetryAt=NULL
+                WHERE Id=@InboxId;
+                IF @StartedTransaction = 1 COMMIT TRANSACTION;
+                SELECT 4 AS ResultCode;
+                RETURN;
+            END;
+
+            UPDATE dbo.BusinessPartners
+            SET MasterSyncStatus='Conflict',MasterSyncMessage=@Message,
+                UpdatedAt=SYSUTCDATETIME(),UpdatedByUserName=N'MasterBranchSyncWorker'
+            WHERE Id=@BusinessPartnerId;
             UPDATE dbo.SyncInbox
             SET Status=N'Applied',AppliedAt=SYSUTCDATETIME(),ErrorMessage=NULL,LastErrorMessage=NULL,NextRetryAt=NULL
             WHERE Id=@InboxId;
-            COMMIT TRANSACTION;
-            SELECT 2 AS ResultCode;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
+            SELECT 1 AS ResultCode;
             RETURN;
         END;
 
-        IF @HasCanonical=0 AND (@BusinessPartnerId IS NULL OR @CurrentVersion < @CanonicalVersion)
+        IF @Status='Rejected' AND @HasCanonical=0 AND @BusinessPartnerId IS NULL
         BEGIN
             UPDATE dbo.SyncInbox
-            SET Status=N'DeadLetter',ErrorMessage=N'Proposal result advanced without a canonical snapshot.',
-                LastErrorMessage=N'Proposal result advanced without a canonical snapshot.',NextRetryAt=NULL
+            SET Status=N'DeadLetter',ErrorMessage=N'Rejected result has no local proposal or canonical snapshot.',
+                LastErrorMessage=N'Rejected result has no local proposal or canonical snapshot.',NextRetryAt=NULL
             WHERE Id=@InboxId;
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 4 AS ResultCode;
             RETURN;
         END;
 
-        IF @HasCanonical=1 AND @BusinessPartnerId IS NOT NULL
+        IF @Status='Rejected' AND @HasCanonical=1 AND @BusinessPartnerId IS NOT NULL
            AND
            (
                @LivePartnerType=N'Both' OR @LiveMasterSyncStatus='LegacyReview'
@@ -1276,12 +1319,12 @@ BEGIN
             SET Status=N'DeadLetter',ErrorMessage=N'Proposal result conflicts with immutable BusinessPartner state.',
                 LastErrorMessage=N'Proposal result conflicts with immutable BusinessPartner state.',NextRetryAt=NULL
             WHERE Id=@InboxId;
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 5 AS ResultCode;
             RETURN;
         END;
 
-        IF @HasCanonical=1
+        IF @Status='Rejected' AND @HasCanonical=1
         BEGIN
             DECLARE @Saved table(BusinessPartnerId int NOT NULL);
             INSERT @Saved(BusinessPartnerId)
@@ -1297,17 +1340,20 @@ BEGIN
         END;
 
         UPDATE dbo.BusinessPartners
-        SET MasterSyncStatus=@Status,MasterSyncMessage=@Message,
+        SET MasterSyncStatus='Rejected',MasterSyncMessage=@Message,
             UpdatedAt=SYSUTCDATETIME(),UpdatedByUserName=N'MasterBranchSyncWorker'
         WHERE GlobalId=@EntityGlobalId;
         UPDATE dbo.SyncInbox
         SET Status=N'Applied',AppliedAt=SYSUTCDATETIME(),ErrorMessage=NULL,LastErrorMessage=NULL,NextRetryAt=NULL
         WHERE Id=@InboxId;
-        COMMIT TRANSACTION;
+        IF @StartedTransaction = 1 COMMIT TRANSACTION;
         SELECT 1 AS ResultCode;
     END TRY
     BEGIN CATCH
-        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        IF @StartedTransaction = 1 AND XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+        ELSE IF XACT_STATE() = 1
+            ROLLBACK TRANSACTION BpProposalResultSavepoint;
         THROW;
     END CATCH;
 END;

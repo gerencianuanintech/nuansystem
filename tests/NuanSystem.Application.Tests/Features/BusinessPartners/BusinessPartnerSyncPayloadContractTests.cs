@@ -5,6 +5,7 @@ using NuanSystem.Application.Features.BusinessPartners.Dtos;
 using NuanSystem.Application.Features.BusinessPartners.Sync;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Application.Features.Sync.Services;
+using NuanSystem.Persistence.Repositories.Sync;
 using NuanSystem.Shared.Sync;
 
 namespace NuanSystem.Application.Tests.Features.BusinessPartners;
@@ -261,6 +262,76 @@ public sealed class BusinessPartnerSyncPayloadContractTests
         roundTrip.Should().BeEquivalentTo(result, options => options.WithStrictOrdering());
     }
 
+    [Fact]
+    public void FullSourceMapping_ProducesCompleteCanonicalV2WithStableReferencesAndDeterministicChildren()
+    {
+        var partner = new BusinessPartnerFullEntitySource.BusinessPartnerSourceRow(
+            PartnerId,
+            "BP-10000000000000000000000000000001",
+            "Partner",
+            "Trade",
+            "Customer",
+            "RUC",
+            "09.999-999 99001",
+            "0999999999001",
+            "partner@example.test",
+            "111",
+            "CN0999999999001",
+            8,
+            true);
+        var addresses = new[]
+        {
+            new BusinessPartnerFullEntitySource.BusinessPartnerAddressSourceRow(
+                PartnerId, HigherAddressId, "Shipping", "Second", null,
+                "EC", "PIC", "UIO", null, null, null, false, true),
+            new BusinessPartnerFullEntitySource.BusinessPartnerAddressSourceRow(
+                PartnerId, LowerAddressId, "Billing", "Main", "Suite 2",
+                "EC", "AZU", "CUE", "010101", -2.9001m, -79.0059m, true, true)
+        };
+        var contacts = new[]
+        {
+            new BusinessPartnerFullEntitySource.BusinessPartnerContactSourceRow(
+                PartnerId, HigherContactId, "BUYER", "MOBILE", "Buyer", null, null,
+                null, null, "0999999999", null, "es", false, false, true, null),
+            new BusinessPartnerFullEntitySource.BusinessPartnerContactSourceRow(
+                PartnerId, LowerContactId, "OWNER", "EMAIL", "Owner", "Manager", "Sales",
+                "222", "10", null, "owner@example.test", "es", true, true, true, "Primary")
+        };
+
+        var record = BusinessPartnerFullEntitySource.CreateRecord(partner, addresses, contacts);
+
+        record.GlobalId.Should().Be(PartnerId);
+        record.EntityKey.Should().Be(partner.Code);
+        record.IsActive.Should().BeTrue();
+        var payload = record.Payload.Should().BeOfType<BusinessPartnerCanonicalPayloadV2>().Subject;
+        payload.SchemaVersion.Should().Be(BusinessPartnerSyncSchemaVersions.Canonical);
+        payload.CanonicalVersion.Should().Be(8);
+        payload.OriginCompanyId.Should().BeNull();
+        payload.CausationEventId.Should().BeNull();
+        payload.Partner.Should().Match<BusinessPartnerCanonicalSnapshot>(value =>
+            value.IdentificationTypeCode == "RUC"
+            && value.NormalizedIdentificationNumber == "0999999999001"
+            && value.SapCardCode == "CN0999999999001");
+        payload.Partner.Addresses.Select(item => item.GlobalId)
+            .Should().Equal(LowerAddressId, HigherAddressId);
+        payload.Partner.Contacts.Select(item => item.GlobalId)
+            .Should().Equal(LowerContactId, HigherContactId);
+
+        var wire = JsonNode.Parse(Serialize("BusinessPartner", payload))!["payload"]!.AsObject();
+        AssertPropertySet(wire, "schemaVersion", "canonicalVersion", "originCompanyId", "causationEventId", "partner");
+        AssertCompleteSnapshotShape(wire["partner"]!.AsObject());
+        wire["partner"]!["addresses"]![0]!["provinceCode"]!.GetValue<string>().Should().Be("AZU");
+        wire["partner"]!["contacts"]![0]!["contactTypeCode"]!.GetValue<string>().Should().Be("OWNER");
+    }
+
+    [Fact]
+    public void LegacyFullSyncPayload_IsRemovedAfterCanonicalProducerMigration()
+    {
+        typeof(BusinessPartnerDto).Assembly
+            .GetType("NuanSystem.Application.Features.BusinessPartners.Dtos.BusinessPartnerSyncPayload")
+            .Should().BeNull();
+    }
+
     private string SerializeCanonical(BusinessPartnerDto partner) =>
         Serialize(
             "BusinessPartner",
@@ -312,7 +383,8 @@ public sealed class BusinessPartnerSyncPayloadContractTests
             "isActive",
             "addresses",
             "contacts");
-        var address = snapshot["addresses"]!.AsArray().Should().ContainSingle().Which!.AsObject();
+        snapshot["addresses"]!.AsArray().Should().NotBeEmpty();
+        var address = snapshot["addresses"]!.AsArray()[0]!.AsObject();
         AssertPropertySet(
             address,
             "globalId",
@@ -327,7 +399,8 @@ public sealed class BusinessPartnerSyncPayloadContractTests
             "longitude",
             "isPrimary",
             "isActive");
-        var contact = snapshot["contacts"]!.AsArray().Should().ContainSingle().Which!.AsObject();
+        snapshot["contacts"]!.AsArray().Should().NotBeEmpty();
+        var contact = snapshot["contacts"]!.AsArray()[0]!.AsObject();
         AssertPropertySet(
             contact,
             "globalId",
