@@ -10,7 +10,20 @@ public sealed class SqlServerTenantDatabaseInitializer(
     ICompanyContext companyContext,
     ITenantConnectionFactory tenantConnectionFactory) : ITenantDatabaseInitializer
 {
-    public async Task InitializeCurrentTenantAsync(CancellationToken cancellationToken = default)
+    public Task InitializeCurrentTenantAsync(CancellationToken cancellationToken = default) =>
+        InitializeCurrentTenantAsync([], inclusiveLastScriptName: null, cancellationToken);
+
+    internal Task InitializeCurrentTenantThroughBusinessPartnerFoundationAsync(
+        CancellationToken cancellationToken = default) =>
+        InitializeCurrentTenantAsync(
+            GetBusinessPartnerFoundationPrerequisiteScriptNames(),
+            "228_tenant_business_partner_bidirectional_foundation.sql",
+            cancellationToken);
+
+    private async Task InitializeCurrentTenantAsync(
+        IReadOnlyList<string> prerequisiteScriptNames,
+        string? inclusiveLastScriptName,
+        CancellationToken cancellationToken)
     {
         var company = companyContext.CurrentCompany
             ?? throw new InvalidOperationException("No hay empresa activa para inicializar la base tenant.");
@@ -27,80 +40,22 @@ public sealed class SqlServerTenantDatabaseInitializer(
         command.CommandText = TenantSchemaSql;
         await command.ExecuteNonQueryAsync(cancellationToken);
 
-        await ExecuteOptionalTenantScriptsAsync(connection, cancellationToken);
+        foreach (var fileName in prerequisiteScriptNames)
+        {
+            var scriptPath = FindDatabaseScriptPath(fileName)
+                ?? throw new FileNotFoundException($"No se encontro la migracion tenant requerida: {fileName}.");
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
+        await ExecuteOptionalTenantScriptsAsync(connection, inclusiveLastScriptName, cancellationToken);
     }
 
     private static async Task ExecuteOptionalTenantScriptsAsync(
         SqlConnection connection,
+        string? inclusiveLastScriptName,
         CancellationToken cancellationToken)
     {
-        foreach (var fileName in new[]
-                 {
-                      "018_inventory_items_master.sql",
-                      "021_inventory_item_families_master.sql",
-                      "043_inventory_item_master_profile.sql",
-                      "044_inventory_auxiliary_catalogs.sql",
-                      "048_tenant_sap_supplier_import.sql",
-                      "050_tenant_sap_sync_worker.sql",
-                      "051_tenant_security_document_series.sql",
-                      "053_tenant_operational_catalog.sql",
-                      "063_tenant_global_ids_and_external_refs.sql",
-                      "065_tenant_sync_inbox_local_outbox.sql",
-                      "083_tenant_country_master_branch_sync.sql",
-                      "067_tenant_warehouses_master.sql",
-                      "095_tenant_item_sap_import.sql",
-                      "097_tenant_item_group_master_branch_sync.sql"
-                      ,"100_tenant_purchase_reference_catalog_sync.sql"
-                      ,"101_tenant_sap_purchase_order_import.sql"
-                      ,"103_tenant_purchase_order_sync.sql"
-                      ,"115_tenant_sri_document_queue.sql"
-                      ,"117_tenant_sri_worker_and_document_store.sql"
-                      ,"118_tenant_sri_document_monitor_and_download.sql"
-                      ,"121_tenant_sri_worker_operational_summary.sql"
-                      ,"123_tenant_sri_document_monitor_summary_bigint_fix.sql"
-                      ,"124_tenant_local_outbox_relay.sql"
-                      ,"127_tenant_item_family_master_branch_sync.sql"
-                      ,"129_tenant_item_group_transactional_outbox.sql"
-                      ,"131_tenant_item_sync_payload_v2.sql"
-                      ,"133_tenant_warehouse_transactional_outbox.sql"
-                      ,"135_tenant_warehouse_tombstone_code_reservation.sql"
-                      ,"136_tenant_currency_transactional_outbox.sql"
-                      ,"138_tenant_sri_txt_import.sql"
-                      ,"150_tenant_sri_document_monitor_import_scope.sql"
-                      ,"151_tenant_sri_document_monitor_summary_bigint_repair.sql"
-                      ,"153_tenant_sap_sync_execution_history.sql"
-                      ,"158_tenant_sap_sync_execution_operations.sql"
-                      ,"162_tenant_carrier_transactional_outbox.sql"
-                      ,"164_tenant_local_outbox_entity_scope.sql"
-                      ,"168_tenant_country_transactional_outbox.sql"
-                      ,"169_tenant_sap_country_execution_snapshot.sql"
-                      ,"172_tenant_province_transactional_outbox.sql"
-                      ,"173_tenant_sap_province_execution_snapshot.sql"
-                      ,"175_tenant_city_transactional_outbox.sql"
-                      ,"177_tenant_sap_city_execution_snapshot.sql"
-                      ,"180_tenant_country_paged_search.sql"
-                      ,"181_tenant_province_paged_search.sql"
-                      ,"182_tenant_city_paged_search.sql"
-                      ,"183_tenant_warehouse_geography_relationships.sql"
-                      ,"184_tenant_item_types_master.sql"
-                      ,"186_tenant_item_groups_master.sql"
-                      ,"188_tenant_item_families_master.sql"
-                      ,"190_tenant_item_brands_master.sql"
-                      ,"194_tenant_unit_of_measures_master.sql"
-                      ,"196_tenant_unit_of_measures_incremental_sync.sql"
-                      ,"198_tenant_product_types_master.sql"
-                      ,"201_tenant_item_lines_master.sql"
-                       ,"205_tenant_item_subgroups_master.sql"
-                       ,"208_tenant_item_origins_master.sql"
-                       ,"211_tenant_replenishment_methods_master.sql"
-                       ,"214_tenant_storage_conditions_master.sql"
-                       ,"217_tenant_item_commercial_segments_master.sql"
-                       ,"221_tenant_item_alert_types_master.sql"
-                       ,"223_tenant_item_auxiliary_delete_hardening.sql"
-                       ,"226_tenant_sales_channels_master.sql"
-                       ,"228_tenant_business_partner_bidirectional_foundation.sql"
-                       ,"230_tenant_business_partner_bidirectional_operations.sql"
-                   })
+        foreach (var fileName in GetOptionalTenantScriptNames(inclusiveLastScriptName))
         {
             var scriptPath = FindDatabaseScriptPath(fileName);
             if (scriptPath is null)
@@ -111,6 +66,31 @@ public sealed class SqlServerTenantDatabaseInitializer(
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
         }
     }
+
+    internal static IReadOnlyList<string> GetOptionalTenantScriptNames(string? inclusiveLastScriptName)
+    {
+        if (inclusiveLastScriptName is null)
+            return OptionalTenantScriptNames;
+
+        for (var index = 0; index < OptionalTenantScriptNames.Count; index++)
+        {
+            if (string.Equals(
+                    OptionalTenantScriptNames[index],
+                    inclusiveLastScriptName,
+                    StringComparison.Ordinal))
+            {
+                return OptionalTenantScriptNames.Take(index + 1).ToArray();
+            }
+        }
+
+        throw new ArgumentOutOfRangeException(
+            nameof(inclusiveLastScriptName),
+            inclusiveLastScriptName,
+            "La migracion limite no pertenece al plan tenant opcional.");
+    }
+
+    internal static IReadOnlyList<string> GetBusinessPartnerFoundationPrerequisiteScriptNames() =>
+        BusinessPartnerFoundationPrerequisiteScriptNames;
 
     private static async Task ExecuteScriptFileAsync(
         SqlConnection connection,
@@ -147,6 +127,81 @@ public sealed class SqlServerTenantDatabaseInitializer(
 
         return null;
     }
+
+    private static readonly IReadOnlyList<string> OptionalTenantScriptNames = Array.AsReadOnly(
+    [
+        "018_inventory_items_master.sql",
+        "021_inventory_item_families_master.sql",
+        "043_inventory_item_master_profile.sql",
+        "044_inventory_auxiliary_catalogs.sql",
+        "048_tenant_sap_supplier_import.sql",
+        "050_tenant_sap_sync_worker.sql",
+        "051_tenant_security_document_series.sql",
+        "053_tenant_operational_catalog.sql",
+        "063_tenant_global_ids_and_external_refs.sql",
+        "065_tenant_sync_inbox_local_outbox.sql",
+        "083_tenant_country_master_branch_sync.sql",
+        "067_tenant_warehouses_master.sql",
+        "095_tenant_item_sap_import.sql",
+        "097_tenant_item_group_master_branch_sync.sql",
+        "100_tenant_purchase_reference_catalog_sync.sql",
+        "101_tenant_sap_purchase_order_import.sql",
+        "103_tenant_purchase_order_sync.sql",
+        "115_tenant_sri_document_queue.sql",
+        "117_tenant_sri_worker_and_document_store.sql",
+        "118_tenant_sri_document_monitor_and_download.sql",
+        "121_tenant_sri_worker_operational_summary.sql",
+        "123_tenant_sri_document_monitor_summary_bigint_fix.sql",
+        "124_tenant_local_outbox_relay.sql",
+        "127_tenant_item_family_master_branch_sync.sql",
+        "129_tenant_item_group_transactional_outbox.sql",
+        "131_tenant_item_sync_payload_v2.sql",
+        "133_tenant_warehouse_transactional_outbox.sql",
+        "135_tenant_warehouse_tombstone_code_reservation.sql",
+        "136_tenant_currency_transactional_outbox.sql",
+        "138_tenant_sri_txt_import.sql",
+        "150_tenant_sri_document_monitor_import_scope.sql",
+        "151_tenant_sri_document_monitor_summary_bigint_repair.sql",
+        "153_tenant_sap_sync_execution_history.sql",
+        "158_tenant_sap_sync_execution_operations.sql",
+        "162_tenant_carrier_transactional_outbox.sql",
+        "164_tenant_local_outbox_entity_scope.sql",
+        "168_tenant_country_transactional_outbox.sql",
+        "169_tenant_sap_country_execution_snapshot.sql",
+        "172_tenant_province_transactional_outbox.sql",
+        "173_tenant_sap_province_execution_snapshot.sql",
+        "175_tenant_city_transactional_outbox.sql",
+        "177_tenant_sap_city_execution_snapshot.sql",
+        "180_tenant_country_paged_search.sql",
+        "181_tenant_province_paged_search.sql",
+        "182_tenant_city_paged_search.sql",
+        "183_tenant_warehouse_geography_relationships.sql",
+        "184_tenant_item_types_master.sql",
+        "186_tenant_item_groups_master.sql",
+        "188_tenant_item_families_master.sql",
+        "190_tenant_item_brands_master.sql",
+        "194_tenant_unit_of_measures_master.sql",
+        "196_tenant_unit_of_measures_incremental_sync.sql",
+        "198_tenant_product_types_master.sql",
+        "201_tenant_item_lines_master.sql",
+        "205_tenant_item_subgroups_master.sql",
+        "208_tenant_item_origins_master.sql",
+        "211_tenant_replenishment_methods_master.sql",
+        "214_tenant_storage_conditions_master.sql",
+        "217_tenant_item_commercial_segments_master.sql",
+        "221_tenant_item_alert_types_master.sql",
+        "223_tenant_item_auxiliary_delete_hardening.sql",
+        "226_tenant_sales_channels_master.sql",
+        "228_tenant_business_partner_bidirectional_foundation.sql",
+        "230_tenant_business_partner_bidirectional_operations.sql"
+    ]);
+
+    private static readonly IReadOnlyList<string> BusinessPartnerFoundationPrerequisiteScriptNames =
+        Array.AsReadOnly(
+        [
+            "024_tenant_business_partners.sql",
+            "046_tenant_purchase_orders.sql"
+        ]);
 
     private const string TenantSchemaSql = """
 IF OBJECT_ID(N'dbo.SchemaHistory', N'U') IS NULL

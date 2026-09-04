@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using FluentAssertions;
+using NuanSystem.Persistence.Services;
 
 namespace NuanSystem.Application.Tests.Features.BusinessPartners;
 
@@ -102,21 +103,21 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
     [Fact]
     public void TenantInitializer_RegistersFoundationBeforeOperationsAtTheEnd()
     {
-        var source = Read(
-            "src", "Backend", "NuanSystem.Persistence", "Services",
-            "SqlServerTenantDatabaseInitializer.cs");
+        var planMethod = typeof(SqlServerTenantDatabaseInitializer).GetMethod(
+            "GetOptionalTenantScriptNames",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        planMethod.Should().NotBeNull();
 
-        var foundation = source.IndexOf(
-            "228_tenant_business_partner_bidirectional_foundation.sql",
-            StringComparison.Ordinal);
-        var operations = source.IndexOf(
-            "230_tenant_business_partner_bidirectional_operations.sql",
-            StringComparison.Ordinal);
+        var scripts = (IReadOnlyList<string>)planMethod!.Invoke(null, [null])!;
+        var orderedScripts = scripts.ToList();
+        var salesChannels = orderedScripts.IndexOf("226_tenant_sales_channels_master.sql");
+        var foundation = orderedScripts.IndexOf("228_tenant_business_partner_bidirectional_foundation.sql");
+        var operations = orderedScripts.IndexOf("230_tenant_business_partner_bidirectional_operations.sql");
 
-        foundation.Should().BeGreaterThan(source.IndexOf(
-            "226_tenant_sales_channels_master.sql",
-            StringComparison.Ordinal));
+        salesChannels.Should().BeGreaterThanOrEqualTo(0);
+        foundation.Should().BeGreaterThan(salesChannels);
         operations.Should().BeGreaterThan(foundation);
+        operations.Should().Be(scripts.Count - 1);
     }
 
     [Fact]
@@ -740,6 +741,136 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
     }
 
     [Fact]
+    public void TenantInitializer_PilotFoundationPlanStopsAt228WhilePublicPlanRetains230()
+    {
+        var planMethod = typeof(SqlServerTenantDatabaseInitializer).GetMethod(
+            "GetOptionalTenantScriptNames",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+        planMethod.Should().NotBeNull("the SQL pilot needs a production-owned bounded initializer plan");
+
+        var allScripts = (IReadOnlyList<string>)planMethod!.Invoke(null, [null])!;
+        var foundationScripts = (IReadOnlyList<string>)planMethod.Invoke(
+            null,
+            ["228_tenant_business_partner_bidirectional_foundation.sql"])!;
+
+        foundationScripts.Should().NotBeEmpty();
+        foundationScripts[^1].Should().Be("228_tenant_business_partner_bidirectional_foundation.sql");
+        foundationScripts.Should().NotContain("230_tenant_business_partner_bidirectional_operations.sql");
+        allScripts.Should().ContainInOrder(
+            "228_tenant_business_partner_bidirectional_foundation.sql",
+            "230_tenant_business_partner_bidirectional_operations.sql");
+    }
+
+    [Fact]
+    public void TenantInitializer_PilotFoundationPlanUsesActualBusinessPartnerBaseMigration()
+    {
+        var prerequisiteMethod = typeof(SqlServerTenantDatabaseInitializer).GetMethod(
+            "GetBusinessPartnerFoundationPrerequisiteScriptNames",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+        prerequisiteMethod.Should().NotBeNull();
+        var prerequisites = (IReadOnlyList<string>)prerequisiteMethod!.Invoke(null, null)!;
+        prerequisites.Should().Equal(
+            "024_tenant_business_partners.sql",
+            "046_tenant_purchase_orders.sql");
+    }
+
+    [Fact]
+    public void SqlIntegrationHarness_UsesApprovedCrossDatabaseOrderAndActualMasterPrerequisite()
+    {
+        var source = Read(
+            "tests", "NuanSystem.Application.Tests", "Features", "Sync",
+            "BusinessPartnerBidirectionalSqlIntegrationTests.cs");
+        var tenantFoundation = source.IndexOf("InitializeTenantsThroughBusinessPartnerFoundationAsync", StringComparison.Ordinal);
+        var master = source.IndexOf("InitializeMasterPrerequisitesAndGovernanceAsync", StringComparison.Ordinal);
+        var tenantOperations = source.IndexOf("ApplyBusinessPartnerOperationsToTenantsAsync", StringComparison.Ordinal);
+
+        tenantFoundation.Should().BeGreaterThan(-1);
+        master.Should().BeGreaterThan(tenantFoundation);
+        tenantOperations.Should().BeGreaterThan(master);
+        source.Should().Contain("InitializeCurrentTenantThroughBusinessPartnerFoundationAsync")
+            .And.Contain("227_master_definitions_inventory_sales_channels_navigation.sql")
+            .And.ContainAll(
+                "008_master_role_access.sql",
+                "010_master_security_roles.sql",
+                "013_master_grid_column_settings.sql",
+                "022_master_accounting_chart_of_accounts_security.sql",
+                "179_master_security_form_operation_applicability.sql",
+                "CREATE TABLE dbo.SecurityFormOperations")
+            .And.Contain("ExecutePrefixedMasterPrerequisiteScriptAsync")
+            .And.NotContain("GetField(\n                \"TenantSchemaSql\"");
+    }
+
+    [Fact]
+    public void PrefixedMasterTransformation_RemovesOnlyExactAllowlistedUseAndDatabaseGuards()
+    {
+        var fixtureType = typeof(NuanSystem.Application.Tests.Features.Sync.BusinessPartnerBidirectionalSqlIntegrationTests)
+            .GetNestedType("BusinessPartnerSqlFixture", System.Reflection.BindingFlags.NonPublic);
+        var transformMethod = fixtureType?.GetMethod(
+            "TransformPrefixedMasterPrerequisite",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+        transformMethod.Should().NotBeNull("the prefixed Master fixture needs one closed exact transformation seam");
+
+        var script080 = Read("database", "sql", "080_sync_entity_definitions.sql");
+        var script227 = Read("database", "sql", "227_master_definitions_inventory_sales_channels_navigation.sql");
+        var transformed080 = (string)transformMethod!.Invoke(
+            null,
+            ["080_sync_entity_definitions.sql", script080])!;
+        var transformed227 = (string)transformMethod.Invoke(
+            null,
+            ["227_master_definitions_inventory_sales_channels_navigation.sql", script227])!;
+
+        transformed080.Should().NotContain("IF DB_NAME() <> N'NuanSystem_Master'")
+            .And.Contain("THROW 51101")
+            .And.Contain("CREATE OR ALTER PROCEDURE dbo.SP_NA_PUT_SYNCPROFILEACTUALIZAR");
+        Count(transformed080, "CREATE OR ALTER PROCEDURE").Should().Be(Count(script080, "CREATE OR ALTER PROCEDURE"));
+        Count(transformed080, "THROW ").Should().Be(Count(script080, "THROW ") - 1);
+
+        transformed227.Should().NotContain("USE [NuanSystem_Master]")
+            .And.NotContain("IF DB_NAME()<>N'NuanSystem_Master'")
+            .And.Contain("MasterSchemaHistory is required")
+            .And.Contain("SecurityFormOperations is required")
+            .And.Contain("BEGIN TRANSACTION")
+            .And.Contain("20260817.227");
+        Count(transformed227, "THROW ").Should().Be(Count(script227, "THROW ") - 1);
+
+        var nonAllowlisted = () => transformMethod.Invoke(
+            null,
+            ["229_master_business_partner_bidirectional_governance.sql", "SELECT 1;"]);
+        nonAllowlisted.Should().Throw<System.Reflection.TargetInvocationException>()
+            .Where(exception => exception.InnerException is ArgumentOutOfRangeException);
+
+        var alteredGuard = () => transformMethod.Invoke(
+            null,
+            ["080_sync_entity_definitions.sql", script080.Replace("THROW 51100", "THROW 59999", StringComparison.Ordinal)]);
+        alteredGuard.Should().Throw<System.Reflection.TargetInvocationException>()
+            .Where(exception => exception.InnerException is InvalidOperationException);
+    }
+
+    [Fact]
+    public void SqlIntegrationHarness_TracksForbiddenDatabaseSurfacesAndBothRolledBackEventIds()
+    {
+        var source = Read(
+            "tests", "NuanSystem.Application.Tests", "Features", "Sync",
+            "BusinessPartnerBidirectionalSqlIntegrationTests.cs");
+
+        source.Should().ContainAll(
+            "CaptureForbiddenSurfaceCountsAsync",
+            "SapSyncOutbox",
+            "ItemWarehouses",
+            "PriceLists",
+            "PurchaseOrderHeaders",
+            "PurchaseOrderLines",
+            "PurchaseOrderRelatedDocuments",
+            "Documents",
+            "DocumentLines",
+            "WHERE EventId=@OutboxEventId",
+            "FROM dbo.LocalOutbox");
+    }
+
+    [Fact]
     public void MasterPolicy_IsDisabledByDefaultCentralOnlyAuditedAndSecretFree()
     {
         var sql = Read("database", "sql", "229_master_business_partner_bidirectional_governance.sql");
@@ -819,6 +950,9 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
 
     private static string Read(params string[] parts) =>
         File.ReadAllText(Path.Combine([Root(), .. parts]));
+
+    private static int Count(string value, string fragment) =>
+        Regex.Matches(value, Regex.Escape(fragment), RegexOptions.CultureInvariant).Count;
 
     private static string Procedure(string name)
     {

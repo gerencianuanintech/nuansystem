@@ -215,14 +215,84 @@ public sealed class BusinessPartnerBidirectionalFlowTests
     {
         var flow = BusinessPartnerBidirectionalFlowHarness.Enabled();
         var before = flow.ForbiddenSurfaceFingerprint();
+        var dependencyGraph = ExpandProductionDependencyGraph(flow.ProductionFlowComponentTypes);
+        var forbiddenDependencies = dependencyGraph
+            .Select(type => new { Type = type, Reason = ForbiddenProductionDependency(type) })
+            .Where(item => item.Reason != null)
+            .ToArray();
 
         var globalId = await flow.CreateCustomerInBranchA();
         await flow.DrainUntilIdle();
 
         flow.Central.Single(globalId).SapCardCode.Should().NotBeNullOrWhiteSpace();
+        flow.ProductionFlowComponentTypes.Should().NotBeEmpty();
+        forbiddenDependencies.Should().BeEmpty(
+            "the exercised central/branch production graph must not depend on SAP or commercial document flows");
         flow.ForbiddenSurfaceFingerprint().Should().Be(before);
-        flow.SapSyncOutboxWrites.Should().Be(0);
-        flow.StockCostPriceOrDocumentWrites.Should().Be(0);
+        flow.LocalEvents.Select(item => item.EntityName)
+            .Concat(flow.MasterEvents.Select(item => item.EntityName))
+            .Should().OnlyContain(entityName => AllowedBusinessPartnerEventNames.Contains(entityName));
+    }
+
+    private static readonly HashSet<string> AllowedBusinessPartnerEventNames =
+    [
+        SyncMasterBranchEntityCodes.BusinessPartnerProposal,
+        SyncMasterBranchEntityCodes.BusinessPartner,
+        SyncMasterBranchEntityCodes.BusinessPartnerProposalResult
+    ];
+
+    private static IReadOnlyCollection<Type> ExpandProductionDependencyGraph(IEnumerable<Type> roots)
+    {
+        var discovered = new HashSet<Type>();
+        var pending = new Queue<Type>(roots);
+        while (pending.TryDequeue(out var candidate))
+        {
+            var type = candidate.IsByRef ? candidate.GetElementType()! : candidate;
+            if (type.IsArray)
+                pending.Enqueue(type.GetElementType()!);
+            foreach (var argument in type.IsGenericType ? type.GetGenericArguments() : [])
+                pending.Enqueue(argument);
+            if (!discovered.Add(type)
+                || !(type.Namespace?.StartsWith("NuanSystem.", StringComparison.Ordinal) ?? false))
+            {
+                continue;
+            }
+
+            foreach (var constructor in type.GetConstructors(
+                         System.Reflection.BindingFlags.Instance
+                         | System.Reflection.BindingFlags.Public
+                         | System.Reflection.BindingFlags.NonPublic))
+            {
+                foreach (var parameter in constructor.GetParameters())
+                    pending.Enqueue(parameter.ParameterType);
+            }
+        }
+
+        return discovered;
+    }
+
+    private static string? ForbiddenProductionDependency(Type type)
+    {
+        var fullName = type.FullName ?? type.Name;
+        var assemblyName = type.Assembly.GetName().Name ?? string.Empty;
+        if (assemblyName is "NuanSystem.SapIntegration" or "NuanSystem.SyncWorker"
+            || fullName.Contains(".Abstractions.SapSync.", StringComparison.Ordinal)
+            || fullName.Contains(".Features.SapSync.", StringComparison.Ordinal)
+            || fullName.Contains("SapSyncOutbox", StringComparison.Ordinal))
+        {
+            return "SAP";
+        }
+
+        if (fullName.Contains(".Features.Purchasing.", StringComparison.Ordinal)
+            || fullName.Contains(".Features.Documents.", StringComparison.Ordinal)
+            || fullName.Contains(".Features.Pricing.", StringComparison.Ordinal)
+            || new[] { "Stock", "Cost", "Price", "PurchaseOrder", "GoodsReceipt", "SalesQuote", "CommercialDocument" }
+                .Any(token => type.Name.Contains(token, StringComparison.Ordinal)))
+        {
+            return "commercial";
+        }
+
+        return null;
     }
 
     private static BusinessPartnerDto ToDto(
@@ -292,12 +362,11 @@ public sealed class BusinessPartnerBidirectionalFlowTests
         private readonly MutableCompanyContext companyContext;
         private readonly InMemoryLocalOutboxRepository localOutbox;
         private readonly InMemorySyncOutboxRepository masterOutbox;
+        private readonly BusinessPartnerLocalOutboxWriter localOutboxWriter;
         private readonly InMemoryProposalApplyRepository proposalRepository;
         private readonly InMemoryBusinessPartnerSyncApplyRepository branchRepository;
         private readonly SyncEventApplierDispatcher dispatcher;
         private readonly MasterBranchSyncWorkerProcessor processor;
-        private readonly List<string> sapSyncOutbox = [];
-        private readonly List<string> stockCostPriceOrDocumentWrites = [];
         private int nextGlobalId;
         private int nextProposalEvent;
 
@@ -314,14 +383,17 @@ public sealed class BusinessPartnerBidirectionalFlowTests
             localOutbox = new InMemoryLocalOutboxRepository(clock);
             masterOutbox = new InMemorySyncOutboxRepository(clock);
             var payloadFactory = new SyncEventPayloadFactory();
+            localOutboxWriter = new BusinessPartnerLocalOutboxWriter(
+                companyContext,
+                payloadFactory,
+                localOutbox);
             var routingRepository = new InMemoryRoutingRepository(
                 () => CentralAvailable,
                 profilesEnabled: enabled,
                 centralCompanyId: Central.CompanyId,
                 branchCompanyIds: [BranchA.CompanyId, BranchB.CompanyId]);
-            var routingService = new SyncRoutingService(
-                routingRepository,
-                new SyncDistributionPolicyEvaluator());
+            var distributionPolicyEvaluator = new SyncDistributionPolicyEvaluator();
+            var routingService = new SyncRoutingService(routingRepository, distributionPolicyEvaluator);
             var promotionService = new LocalSyncOutboxPromotionService(routingService, masterOutbox);
             var options = new MasterBranchSyncWorkerOptions
             {
@@ -360,13 +432,16 @@ public sealed class BusinessPartnerBidirectionalFlowTests
                     [BranchA.CompanyId] = BranchA,
                     [BranchB.CompanyId] = BranchB
                 });
+            var proposalApplier = new BusinessPartnerProposalSyncEventApplier(proposalRepository, resolver);
+            var canonicalApplier = new BusinessPartnerSyncEventApplier(branchRepository, resolver);
+            var resultApplier = new BusinessPartnerProposalResultSyncEventApplier(branchRepository, resolver);
             dispatcher = new SyncEventApplierDispatcher(
                 optionsMonitor,
                 new ISyncEntityEventApplier[]
                 {
-                    new BusinessPartnerProposalSyncEventApplier(proposalRepository, resolver),
-                    new BusinessPartnerSyncEventApplier(branchRepository, resolver),
-                    new BusinessPartnerProposalResultSyncEventApplier(branchRepository, resolver)
+                    proposalApplier,
+                    canonicalApplier,
+                    resultApplier
                 });
             var relay = new LocalSyncOutboxRelay(
                 optionsMonitor,
@@ -380,6 +455,24 @@ public sealed class BusinessPartnerBidirectionalFlowTests
                 dispatcher,
                 relay,
                 NullLogger<MasterBranchSyncWorkerProcessor>.Instance);
+            ProductionFlowComponentTypes =
+            [
+                localOutboxWriter.GetType(),
+                payloadFactory.GetType(),
+                distributionPolicyEvaluator.GetType(),
+                routingService.GetType(),
+                promotionService.GetType(),
+                proposalApplier.GetType(),
+                canonicalApplier.GetType(),
+                resultApplier.GetType(),
+                dispatcher.GetType(),
+                relay.GetType(),
+                processor.GetType(),
+                typeof(BusinessPartnerSnapshotFactory),
+                typeof(BusinessPartnerIdentityPolicy),
+                typeof(BusinessPartnerSapCardCodePolicy),
+                typeof(BusinessPartnerProposalReconciliationPolicy)
+            ];
         }
 
         public bool CentralAvailable { get; set; } = true;
@@ -388,10 +481,9 @@ public sealed class BusinessPartnerBidirectionalFlowTests
         public LogicalTenantState BranchB { get; }
         public IReadOnlyCollection<LocalSyncOutboxDto> LocalEvents => localOutbox.Events;
         public IReadOnlyCollection<SyncOutboxDto> MasterEvents => masterOutbox.Events;
+        public IReadOnlyCollection<Type> ProductionFlowComponentTypes { get; }
         private List<ConflictObservation> ConflictsInternal { get; } = [];
         public IReadOnlyCollection<ConflictObservation> Conflicts => ConflictsInternal;
-        public int SapSyncOutboxWrites => sapSyncOutbox.Count;
-        public int StockCostPriceOrDocumentWrites => stockCostPriceOrDocumentWrites.Count;
 
         public static BusinessPartnerBidirectionalFlowHarness Enabled() => new(true);
         public static BusinessPartnerBidirectionalFlowHarness Disabled() => new(false);
@@ -473,7 +565,12 @@ public sealed class BusinessPartnerBidirectionalFlowTests
             + $"#C:{Central.Fingerprint()}#A:{BranchA.Fingerprint()}#B:{BranchB.Fingerprint()}";
 
         public string ForbiddenSurfaceFingerprint() =>
-            $"sap={string.Join('|', sapSyncOutbox)};commercial={string.Join('|', stockCostPriceOrDocumentWrites)}";
+            string.Join("|", LocalEvents
+                .Select(item => $"L:{item.EntityName}:{item.EventId:D}")
+                .Concat(MasterEvents.Select(item => $"M:{item.EntityName}:{item.EventId:D}"))
+                .Where(item => !AllowedBusinessPartnerEventNames.Any(
+                    allowed => item.Contains($":{allowed}:", StringComparison.Ordinal)))
+                .OrderBy(item => item, StringComparer.Ordinal));
 
         private async Task<Guid> CreateInBranchAAsync(
             string partnerType,
@@ -511,11 +608,7 @@ public sealed class BusinessPartnerBidirectionalFlowTests
             SyncOperation operation)
         {
             companyContext.SetCurrentCompany(Company(companyId, "BRANCH-A", isMaster: false, parentCompanyId: 10));
-            var writer = new BusinessPartnerLocalOutboxWriter(
-                companyContext,
-                new SyncEventPayloadFactory(),
-                localOutbox);
-            var generatedEventId = await writer.EnqueueAsync(
+            var generatedEventId = await localOutboxWriter.EnqueueAsync(
                 new BusinessPartnerOutboxWriteRequest(current, @base, operation, 7, "branch-user", null),
                 Substitute.For<IDbConnection>(),
                 Substitute.For<IDbTransaction>());

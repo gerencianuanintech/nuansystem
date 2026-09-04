@@ -32,7 +32,10 @@ public sealed class BusinessPartnerBidirectionalSqlIntegrationTests
         {
             (await fixture.CountHistoryAsync(tenant, "20260903.228")).Should().Be(1);
             (await fixture.CountHistoryAsync(tenant, "20260903.230")).Should().Be(1);
+            var forbiddenSurfaceCountsBefore = await fixture.CaptureForbiddenSurfaceCountsAsync(tenant);
             await fixture.VerifyRoleUniquenessVersionInboxOutboxAndRollbackAsync(tenant);
+            var forbiddenSurfaceCountsAfter = await fixture.CaptureForbiddenSurfaceCountsAsync(tenant);
+            forbiddenSurfaceCountsAfter.Should().Equal(forbiddenSurfaceCountsBefore);
         }
     }
 
@@ -66,6 +69,25 @@ public sealed class BusinessPartnerBidirectionalSqlIntegrationTests
         private static readonly Regex GoBatch = new(
             @"^\s*GO\s*$",
             RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        private const string Master080DatabaseGuard = """
+IF DB_NAME() <> N'NuanSystem_Master'
+BEGIN
+    THROW 51100, 'Este script debe ejecutarse en NuanSystem_Master.', 1;
+END;
+""";
+        private const string Master227DatabaseGuard =
+            "IF DB_NAME()<>N'NuanSystem_Master' THROW 51227, 'Migration 227 must run only in NuanSystem_Master.', 1;";
+        private static readonly IReadOnlyList<string> ForbiddenSurfaceTableNames =
+        [
+            "SapSyncOutbox",
+            "ItemWarehouses",
+            "PriceLists",
+            "PurchaseOrderHeaders",
+            "PurchaseOrderLines",
+            "PurchaseOrderRelatedDocuments",
+            "Documents",
+            "DocumentLines"
+        ];
 
         private readonly SqlConnectionStringBuilder admin;
         private readonly Guid runId;
@@ -132,11 +154,17 @@ public sealed class BusinessPartnerBidirectionalSqlIntegrationTests
 
         public async Task RerunMigrationsAsync()
         {
-            await RerunMasterMigrationWithReadOnlyBindingAsync();
             foreach (var tenant in TenantDatabaseNames)
             {
                 await using var connection = await OpenDatabaseAsync(tenant);
                 await ExecuteScriptAsync(connection, "228_tenant_business_partner_bidirectional_foundation.sql");
+            }
+
+            await RerunMasterMigrationWithReadOnlyBindingAsync();
+
+            foreach (var tenant in TenantDatabaseNames)
+            {
+                await using var connection = await OpenDatabaseAsync(tenant);
                 await ExecuteScriptAsync(connection, "230_tenant_business_partner_bidirectional_operations.sql");
             }
         }
@@ -188,6 +216,30 @@ public sealed class BusinessPartnerBidirectionalSqlIntegrationTests
             return checked((int)Convert.ToInt64(await command.ExecuteScalarAsync()));
         }
 
+        public async Task<IReadOnlyList<ForbiddenSurfaceCount>> CaptureForbiddenSurfaceCountsAsync(
+            string tenantDatabaseName)
+        {
+            ValidateRegisteredDatabase(tenantDatabaseName);
+            var counts = new List<ForbiddenSurfaceCount>();
+            await using var connection = await OpenDatabaseAsync(tenantDatabaseName);
+            foreach (var tableName in ForbiddenSurfaceTableNames)
+            {
+                await using var exists = connection.CreateCommand();
+                exists.CommandText = "SELECT CASE WHEN OBJECT_ID(N'dbo.'+@TableName,N'U') IS NULL THEN 0 ELSE 1 END;";
+                exists.Parameters.Add("@TableName", SqlDbType.NVarChar, 128).Value = tableName;
+                if (Convert.ToInt32(await exists.ExecuteScalarAsync()) == 0)
+                    continue;
+
+                await using var count = connection.CreateCommand();
+                count.CommandText = $"SELECT COUNT_BIG(1) FROM dbo.{QuoteObjectName(tableName)};";
+                counts.Add(new ForbiddenSurfaceCount(
+                    tableName,
+                    Convert.ToInt64(await count.ExecuteScalarAsync())));
+            }
+
+            return counts;
+        }
+
         public async Task VerifyRoleUniquenessVersionInboxOutboxAndRollbackAsync(string tenantDatabaseName)
         {
             ValidateRegisteredDatabase(tenantDatabaseName);
@@ -195,6 +247,7 @@ public sealed class BusinessPartnerBidirectionalSqlIntegrationTests
             await VerifyRoleUniquenessAndVersionAsync(connection);
             await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
             var eventId = Guid.NewGuid();
+            var outboxEventId = Guid.NewGuid();
             var globalId = Guid.NewGuid();
 
             await using (var schema = connection.CreateCommand())
@@ -259,7 +312,7 @@ EXEC dbo.SP_NA_POST_BUSINESSPARTNER_LOCALOUTBOX_ENSURE
     @OutboxId=@OutboxId OUTPUT,@EnvelopeResult=@EnvelopeResult OUTPUT;
 SELECT CASE WHEN @OutboxId IS NOT NULL AND @EnvelopeResult=1 THEN 1 ELSE 0 END;
 """;
-                outbox.Parameters.Add("@EventId", SqlDbType.UniqueIdentifier).Value = Guid.NewGuid();
+                outbox.Parameters.Add("@EventId", SqlDbType.UniqueIdentifier).Value = outboxEventId;
                 outbox.Parameters.Add("@GlobalId", SqlDbType.UniqueIdentifier).Value = globalId;
                 Convert.ToInt32(await outbox.ExecuteScalarAsync()).Should().Be(1);
             }
@@ -270,6 +323,11 @@ SELECT CASE WHEN @OutboxId IS NOT NULL AND @EnvelopeResult=1 THEN 1 ELSE 0 END;
             rolledBack.CommandText = "SELECT COUNT_BIG(1) FROM dbo.SyncInbox WHERE EventId=@EventId;";
             rolledBack.Parameters.Add("@EventId", SqlDbType.UniqueIdentifier).Value = eventId;
             Convert.ToInt64(await rolledBack.ExecuteScalarAsync()).Should().Be(0);
+
+            await using var rolledBackOutbox = connection.CreateCommand();
+            rolledBackOutbox.CommandText = "SELECT COUNT_BIG(1) FROM dbo.LocalOutbox WHERE EventId=@OutboxEventId;";
+            rolledBackOutbox.Parameters.Add("@OutboxEventId", SqlDbType.UniqueIdentifier).Value = outboxEventId;
+            Convert.ToInt64(await rolledBackOutbox.ExecuteScalarAsync()).Should().Be(0);
         }
 
         private static async Task VerifyRoleUniquenessAndVersionAsync(SqlConnection connection)
@@ -447,15 +505,16 @@ SELECT @Result;
                 await CreateMarkerAsync(name);
             }
 
-            await InitializeMasterAsync();
-            foreach (var tenant in TenantDatabaseNames)
-                await InitializeTenantAsync(tenant);
+            await InitializeTenantsThroughBusinessPartnerFoundationAsync();
+            await InitializeMasterPrerequisitesAndGovernanceAsync();
+            await ApplyBusinessPartnerOperationsToTenantsAsync();
             await ConfigureCompaniesAsync();
         }
 
-        private async Task InitializeMasterAsync()
+        private async Task InitializeMasterPrerequisitesAndGovernanceAsync()
         {
             await using var connection = await OpenDatabaseAsync(MasterDatabaseName);
+            await BindMasterSessionContextAsync(connection);
             var method = typeof(SqlServerMasterDatabaseInitializer).GetMethod(
                 "CreateSchemaObjectsAsync",
                 BindingFlags.NonPublic | BindingFlags.Static)
@@ -465,42 +524,54 @@ SELECT @Result;
             await task;
 
             foreach (var prerequisite in new[]
+                      {
+                          "064_master_sync_outbox_inbox.sql",
+                          "069_sync_master_branch_configuration.sql"
+                      })
+            {
+                await ExecuteScriptAsync(connection, prerequisite);
+            }
+
+            await ExecutePrefixedMasterPrerequisiteScriptAsync(
+                connection,
+                "080_sync_entity_definitions.sql");
+            foreach (var prerequisite in new[]
                      {
-                         "064_master_sync_outbox_inbox.sql",
-                         "069_sync_master_branch_configuration.sql",
-                         "080_sync_entity_definitions.sql",
                          "092_sync_routing_by_target_branch.sql",
                          "093_sync_distribution_policies.sql",
                          "094_master_company_branch_hierarchy.sql"
                      })
             {
-                await ExecuteScriptAsync(
-                    connection,
-                    prerequisite,
-                    skipExactMasterGuard: prerequisite.StartsWith("080_", StringComparison.Ordinal));
+                await ExecuteScriptAsync(connection, prerequisite);
             }
 
-            await BindMasterSessionContextAsync(connection);
+            await PrepareActual227PrerequisitesAsync(connection);
+            await ExecutePrefixedMasterPrerequisiteScriptAsync(
+                connection,
+                "227_master_definitions_inventory_sales_channels_navigation.sql");
             await ExecuteScriptAsync(connection, "229_master_business_partner_bidirectional_governance.sql");
         }
 
-        private async Task InitializeTenantAsync(string databaseName)
+        private async Task InitializeTenantsThroughBusinessPartnerFoundationAsync()
         {
-            var schemaField = typeof(SqlServerTenantDatabaseInitializer).GetField(
-                "TenantSchemaSql",
-                BindingFlags.NonPublic | BindingFlags.Static)
-                ?? throw new MissingFieldException(nameof(SqlServerTenantDatabaseInitializer), "TenantSchemaSql");
-            var tenantSchema = schemaField.GetRawConstantValue() as string
-                ?? throw new InvalidOperationException("Tenant schema bootstrap is unavailable.");
-            await using (var bootstrapConnection = await OpenDatabaseAsync(databaseName))
+            foreach (var databaseName in TenantDatabaseNames)
             {
-                await using var bootstrap = bootstrapConnection.CreateCommand();
-                bootstrap.CommandText = tenantSchema;
-                bootstrap.CommandTimeout = 120;
-                await bootstrap.ExecuteNonQueryAsync();
-                await ExecuteScriptAsync(bootstrapConnection, "024_tenant_business_partners.sql");
+                var initializer = CreateTenantInitializer(databaseName);
+                await initializer.InitializeCurrentTenantThroughBusinessPartnerFoundationAsync();
             }
+        }
 
+        private async Task ApplyBusinessPartnerOperationsToTenantsAsync()
+        {
+            foreach (var databaseName in TenantDatabaseNames)
+            {
+                await using var connection = await OpenDatabaseAsync(databaseName);
+                await ExecuteScriptAsync(connection, "230_tenant_business_partner_bidirectional_operations.sql");
+            }
+        }
+
+        private SqlServerTenantDatabaseInitializer CreateTenantInitializer(string databaseName)
+        {
             var context = new FixtureCompanyContext();
             context.SetCurrentCompany(new CompanyConnectionInfo(
                 1,
@@ -509,10 +580,9 @@ SELECT @Result;
                 DatabaseEngine.SqlServer,
                 BuildDatabaseConnectionString(databaseName),
                 SapIntegrationMode.None));
-            var initializer = new SqlServerTenantDatabaseInitializer(
+            return new SqlServerTenantDatabaseInitializer(
                 context,
                 new FixtureTenantConnectionFactory(BuildDatabaseConnectionString(databaseName)));
-            await initializer.InitializeCurrentTenantAsync();
         }
 
         private async Task ConfigureCompaniesAsync()
@@ -543,6 +613,104 @@ VALUES
 
         private async Task BindMasterSessionContextAsync(SqlConnection connection)
             => await SetMasterSessionContextAsync(connection, MasterDatabaseName);
+
+        private async Task ExecutePrefixedMasterPrerequisiteScriptAsync(
+            SqlConnection connection,
+            string fileName)
+        {
+            await VerifyBoundRegisteredMasterAsync(connection);
+            var script = await File.ReadAllTextAsync(Path.Combine(Root(), "database", "sql", fileName));
+            await ExecuteScriptTextAsync(
+                connection,
+                fileName,
+                TransformPrefixedMasterPrerequisite(fileName, script));
+        }
+
+        private async Task VerifyBoundRegisteredMasterAsync(SqlConnection connection)
+        {
+            ValidateRegisteredDatabase(MasterDatabaseName);
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+SELECT DB_NAME(),CONVERT(nvarchar(128),SESSION_CONTEXT(N'NUANSYSTEM_INTEGRATION_TEST_MASTER_DATABASE'));
+""";
+            await using var reader = await command.ExecuteReaderAsync();
+            if (!await reader.ReadAsync()
+                || !string.Equals(reader.GetString(0), MasterDatabaseName, StringComparison.Ordinal)
+                || reader.IsDBNull(1)
+                || !string.Equals(reader.GetString(1), MasterDatabaseName, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "Prefixed Master prerequisite transformation requires the exact registered database and same-session binding.");
+            }
+        }
+
+        private async Task PrepareActual227PrerequisitesAsync(SqlConnection connection)
+        {
+            foreach (var fileName in new[]
+                     {
+                         "006_master_security_menus.sql",
+                         "007_master_security_forms.sql",
+                         "008_master_role_access.sql",
+                         "010_master_security_roles.sql",
+                         "013_master_grid_column_settings.sql",
+                         "022_master_accounting_chart_of_accounts_security.sql",
+                         "045_master_general_inventory_auxiliary_security.sql"
+                     })
+            {
+                await ExecuteScriptAsync(connection, fileName);
+            }
+
+            await ExecuteSingleExactBatchAsync(
+                connection,
+                "179_master_security_form_operation_applicability.sql",
+                "CREATE TABLE dbo.SecurityFormOperations");
+
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+IF NOT EXISTS(SELECT 1 FROM dbo.SecurityMenus WHERE Code=N'MENU.DEFINITIONS.INVENTORY' AND IsDeleted=0)
+    INSERT dbo.SecurityMenus(Code,Name,Description,MenuType,DisplayOrder,IsVisible,IsActive,CreatedByUserName,CreatedAt)
+    VALUES(N'MENU.DEFINITIONS.INVENTORY',N'Inventario',N'Prerequisito aislado del piloto SQL',1,1,1,1,N'integration-test',SYSUTCDATETIME());
+""";
+            await command.ExecuteNonQueryAsync();
+        }
+
+        private static async Task ExecuteSingleExactBatchAsync(
+            SqlConnection connection,
+            string fileName,
+            string requiredMarker)
+        {
+            var script = await File.ReadAllTextAsync(Path.Combine(Root(), "database", "sql", fileName));
+            var batches = GoBatch.Split(script)
+                .Where(batch => batch.Contains(requiredMarker, StringComparison.Ordinal))
+                .ToArray();
+            if (batches.Length != 1)
+                throw new InvalidOperationException($"Expected exactly one prerequisite batch in {fileName}.");
+            await ExecuteScriptTextAsync(connection, fileName, batches[0]);
+        }
+
+        private static string TransformPrefixedMasterPrerequisite(string fileName, string script)
+        {
+            var normalized = script.Replace("\r\n", "\n", StringComparison.Ordinal);
+            return fileName switch
+            {
+                "080_sync_entity_definitions.sql" => RemoveExactlyOnce(normalized, Master080DatabaseGuard),
+                "227_master_definitions_inventory_sales_channels_navigation.sql" => RemoveExactlyOnce(
+                    RemoveExactlyOnce(normalized, "USE [NuanSystem_Master];"),
+                    Master227DatabaseGuard),
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(fileName),
+                    fileName,
+                    "Only Master prerequisites 080 and 227 may be transformed for the prefixed fixture.")
+            };
+        }
+
+        private static string RemoveExactlyOnce(string value, string exactFragment)
+        {
+            var first = value.IndexOf(exactFragment, StringComparison.Ordinal);
+            if (first < 0 || value.IndexOf(exactFragment, first + exactFragment.Length, StringComparison.Ordinal) >= 0)
+                throw new InvalidOperationException("The allowlisted Master prerequisite statement did not match exactly once.");
+            return value.Remove(first, exactFragment.Length);
+        }
 
         private static async Task SetMasterSessionContextAsync(
             SqlConnection connection,
@@ -649,18 +817,31 @@ WHERE RunId=@RunId AND DatabaseName=@DatabaseName;
             return commandBuilder.QuoteIdentifier(databaseName);
         }
 
+        private static string QuoteObjectName(string tableName)
+        {
+            if (!ForbiddenSurfaceTableNames.Contains(tableName, StringComparer.Ordinal))
+                throw new InvalidOperationException("Table is outside the forbidden-surface count allowlist.");
+            using var commandBuilder = new SqlCommandBuilder();
+            return commandBuilder.QuoteIdentifier(tableName);
+        }
+
         private static async Task ExecuteScriptAsync(
             SqlConnection connection,
-            string fileName,
-            bool skipExactMasterGuard = false)
+            string fileName)
         {
             var script = await File.ReadAllTextAsync(Path.Combine(Root(), "database", "sql", fileName));
+            await ExecuteScriptTextAsync(connection, fileName, script);
+        }
+
+        private static async Task ExecuteScriptTextAsync(
+            SqlConnection connection,
+            string fileName,
+            string script)
+        {
             foreach (var batch in GoBatch.Split(script).Where(value => !string.IsNullOrWhiteSpace(value)))
             {
                 if (Regex.IsMatch(batch, @"\bUSE\s+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
                     throw new InvalidOperationException($"Fixture refuses script batch with USE: {fileName}.");
-                if (skipExactMasterGuard && batch.Contains("IF DB_NAME() <> N'NuanSystem_Master'", StringComparison.Ordinal))
-                    continue;
                 await using var command = connection.CreateCommand();
                 command.CommandText = batch;
                 command.CommandTimeout = 120;
@@ -675,6 +856,8 @@ WHERE RunId=@RunId AND DatabaseName=@DatabaseName;
                 directory = directory.Parent;
             return directory?.FullName ?? throw new DirectoryNotFoundException("Repository root not found.");
         }
+
+        public sealed record ForbiddenSurfaceCount(string TableName, long RowCount);
     }
 
     private sealed class FixtureCompanyContext : ICompanyContext
