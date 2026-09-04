@@ -232,6 +232,65 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
     }
 
     [Fact]
+    public void ConflictResolver_ReceivesResolvedTenantIdentificationTypeInsteadOfReadingLocalIdFromWireSnapshot()
+    {
+        var procedure = Procedure("SP_NA_POST_BUSINESSPARTNER_SYNCCONFLICT_RESOLVER");
+
+        procedure.Should().Contain("@IdentificationTypeId int")
+            .And.Contain("@IdentificationTypeId=@IdentificationTypeId")
+            .And.NotContain("JSON_VALUE(@ResolvedSnapshotJson,'$.identificationTypeId')");
+    }
+
+    [Fact]
+    public void ConflictResolver_ClosesOutboundEntityAndTargetAgainstPersistedOrigin()
+    {
+        var procedure = Procedure("SP_NA_POST_BUSINESSPARTNER_SYNCCONFLICT_RESOLVER");
+
+        procedure.Should().ContainAll(
+                "@OutboundEntityName COLLATE Latin1_General_100_BIN2<>N'BusinessPartner'",
+                "@Resolution='AcceptBranch'",
+                "@TargetCompanyId IS NOT NULL",
+                "@OutboundEntityName COLLATE Latin1_General_100_BIN2<>N'BusinessPartnerProposalResult'",
+                "@TargetCompanyId<>@OriginCompanyId",
+                "THROW 52030, 'Conflict outbound route is invalid.'")
+            .And.NotContain("COALESCE(@TargetCompanyId,@OriginCompanyId)");
+    }
+
+    [Fact]
+    public void ConflictResolver_PreservesCallerOwnedTransactionWithNamedSavepoint()
+    {
+        var procedure = Procedure("SP_NA_POST_BUSINESSPARTNER_SYNCCONFLICT_RESOLVER");
+
+        procedure.Should().Contain("DECLARE @StartedTransaction bit = 0")
+            .And.Contain("IF @@TRANCOUNT = 0")
+            .And.Contain("SAVE TRANSACTION BpConflictResolveSavepoint")
+            .And.Contain("IF @StartedTransaction = 1 COMMIT TRANSACTION")
+            .And.Contain("ROLLBACK TRANSACTION BpConflictResolveSavepoint")
+            .And.NotContain("IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;");
+    }
+
+    [Fact]
+    public void ConflictList_ReturnsSnapshotsForSingleCallSafeDifferenceProjection()
+    {
+        var procedure = Procedure("SP_NA_GET_BUSINESSPARTNER_SYNCCONFLICTS_LISTAR");
+
+        procedure.Should().ContainAll(
+            "conflict.BaseSnapshotJson AS BaseSnapshotJson",
+            "conflict.ProposedSnapshotJson AS ProposedSnapshotJson",
+            "conflict.CanonicalSnapshotJson AS CanonicalSnapshotJson",
+            "conflict.ConflictFieldsJson AS ConflictFieldsJson");
+    }
+
+    [Fact]
+    public void ConflictDetail_LocksTheConflictForRepositoryPreflight()
+    {
+        var procedure = Procedure("SP_NA_GET_BUSINESSPARTNER_SYNCCONFLICT_BUSCARPORID");
+
+        procedure.Should().Contain(
+            "FROM dbo.BusinessPartnerSyncConflicts AS conflict WITH (UPDLOCK,HOLDLOCK)");
+    }
+
+    [Fact]
     public void EventEnvelopeGuards_DeadLetterCollisionsAndPreserveIdenticalReplays()
     {
         var inboxGuard = Procedure("SP_NA_POST_BUSINESSPARTNER_SYNCINBOX_ENSURE");
@@ -269,12 +328,15 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
         [
             "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_ACCEPT",
             "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_CONFLICT",
-            "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_REJECT",
-            "SP_NA_POST_BUSINESSPARTNER_SYNCCONFLICT_RESOLVER"
+            "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_REJECT"
         ];
         foreach (var name in outboxProcedures)
             Procedure(name).Should().Contain("EXEC dbo.SP_NA_POST_BUSINESSPARTNER_LOCALOUTBOX_ENSURE")
                 .And.Contain("SELECT 4 AS ResultCode");
+        Procedure("SP_NA_POST_BUSINESSPARTNER_SYNCCONFLICT_RESOLVER")
+            .Should().Contain("IF @OutboxEnvelopeResult=4")
+            .And.Contain("SELECT 5 AS ResultCode")
+            .And.Contain("SELECT 4 AS ResultCode");
     }
 
     [Fact]

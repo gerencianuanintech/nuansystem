@@ -1459,6 +1459,9 @@ BEGIN
            conflict.BaseCanonicalVersion AS BaseCanonicalVersion,
            conflict.CurrentCanonicalVersion AS CurrentCanonicalVersion,
            conflict.PresentedBusinessPartnerRowVersion AS PresentedBusinessPartnerRowVersion,
+           conflict.BaseSnapshotJson AS BaseSnapshotJson,
+           conflict.ProposedSnapshotJson AS ProposedSnapshotJson,
+           conflict.CanonicalSnapshotJson AS CanonicalSnapshotJson,
            conflict.ConflictFieldsJson AS ConflictFieldsJson,conflict.Status AS Status,
            conflict.Resolution AS Resolution,conflict.ResolutionReason AS ResolutionReason,
            conflict.CreatedByUserId AS CreatedByUserId,
@@ -1498,7 +1501,7 @@ BEGIN
            conflict.ResolvedByUserName AS ResolvedByUserName,
            conflict.ResolvedAt AS ResolvedAt,conflict.RowVersion AS RowVersion,
            bp.Code AS Code,bp.Name AS Name
-    FROM dbo.BusinessPartnerSyncConflicts AS conflict
+    FROM dbo.BusinessPartnerSyncConflicts AS conflict WITH (UPDLOCK,HOLDLOCK)
     LEFT JOIN dbo.BusinessPartners AS bp ON bp.Id=conflict.BusinessPartnerId
     WHERE conflict.Id=@Id;
 END;
@@ -1510,6 +1513,7 @@ CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_BUSINESSPARTNER_SYNCCONFLICT_RESOLVER
     @ResolutionReason nvarchar(500),
     @ExpectedRowVersion binary(8),
     @CompanyId int,
+    @IdentificationTypeId int = NULL,
     @ResolvedSnapshotJson nvarchar(max) = NULL,
     @AddressesJson nvarchar(max) = N'[]',
     @ContactsJson nvarchar(max) = N'[]',
@@ -1529,8 +1533,15 @@ BEGIN
         THROW 52030, 'Conflict resolution reason is required.', 1;
     IF @ExpectedRowVersion IS NULL
         THROW 52030, 'Expected conflict row version is required.', 1;
-    BEGIN TRY
+    DECLARE @StartedTransaction bit = 0;
+    IF @@TRANCOUNT = 0
+    BEGIN
+        SET @StartedTransaction = 1;
         BEGIN TRANSACTION;
+    END
+    ELSE
+        SAVE TRANSACTION BpConflictResolveSavepoint;
+    BEGIN TRY
         DECLARE @ProposalEventId uniqueidentifier,@BusinessPartnerId int,@GlobalId uniqueidentifier,
                 @OriginCompanyId int,@CurrentVersion bigint,@Status varchar(20),
                 @ActualRowVersion binary(8),@PresentedBusinessPartnerRowVersion binary(8),
@@ -1546,13 +1557,13 @@ BEGIN
         IF @ProposalEventId IS NULL THROW 52030, 'BusinessPartner sync conflict was not found.', 1;
         IF @Status='Resolved'
         BEGIN
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 2 AS ResultCode,@Id AS ConflictId;
             RETURN;
         END;
         IF @ActualRowVersion<>@ExpectedRowVersion
         BEGIN
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 4 AS ResultCode,@Id AS ConflictId;
             RETURN;
         END;
@@ -1567,13 +1578,20 @@ BEGIN
            OR (@LiveBusinessPartnerId IS NOT NULL AND @PresentedBusinessPartnerRowVersion IS NULL)
            OR (@LiveBusinessPartnerId IS NOT NULL AND @LiveBusinessPartnerRowVersion<>@PresentedBusinessPartnerRowVersion)
         BEGIN
-            COMMIT TRANSACTION;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 4 AS ResultCode,@Id AS ConflictId;
             RETURN;
         END;
         SET @LiveCanonicalVersion=COALESCE(@LiveCanonicalVersion,0);
+        IF (@Resolution='AcceptBranch' AND
+            (@OutboundEntityName COLLATE Latin1_General_100_BIN2<>N'BusinessPartner'
+             OR @TargetCompanyId IS NOT NULL))
+           OR (@Resolution='KeepCentral' AND
+            (@OutboundEntityName COLLATE Latin1_General_100_BIN2<>N'BusinessPartnerProposalResult'
+             OR @TargetCompanyId IS NULL OR @TargetCompanyId<>@OriginCompanyId))
+            THROW 52030, 'Conflict outbound route is invalid.', 1;
         SET @ResolvedTargetCompanyId=CASE WHEN @Resolution='KeepCentral'
-            THEN COALESCE(@TargetCompanyId,@OriginCompanyId) ELSE @TargetCompanyId END;
+            THEN @OriginCompanyId ELSE NULL END;
 
         EXEC dbo.SP_NA_POST_BUSINESSPARTNER_LOCALOUTBOX_ENSURE
             @EventId=@OutboundEventId,@CompanyId=@CompanyId,
@@ -1583,8 +1601,8 @@ BEGIN
             @OutboxId=@OutboxId OUTPUT,@EnvelopeResult=@OutboxEnvelopeResult OUTPUT;
         IF @OutboxEnvelopeResult=4
         BEGIN
-            COMMIT TRANSACTION;
-            SELECT 4 AS ResultCode,@Id AS ConflictId;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
+            SELECT 5 AS ResultCode,@Id AS ConflictId;
             RETURN;
         END;
 
@@ -1600,7 +1618,7 @@ BEGIN
                 @Name=JSON_VALUE(@ResolvedSnapshotJson,'$.name'),
                 @CommercialName=JSON_VALUE(@ResolvedSnapshotJson,'$.commercialName'),
                 @PartnerType=JSON_VALUE(@ResolvedSnapshotJson,'$.partnerType'),
-                @IdentificationTypeId=TRY_CONVERT(int,JSON_VALUE(@ResolvedSnapshotJson,'$.identificationTypeId')),
+                @IdentificationTypeId=@IdentificationTypeId,
                 @IdentificationNumber=JSON_VALUE(@ResolvedSnapshotJson,'$.identificationNumber'),
                 @NormalizedIdentificationNumber=JSON_VALUE(@ResolvedSnapshotJson,'$.normalizedIdentificationNumber'),
                 @Email=JSON_VALUE(@ResolvedSnapshotJson,'$.email'),
@@ -1624,11 +1642,14 @@ BEGIN
             ErrorMessage=NULL,LastErrorMessage=NULL,NextRetryAt=NULL
         WHERE EventId=@ProposalEventId;
 
-        COMMIT TRANSACTION;
+        IF @StartedTransaction = 1 COMMIT TRANSACTION;
         SELECT 1 AS ResultCode,@Id AS ConflictId;
     END TRY
     BEGIN CATCH
-        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        IF @StartedTransaction = 1 AND XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+        ELSE IF XACT_STATE() = 1
+            ROLLBACK TRANSACTION BpConflictResolveSavepoint;
         THROW;
     END CATCH;
 END;

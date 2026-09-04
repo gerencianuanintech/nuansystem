@@ -167,6 +167,8 @@ public static class PermissionCodes
     public const string SyncOutboxRetry = "SYNC.OUTBOX.RETRY";
     public const string SyncOutboxRetryDeadLetter = "SYNC.OUTBOX.RETRY_DEADLETTER";
     public const string SyncOutboxReleaseLock = "SYNC.OUTBOX.RELEASE_LOCK";
+    public const string BusinessPartnerSyncConflictsView = "SYNC.BUSINESS_PARTNER_CONFLICTS.VIEW";
+    public const string BusinessPartnerSyncConflictsResolve = "SYNC.BUSINESS_PARTNER_CONFLICTS.RESOLVE";
     public const string SyncConfigurationView = "SYNC.CONFIGURATION.VIEW";
     public const string SyncConfigurationCreate = "SYNC.CONFIGURATION.CREATE";
     public const string SyncConfigurationEdit = "SYNC.CONFIGURATION.EDIT";
@@ -362,6 +364,8 @@ public static class PermissionCodes
         SyncOutboxRetry,
         SyncOutboxRetryDeadLetter,
         SyncOutboxReleaseLock,
+        BusinessPartnerSyncConflictsView,
+        BusinessPartnerSyncConflictsResolve,
         SyncConfigurationView,
         SyncConfigurationCreate,
         SyncConfigurationEdit,
