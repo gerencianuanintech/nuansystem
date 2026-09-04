@@ -513,6 +513,42 @@ public sealed class BusinessPartnerFrontendContractTests
         request.IsPrimary.Should().Be(isPrimary);
     }
 
+    [Theory]
+    [InlineData("Billing", false)]
+    [InlineData("Billing", true)]
+    [InlineData("Shipping", false)]
+    [InlineData("Shipping", true)]
+    [InlineData("Main", false)]
+    [InlineData("Main", true)]
+    [InlineData("Other", false)]
+    [InlineData("Other", true)]
+    public void CustomerAddressEditResult_PreservesOriginalPrimaryForEveryApiType(
+        string apiType,
+        bool originalIsPrimary)
+    {
+        var partner = new BusinessPartnerItem
+        {
+            Addresses = [new(1, Guid.NewGuid(), 42, null, null, null, apiType, "Original", null, null, null, null, null, null, null, originalIsPrimary, true)]
+        };
+        var original = SupplierBusinessPartnerMapper.ToAddressViewModels(partner).Single();
+        var dialogResult = original.Clone();
+        dialogResult.MainStreet = "Editada";
+        dialogResult.IsPrimary = !originalIsPrimary;
+
+        var result = ComposeCustomerAddressEditResult(original, dialogResult);
+        var request = SupplierBusinessPartnerMapper.ToAddressRequests(
+            [result],
+            CreatePopulated<BusinessPartnerLookups>(populated: false)).Single();
+
+        result.IsPrimary.Should().Be(originalIsPrimary);
+        result.MainStreet.Should().Be("Editada");
+        request.AddressType.Should().Be(apiType);
+        request.IsPrimary.Should().Be(originalIsPrimary);
+        original.MainStreet.Should().Be("Original");
+        original.IsPrimary.Should().Be(originalIsPrimary);
+        dialogResult.IsPrimary.Should().Be(!originalIsPrimary);
+    }
+
     [Fact]
     public void CustomerContactDetailPresentation_MapsPrimaryActiveAndNotesAndClearsSelection()
     {
@@ -802,6 +838,17 @@ public sealed class BusinessPartnerFrontendContractTests
             BindingFlags.Public | BindingFlags.Static);
         method.Should().NotBeNull("the selected Customer contact detail must map every displayed value");
         return method!.Invoke(null, [contact])!;
+    }
+
+    private static SupplierAddressViewModel ComposeCustomerAddressEditResult(
+        SupplierAddressViewModel original,
+        SupplierAddressViewModel dialogResult)
+    {
+        var method = typeof(SupplierBusinessPartnerMapper).GetMethod(
+            "ComposeCustomerAddressEditResult",
+            BindingFlags.Public | BindingFlags.Static);
+        method.Should().NotBeNull("Customer address editing needs a production seam that preserves explicit primary selection");
+        return (SupplierAddressViewModel)method!.Invoke(null, [original, dialogResult])!;
     }
 
     private static T CreatePopulated<T>(

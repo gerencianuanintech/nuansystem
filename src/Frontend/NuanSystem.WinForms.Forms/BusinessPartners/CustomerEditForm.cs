@@ -386,8 +386,8 @@ public sealed partial class CustomerEditForm : BaseEditForm
             return;
         }
 
-        var address = dialog.Address;
-        ApplyPrimaryAddress(address);
+        var address = dialog.Address.Clone();
+        address.IsPrimary = addresses.Count == 0;
         addresses.Add(address);
         RefreshAddressData();
     }
@@ -407,8 +407,9 @@ public sealed partial class CustomerEditForm : BaseEditForm
             return;
         }
 
-        var edited = dialog.Address;
-        ApplyPrimaryAddress(edited, address.Id);
+        var edited = SupplierBusinessPartnerMapper.ComposeCustomerAddressEditResult(
+            address,
+            dialog.Address);
         address.CopyFrom(edited);
         RefreshAddressData();
     }
@@ -502,20 +503,6 @@ public sealed partial class CustomerEditForm : BaseEditForm
 
     private SupplierContactViewModel? SelectedContact() =>
         grvCustomerContactList.GetFocusedRow() as SupplierContactViewModel;
-
-    private void ApplyPrimaryAddress(SupplierAddressViewModel address, Guid? exceptId = null)
-    {
-        address.IsPrimary = address.IsPrimary || address.IsDefaultBilling || address.IsDefaultDelivery;
-        if (!address.IsPrimary)
-        {
-            return;
-        }
-
-        foreach (var item in addresses.Where(item => !exceptId.HasValue || item.Id != exceptId.Value))
-        {
-            item.IsPrimary = false;
-        }
-    }
 
     private void ApplyPrimaryContact(SupplierContactViewModel contact, Guid? exceptId = null)
     {

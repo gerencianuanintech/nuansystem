@@ -400,6 +400,18 @@ public static class SupplierBusinessPartnerMapper
             contact?.IsActive == true,
             contact?.Notes ?? string.Empty);
 
+    public static SupplierAddressViewModel ComposeCustomerAddressEditResult(
+        SupplierAddressViewModel original,
+        SupplierAddressViewModel dialogResult)
+    {
+        ArgumentNullException.ThrowIfNull(original);
+        ArgumentNullException.ThrowIfNull(dialogResult);
+
+        var result = dialogResult.Clone();
+        result.IsPrimary = original.IsPrimary;
+        return result;
+    }
+
     private static SaveBusinessPartnerRequest ProjectBranchCreate(SaveBusinessPartnerRequest proposed)
     {
         return proposed with
