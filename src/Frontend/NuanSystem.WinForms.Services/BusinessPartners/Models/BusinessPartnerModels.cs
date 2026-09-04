@@ -3,6 +3,7 @@ namespace NuanSystem.WinForms.Services.BusinessPartners.Models;
 public sealed class BusinessPartnerItem
 {
     public int Id { get; set; }
+    public Guid GlobalId { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? CommercialName { get; set; }
@@ -11,6 +12,11 @@ public sealed class BusinessPartnerItem
     public string? IdentificationTypeCode { get; set; }
     public string? IdentificationTypeName { get; set; }
     public string IdentificationNumber { get; set; } = string.Empty;
+    public string NormalizedIdentificationNumber { get; set; } = string.Empty;
+    public long CanonicalVersion { get; set; }
+    public string RowVersion { get; set; } = string.Empty;
+    public string MasterSyncStatus { get; set; } = "Accepted";
+    public string? MasterSyncMessage { get; set; }
     public int? SupplierGroupId { get; set; }
     public int? SupplierClassId { get; set; }
     public int? EconomicActivityId { get; set; }
@@ -123,10 +129,58 @@ public sealed class BusinessPartnerItem
     public BusinessPartnerNotesItem? Notes { get; set; }
     public IReadOnlyCollection<BusinessPartnerSapFieldMappingItem> SapFieldMappings { get; set; } = [];
     public IReadOnlyCollection<BusinessPartnerAttachmentItem> Attachments { get; set; } = [];
+
+    public BusinessPartnerItem CreateCopyDraft()
+    {
+        var copy = (BusinessPartnerItem)MemberwiseClone();
+        copy.Id = 0;
+        copy.GlobalId = Guid.Empty;
+        copy.Code = string.Empty;
+        copy.IdentificationNumber = string.Empty;
+        copy.NormalizedIdentificationNumber = string.Empty;
+        copy.CanonicalVersion = 0;
+        copy.RowVersion = string.Empty;
+        copy.MasterSyncStatus = "Accepted";
+        copy.MasterSyncMessage = null;
+        copy.SapCardCode = null;
+        copy.SapSyncStatus = "Pending";
+        copy.SapLastSyncAt = null;
+        copy.SapLastError = null;
+        copy.SapRetryCount = 0;
+        copy.CreatedAt = default;
+        copy.UpdatedAt = null;
+        copy.Addresses = Addresses.Select(item => item with
+        {
+            Id = 0,
+            GlobalId = Guid.Empty,
+            BusinessPartnerId = 0
+        }).ToArray();
+        copy.Contacts = Contacts.Select(item => item with
+        {
+            Id = 0,
+            GlobalId = Guid.Empty,
+            BusinessPartnerId = 0
+        }).ToArray();
+        copy.BankAccounts = BankAccounts.Select(item => item with
+        {
+            Id = 0,
+            BusinessPartnerId = 0
+        }).ToArray();
+        copy.RetentionSettings = RetentionSettings.Select(item => item with
+        {
+            Id = 0,
+            BusinessPartnerId = 0
+        }).ToArray();
+        copy.Notes = Notes is null ? null : Notes with { BusinessPartnerId = 0 };
+        copy.SapFieldMappings = [];
+        copy.Attachments = [];
+        return copy;
+    }
 }
 
 public sealed record BusinessPartnerAddressItem(
     int Id,
+    Guid GlobalId,
     int BusinessPartnerId,
     int? CountryId,
     int? ProvinceId,
@@ -145,6 +199,7 @@ public sealed record BusinessPartnerAddressItem(
 
 public sealed record BusinessPartnerContactItem(
     int Id,
+    Guid GlobalId,
     int BusinessPartnerId,
     int? ContactTypeId,
     int? ContactChannelId,
@@ -226,6 +281,7 @@ public sealed record BusinessPartnerAttachmentItem(
     bool IsActive);
 
 public sealed record SaveBusinessPartnerAddressRequest(
+    Guid? GlobalId,
     int? CountryId,
     int? ProvinceId,
     int? CityId,
@@ -242,6 +298,7 @@ public sealed record SaveBusinessPartnerAddressRequest(
     bool IsActive);
 
 public sealed record SaveBusinessPartnerContactRequest(
+    Guid? GlobalId,
     int? ContactTypeId,
     int? ContactChannelId,
     string Name,
@@ -311,7 +368,6 @@ public sealed record SaveBusinessPartnerAttachmentRequest(
     bool IsActive);
 
 public sealed record SaveBusinessPartnerRequest(
-    string Code,
     string Name,
     string? CommercialName,
     string PartnerType,
@@ -415,7 +471,108 @@ public sealed record SaveBusinessPartnerRequest(
     int AverageDeliveryDays = 0,
     int LeadTimeDays = 0,
     int DeliveryToleranceDays = 0,
-    bool RequiresPurchaseOrder = false);
+    bool RequiresPurchaseOrder = false,
+    string? ExpectedRowVersion = null);
+
+public sealed record BusinessPartnerEditPolicyDto(
+    bool IsSyncedBranch,
+    bool CanEditManagedFields,
+    IReadOnlyCollection<string> EditableFields);
+
+public sealed record BusinessPartnerEditPolicy(
+    bool IsSyncedBranch,
+    bool CanEditManagedFields,
+    IReadOnlyCollection<string> EditableFields)
+{
+    public bool Allows(string fieldName) =>
+        CanEditManagedFields || EditableFields.Contains(fieldName, StringComparer.OrdinalIgnoreCase);
+
+    public static BusinessPartnerEditPolicy From(BusinessPartnerEditPolicyDto? policy) => policy is null
+        ? new(false, true, [])
+        : new(policy.IsSyncedBranch, policy.CanEditManagedFields, policy.EditableFields);
+}
+
+public sealed record BusinessPartnerSyncPresentation(
+    string Caption,
+    string Message,
+    bool CanSave,
+    string BadgeKind);
+
+public static class BusinessPartnerSyncPresentationPolicy
+{
+    public static BusinessPartnerSyncPresentation Describe(string? status, string? message)
+    {
+        var detail = message ?? string.Empty;
+        return status?.Trim().ToUpperInvariant() switch
+        {
+            "PENDINGMASTER" => new("Pendiente en central", detail, false, "Warning"),
+            "REJECTED" => new("Rechazado", detail, true, "Error"),
+            "CONFLICT" => new("Conflicto", detail, false, "Error"),
+            "LEGACYREVIEW" => new("Revisión requerida", detail, false, "Warning"),
+            _ => new("Aceptado", detail, true, "Success")
+        };
+    }
+}
+
+public sealed record BusinessPartnerFormEditState(
+    bool IsCreating,
+    string CodeText,
+    string CodeHint,
+    bool IdentificationEditable,
+    bool CanSave,
+    bool NameEditable,
+    bool CommercialNameEditable,
+    bool PhoneEditable,
+    bool EmailEditable,
+    bool AddressesEditable,
+    bool ContactsEditable,
+    bool ManagedFieldsEditable,
+    BusinessPartnerSyncPresentation SyncPresentation);
+
+public static class BusinessPartnerFormEditStatePolicy
+{
+    public static BusinessPartnerFormEditState Evaluate(
+        BusinessPartnerItem? partner,
+        BusinessPartnerEditPolicy policy)
+    {
+        ArgumentNullException.ThrowIfNull(policy);
+        var isCreating = partner is null || partner.Id <= 0;
+        var presentation = BusinessPartnerSyncPresentationPolicy.Describe(
+            partner?.MasterSyncStatus,
+            partner?.MasterSyncMessage);
+        var managedFieldsEditable = !policy.IsSyncedBranch || policy.CanEditManagedFields;
+
+        return new BusinessPartnerFormEditState(
+            isCreating,
+            isCreating ? string.Empty : ResolveDisplayCode(partner!),
+            isCreating ? "Se asigna al guardar" : string.Empty,
+            isCreating,
+            presentation.CanSave,
+            Allows(policy, "Name"),
+            Allows(policy, "CommercialName"),
+            Allows(policy, "Phone"),
+            Allows(policy, "Email"),
+            Allows(policy, "Addresses"),
+            Allows(policy, "Contacts"),
+            managedFieldsEditable,
+            presentation);
+    }
+
+    private static bool Allows(BusinessPartnerEditPolicy policy, string field) =>
+        !policy.IsSyncedBranch || policy.Allows(field);
+
+    private static string ResolveDisplayCode(BusinessPartnerItem partner)
+    {
+        if (!string.IsNullOrWhiteSpace(partner.Code))
+        {
+            return partner.Code;
+        }
+
+        return partner.GlobalId == Guid.Empty
+            ? string.Empty
+            : $"BP-{partner.GlobalId:N}".ToUpperInvariant();
+    }
+}
 
 public sealed record BusinessPartnerLookupOption(int Id, string Code, string Name, bool IsActive = true);
 public sealed record BusinessPartnerGeoLookupOption(int Id, string Code, string Name, bool IsActive = true, int? CountryId = null, int? ProvinceId = null, string? PostalCode = null);
@@ -468,4 +625,5 @@ public sealed record BusinessPartnerLookups(
     IReadOnlyCollection<BusinessPartnerLookupOption> Departments,
     IReadOnlyCollection<BusinessPartnerLookupOption> BusinessLines,
     IReadOnlyCollection<BusinessPartnerLookupOption> CostCenters,
-    IReadOnlyCollection<BusinessPartnerLookupOption> Projects);
+    IReadOnlyCollection<BusinessPartnerLookupOption> Projects,
+    BusinessPartnerEditPolicyDto? EditPolicy = null);

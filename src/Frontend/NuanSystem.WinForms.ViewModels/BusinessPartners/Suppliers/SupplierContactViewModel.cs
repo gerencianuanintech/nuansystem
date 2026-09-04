@@ -11,6 +11,7 @@ public sealed class SupplierContactViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid? GlobalId { get; set; }
     public string Treatment { get; set; } = string.Empty;
     public int? ContactTypeId { get; set; }
     public string ContactTypeCode { get; set; } = string.Empty;
@@ -47,6 +48,7 @@ public sealed class SupplierContactViewModel : INotifyPropertyChanged
         return new SupplierContactViewModel
         {
             Id = Id,
+            GlobalId = GlobalId,
             Treatment = Treatment,
             ContactTypeId = ContactTypeId,
             ContactTypeCode = ContactTypeCode,
@@ -71,6 +73,7 @@ public sealed class SupplierContactViewModel : INotifyPropertyChanged
 
     public void CopyFrom(SupplierContactViewModel source)
     {
+        GlobalId = source.GlobalId;
         Treatment = source.Treatment;
         ContactTypeId = source.ContactTypeId;
         ContactTypeCode = source.ContactTypeCode;

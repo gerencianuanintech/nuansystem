@@ -65,12 +65,50 @@ public sealed class SyncProfileEditViewModel(ISyncConfigurationClient client)
 
     public DateTimeOffset? LastSuccessfulScheduledExecutionAt { get; private set; }
 
+    public BusinessPartnerSapCodePolicy? BusinessPartnerSapCodePolicy { get; private set; }
+
+    public bool RequiresBusinessPartnerSapCodePolicy =>
+        State.Entities.Any(entity => string.Equals(
+            entity.EntityCode,
+            "BusinessPartnerProposal",
+            StringComparison.OrdinalIgnoreCase));
+
     public async Task InitializeAsync(int? id, CancellationToken cancellationToken = default)
     {
         Catalog = await client.GetCatalogAsync(cancellationToken);
         State = id.HasValue
             ? SyncProfileEditorState.FromDetail(await client.GetProfileAsync(id.Value, cancellationToken), Catalog)
             : SyncProfileEditorState.CreateNew(Catalog);
+    }
+
+    public async Task<BusinessPartnerSapCodePolicy?> LoadBusinessPartnerSapCodePolicyAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (!RequiresBusinessPartnerSapCodePolicy)
+        {
+            BusinessPartnerSapCodePolicy = null;
+            return null;
+        }
+
+        BusinessPartnerSapCodePolicy =
+            await client.GetBusinessPartnerSapCodePolicyAsync(cancellationToken);
+        return BusinessPartnerSapCodePolicy;
+    }
+
+    public async Task<BusinessPartnerSapCodePolicy> SaveBusinessPartnerSapCodePolicyAsync(
+        SaveBusinessPartnerSapCodePolicyRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (!RequiresBusinessPartnerSapCodePolicy)
+        {
+            throw new InvalidOperationException(
+                "La política de códigos SAP sólo corresponde a perfiles con propuestas de socios.");
+        }
+
+        BusinessPartnerSapCodePolicy =
+            await client.UpdateBusinessPartnerSapCodePolicyAsync(request, cancellationToken);
+        return BusinessPartnerSapCodePolicy;
     }
 
     public async Task RefreshCatalogAsync(CancellationToken cancellationToken = default)
@@ -144,6 +182,35 @@ public sealed class SyncProfileEditViewModel(ISyncConfigurationClient client)
         ProfileSummary = null;
         LastSuccessfulScheduledExecutionAt = null;
         return saved;
+    }
+}
+
+public sealed record SyncProfileDirectionOption(string Code, string Label)
+{
+    public override string ToString() => Label;
+}
+
+public static class SyncProfileDirectionPolicy
+{
+    public static IReadOnlyCollection<SyncProfileDirectionOption> Build(
+        IReadOnlyCollection<LookupItem> directions)
+    {
+        ArgumentNullException.ThrowIfNull(directions);
+        var available = directions
+            .Select(direction => direction.Code)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var result = new List<SyncProfileDirectionOption>(2);
+        if (available.Contains("MasterToBranch"))
+        {
+            result.Add(new("MasterToBranch", "Central origen → sucursales destino"));
+        }
+
+        if (available.Contains("BranchToMaster"))
+        {
+            result.Add(new("BranchToMaster", "Sucursales origen → central destino"));
+        }
+
+        return result;
     }
 }
 

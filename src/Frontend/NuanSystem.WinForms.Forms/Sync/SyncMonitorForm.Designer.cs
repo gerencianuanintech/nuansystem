@@ -3,6 +3,7 @@ using NuanSystem.WinForms.Controls.Buttons;
 using NuanSystem.WinForms.Controls.Grids;
 using NuanSystem.WinForms.Controls.Kpi;
 using NuanSystem.WinForms.Forms.Common;
+using DevExpress.XtraTab;
 
 namespace NuanSystem.WinForms.Forms.Sync;
 
@@ -33,9 +34,16 @@ partial class SyncMonitorForm
     private NuanActionButton btnApplyFilters;
     private NuanActionButton btnClearFilters;
     private PanelControl pnlContent;
+    private XtraTabControl tabMonitor;
+    private XtraTabPage pageOutbox;
+    private XtraTabPage pageBusinessPartnerConflicts;
     private PanelControl pnlGridHeader;
     private LabelControl lblOutboxTitle;
     private NuanDataGridControl outboxGrid;
+    private NuanDataGridControl conflictGrid;
+    private PanelControl pnlConflictActions;
+    private NuanActionButton btnAcceptBranch;
+    private NuanActionButton btnKeepCentral;
 
     private void InitializeComponent()
     {
@@ -62,9 +70,16 @@ partial class SyncMonitorForm
         btnApplyFilters = new NuanActionButton();
         btnClearFilters = new NuanActionButton();
         pnlContent = new PanelControl();
+        tabMonitor = new XtraTabControl();
+        pageOutbox = new XtraTabPage();
+        pageBusinessPartnerConflicts = new XtraTabPage();
         outboxGrid = new NuanDataGridControl();
         pnlGridHeader = new PanelControl();
         lblOutboxTitle = new LabelControl();
+        conflictGrid = new NuanDataGridControl();
+        pnlConflictActions = new PanelControl();
+        btnAcceptBranch = new NuanActionButton();
+        btnKeepCentral = new NuanActionButton();
         ((System.ComponentModel.ISupportInitialize)pnlHeader).BeginInit();
         pnlHeader.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)pnlFilters).BeginInit();
@@ -80,12 +95,18 @@ partial class SyncMonitorForm
         ((System.ComponentModel.ISupportInitialize)chkDeadLetterOnly.Properties).BeginInit();
         ((System.ComponentModel.ISupportInitialize)pnlContent).BeginInit();
         pnlContent.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)tabMonitor).BeginInit();
+        tabMonitor.SuspendLayout();
+        pageOutbox.SuspendLayout();
+        pageBusinessPartnerConflicts.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)pnlGridHeader).BeginInit();
         pnlGridHeader.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)pnlConflictActions).BeginInit();
+        pnlConflictActions.SuspendLayout();
         SuspendLayout();
-        // 
+        //
         // pnlHeader
-        // 
+        //
         pnlHeader.Appearance.BackColor = Color.White;
         pnlHeader.Appearance.Options.UseBackColor = true;
         pnlHeader.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
@@ -100,57 +121,57 @@ partial class SyncMonitorForm
         pnlHeader.Name = "pnlHeader";
         pnlHeader.Size = new Size(1236, 143);
         pnlHeader.TabIndex = 0;
-        // 
+        //
         // cardIgnored
-        // 
+        //
         cardIgnored.Location = new Point(1022, 13);
         cardIgnored.MinimumSize = new Size(160, 88);
         cardIgnored.Name = "cardIgnored";
         cardIgnored.Size = new Size(196, 118);
         cardIgnored.TabIndex = 5;
-        // 
+        //
         // cardDeadLetter
-        // 
+        //
         cardDeadLetter.Location = new Point(820, 13);
         cardDeadLetter.MinimumSize = new Size(160, 88);
         cardDeadLetter.Name = "cardDeadLetter";
         cardDeadLetter.Size = new Size(196, 118);
         cardDeadLetter.TabIndex = 4;
-        // 
+        //
         // cardError
-        // 
+        //
         cardError.Location = new Point(618, 13);
         cardError.MinimumSize = new Size(160, 88);
         cardError.Name = "cardError";
         cardError.Size = new Size(196, 118);
         cardError.TabIndex = 3;
-        // 
+        //
         // cardApplied
-        // 
+        //
         cardApplied.Location = new Point(416, 13);
         cardApplied.MinimumSize = new Size(160, 88);
         cardApplied.Name = "cardApplied";
         cardApplied.Size = new Size(196, 118);
         cardApplied.TabIndex = 2;
-        // 
+        //
         // cardInProcess
-        // 
+        //
         cardInProcess.Location = new Point(214, 13);
         cardInProcess.MinimumSize = new Size(160, 88);
         cardInProcess.Name = "cardInProcess";
         cardInProcess.Size = new Size(196, 118);
         cardInProcess.TabIndex = 1;
-        // 
+        //
         // cardPending
-        // 
+        //
         cardPending.Location = new Point(12, 13);
         cardPending.MinimumSize = new Size(160, 88);
         cardPending.Name = "cardPending";
         cardPending.Size = new Size(196, 118);
         cardPending.TabIndex = 0;
-        // 
+        //
         // pnlFilters
-        // 
+        //
         pnlFilters.Appearance.BackColor = Color.White;
         pnlFilters.Appearance.Options.UseBackColor = true;
         pnlFilters.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
@@ -174,9 +195,9 @@ partial class SyncMonitorForm
         pnlFilters.Padding = new Padding(16, 10, 16, 10);
         pnlFilters.Size = new Size(1236, 71);
         pnlFilters.TabIndex = 2;
-        // 
+        //
         // lblStatus
-        // 
+        //
         lblStatus.Appearance.Font = new Font("Segoe UI", 9F);
         lblStatus.Appearance.ForeColor = Color.FromArgb(31, 41, 55);
         lblStatus.Appearance.Options.UseFont = true;
@@ -186,9 +207,9 @@ partial class SyncMonitorForm
         lblStatus.Size = new Size(35, 15);
         lblStatus.TabIndex = 0;
         lblStatus.Text = "Estado";
-        // 
+        //
         // cmbStatus
-        // 
+        //
         cmbStatus.EditValue = "(Todos)";
         cmbStatus.Location = new Point(18, 35);
         cmbStatus.Name = "cmbStatus";
@@ -197,9 +218,9 @@ partial class SyncMonitorForm
         cmbStatus.Properties.Items.AddRange(new object[] { "(Todos)", "Pending", "InProcess", "Applied", "Error", "DeadLetter", "Ignored" });
         cmbStatus.Size = new Size(146, 22);
         cmbStatus.TabIndex = 1;
-        // 
+        //
         // lblEntity
-        // 
+        //
         lblEntity.Appearance.Font = new Font("Segoe UI", 9F);
         lblEntity.Appearance.ForeColor = Color.FromArgb(31, 41, 55);
         lblEntity.Appearance.Options.UseFont = true;
@@ -209,9 +230,9 @@ partial class SyncMonitorForm
         lblEntity.Size = new Size(40, 15);
         lblEntity.TabIndex = 2;
         lblEntity.Text = "Entidad";
-        // 
+        //
         // txtEntity
-        // 
+        //
         txtEntity.EditValue = "(Todas)";
         txtEntity.Location = new Point(188, 35);
         txtEntity.Name = "txtEntity";
@@ -219,9 +240,9 @@ partial class SyncMonitorForm
         txtEntity.Properties.Appearance.Options.UseFont = true;
         txtEntity.Size = new Size(160, 22);
         txtEntity.TabIndex = 3;
-        // 
+        //
         // lblBranch
-        // 
+        //
         lblBranch.Appearance.Font = new Font("Segoe UI", 9F);
         lblBranch.Appearance.ForeColor = Color.FromArgb(31, 41, 55);
         lblBranch.Appearance.Options.UseFont = true;
@@ -231,9 +252,9 @@ partial class SyncMonitorForm
         lblBranch.Size = new Size(44, 15);
         lblBranch.TabIndex = 4;
         lblBranch.Text = "Sucursal";
-        // 
+        //
         // txtBranch
-        // 
+        //
         txtBranch.EditValue = "(Todas)";
         txtBranch.Location = new Point(372, 35);
         txtBranch.Name = "txtBranch";
@@ -242,9 +263,9 @@ partial class SyncMonitorForm
         txtBranch.Properties.ReadOnly = true;
         txtBranch.Size = new Size(166, 22);
         txtBranch.TabIndex = 5;
-        // 
+        //
         // lblFrom
-        // 
+        //
         lblFrom.Appearance.Font = new Font("Segoe UI", 9F);
         lblFrom.Appearance.ForeColor = Color.FromArgb(31, 41, 55);
         lblFrom.Appearance.Options.UseFont = true;
@@ -254,9 +275,9 @@ partial class SyncMonitorForm
         lblFrom.Size = new Size(32, 15);
         lblFrom.TabIndex = 6;
         lblFrom.Text = "Desde";
-        // 
+        //
         // dateFrom
-        // 
+        //
         dateFrom.EditValue = new DateTime(2026, 7, 9, 0, 0, 0, 0);
         dateFrom.Location = new Point(562, 35);
         dateFrom.Name = "dateFrom";
@@ -266,9 +287,9 @@ partial class SyncMonitorForm
         dateFrom.Properties.CalendarTimeProperties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
         dateFrom.Size = new Size(124, 22);
         dateFrom.TabIndex = 7;
-        // 
+        //
         // lblTo
-        // 
+        //
         lblTo.Appearance.Font = new Font("Segoe UI", 9F);
         lblTo.Appearance.ForeColor = Color.FromArgb(31, 41, 55);
         lblTo.Appearance.Options.UseFont = true;
@@ -278,9 +299,9 @@ partial class SyncMonitorForm
         lblTo.Size = new Size(30, 15);
         lblTo.TabIndex = 8;
         lblTo.Text = "Hasta";
-        // 
+        //
         // dateTo
-        // 
+        //
         dateTo.EditValue = new DateTime(2026, 7, 9, 0, 0, 0, 0);
         dateTo.Location = new Point(710, 35);
         dateTo.Name = "dateTo";
@@ -290,9 +311,9 @@ partial class SyncMonitorForm
         dateTo.Properties.CalendarTimeProperties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
         dateTo.Size = new Size(124, 22);
         dateTo.TabIndex = 9;
-        // 
+        //
         // chkHasErrors
-        // 
+        //
         chkHasErrors.Location = new Point(858, 20);
         chkHasErrors.Name = "chkHasErrors";
         chkHasErrors.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -300,9 +321,9 @@ partial class SyncMonitorForm
         chkHasErrors.Properties.Caption = "Solo con errores";
         chkHasErrors.Size = new Size(136, 20);
         chkHasErrors.TabIndex = 10;
-        // 
+        //
         // chkDeadLetterOnly
-        // 
+        //
         chkDeadLetterOnly.Location = new Point(858, 46);
         chkDeadLetterOnly.Name = "chkDeadLetterOnly";
         chkDeadLetterOnly.Properties.Appearance.Font = new Font("Segoe UI", 9F);
@@ -310,9 +331,9 @@ partial class SyncMonitorForm
         chkDeadLetterOnly.Properties.Caption = "Solo DeadLetter";
         chkDeadLetterOnly.Size = new Size(136, 20);
         chkDeadLetterOnly.TabIndex = 11;
-        // 
+        //
         // btnApplyFilters
-        // 
+        //
         btnApplyFilters.Appearance.BackColor = Color.FromArgb(0, 184, 148);
         btnApplyFilters.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
         btnApplyFilters.Appearance.ForeColor = Color.White;
@@ -340,9 +361,9 @@ partial class SyncMonitorForm
         btnApplyFilters.Size = new Size(100, 36);
         btnApplyFilters.TabIndex = 12;
         btnApplyFilters.Text = "Buscar";
-        // 
+        //
         // btnClearFilters
-        // 
+        //
         btnClearFilters.Appearance.BackColor = Color.FromArgb(99, 110, 114);
         btnClearFilters.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
         btnClearFilters.Appearance.ForeColor = Color.White;
@@ -370,46 +391,73 @@ partial class SyncMonitorForm
         btnClearFilters.Size = new Size(100, 36);
         btnClearFilters.TabIndex = 13;
         btnClearFilters.Text = "Limpiar";
-        // 
+        //
         // pnlContent
-        // 
+        //
         pnlContent.Appearance.BackColor = Color.White;
         pnlContent.Appearance.Options.UseBackColor = true;
         pnlContent.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
-        pnlContent.Controls.Add(outboxGrid);
-        pnlContent.Controls.Add(pnlGridHeader);
+        pnlContent.Controls.Add(tabMonitor);
         pnlContent.Dock = DockStyle.Fill;
         pnlContent.Location = new Point(0, 214);
         pnlContent.Name = "pnlContent";
         pnlContent.Padding = new Padding(24, 0, 24, 18);
         pnlContent.Size = new Size(1236, 706);
         pnlContent.TabIndex = 3;
-        // 
+        //
+        // tabMonitor
+        //
+        tabMonitor.Dock = DockStyle.Fill;
+        tabMonitor.Location = new Point(24, 0);
+        tabMonitor.Name = "tabMonitor";
+        tabMonitor.SelectedTabPage = pageOutbox;
+        tabMonitor.Size = new Size(1188, 688);
+        tabMonitor.TabIndex = 0;
+        tabMonitor.TabPages.AddRange(new XtraTabPage[] { pageOutbox, pageBusinessPartnerConflicts });
+        //
+        // pageOutbox
+        //
+        pageOutbox.Controls.Add(outboxGrid);
+        pageOutbox.Controls.Add(pnlGridHeader);
+        pageOutbox.Name = "pageOutbox";
+        pageOutbox.Padding = new Padding(0, 8, 0, 0);
+        pageOutbox.Size = new Size(1186, 657);
+        pageOutbox.Text = "Eventos SyncOutbox";
+        //
+        // pageBusinessPartnerConflicts
+        //
+        pageBusinessPartnerConflicts.Controls.Add(conflictGrid);
+        pageBusinessPartnerConflicts.Controls.Add(pnlConflictActions);
+        pageBusinessPartnerConflicts.Name = "pageBusinessPartnerConflicts";
+        pageBusinessPartnerConflicts.Padding = new Padding(0, 8, 0, 0);
+        pageBusinessPartnerConflicts.Size = new Size(1186, 657);
+        pageBusinessPartnerConflicts.Text = "Conflictos de socios de negocio";
+        //
         // outboxGrid
-        // 
+        //
         outboxGrid.Dock = DockStyle.Fill;
         outboxGrid.FormKey = "sync-monitor";
         outboxGrid.GridName = "OutboxGrid";
-        outboxGrid.Location = new Point(24, 38);
+        outboxGrid.Location = new Point(0, 46);
         outboxGrid.Name = "outboxGrid";
         outboxGrid.PageSize = 50;
-        outboxGrid.Size = new Size(1188, 650);
+        outboxGrid.Size = new Size(1186, 611);
         outboxGrid.TabIndex = 1;
-        // 
+        //
         // pnlGridHeader
-        // 
+        //
         pnlGridHeader.Appearance.BackColor = Color.White;
         pnlGridHeader.Appearance.Options.UseBackColor = true;
         pnlGridHeader.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
         pnlGridHeader.Controls.Add(lblOutboxTitle);
         pnlGridHeader.Dock = DockStyle.Top;
-        pnlGridHeader.Location = new Point(24, 0);
+        pnlGridHeader.Location = new Point(0, 8);
         pnlGridHeader.Name = "pnlGridHeader";
-        pnlGridHeader.Size = new Size(1188, 38);
+        pnlGridHeader.Size = new Size(1186, 38);
         pnlGridHeader.TabIndex = 0;
-        // 
+        //
         // lblOutboxTitle
-        // 
+        //
         lblOutboxTitle.Appearance.Font = new Font("Segoe UI Semibold", 11F, FontStyle.Bold);
         lblOutboxTitle.Appearance.ForeColor = Color.FromArgb(23, 32, 51);
         lblOutboxTitle.Appearance.Options.UseFont = true;
@@ -419,9 +467,65 @@ partial class SyncMonitorForm
         lblOutboxTitle.Size = new Size(140, 20);
         lblOutboxTitle.TabIndex = 0;
         lblOutboxTitle.Text = "Eventos SyncOutbox";
-        // 
+        //
+        // conflictGrid
+        //
+        conflictGrid.Dock = DockStyle.Fill;
+        conflictGrid.FormKey = "sync-monitor";
+        conflictGrid.GridName = "BusinessPartnerConflictGrid";
+        conflictGrid.Location = new Point(0, 60);
+        conflictGrid.Name = "conflictGrid";
+        conflictGrid.PageSize = 50;
+        conflictGrid.Size = new Size(1186, 597);
+        conflictGrid.TabIndex = 1;
+        //
+        // pnlConflictActions
+        //
+        pnlConflictActions.Appearance.BackColor = Color.White;
+        pnlConflictActions.Appearance.Options.UseBackColor = true;
+        pnlConflictActions.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+        pnlConflictActions.Controls.Add(btnAcceptBranch);
+        pnlConflictActions.Controls.Add(btnKeepCentral);
+        pnlConflictActions.Dock = DockStyle.Top;
+        pnlConflictActions.Location = new Point(0, 8);
+        pnlConflictActions.Name = "pnlConflictActions";
+        pnlConflictActions.Size = new Size(1186, 52);
+        pnlConflictActions.TabIndex = 0;
+        //
+        // btnAcceptBranch
+        //
+        btnAcceptBranch.Appearance.BackColor = Color.FromArgb(0, 184, 148);
+        btnAcceptBranch.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        btnAcceptBranch.Appearance.ForeColor = Color.White;
+        btnAcceptBranch.Appearance.Options.UseBackColor = true;
+        btnAcceptBranch.Appearance.Options.UseFont = true;
+        btnAcceptBranch.Appearance.Options.UseForeColor = true;
+        btnAcceptBranch.ButtonKind = NuanActionButtonKind.Save;
+        btnAcceptBranch.ButtonText = "Aceptar sucursal";
+        btnAcceptBranch.Location = new Point(0, 8);
+        btnAcceptBranch.Name = "btnAcceptBranch";
+        btnAcceptBranch.Size = new Size(150, 34);
+        btnAcceptBranch.TabIndex = 0;
+        btnAcceptBranch.Text = "Aceptar sucursal";
+        //
+        // btnKeepCentral
+        //
+        btnKeepCentral.Appearance.BackColor = Color.FromArgb(99, 110, 114);
+        btnKeepCentral.Appearance.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+        btnKeepCentral.Appearance.ForeColor = Color.White;
+        btnKeepCentral.Appearance.Options.UseBackColor = true;
+        btnKeepCentral.Appearance.Options.UseFont = true;
+        btnKeepCentral.Appearance.Options.UseForeColor = true;
+        btnKeepCentral.ButtonKind = NuanActionButtonKind.Neutral;
+        btnKeepCentral.ButtonText = "Mantener central";
+        btnKeepCentral.Location = new Point(158, 8);
+        btnKeepCentral.Name = "btnKeepCentral";
+        btnKeepCentral.Size = new Size(150, 34);
+        btnKeepCentral.TabIndex = 1;
+        btnKeepCentral.Text = "Mantener central";
+        //
         // SyncMonitorForm
-        // 
+        //
         Appearance.BackColor = Color.White;
         Appearance.Options.UseBackColor = true;
         Appearance.Options.UseFont = true;
@@ -452,9 +556,15 @@ partial class SyncMonitorForm
         ((System.ComponentModel.ISupportInitialize)chkDeadLetterOnly.Properties).EndInit();
         ((System.ComponentModel.ISupportInitialize)pnlContent).EndInit();
         pnlContent.ResumeLayout(false);
+        ((System.ComponentModel.ISupportInitialize)tabMonitor).EndInit();
+        tabMonitor.ResumeLayout(false);
+        pageOutbox.ResumeLayout(false);
+        pageBusinessPartnerConflicts.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)pnlGridHeader).EndInit();
         pnlGridHeader.ResumeLayout(false);
         pnlGridHeader.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)pnlConflictActions).EndInit();
+        pnlConflictActions.ResumeLayout(false);
         ResumeLayout(false);
     }
 

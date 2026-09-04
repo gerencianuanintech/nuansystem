@@ -238,6 +238,23 @@ public sealed record LookupItem(string Code, string Name)
     public string DisplayName => $"{Code} - {Name}";
 }
 
+public sealed record BusinessPartnerSapCodePolicy(
+    int CompanyId,
+    bool IsEnabled,
+    string PrefixMode,
+    string PassportIdentificationTypeCode,
+    string CustomerNationalExample,
+    string CustomerForeignExample,
+    string SupplierNationalExample,
+    string SupplierForeignExample,
+    string RowVersion);
+
+public sealed record SaveBusinessPartnerSapCodePolicyRequest(
+    bool IsEnabled,
+    string PrefixMode,
+    string PassportIdentificationTypeCode,
+    string? ExpectedRowVersion);
+
 public sealed record SyncEntityCatalogItem
 {
     public string Code { get; init; } = string.Empty;

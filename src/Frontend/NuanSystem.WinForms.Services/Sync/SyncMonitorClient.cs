@@ -61,6 +61,26 @@ public sealed class SyncMonitorClient(INuanApiClient apiClient) : ISyncMonitorCl
             cancellationToken);
     }
 
+    public Task<IReadOnlyCollection<BusinessPartnerSyncConflict>> GetBusinessPartnerConflictsAsync(
+        string status = "Open",
+        CancellationToken cancellationToken = default)
+    {
+        return apiClient.GetAsync<IReadOnlyCollection<BusinessPartnerSyncConflict>>(
+            $"/api/sync/business-partner-conflicts?status={Uri.EscapeDataString(status)}",
+            cancellationToken);
+    }
+
+    public Task<BusinessPartnerSyncConflict> ResolveBusinessPartnerConflictAsync(
+        long id,
+        ResolveBusinessPartnerSyncConflictRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return apiClient.PostAsync<ResolveBusinessPartnerSyncConflictRequest, BusinessPartnerSyncConflict>(
+            $"/api/sync/business-partner-conflicts/{id}/resolve",
+            request,
+            cancellationToken);
+    }
+
     public Task<RetrySyncOutboxBatchResult> RetryBatchAsync(RetrySyncOutboxBatchRequest request,CancellationToken cancellationToken=default)
         => apiClient.PostAsync<RetrySyncOutboxBatchRequest,RetrySyncOutboxBatchResult>("/api/sync/outbox/retry-batch",request,cancellationToken);
 

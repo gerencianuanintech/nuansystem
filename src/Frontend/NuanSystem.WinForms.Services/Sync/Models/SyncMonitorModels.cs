@@ -123,6 +123,54 @@ public sealed record SyncBranchStatusCount(int BranchCompanyId, SyncEventStatus 
     public string BranchDisplay => BranchCompanyId.ToString();
 }
 
+public sealed record BusinessPartnerSyncConflict(
+    long Id,
+    Guid ProposalEventId,
+    int? BusinessPartnerId,
+    Guid BusinessPartnerGlobalId,
+    int OriginCompanyId,
+    string? Code,
+    string? Name,
+    long BaseCanonicalVersion,
+    long CurrentCanonicalVersion,
+    IReadOnlyCollection<BusinessPartnerSyncConflictDifference> Differences,
+    string Status,
+    string? Resolution,
+    string? ResolutionReason,
+    int? CreatedByUserId,
+    string? CreatedByUserName,
+    DateTime CreatedAt,
+    int? ResolvedByUserId,
+    string? ResolvedByUserName,
+    DateTime? ResolvedAt,
+    string RowVersion);
+
+public sealed record BusinessPartnerSyncConflictDifference(
+    string FieldPath,
+    string? BaseValue,
+    string? ProposedValue,
+    string? CentralValue);
+
+public sealed record ResolveBusinessPartnerSyncConflictRequest(
+    long ConflictId,
+    string Resolution,
+    string Reason,
+    string ExpectedRowVersion);
+
+public sealed record BusinessPartnerSyncConflictGridRow(
+    long ConflictId,
+    Guid BusinessPartnerGlobalId,
+    string Partner,
+    int OriginCompanyId,
+    long BaseCanonicalVersion,
+    long CurrentCanonicalVersion,
+    string FieldPath,
+    string? ProposedValue,
+    string? CentralValue,
+    DateTime CreatedAt,
+    string Status,
+    string RowVersion);
+
 public sealed record RetrySyncOutboxRequest(string? Reason = null);
 
 public sealed record RetryDeadLetterRequest(string Reason, bool ResetAttemptCount = true);

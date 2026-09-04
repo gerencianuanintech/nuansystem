@@ -27,6 +27,7 @@ public sealed partial class CustomerEditForm : BaseEditForm
         WireEvents();
         BindLookups();
         LoadPartner();
+        ApplyEditState();
         LoadDemoTables();
     }
 
@@ -36,8 +37,7 @@ public sealed partial class CustomerEditForm : BaseEditForm
 
     protected override bool ValidateForm()
     {
-        return Validator.RequireText(txtCustomerCode, "Codigo es requerido.")
-            & Validator.RequireText(txtCustomerName, "Nombre es requerido.")
+        return Validator.RequireText(txtCustomerName, "Nombre es requerido.")
             & Validator.RequireText(txtIdentificationNumber, "Identificacion es requerida.")
             & Validator.EmailIfPresent(txtEmail, "Correo no tiene un formato valido.")
             & RequireLookup(lueIdentificationType, "Tipo de identificacion es requerido.");
@@ -46,7 +46,6 @@ public sealed partial class CustomerEditForm : BaseEditForm
     protected override void BuildRequest()
     {
         Request = new SaveBusinessPartnerRequest(
-            txtCustomerCode.Text.Trim(),
             txtCustomerName.Text.Trim(),
             NullIfEmpty(txtCustomerCommercialName.Text),
             "Customer",
@@ -130,12 +129,13 @@ public sealed partial class CustomerEditForm : BaseEditForm
             false,
             false,
             false,
-            Array.Empty<SaveBusinessPartnerAddressRequest>(),
-            Array.Empty<SaveBusinessPartnerContactRequest>(),
+            MapAddresses(),
+            MapContacts(),
             Array.Empty<SaveBusinessPartnerBankAccountRequest>(),
             Array.Empty<SaveBusinessPartnerRetentionSettingRequest>(),
             null,
-            Array.Empty<SaveBusinessPartnerSapFieldMappingRequest>());
+            Array.Empty<SaveBusinessPartnerSapFieldMappingRequest>(),
+            ExpectedRowVersion: partner is { Id: > 0 } ? partner.RowVersion : null);
     }
 
     private void WireEvents()
@@ -210,6 +210,110 @@ public sealed partial class CustomerEditForm : BaseEditForm
         lueSapStatus.EditValue = partner.SapSyncStatus;
         lueStatus.EditValue = partner.IsActive ? "Activo" : "Inactivo";
     }
+
+    private void ApplyEditState()
+    {
+        var editPolicy = BusinessPartnerEditPolicy.From(lookups.EditPolicy);
+        var state = BusinessPartnerFormEditStatePolicy.Evaluate(partner, editPolicy);
+
+        txtCustomerCode.Text = state.CodeText;
+        txtCustomerCode.Properties.ReadOnly = true;
+        txtCustomerCode.Properties.NullValuePrompt = state.CodeHint;
+        txtCustomerCode.Properties.ShowNullValuePromptWhenFocused = true;
+        lueIdentificationType.Properties.ReadOnly = !state.IdentificationEditable;
+        txtIdentificationNumber.Properties.ReadOnly = !state.IdentificationEditable;
+        btnSave.Enabled = state.CanSave;
+
+        lblMasterSyncStatus.Text = state.SyncPresentation.Caption;
+        ApplySyncBadge(lblMasterSyncStatus, state.SyncPresentation.BadgeKind);
+        lblMasterSyncMessage.Text = state.SyncPresentation.Message;
+        lblMasterSyncMessage.Visible = !string.IsNullOrWhiteSpace(state.SyncPresentation.Message);
+
+        if (!editPolicy.IsSyncedBranch)
+        {
+            return;
+        }
+
+        SetReadOnly(grpGeneralInfo, true);
+        SetReadOnly(grpClassification, true);
+        foreach (var page in new[] { xtpGeneral, xtpFiscal, xtpCommercial, xtpAccounting, xtpSap })
+        {
+            page.PageEnabled = false;
+        }
+
+        lueIdentificationType.Properties.ReadOnly = !state.IdentificationEditable;
+        txtIdentificationNumber.Properties.ReadOnly = !state.IdentificationEditable;
+        txtCustomerName.Properties.ReadOnly = !state.NameEditable;
+        txtCustomerCommercialName.Properties.ReadOnly = !state.CommercialNameEditable;
+        txtPhone.Properties.ReadOnly = !state.PhoneEditable;
+        txtEmail.Properties.ReadOnly = !state.EmailEditable;
+        xtpAddresses.PageEnabled = state.AddressesEditable;
+        xtpContacts.PageEnabled = state.ContactsEditable;
+    }
+
+    private static void SetReadOnly(Control parent, bool readOnly)
+    {
+        foreach (Control control in parent.Controls)
+        {
+            if (control is BaseEdit editor)
+            {
+                editor.Properties.ReadOnly = readOnly;
+            }
+
+            if (control.HasChildren)
+            {
+                SetReadOnly(control, readOnly);
+            }
+        }
+    }
+
+    private static void ApplySyncBadge(LabelControl label, string badgeKind)
+    {
+        (label.Appearance.BackColor, label.Appearance.ForeColor) = badgeKind switch
+        {
+            "Success" => (Color.FromArgb(220, 252, 231), Color.FromArgb(22, 101, 52)),
+            "Warning" => (Color.FromArgb(254, 243, 199), Color.FromArgb(146, 64, 14)),
+            _ => (Color.FromArgb(254, 226, 226), Color.FromArgb(153, 27, 27))
+        };
+        label.Appearance.Options.UseBackColor = true;
+        label.Appearance.Options.UseForeColor = true;
+    }
+
+    private IReadOnlyCollection<SaveBusinessPartnerAddressRequest> MapAddresses() =>
+        partner?.Addresses.Select(address => new SaveBusinessPartnerAddressRequest(
+            address.GlobalId == Guid.Empty ? null : address.GlobalId,
+            address.CountryId,
+            address.ProvinceId,
+            address.CityId,
+            address.AddressType,
+            address.Line1,
+            address.Line2,
+            address.CountryCode,
+            address.Province,
+            address.City,
+            address.PostalCode,
+            address.Latitude,
+            address.Longitude,
+            address.IsPrimary,
+            address.IsActive)).ToArray() ?? [];
+
+    private IReadOnlyCollection<SaveBusinessPartnerContactRequest> MapContacts() =>
+        partner?.Contacts.Select(contact => new SaveBusinessPartnerContactRequest(
+            contact.GlobalId == Guid.Empty ? null : contact.GlobalId,
+            contact.ContactTypeId,
+            contact.ContactChannelId,
+            contact.Name,
+            contact.Position,
+            contact.Department,
+            contact.Phone,
+            contact.Extension,
+            contact.Mobile,
+            contact.Email,
+            contact.Language,
+            contact.ReceivesNotifications,
+            contact.IsPrimary,
+            contact.IsActive,
+            contact.Notes)).ToArray() ?? [];
 
     private void LoadDemoTables()
     {
@@ -342,7 +446,6 @@ public sealed partial class CustomerEditForm : BaseEditForm
     private static SaveBusinessPartnerRequest EmptyRequest()
     {
         return new SaveBusinessPartnerRequest(
-            Code: string.Empty,
             Name: string.Empty,
             CommercialName: null,
             PartnerType: "Customer",
@@ -431,7 +534,8 @@ public sealed partial class CustomerEditForm : BaseEditForm
             BankAccounts: Array.Empty<SaveBusinessPartnerBankAccountRequest>(),
             RetentionSettings: Array.Empty<SaveBusinessPartnerRetentionSettingRequest>(),
             Notes: null,
-            SapFieldMappings: Array.Empty<SaveBusinessPartnerSapFieldMappingRequest>());
+            SapFieldMappings: Array.Empty<SaveBusinessPartnerSapFieldMappingRequest>(),
+            ExpectedRowVersion: null);
     }
 
     private static BusinessPartnerLookups CreateDesignLookups()

@@ -101,6 +101,7 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
         RefreshBranchesGrid();
         LoadEntitiesFromState();
         RefreshEntitiesGrid();
+        RefreshBusinessPartnerCodePolicyPanel();
         RefreshDistributionGrid();
         LoadScheduleOptions();
         LoadScheduleFromState();
@@ -108,6 +109,25 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
     }
 
     public event Func<SyncProfileEditForm, Task<CompanyLookupItem?>>? CreateBranchCompanyRequested;
+
+    protected override async void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        if (viewModel is null || !viewModel.RequiresBusinessPartnerSapCodePolicy || !CanManageBusinessPartnerSapCodePolicy)
+        {
+            return;
+        }
+
+        await RunWithUiExceptionHandlingAsync(async () =>
+        {
+            if (viewModel.BusinessPartnerSapCodePolicy is null)
+            {
+                await viewModel.LoadBusinessPartnerSapCodePolicyAsync();
+            }
+
+            RefreshBusinessPartnerCodePolicyPanel();
+        });
+    }
 
     protected override void BuildRequest()
     {
@@ -121,6 +141,7 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
         var isValid = true;
         isValid &= Validator.RequireText(txtCode, "El codigo es obligatorio.");
         isValid &= Validator.RequireText(txtName, "El nombre es obligatorio.");
+        isValid &= Validator.RequireCombo(cboDirection, "Seleccione la dirección del perfil.");
         isValid &= Validator.RequireCombo(cboExecutionMode, "Seleccione el modo de ejecucion.");
 
         if (viewModel?.State.CompanyId is null or <= 0)
@@ -175,6 +196,8 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
             return false;
         }
 
+        await SaveBusinessPartnerSapCodePolicyAsync();
+
         if (canValidateProfile)
         {
             var validation = await viewModel.ValidateAsync();
@@ -219,6 +242,15 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Cast<object>()
             .ToArray());
+
+        cboDirection.Properties.Items.Clear();
+        cboDirection.Properties.Items.AddRange(SyncProfileDirectionPolicy.Build(viewModel.Catalog.Directions)
+            .Cast<object>()
+            .ToArray());
+
+        cboSapPrefixMode.Properties.Items.Clear();
+        cboSapPrefixMode.Properties.Items.AddRange(new object[] { "NationalForeign", "RoleOnly" });
+        txtPassportIdentificationTypeCode.Properties.MaxLength = 30;
     }
 
     private void LoadGeneralFromState()
@@ -243,7 +275,9 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
         txtCode.EditValue = state.Code;
         txtName.EditValue = state.Name;
         memDescription.EditValue = state.Description ?? string.Empty;
-        txtDirection.EditValue = state.Direction;
+        cboDirection.EditValue = cboDirection.Properties.Items
+            .OfType<SyncProfileDirectionOption>()
+            .FirstOrDefault(option => string.Equals(option.Code, state.Direction, StringComparison.OrdinalIgnoreCase));
         cboExecutionMode.EditValue = state.ExecutionMode;
         txtConflictStrategy.EditValue = state.ConflictStrategy;
         spnBatchSize.EditValue = state.BatchSize;
@@ -251,6 +285,61 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
         spnRetryDelaySeconds.EditValue = state.RetryDelaySeconds;
         spnTimeoutMinutes.EditValue = state.TimeoutMinutes;
         swIsActive.IsOn = state.IsActive;
+    }
+
+    private void RefreshBusinessPartnerCodePolicyPanel()
+    {
+        if (viewModel is null)
+        {
+            pnlBusinessPartnerCodePolicy.Visible = false;
+            return;
+        }
+
+        pnlBusinessPartnerCodePolicy.Visible =
+            viewModel.RequiresBusinessPartnerSapCodePolicy && CanManageBusinessPartnerSapCodePolicy;
+        if (!pnlBusinessPartnerCodePolicy.Visible || viewModel.BusinessPartnerSapCodePolicy is not { } policy)
+        {
+            return;
+        }
+
+        swSapCodePolicyEnabled.IsOn = policy.IsEnabled;
+        cboSapPrefixMode.EditValue = policy.PrefixMode;
+        txtPassportIdentificationTypeCode.Text = policy.PassportIdentificationTypeCode;
+        lblCustomerNationalExample.Text = $"Cliente nacional: {policy.CustomerNationalExample}";
+        lblCustomerForeignExample.Text = $"Cliente extranjero: {policy.CustomerForeignExample}";
+        lblSupplierNationalExample.Text = $"Proveedor nacional: {policy.SupplierNationalExample}";
+        lblSupplierForeignExample.Text = $"Proveedor extranjero: {policy.SupplierForeignExample}";
+    }
+
+    private async Task RefreshBusinessPartnerCodePolicyAsync()
+    {
+        if (viewModel is null || !viewModel.RequiresBusinessPartnerSapCodePolicy || !CanManageBusinessPartnerSapCodePolicy)
+        {
+            RefreshBusinessPartnerCodePolicyPanel();
+            return;
+        }
+
+        await viewModel.LoadBusinessPartnerSapCodePolicyAsync();
+        RefreshBusinessPartnerCodePolicyPanel();
+    }
+
+    private async Task SaveBusinessPartnerSapCodePolicyAsync()
+    {
+        if (viewModel is null || !viewModel.RequiresBusinessPartnerSapCodePolicy || !CanManageBusinessPartnerSapCodePolicy)
+        {
+            return;
+        }
+
+        await viewModel.SaveBusinessPartnerSapCodePolicyAsync(
+            new SaveBusinessPartnerSapCodePolicyRequest(
+                swSapCodePolicyEnabled.IsOn,
+                Convert.ToString(cboSapPrefixMode.EditValue)?.Trim() ?? string.Empty,
+                txtPassportIdentificationTypeCode.Text.Trim(),
+                string.IsNullOrWhiteSpace(viewModel.BusinessPartnerSapCodePolicy?.RowVersion)
+                    ? null
+                    : viewModel.BusinessPartnerSapCodePolicy.RowVersion));
+
+        RefreshBusinessPartnerCodePolicyPanel();
     }
 
     private void ConfigureGeneralEditability()
@@ -262,7 +351,7 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
 
         txtMasterCompany.Properties.ReadOnly = true;
         txtCode.Properties.ReadOnly = viewModel.State.Id > 0;
-        txtDirection.Properties.ReadOnly = true;
+        cboDirection.Properties.ReadOnly = IsReadOnlyMode;
         txtConflictStrategy.Properties.ReadOnly = true;
     }
 
@@ -277,7 +366,9 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
         state.Code = txtCode.Text.Trim();
         state.Name = txtName.Text.Trim();
         state.Description = string.IsNullOrWhiteSpace(memDescription.Text) ? null : memDescription.Text.Trim();
-        state.Direction = txtDirection.Text.Trim();
+        state.Direction = cboDirection.SelectedItem is SyncProfileDirectionOption direction
+            ? direction.Code
+            : string.Empty;
         state.ExecutionMode = Convert.ToString(cboExecutionMode.EditValue)?.Trim() ?? string.Empty;
         state.ConflictStrategy = txtConflictStrategy.Text.Trim();
         state.BatchSize = Convert.ToInt32(spnBatchSize.Value);
@@ -934,6 +1025,7 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
             txtCode,
             txtName,
             memDescription,
+            cboDirection,
             cboExecutionMode,
             spnBatchSize,
             spnMaxRetries,
@@ -942,7 +1034,19 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
             swIsActive
         ];
 
+        BaseEdit[] policyEditors =
+        [
+            swSapCodePolicyEnabled,
+            cboSapPrefixMode,
+            txtPassportIdentificationTypeCode
+        ];
+
         foreach (var editor in generalEditors)
+        {
+            editor.EditValueChanged += (_, _) => InvalidateValidationResult();
+        }
+
+        foreach (var editor in policyEditors)
         {
             editor.EditValueChanged += (_, _) => InvalidateValidationResult();
         }
@@ -968,6 +1072,7 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
         btnValidateProfile.ButtonText = "Validando";
         try
         {
+            await SaveBusinessPartnerSapCodePolicyAsync();
             var result = await viewModel.ValidateAsync();
             ApplyValidationResult(result);
         }
@@ -1102,7 +1207,7 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
             "Code" => txtCode,
             "Name" => txtName,
             "CompanyId" => txtMasterCompany,
-            "Direction" => txtDirection,
+            "Direction" => cboDirection,
             "ExecutionMode" => cboExecutionMode,
             "ConflictStrategy" => txtConflictStrategy,
             "BatchSize" => spnBatchSize,
@@ -1540,6 +1645,8 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
 
     private int ExecutionsTotalPages => CalculateExecutionTotalPages(executionsTotalCount);
     private bool CanViewExecutions => session?.HasPermission(PermissionCodes.SyncConfigurationViewExecutions) == true;
+    private bool CanManageBusinessPartnerSapCodePolicy =>
+        session?.HasPermission(PermissionCodes.SapManage) == true;
     private bool CanCreateEntityDefinition =>
         entityDefinitionClient is not null
         && session?.HasPermission(PermissionCodes.SyncEntitiesCreate) == true;
@@ -1740,7 +1847,7 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
         return grdBranches.GetFocusedRow<BranchPreviewRow>();
     }
 
-    private void BtnAddEntity_Click(object? sender, EventArgs e)
+    private async void BtnAddEntity_Click(object? sender, EventArgs e)
     {
         if (viewModel is null || IsReadOnlyMode)
         {
@@ -1780,6 +1887,7 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
         LoadEntitiesFromState();
         RefreshEntitiesGrid();
         RefreshDistributionGrid();
+        await RunWithUiExceptionHandlingAsync(RefreshBusinessPartnerCodePolicyAsync);
     }
 
     private async Task<SyncEntityCatalogItem?> CreateEntityDefinitionFromLookupAsync(SyncProfileEntityDialog owner)
@@ -1836,7 +1944,7 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
         RefreshDistributionGrid();
     }
 
-    private void BtnRemoveEntity_Click(object? sender, EventArgs e)
+    private async void BtnRemoveEntity_Click(object? sender, EventArgs e)
     {
         if (viewModel is null || IsReadOnlyMode || grdEntities.GetFocusedRow<EntityPreviewRow>() is not { } selected)
         {
@@ -1861,6 +1969,7 @@ public sealed partial class SyncProfileEditForm : BaseEditForm
         LoadEntitiesFromState();
         RefreshEntitiesGrid();
         RefreshDistributionGrid();
+        await RunWithUiExceptionHandlingAsync(RefreshBusinessPartnerCodePolicyAsync);
     }
 
     private void MoveSelectedEntity(int offset)

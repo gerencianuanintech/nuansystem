@@ -113,10 +113,9 @@ public sealed partial class BusinessPartnersForm : BaseGridCrudListForm
         }
 
         var lookups = await viewModel.LoadLookupsAsync();
-        var partner = await viewModel.GetByIdAsync(selected.Id);
-        partner.Code = string.Empty;
-        partner.SapCardCode = null;
-        if (ShowEditForm(partner, lookups) is not { } request)
+        var source = await viewModel.GetByIdAsync(selected.Id);
+        var copy = source.CreateCopyDraft();
+        if (ShowEditForm(copy, lookups) is not { } request)
         {
             return;
         }

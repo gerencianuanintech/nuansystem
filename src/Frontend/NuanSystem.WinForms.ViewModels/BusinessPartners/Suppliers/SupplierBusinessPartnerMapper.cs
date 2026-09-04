@@ -16,6 +16,7 @@ public static class SupplierBusinessPartnerMapper
             var contactChannel = LookupOption(lookups?.ContactChannels, contact.ContactChannelId);
             return new SupplierContactViewModel
             {
+                GlobalId = contact.GlobalId,
                 ContactTypeId = contact.ContactTypeId,
                 ContactTypeCode = contactType?.Code ?? string.Empty,
                 ContactTypeName = contactType?.Name ?? string.Empty,
@@ -47,6 +48,7 @@ public static class SupplierBusinessPartnerMapper
         var index = 1;
         return partner.Addresses.Select(address => new SupplierAddressViewModel
         {
+            GlobalId = address.GlobalId,
             AddressType = FromApiAddressType(address.AddressType),
             Code = $"DIR-{index++:000}",
             AddressName = address.AddressType,
@@ -160,6 +162,7 @@ public static class SupplierBusinessPartnerMapper
         return contacts
             .Where(contact => !string.IsNullOrWhiteSpace(contact.FullName))
             .Select(contact => new SaveBusinessPartnerContactRequest(
+                GlobalId: contact.GlobalId is null || contact.GlobalId == Guid.Empty ? null : contact.GlobalId,
                 ContactTypeId: contact.ContactTypeId,
                 ContactChannelId: contact.ContactChannelId,
                 Name: contact.FullName,
@@ -184,6 +187,7 @@ public static class SupplierBusinessPartnerMapper
         return addresses
             .Where(address => !string.IsNullOrWhiteSpace(address.MainStreet))
             .Select(address => new SaveBusinessPartnerAddressRequest(
+                GlobalId: address.GlobalId is null || address.GlobalId == Guid.Empty ? null : address.GlobalId,
                 CountryId: LookupId(lookups.Countries, address.Country),
                 ProvinceId: LookupGeoId(lookups.Provinces, address.Province),
                 CityId: LookupGeoId(lookups.Cities, address.City),

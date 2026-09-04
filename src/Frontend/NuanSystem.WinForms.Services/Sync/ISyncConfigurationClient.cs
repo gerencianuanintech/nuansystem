@@ -48,6 +48,15 @@ public interface ISyncConfigurationClient
         int matrixId,
         SaveSyncDistributionPolicyRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<BusinessPartnerSapCodePolicy> GetBusinessPartnerSapCodePolicyAsync(
+        CancellationToken cancellationToken = default)
+        => throw new NotSupportedException("El cliente no implementa la política de códigos SAP.");
+
+    Task<BusinessPartnerSapCodePolicy> UpdateBusinessPartnerSapCodePolicyAsync(
+        SaveBusinessPartnerSapCodePolicyRequest request,
+        CancellationToken cancellationToken = default)
+        => throw new NotSupportedException("El cliente no implementa la política de códigos SAP.");
 }
 
 public sealed class SyncProfileListFilter

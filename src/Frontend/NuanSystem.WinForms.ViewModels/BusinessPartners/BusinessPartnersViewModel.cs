@@ -20,6 +20,7 @@ public sealed class BusinessPartnersViewModel : CrudViewModel<BusinessPartnerIte
 
     public IReadOnlyCollection<BusinessPartnerItem> Partners => Items;
     public BusinessPartnerLookups? Lookups => lookups;
+    public BusinessPartnerEditPolicy EditPolicy => BusinessPartnerEditPolicy.From(lookups?.EditPolicy);
 
     public override Task LoadAsync(CancellationToken cancellationToken = default)
     {
@@ -49,6 +50,13 @@ public sealed class BusinessPartnersViewModel : CrudViewModel<BusinessPartnerIte
 
     public override Task DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        return client.DeleteAsync(formKey, id, cancellationToken);
+        var item = Items.SingleOrDefault(candidate => candidate.Id == id)
+            ?? throw new InvalidOperationException("El tercero debe estar cargado antes de eliminarlo.");
+        if (string.IsNullOrWhiteSpace(item.RowVersion))
+        {
+            throw new InvalidOperationException("El tercero no contiene una versión de concurrencia válida.");
+        }
+
+        return client.DeleteAsync(formKey, id, item.RowVersion, cancellationToken);
     }
 }
