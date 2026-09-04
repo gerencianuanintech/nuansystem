@@ -62,7 +62,13 @@ Configurar la política únicamente para la empresa central y mantenerla inicial
 
 Configurar el código estable que representa pasaporte. Probar en preview cliente/proveedor nacional y extranjero; comprobar normalización, longitud máxima y que cliente y proveedor con la misma identificación producen identidades separadas. Habilitar la política solo tras aprobación. Esto calcula/reserva `SapCardCode`; no autoriza un envío SAP.
 
-## 5. Perfiles cerrados e inactivos
+## 5. Habilitación auditada de definiciones
+
+Antes de crear o habilitar perfiles, verificar técnicamente en la versión desplegada los appliers, esquemas de payload, idempotencia, rutas cerradas y compatibilidad de las migraciones del piloto. Con esa verificación aprobada, usar exclusivamente el CRUD administrativo de definiciones de sincronización para habilitar `BusinessPartnerProposal` y `BusinessPartnerProposalResult`; no modificar los defaults SQL inactivos ni habilitar otras definiciones como parte de este piloto.
+
+La operación debe registrar usuario, fecha UTC, valores anterior/nuevo y motivo aprobado. Conservar como evidencia saneada la consulta posterior del CRUD que muestre exactamente ambas definiciones activas, junto con el identificador del registro de auditoría y la versión desplegada. No editar tablas directamente.
+
+## 5.1. Perfiles cerrados e inactivos
 
 Crear perfiles separados, inicialmente inactivos:
 
@@ -140,7 +146,8 @@ Ante duplicado, loop, conflicto silencioso, ruta incorrecta, `DeadLetter` no exp
 4. confirmar que no aparecen nuevos claims, locks o intentos;
 5. consultar y preservar eventos `Pending`, `Error`, `DeadLetter`, inbox, conflictos y auditoría;
 6. no borrar, truncar ni reescribir eventos para “limpiar” el tablero;
-7. restaurar base solo mediante el procedimiento aprobado si la corrección forward-only no es segura.
+7. solo cuando ningún perfil activo ni otro flujo use las definiciones, deshabilitar mediante el CRUD administrativo únicamente `BusinessPartnerProposal` y `BusinessPartnerProposalResult`, registrando auditoría y verificación posterior; si siguen en uso, mantenerlas activas y escalar;
+8. restaurar base solo mediante el procedimiento aprobado si la corrección forward-only no es segura.
 
 Consultas de control deben filtrar por la empresa piloto y los tres nombres de entidad. El rollback operativo detiene procesamiento; no revierte automáticamente datos aceptados.
 

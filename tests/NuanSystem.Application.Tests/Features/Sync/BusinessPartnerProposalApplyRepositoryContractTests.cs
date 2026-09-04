@@ -435,10 +435,26 @@ public sealed class BusinessPartnerProposalApplyRepositoryContractTests
         decision.ErrorCode.Should().Be("BP_SYNC_CREATE_BASE_NOT_ALLOWED");
     }
 
+    [Fact]
+    public void Create_OmittedActivationSentinelIsAcceptedAndCentralActivatesCanonical()
+    {
+        var proposal = Proposal() with
+        {
+            Proposed = Snapshot() with { IsActive = false, SapCardCode = null }
+        };
+
+        var decision = BusinessPartnerProposalReconciliationPolicy.Evaluate(
+            proposal, null, false, SapPolicy, true);
+
+        decision.Outcome.Should().Be(BusinessPartnerProposalApplyOutcome.Accepted);
+        decision.Canonical!.IsActive.Should().BeTrue();
+        decision.Canonical.SapCardCode.Should().Be("CN0999999999001");
+    }
+
     [Theory]
-    [InlineData(false, null)]
-    [InlineData(true, "USER-SAP-CODE")]
-    public void Create_ProtectedActivationOrSapCardCodeIsRejected(bool isActive, string? sapCardCode)
+    [InlineData(true, null)]
+    [InlineData(false, "USER-SAP-CODE")]
+    public void Create_ExplicitActivationOrSapCardCodeIsRejected(bool isActive, string? sapCardCode)
     {
         var proposal = Proposal() with
         {
@@ -633,7 +649,7 @@ public sealed class BusinessPartnerProposalApplyRepositoryContractTests
             null,
             null,
             null,
-            true,
+            false,
             [],
             []);
 

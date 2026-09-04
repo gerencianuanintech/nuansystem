@@ -10,6 +10,7 @@ using NuanSystem.Application.Features.BusinessPartners.Commands;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
 using NuanSystem.Application.Features.BusinessPartners.Exceptions;
 using NuanSystem.Application.Features.BusinessPartners.Policies;
+using NuanSystem.Application.Features.BusinessPartners.Queries;
 using NuanSystem.Application.Features.Sync.Dtos;
 using NuanSystem.Application.Features.Sync.Services;
 using NuanSystem.Domain.Tenancy;
@@ -276,6 +277,20 @@ public sealed class BusinessPartnerSyncPublishingTests
     }
 
     [Fact]
+    public async Task Create_BranchOmissionSentinelStillPrechecksIntendedActiveIdentification()
+    {
+        _repository.ExistsByIdentificationAsync("Customer", 1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await CreateCreateHandler(BranchCompany()).Handle(
+            BranchCreateCommand(),
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BP_IDENTIFICATION_ALREADY_EXISTS");
+        await _repository.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
     public async Task Create_ActiveCandidateAllowsAnInactiveExistingIdentification()
     {
         _repository.ExistsByIdentificationAsync("Customer", 1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
@@ -471,6 +486,56 @@ public sealed class BusinessPartnerSyncPublishingTests
     }
 
     [Fact]
+    public async Task Update_RejectedBranchCreatePublishesCreatedWithoutBaseAndPreservesIdentity()
+    {
+        var current = CreatePartner();
+        current.CanonicalVersion = 0;
+        current.MasterSyncStatus = "Rejected";
+        var updated = CreatePartner(name: "Cliente corregido");
+        updated.GlobalId = current.GlobalId;
+        updated.Code = current.Code;
+        updated.CanonicalVersion = 0;
+        updated.MasterSyncStatus = "PendingMaster";
+        _repository.GetByIdAsync(current.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
+            .Returns(current, updated);
+        _repository.UpdateAsync(Arg.Any<UpdateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(1);
+
+        var result = await CreateUpdateHandler(BranchCompany()).Handle(
+            UpdateCommand(current.Id) with { Name = "Cliente corregido" },
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        await _writer.Received(1).EnqueueAsync(
+            Arg.Is<BusinessPartnerOutboxWriteRequest>(write =>
+                write.Operation == SyncOperation.Created && write.Base == null &&
+                write.Current.GlobalId == current.GlobalId && write.Current.Code == current.Code),
+            _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Update_CanonicalBranchPartnerStillPublishesUpdatedWithBase()
+    {
+        var current = CreatePartner(name: "Cliente antes");
+        current.CanonicalVersion = 4;
+        var updated = CreatePartner(name: "Cliente despues");
+        updated.GlobalId = current.GlobalId;
+        updated.Code = current.Code;
+        updated.CanonicalVersion = 4;
+        _repository.GetByIdAsync(current.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>())
+            .Returns(current, updated);
+        _repository.UpdateAsync(Arg.Any<UpdateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(1);
+
+        var result = await CreateUpdateHandler(BranchCompany()).Handle(
+            UpdateCommand(current.Id) with { Name = "Cliente despues" }, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        await _writer.Received(1).EnqueueAsync(
+            Arg.Is<BusinessPartnerOutboxWriteRequest>(write =>
+                write.Operation == SyncOperation.Updated && write.Base == current),
+            _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Update_StandaloneAllowsManagedFieldsWithoutDistributionVersionIncrement()
     {
         var partner = CreatePartner();
@@ -491,13 +556,60 @@ public sealed class BusinessPartnerSyncPublishingTests
     public async Task Delete_BranchIsRejectedAndZeroRowsMapsToConcurrencyConflict()
     {
         var partner = CreatePartner();
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
         var branch = await CreateDeleteHandler(BranchCompany()).Handle(new DeleteBusinessPartnerCommand(partner.Id, partner.RowVersion), CancellationToken.None);
         branch.Errors.Should().ContainSingle(error => error.Code == "BP_SYNC_DELETE_NOT_SUPPORTED");
 
-        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
         _repository.DeleteAsync(Arg.Any<DeleteBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
         var stale = await CreateDeleteHandler().Handle(new DeleteBusinessPartnerCommand(partner.Id, partner.RowVersion), CancellationToken.None);
         stale.Errors.Should().ContainSingle(error => error.Code == "BP_CONCURRENCY_CONFLICT");
+    }
+
+    [Theory]
+    [InlineData("Supplier", "Customer")]
+    [InlineData("Customer", "Supplier")]
+    public async Task TypedConsult_HidesPartnerFromTheOtherRole(string actualRole, string expectedRole)
+    {
+        var partner = WithPartnerType(CreatePartner(), actualRole);
+        _repository.GetByIdAsync(partner.Id, Arg.Any<CancellationToken>()).Returns(partner);
+
+        var result = await new GetBusinessPartnerByIdQueryHandler(_repository)
+            .Handle(new GetBusinessPartnerByIdQuery(partner.Id, expectedRole), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BusinessPartnerNotFound");
+    }
+
+    [Theory]
+    [InlineData("Supplier", "Customer")]
+    [InlineData("Customer", "Supplier")]
+    public async Task TypedUpdate_HidesPartnerFromTheOtherRoleBeforeMutation(string actualRole, string expectedRole)
+    {
+        var partner = WithPartnerType(CreatePartner(), actualRole);
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+
+        var result = await CreateUpdateHandler().Handle(
+            UpdateCommand(partner.Id) with { ExpectedPartnerType = expectedRole }, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BusinessPartnerNotFound");
+        await _repository.DidNotReceiveWithAnyArgs().UpdateAsync(default!, default!, default!, default);
+    }
+
+    [Theory]
+    [InlineData("Supplier", "Customer")]
+    [InlineData("Customer", "Supplier")]
+    public async Task TypedDelete_HidesPartnerFromTheOtherRoleBeforeMutation(string actualRole, string expectedRole)
+    {
+        var partner = WithPartnerType(CreatePartner(), actualRole);
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+
+        var result = await CreateDeleteHandler().Handle(
+            new DeleteBusinessPartnerCommand(partner.Id, partner.RowVersion, ExpectedPartnerType: expectedRole), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "BusinessPartnerNotFound");
+        await _repository.DidNotReceiveWithAnyArgs().DeleteAsync(default!, default!, default!, default);
     }
 
     [Fact]

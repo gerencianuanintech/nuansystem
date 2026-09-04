@@ -1,4 +1,5 @@
 using FluentAssertions;
+using System.Text.Json.Serialization;
 using NuanSystem.Application.Features.BusinessPartners.Commands;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
 using NuanSystem.Application.Features.BusinessPartners.Exceptions;
@@ -48,6 +49,31 @@ public sealed class BusinessPartnerCommandPolicyTests
         typeof(BusinessPartnerLookupsDto).GetProperty("EditPolicy").Should().NotBeNull();
         typeof(BusinessPartnerUniqueConflictException).Assembly.GetReferencedAssemblies()
             .Should().NotContain(reference => reference.Name == "Microsoft.Data.SqlClient");
+    }
+
+    [Fact]
+    public void TypedEndpoints_PinExpectedRoleWhileGenericRoutesRemainUnfiltered()
+    {
+        var source = Read("src", "Backend", "NuanSystem.Api", "Endpoints", "BusinessPartnerEndpoints.cs");
+
+        source.Should().Contain("new GetBusinessPartnerByIdQuery(id, \"Customer\")")
+            .And.Contain("new GetBusinessPartnerByIdQuery(id, \"Supplier\")")
+            .And.Contain("ExpectedPartnerType = \"Customer\"")
+            .And.Contain("ExpectedPartnerType = \"Supplier\"")
+            .And.Contain("ExpectedPartnerType: \"Customer\"")
+            .And.Contain("ExpectedPartnerType: \"Supplier\"")
+            .And.Contain("new GetBusinessPartnerByIdQuery(id), cancellationToken")
+            .And.Contain("ExpectedPartnerType = null")
+            .And.Contain("ExpectedPartnerType: null");
+    }
+
+    [Fact]
+    public void ExpectedRoleCannotBeSuppliedByUpdateOrDeleteJsonBodies()
+    {
+        typeof(UpdateBusinessPartnerCommand).GetProperty("ExpectedPartnerType")!
+            .GetCustomAttributes(typeof(JsonIgnoreAttribute), inherit: true).Should().ContainSingle();
+        typeof(DeleteBusinessPartnerCommand).GetProperty("ExpectedPartnerType")!
+            .GetCustomAttributes(typeof(JsonIgnoreAttribute), inherit: true).Should().ContainSingle();
     }
 
     [Fact]

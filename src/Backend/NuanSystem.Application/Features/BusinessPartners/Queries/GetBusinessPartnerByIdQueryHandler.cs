@@ -12,7 +12,9 @@ public sealed class GetBusinessPartnerByIdQueryHandler(IBusinessPartnerRepositor
     public async Task<Result<BusinessPartnerDto>> Handle(GetBusinessPartnerByIdQuery request, CancellationToken cancellationToken)
     {
         var partner = await repository.GetByIdAsync(request.Id, cancellationToken);
-        if (partner is null)
+        if (partner is null ||
+            request.ExpectedPartnerType is not null &&
+            !string.Equals(partner.PartnerType, request.ExpectedPartnerType, StringComparison.Ordinal))
         {
             return Result<BusinessPartnerDto>.Failure(
                 "Tercero comercial no encontrado.",

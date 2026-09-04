@@ -25,10 +25,6 @@ public sealed class DeleteBusinessPartnerCommandHandler(
         }
 
         var company = companyContext.CurrentCompany;
-        if (BusinessPartnerWritePolicy.IsSynchronizedBranch(company))
-        {
-            return Failure("BP_SYNC_DELETE_NOT_SUPPORTED", "Una sucursal sincronizada no puede eliminar terceros.", nameof(request.Id));
-        }
 
         return await transactionRunner.ExecuteInTenantTransactionAsync(
             async (connection, transaction, token) =>
@@ -39,6 +35,18 @@ public sealed class DeleteBusinessPartnerCommandHandler(
                     return Result<bool>.Failure(
                         "Tercero comercial no encontrado.",
                         [new ApiError("BusinessPartnerNotFound", "Tercero comercial no encontrado.", nameof(request.Id))]);
+                }
+                if (request.ExpectedPartnerType is not null &&
+                    !string.Equals(current.PartnerType, request.ExpectedPartnerType, StringComparison.Ordinal))
+                {
+                    return Result<bool>.Failure(
+                        "Tercero comercial no encontrado.",
+                        [new ApiError("BusinessPartnerNotFound", "Tercero comercial no encontrado.", nameof(request.Id))]);
+                }
+
+                if (BusinessPartnerWritePolicy.IsSynchronizedBranch(company))
+                {
+                    return Failure("BP_SYNC_DELETE_NOT_SUPPORTED", "Una sucursal sincronizada no puede eliminar terceros.", nameof(request.Id));
                 }
 
                 if (BusinessPartnerWritePolicy.RequiresLegacyReview(current.MasterSyncStatus))

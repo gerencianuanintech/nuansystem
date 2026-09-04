@@ -139,7 +139,7 @@ public static class BusinessPartnerProposalReconciliationPolicy
                 return Conflict(current, "BP_SYNC_CREATE_IDENTITY_CONFLICT");
             }
 
-            if (!proposal.Proposed.IsActive ||
+            if (proposal.Proposed.IsActive ||
                 !string.IsNullOrWhiteSpace(proposal.Proposed.SapCardCode))
             {
                 return Rejected(
@@ -161,7 +161,7 @@ public static class BusinessPartnerProposalReconciliationPolicy
             return new BusinessPartnerProposalDecision(
                 BusinessPartnerProposalApplyOutcome.Accepted,
                 1,
-                proposal.Proposed with { SapCardCode = sapCardCode },
+                proposal.Proposed with { IsActive = true, SapCardCode = sapCardCode },
                 []);
         }
 

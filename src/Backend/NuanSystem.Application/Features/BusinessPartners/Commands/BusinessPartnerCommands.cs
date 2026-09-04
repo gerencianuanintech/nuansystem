@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
 
@@ -192,10 +193,12 @@ public sealed record UpdateBusinessPartnerCommand(
     IReadOnlyCollection<SaveBusinessPartnerSapFieldMappingData>? SapFieldMappings,
     IReadOnlyCollection<SaveBusinessPartnerAttachmentData>? Attachments = null,
     int? AuditUserId = null,
-    string? AuditUserName = null) : ICommand<BusinessPartnerDto>;
+    string? AuditUserName = null,
+    [property: JsonIgnore] string? ExpectedPartnerType = null) : ICommand<BusinessPartnerDto>;
 
 public sealed record DeleteBusinessPartnerCommand(
     int Id,
     string ExpectedRowVersion,
     int? AuditUserId = null,
-    string? AuditUserName = null) : ICommand<bool>;
+    string? AuditUserName = null,
+    [property: JsonIgnore] string? ExpectedPartnerType = null) : ICommand<bool>;

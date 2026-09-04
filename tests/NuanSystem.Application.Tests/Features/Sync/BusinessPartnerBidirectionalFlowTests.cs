@@ -4,6 +4,8 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using NuanSystem.Application.Abstractions.Data;
+using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Features.BusinessPartners.Commands;
@@ -23,6 +25,52 @@ namespace NuanSystem.Application.Tests.Features.Sync;
 
 public sealed class BusinessPartnerBidirectionalFlowTests
 {
+    [Fact]
+    public async Task BranchCreate_HandlerWriterPayloadAndReconciliation_UsesOmissionSentinelThenActivatesCanonical()
+    {
+        var flow = BusinessPartnerBidirectionalFlowHarness.Enabled();
+
+        var globalId = await flow.CreateCustomerThroughHandlerInBranchAAsync();
+        var branchBeforeAcceptance = flow.BranchA.Single(globalId);
+        var proposal = flow.ProposalPayloads(globalId).Should().ContainSingle().Subject;
+
+        branchBeforeAcceptance.IsActive.Should().BeFalse();
+        proposal.Operation.Should().Be(SyncOperation.Created.ToString());
+        proposal.Payload.Base.Should().BeNull();
+        proposal.Payload.Proposed.IsActive.Should().BeFalse();
+
+        await flow.DrainUntilIdle();
+
+        flow.Central.Single(globalId).IsActive.Should().BeTrue();
+        flow.Central.Single(globalId).SapCardCode.Should().Be("C0999999999001");
+        flow.BranchA.Single(globalId).IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task RejectedVersionZeroCorrection_HandlerWriterPayloadAndReconciliation_ReissuesCreatedIdentity()
+    {
+        var flow = BusinessPartnerBidirectionalFlowHarness.Enabled();
+        var blocker = flow.SeedCentralCustomer("0999999999001");
+        var globalId = await flow.CreateCustomerThroughHandlerInBranchAAsync();
+        var identity = flow.BranchA.Single(globalId);
+
+        await flow.DrainUntilIdle();
+        flow.BranchA.Single(globalId).MasterSyncStatus.Should().Be("Rejected");
+        flow.RemoveCentral(blocker);
+
+        await flow.CorrectRejectedCreateThroughHandlerAsync(globalId, "Cliente corregido");
+        var correction = flow.ProposalPayloads(globalId).Last();
+
+        correction.Operation.Should().Be(SyncOperation.Created.ToString());
+        correction.Payload.Base.Should().BeNull();
+        correction.Payload.GlobalId.Should().Be(identity.GlobalId);
+        correction.Payload.Code.Should().Be(identity.Code);
+
+        await flow.DrainUntilIdle();
+        flow.Central.Single(globalId).Name.Should().Be("Cliente corregido");
+        flow.Central.Single(globalId).CanonicalVersion.Should().Be(1);
+    }
+
     [Fact]
     public async Task BranchTransaction_CreatesExactlyOneDurableProposal()
     {
@@ -495,6 +543,91 @@ public sealed class BusinessPartnerBidirectionalFlowTests
         public async Task<Guid> CreateSupplierInBranchA(string identification) =>
             await CreateInBranchAAsync("Supplier", identification, configure: null);
 
+        public async Task<Guid> CreateCustomerThroughHandlerInBranchAAsync()
+        {
+            companyContext.SetCurrentCompany(Company(BranchA.CompanyId, "BRANCH-A", isMaster: false, parentCompanyId: 10));
+            var repository = CreateBranchCrudRepository();
+            var handler = new CreateBusinessPartnerCommandHandler(
+                repository,
+                new InMemoryTransactionRunner(),
+                localOutboxWriter,
+                companyContext,
+                Substitute.For<IBusinessPartnerSapCodePolicyRepository>());
+            var command = JsonSerializer.Deserialize<CreateBusinessPartnerCommand>(
+                """
+                {
+                  "name":"Cliente handler",
+                  "partnerType":"Customer",
+                  "identificationTypeId":1,
+                  "identificationNumber":"0999999999001",
+                  "isActive":false,
+                  "auditUserId":7,
+                  "auditUserName":"branch-user"
+                }
+                """, JsonOptions)!;
+
+            var result = await handler.Handle(command, CancellationToken.None);
+            result.IsSuccess.Should().BeTrue(result.Message);
+            return result.Value!.GlobalId;
+        }
+
+        public async Task CorrectRejectedCreateThroughHandlerAsync(Guid globalId, string name)
+        {
+            companyContext.SetCurrentCompany(Company(BranchA.CompanyId, "BRANCH-A", isMaster: false, parentCompanyId: 10));
+            var current = BranchA.Single(globalId);
+            var repository = CreateBranchCrudRepository();
+            var command = JsonSerializer.Deserialize<UpdateBusinessPartnerCommand>(
+                $$"""
+                {
+                  "id":{{current.Id}},
+                  "expectedRowVersion":"{{current.RowVersion}}",
+                  "name":"{{name}}",
+                  "isActive":false,
+                  "auditUserId":7,
+                  "auditUserName":"branch-user"
+                }
+                """, JsonOptions)!;
+            var result = await new UpdateBusinessPartnerCommandHandler(
+                    repository, new InMemoryTransactionRunner(), localOutboxWriter, companyContext)
+                .Handle(command, CancellationToken.None);
+            result.IsSuccess.Should().BeTrue(result.Message);
+        }
+
+        public Guid SeedCentralCustomer(string identification)
+        {
+            var id = Guid.NewGuid();
+            Central.Upsert(new BusinessPartnerDto
+            {
+                GlobalId = id,
+                Code = BusinessPartnerIdentityPolicy.CreateInternalCode(id),
+                Name = "Existing central customer",
+                PartnerType = "Customer",
+                IdentificationTypeId = 1,
+                IdentificationTypeCode = "RUC",
+                IdentificationNumber = identification,
+                NormalizedIdentificationNumber = BusinessPartnerIdentityPolicy.NormalizeIdentification(identification),
+                CanonicalVersion = 1,
+                MasterSyncStatus = "Accepted",
+                IsActive = true,
+                RowVersion = "AQIDBAUGBwg="
+            });
+            return id;
+        }
+
+        public void RemoveCentral(Guid globalId) => Central.Remove(globalId);
+
+        public IReadOnlyCollection<ProposalObservation> ProposalPayloads(Guid globalId) =>
+            LocalEvents
+                .Where(item => item.EntityGlobalId == globalId && item.EntityName == SyncMasterBranchEntityCodes.BusinessPartnerProposal)
+                .Select(item =>
+                {
+                    using var document = JsonDocument.Parse(item.PayloadJson);
+                    return new ProposalObservation(
+                        document.RootElement.GetProperty("operation").GetString()!,
+                        document.RootElement.GetProperty("payload").Deserialize<BusinessPartnerProposalPayloadV1>(JsonOptions)!);
+                })
+                .ToArray();
+
         public async Task ProposeBranchAUpdateAsync(Guid globalId, Action<BusinessPartnerDto> change)
         {
             var original = BranchA.Single(globalId);
@@ -592,13 +725,77 @@ public sealed class BusinessPartnerBidirectionalFlowTests
                 NormalizedIdentificationNumber = normalized,
                 CanonicalVersion = 0,
                 MasterSyncStatus = "PendingMaster",
-                IsActive = true,
+                IsActive = false,
                 CreatedAt = clock.UtcNow
             };
             configure?.Invoke(partner);
             BranchA.Upsert(partner);
             await WriteLocalEventAsync(BranchA.CompanyId, partner, @base: null, SyncOperation.Created);
             return globalId;
+        }
+
+        private IBusinessPartnerRepository CreateBranchCrudRepository()
+        {
+            var repository = Substitute.For<IBusinessPartnerRepository>();
+            repository.ExistsByCodeAsync(
+                    Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>(), Arg.Any<CancellationToken>())
+                .Returns(call => BranchA.All.Any(item => item.Code == call.ArgAt<string>(0)));
+            repository.ExistsByIdentificationAsync(
+                    Arg.Any<string>(), Arg.Any<int>(), Arg.Any<string>(), Arg.Any<int?>(),
+                    Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>(), Arg.Any<CancellationToken>())
+                .Returns(call => BranchA.All.Any(item =>
+                    item.PartnerType == call.ArgAt<string>(0) &&
+                    item.IdentificationTypeId == call.ArgAt<int>(1) &&
+                    item.NormalizedIdentificationNumber == call.ArgAt<string>(2) &&
+                    item.IsActive));
+            repository.CreateAsync(
+                    Arg.Any<CreateBusinessPartnerData>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>(), Arg.Any<CancellationToken>())
+                .Returns(call =>
+                {
+                    var data = call.ArgAt<CreateBusinessPartnerData>(0);
+                    var partner = new BusinessPartnerDto
+                    {
+                        GlobalId = data.GlobalId,
+                        Code = data.Code,
+                        Name = data.Name,
+                        CommercialName = data.CommercialName,
+                        PartnerType = data.PartnerType,
+                        IdentificationTypeId = data.IdentificationTypeId,
+                        IdentificationTypeCode = "RUC",
+                        IdentificationNumber = data.IdentificationNumber,
+                        NormalizedIdentificationNumber = data.NormalizedIdentificationNumber,
+                        Email = data.Email,
+                        Phone = data.Phone,
+                        CanonicalVersion = data.CanonicalVersion,
+                        MasterSyncStatus = data.MasterSyncStatus,
+                        IsActive = data.IsActive,
+                        SapCardCode = data.SapCardCode,
+                        RowVersion = "AQIDBAUGBwg=",
+                        CreatedAt = clock.UtcNow
+                    };
+                    BranchA.Upsert(partner);
+                    return partner.Id;
+                });
+            repository.GetByIdAsync(
+                    Arg.Any<int>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>(), Arg.Any<CancellationToken>())
+                .Returns(call => BranchA.All.SingleOrDefault(item => item.Id == call.ArgAt<int>(0)));
+            repository.UpdateAsync(
+                    Arg.Any<UpdateBusinessPartnerData>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>(), Arg.Any<CancellationToken>())
+                .Returns(call =>
+                {
+                    var data = call.ArgAt<UpdateBusinessPartnerData>(0);
+                    var current = BranchA.All.Single(item => item.Id == data.Id);
+                    current.Name = data.Name;
+                    current.CommercialName = data.CommercialName;
+                    current.Email = data.Email;
+                    current.Phone = data.Phone;
+                    current.IsActive = data.IsActive;
+                    current.CanonicalVersion = data.CanonicalVersion;
+                    current.MasterSyncStatus = data.MasterSyncStatus;
+                    current.MasterSyncMessage = null;
+                    return 1;
+                });
+            return repository;
         }
 
         private async Task WriteLocalEventAsync(
@@ -685,6 +882,24 @@ public sealed class BusinessPartnerBidirectionalFlowTests
                 partner.CreatedAt = clock.UtcNow;
             partners[partner.GlobalId] = partner;
         }
+
+        public void Remove(Guid globalId) => partners.Remove(globalId);
+    }
+
+    private sealed class InMemoryTransactionRunner : ITransactionRunner
+    {
+        private readonly IDbConnection connection = Substitute.For<IDbConnection>();
+        private readonly IDbTransaction transaction = Substitute.For<IDbTransaction>();
+
+        public async Task ExecuteInTenantTransactionAsync(
+            Func<IDbConnection, IDbTransaction, CancellationToken, Task> operation,
+            CancellationToken cancellationToken = default) =>
+            await operation(connection, transaction, cancellationToken);
+
+        public Task<T> ExecuteInTenantTransactionAsync<T>(
+            Func<IDbConnection, IDbTransaction, CancellationToken, Task<T>> operation,
+            CancellationToken cancellationToken = default) =>
+            operation(connection, transaction, cancellationToken);
     }
 
     private sealed class MutableClock
@@ -1505,4 +1720,5 @@ public sealed class BusinessPartnerBidirectionalFlowTests
         int MasterEvents);
 
     private sealed record ConflictObservation(Guid GlobalId, IReadOnlyCollection<string> Fields);
+    private sealed record ProposalObservation(string Operation, BusinessPartnerProposalPayloadV1 Payload);
 }

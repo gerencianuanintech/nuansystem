@@ -75,7 +75,7 @@ public sealed class CreateBusinessPartnerCommandHandler(
                         [new ApiError("BusinessPartnerCodeAlreadyExists", "El codigo interno ya existe.", "Code")]);
                 }
 
-                if (request.IsActive && await repository.ExistsByIdentificationAsync(
+                if ((request.IsActive || isBranch) && await repository.ExistsByIdentificationAsync(
                         partnerType, request.IdentificationTypeId, normalizedIdentification, null, connection, transaction, token))
                 {
                     return Result<BusinessPartnerDto>.Failure(

@@ -46,6 +46,14 @@ public sealed class UpdateBusinessPartnerCommandHandler(
                         [new ApiError("BusinessPartnerNotFound", "Tercero comercial no encontrado.", nameof(request.Id))]);
                 }
 
+                if (request.ExpectedPartnerType is not null &&
+                    !string.Equals(current.PartnerType, request.ExpectedPartnerType, StringComparison.Ordinal))
+                {
+                    return Result<BusinessPartnerDto>.Failure(
+                        "Tercero comercial no encontrado.",
+                        [new ApiError("BusinessPartnerNotFound", "Tercero comercial no encontrado.", nameof(request.Id))]);
+                }
+
                 if (BusinessPartnerWritePolicy.RequiresLegacyReview(current.MasterSyncStatus))
                 {
                     return Failure("BP_LEGACY_REVIEW_REQUIRED", "El tercero debe salir de LegacyReview antes de editarse.", nameof(current.MasterSyncStatus));
@@ -106,11 +114,12 @@ public sealed class UpdateBusinessPartnerCommandHandler(
 
                 var partner = await repository.GetByIdAsync(request.Id, connection, transaction, token)
                     ?? throw new InvalidOperationException("El tercero comercial fue actualizado pero no pudo consultarse.");
+                var isRejectedCreateCorrection = isBranch && current.CanonicalVersion == 0;
                 await localOutboxWriter.EnqueueAsync(
                     new BusinessPartnerOutboxWriteRequest(
                         partner,
-                        current,
-                        SyncOperation.Updated,
+                        isRejectedCreateCorrection ? null : current,
+                        isRejectedCreateCorrection ? SyncOperation.Created : SyncOperation.Updated,
                         request.AuditUserId,
                         CreateBusinessPartnerCommandHandler.TrimOrNull(request.AuditUserName),
                         CausationEventId: null),
