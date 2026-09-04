@@ -653,6 +653,93 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
     }
 
     [Fact]
+    public void MasterGovernance_AllowsOnlyExactProductionOrSessionBoundDisposableTestDatabase()
+    {
+        var sql = Read("database", "sql", "229_master_business_partner_bidirectional_governance.sql");
+        var firstPrerequisite = sql.IndexOf("IF OBJECT_ID(N'dbo.Companies'", StringComparison.Ordinal);
+        var firstDdl = sql.IndexOf("CREATE TABLE dbo.BusinessPartnerSapCodePolicies", StringComparison.Ordinal);
+        var productionGuard = sql.IndexOf("DB_NAME()=N'NuanSystem_Master'", StringComparison.Ordinal);
+        var testPrefixGuard = sql.IndexOf("N'NuanSystem[_]Test[_]Master[_]%'", StringComparison.Ordinal);
+        var sessionGuard = sql.IndexOf(
+            "SESSION_CONTEXT(N'NUANSYSTEM_INTEGRATION_TEST_MASTER_DATABASE')",
+            StringComparison.Ordinal);
+
+        productionGuard.Should().BeGreaterThan(-1).And.BeLessThan(firstPrerequisite);
+        testPrefixGuard.Should().BeGreaterThan(-1).And.BeLessThan(firstPrerequisite);
+        sessionGuard.Should().BeGreaterThan(-1).And.BeLessThan(firstPrerequisite);
+        firstPrerequisite.Should().BeGreaterThan(sessionGuard).And.BeLessThan(firstDdl);
+        sql.Should().Contain("CONVERT(nvarchar(128), SESSION_CONTEXT")
+            .And.Contain("=DB_NAME()")
+            .And.NotContain("LIKE N'NuanSystem_Test_Master_%'");
+    }
+
+    [Fact]
+    public void SqlIntegrationHarness_IsExplicitOptInSerializedAndUsesOnlyDisposableNames()
+    {
+        var source = Read(
+            "tests", "NuanSystem.Application.Tests", "Features", "Sync",
+            "BusinessPartnerBidirectionalSqlIntegrationTests.cs");
+
+        source.Should().Contain("[SqlServerIntegrationFact]")
+            .And.Contain("DisableParallelization = true")
+            .And.Contain("NUANSYSTEM_SQL_INTEGRATION_ADMIN_CONNECTION")
+            .And.Contain("Initial Catalog=master")
+            .And.Contain("^NuanSystem_Test_Master_[0-9a-f]{32}$")
+            .And.Contain("^NuanSystem_Test_Tenant_(Central|BranchA|BranchB)_[0-9a-f]{32}$")
+            .And.Contain("createdDatabaseRegistry")
+            .And.Contain("Disposable database name already exists")
+            .And.NotContain("appsettings.json")
+            .And.NotContain("Console.Write")
+            .And.NotContain("NuanSystem_Prod");
+    }
+
+    [Fact]
+    public void SqlIntegrationHarness_BindsReadOnlySessionContextAndVerifiesOwnershipBeforeCleanup()
+    {
+        var source = Read(
+            "tests", "NuanSystem.Application.Tests", "Features", "Sync",
+            "BusinessPartnerBidirectionalSqlIntegrationTests.cs");
+        var markerCheck = source.IndexOf("VerifyMarkerAsync(databaseName)", StringComparison.Ordinal);
+        var drop = source.IndexOf("DROP DATABASE", StringComparison.Ordinal);
+
+        source.Should().Contain("NUANSYSTEM_INTEGRATION_TEST_MASTER_DATABASE")
+            .And.Contain("@read_only=1")
+            .And.Contain("NuanSystemIntegrationTestMarker")
+            .And.Contain("RunId=@RunId AND DatabaseName=@DatabaseName")
+            .And.Contain("Database is not in this fixture's exact creation registry")
+            .And.Contain("Fixture refuses script batch with USE")
+            .And.Contain("MasterMigration_RejectsAbsentOrMismatchedBindingAndAcceptsReadOnlyExactContext")
+            .And.Contain("ExecuteMasterMigrationWithMismatchedBindingAsync")
+            .And.Contain("sys.sp_getapplock")
+            .And.Contain("sys.sp_releaseapplock")
+            .And.Contain("SqlCommandBuilder")
+            .And.Contain("QuoteIdentifier(databaseName)")
+            .And.Contain("SQL fixture initialization and safe cleanup both failed");
+        markerCheck.Should().BeGreaterThan(-1).And.BeLessThan(drop);
+    }
+
+    [Fact]
+    public void SqlIntegrationHarness_CoversMigrationRerunRoleUniquenessVersionsInboxOutboxAndRollback()
+    {
+        var source = Read(
+            "tests", "NuanSystem.Application.Tests", "Features", "Sync",
+            "BusinessPartnerBidirectionalSqlIntegrationTests.cs");
+
+        source.Should().ContainAll(
+                "228_tenant_business_partner_bidirectional_foundation.sql",
+                "229_master_business_partner_bidirectional_governance.sql",
+                "230_tenant_business_partner_bidirectional_operations.sql",
+                "UX_BusinessPartners_Identification_Active",
+                "SP_NA_POST_BUSINESSPARTNER_CANONICAL_UPSERT",
+                "CanonicalVersion",
+                "SP_NA_POST_BUSINESSPARTNER_SYNCINBOX_ENSURE",
+                "SP_NA_POST_BUSINESSPARTNER_LOCALOUTBOX_ENSURE",
+                "RollbackAsync",
+                "ClearAllPools")
+            .And.Contain("Canonical identification belongs to another BusinessPartner");
+    }
+
+    [Fact]
     public void MasterPolicy_IsDisabledByDefaultCentralOnlyAuditedAndSecretFree()
     {
         var sql = Read("database", "sql", "229_master_business_partner_bidirectional_governance.sql");

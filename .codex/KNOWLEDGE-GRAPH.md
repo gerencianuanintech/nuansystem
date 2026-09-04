@@ -752,3 +752,41 @@ Warehouse
 Warehouse remains disabled and requires separate runtime authorization. The
 UnitOfMeasure full-profile administrative launcher remains pending because the
 shared pilot profile has unrelated historical dependency defects.
+
+## 13. BusinessPartner central/branch bidirectional blocks 1/2
+
+```text
+branch BusinessPartner transaction
+  -> BusinessPartnerLocalOutboxWriter
+  -> LocalOutbox: BusinessPartnerProposal (target = parent central)
+  -> LocalSyncOutboxRelay + LocalSyncOutboxPromotionService
+  -> SyncRoutingService + SyncDistributionPolicyEvaluator
+  -> SyncOutbox target central
+  -> BusinessPartnerProposalSyncEventApplier
+  -> central reconciliation
+       -> BusinessPartnerIdentityPolicy
+       -> BusinessPartnerSapCardCodePolicy
+       -> BusinessPartnerThreeWayMergeService
+       -> canonical version / explicit rejection / explicit conflict
+  -> central LocalOutbox
+       -> BusinessPartner -> every branch including origin
+       -> BusinessPartnerProposalResult -> origin only
+  -> MasterBranchSyncWorkerProcessor + directional appliers
+  -> branch SyncInbox and replica apply (no return proposal)
+```
+
+`GlobalId` and immutable NuanSystem `Code` preserve internal identity. `SapCardCode` is a separate centrally governed reference; `Customer` and `Supplier` remain different identities and no `Both` edge is created. Same-role normalized identification is unique, while an explicit different-role record is allowed.
+
+The twelve-scenario in-memory harness traverses the production writer, factories, routing, promotion, relay, worker, appliers and reconciliation/merge decisions. Only persistence/external infrastructure is replaced. Its passing result is code-level evidence, not runtime database or deployment evidence.
+
+```text
+blocks 1/2 code + unit/static contracts [validated]
+  -X-> automatic SQL opt-in
+  -X-> migration installation
+  -X-> readiness approval
+  -X-> worker/profile activation
+  -X-> operational pilot
+  -X-> SapSyncOutbox / SAP / stock / costs / prices / documents
+```
+
+SQL integration remains opt-in and disposable: exact `NuanSystem_Test_Master_<32hex>`/tenant names, administrative initial catalog `master`, `RunId` marker, exact creation registry and marker-verified cleanup. Migration `229` additionally requires the same-connection read-only session context. Runtime SQL, readiness, migrations, pilot, rollback and SAP are **not validated**. See `docs/operations/BUSINESS-PARTNER-BIDIRECTIONAL-PILOT.md`.

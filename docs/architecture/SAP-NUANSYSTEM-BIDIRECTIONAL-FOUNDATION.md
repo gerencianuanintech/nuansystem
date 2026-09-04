@@ -3,7 +3,7 @@
 ## Estado, autoridad y propósito
 
 - **Fecha:** 2026-08-28.
-- **Estado:** decisiones funcionales aprobadas en conversación; especificación técnica pendiente de revisión antes de crear planes de implementación.
+- **Estado:** bloques 1 y 2 completos en código y verificación automatizada; gate runtime/operativo pendiente. Los bloques 3 a 7 no están implementados.
 - **Alcance de este documento:** arquitectura transversal, propiedad de datos, identidad de socios, flujo Sucursal–Master–SAP, colas, conflictos, migración y orden de implementación.
 - **Autoridad:** `AGENTS.md`, Constitución, Kernel, arquitectura general de NuanSystem, este documento y, finalmente, los planes de implementación aprobados por fase.
 
@@ -375,6 +375,14 @@ Cada bloque tendrá especificación enfocada, plan, pruebas y autorización inde
 7. **Endurecimiento y despliegue:** reconciliación, monitores, runbooks, seguridad negativa, rendimiento, piloto y rollback.
 
 No se crea un único plan gigante. El primer plan posterior a la aprobación de este documento cubrirá únicamente los bloques 1 y 2 hasta obtener un socio canónico distribuido, sin realizar llamadas SAP.
+
+### Estado verificable de los bloques 1 y 2
+
+La implementación de código de los bloques 1 y 2 incluye identidad separada, política central de prefijos, migraciones forward-only, propuesta durable desde sucursal, reconciliación/versionamiento en el tenant central, conflicto explícito y redistribución a origen y sucursales hermanas. Los doce escenarios de aceptación pasan en memoria reutilizando los servicios y políticas de producción. Los contratos SQL y el fixture SQL opt-in compilan; sin opt-in, las pruebas SQL se omiten de manera explícita.
+
+Esto no equivale a una activación operativa. Permanecen **no validados**: la ejecución runtime SQL y de migraciones, el readiness de datos reales, el despliegue/activación de perfiles y worker, el piloto/UAT, el rollback en infraestructura y cualquier conexión o escritura SAP. No se declara listo el bloque 3 ni se habilita `SapSyncOutbox`.
+
+El procedimiento operativo, criterios de aborto y evidencia requerida están en [`docs/operations/BUSINESS-PARTNER-BIDIRECTIONAL-PILOT.md`](../operations/BUSINESS-PARTNER-BIDIRECTIONAL-PILOT.md).
 
 ## Matriz de capas
 

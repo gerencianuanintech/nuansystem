@@ -11,7 +11,17 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 GO
 
-IF DB_NAME()<>N'NuanSystem_Master'
+DECLARE @NuanSystemIsProductionMaster bit =
+    CASE WHEN DB_NAME()=N'NuanSystem_Master' THEN 1 ELSE 0 END;
+DECLARE @NuanSystemIsBoundIntegrationTestMaster bit =
+    CASE
+        WHEN DB_NAME() LIKE N'NuanSystem[_]Test[_]Master[_]%'
+         AND CONVERT(nvarchar(128), SESSION_CONTEXT(N'NUANSYSTEM_INTEGRATION_TEST_MASTER_DATABASE'))=DB_NAME()
+        THEN 1
+        ELSE 0
+    END;
+
+IF @NuanSystemIsProductionMaster=0 AND @NuanSystemIsBoundIntegrationTestMaster=0
     THROW 52229, 'Migration 229 must run only in NuanSystem_Master.', 1;
 IF OBJECT_ID(N'dbo.Companies',N'U') IS NULL
     THROW 52229, 'Companies is required before migration 229.', 1;
