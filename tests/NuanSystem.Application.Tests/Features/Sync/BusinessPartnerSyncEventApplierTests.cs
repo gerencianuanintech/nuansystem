@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using FluentAssertions;
 using NSubstitute;
 using NuanSystem.Application.Abstractions.Sync;
@@ -90,6 +91,57 @@ public sealed class BusinessPartnerSyncEventApplierTests
 
         result.Terminal.Should().BeTrue();
         result.ErrorCode.Should().Be("SYNC_PAYLOAD_INVALID");
+        await repository.DidNotReceiveWithAnyArgs().ApplyCanonicalAsync(default, default!, default!, default);
+    }
+
+    [Theory]
+    [InlineData("extra-root")]
+    [InlineData("missing-root-code")]
+    [InlineData("numeric-root-operation")]
+    [InlineData("root-entity-mismatch")]
+    [InlineData("root-global-mismatch")]
+    [InlineData("root-code-mismatch")]
+    [InlineData("root-operation-mismatch")]
+    [InlineData("missing-origin")]
+    [InlineData("missing-is-active")]
+    [InlineData("addresses-not-array")]
+    [InlineData("blank-address-type")]
+    [InlineData("missing-address-line")]
+    [InlineData("missing-address-global-id")]
+    [InlineData("blank-contact-name")]
+    [InlineData("missing-contact-global-id")]
+    [InlineData("missing-contact-code")]
+    [InlineData("string-contact-bool")]
+    [InlineData("numeric-contact-code")]
+    public async Task Apply_ValidJsonWithInvalidCanonicalWireShapeIsTerminal(string mutation)
+    {
+        var applier = CreateApplier(out var repository, out _);
+        repository.ApplyCanonicalAsync(default, default!, default!, default)
+            .ReturnsForAnyArgs(new BusinessPartnerSyncApplyResult(true, false, 80, "Applied."));
+
+        var result = await applier.ApplyAsync(MutatedCanonicalContext(mutation));
+
+        result.Should().BeEquivalentTo(new SyncEventApplyResult(
+            false, "Payload canonico de socio no es JSON valido.", "SYNC_PAYLOAD_INVALID", false, true));
+        await repository.DidNotReceiveWithAnyArgs().ApplyCanonicalAsync(default, default!, default!, default);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("1")]
+    [InlineData("4")]
+    [InlineData("-1")]
+    [InlineData(" 1 ")]
+    public async Task Apply_NumericOrUndefinedOperationIsTerminal(string operation)
+    {
+        var applier = CreateApplier(out var repository, out _);
+        repository.ApplyCanonicalAsync(default, default!, default!, default)
+            .ReturnsForAnyArgs(new BusinessPartnerSyncApplyResult(true, false, 80, "Applied."));
+
+        var result = await applier.ApplyAsync(Context(Canonical()) with { Operation = operation });
+
+        result.Terminal.Should().BeTrue();
+        result.ErrorCode.Should().Be("BP_SYNC_OPERATION_UNSUPPORTED");
         await repository.DidNotReceiveWithAnyArgs().ApplyCanonicalAsync(default, default!, default!, default);
     }
 
@@ -187,6 +239,37 @@ public sealed class BusinessPartnerSyncEventApplierTests
             .Should().ContainSingle(parameter => parameter.ParameterType == typeof(ICompanyResolver));
     }
 
+    [Fact]
+    public void CanonicalPreflight_UsesExactEnvelopeAndClosesOnlyEarlyOutcomes()
+    {
+        var payload = Canonical();
+        var context = Context(payload);
+
+        var parameters = BusinessPartnerSyncApplyRepository.CreateCanonicalPreflightParameters(context, payload);
+
+        parameters.Should().Be(new BusinessPartnerSyncApplyRepository.PreflightParameters(
+            context.EventId,
+            context.SourceCompanyId,
+            "BusinessPartner",
+            context.EntityGlobalId,
+            "Updated",
+            context.PayloadJson,
+            7,
+            CompareCanonicalVersion: true,
+            EqualVersionIsReplay: true));
+        BusinessPartnerSyncApplyRepository.MapCanonicalPreflightResult(
+            new BusinessPartnerSyncApplyRepository.ApplyResultRow { ResultCode = 0 }).Should().BeNull();
+        BusinessPartnerSyncApplyRepository.MapCanonicalPreflightResult(
+            new BusinessPartnerSyncApplyRepository.ApplyResultRow { ResultCode = 2 }).Should().Match<BusinessPartnerSyncApplyResult>(
+                result => result.Applied && result.AlreadyApplied);
+        BusinessPartnerSyncApplyRepository.MapCanonicalPreflightResult(
+            new BusinessPartnerSyncApplyRepository.ApplyResultRow { ResultCode = 3 }).Should().Match<BusinessPartnerSyncApplyResult>(
+                result => result.Applied && result.Ignored);
+        BusinessPartnerSyncApplyRepository.MapCanonicalPreflightResult(
+            new BusinessPartnerSyncApplyRepository.ApplyResultRow { ResultCode = 4 }).Should().Match<BusinessPartnerSyncApplyResult>(
+                result => result.Terminal && result.ErrorCode == "BP_SYNC_EVENT_ID_COLLISION");
+    }
+
     private static BusinessPartnerSyncEventApplier CreateApplier(
         out IBusinessPartnerSyncApplyRepository repository, out ICompanyResolver companies)
     {
@@ -208,6 +291,47 @@ public sealed class BusinessPartnerSyncEventApplierTests
 
     private static BusinessPartnerCanonicalPayloadV2 Canonical() =>
         new(2, 7, 21, Guid.Parse("80000000-0000-0000-0000-000000000009"), Snapshot());
+
+    private static SyncEventApplyContext MutatedCanonicalContext(string mutation)
+    {
+        var childId = Guid.Parse("20000000-0000-0000-0000-000000000009");
+        var payload = Canonical() with
+        {
+            Partner = Snapshot() with
+            {
+                Addresses = [new(childId, "Billing", "Street", null, "EC", null, null, null, null, null, true, true)],
+                Contacts = [new(childId, "OWNER", "EMAIL", "Ana", null, null, null, null, null, null, null, true, true, true, null)]
+            }
+        };
+        var context = Context(payload);
+        var root = JsonNode.Parse(context.PayloadJson)!.AsObject();
+        var wirePayload = root["payload"]!.AsObject();
+        var partner = wirePayload["partner"]!.AsObject();
+        switch (mutation)
+        {
+            case "extra-root": root["unexpected"] = true; break;
+            case "missing-root-code": root.Remove("code"); break;
+            case "numeric-root-operation": root["operation"] = 1; break;
+            case "root-entity-mismatch": root["entityName"] = "BusinessPartnerProposalResult"; break;
+            case "root-global-mismatch": root["globalId"] = JsonValue.Create(Guid.NewGuid()); break;
+            case "root-code-mismatch": root["code"] = "BP-OTHER"; break;
+            case "root-operation-mismatch": root["operation"] = "Created"; break;
+            case "missing-origin": wirePayload.Remove("originCompanyId"); break;
+            case "missing-is-active": partner.Remove("isActive"); break;
+            case "addresses-not-array": partner["addresses"] = new JsonObject(); break;
+            case "blank-address-type": partner["addresses"]![0]!["addressType"] = " "; break;
+            case "missing-address-line": partner["addresses"]![0]!.AsObject().Remove("line1"); break;
+            case "missing-address-global-id": partner["addresses"]![0]!.AsObject().Remove("globalId"); break;
+            case "blank-contact-name": partner["contacts"]![0]!["name"] = ""; break;
+            case "missing-contact-global-id": partner["contacts"]![0]!.AsObject().Remove("globalId"); break;
+            case "missing-contact-code": partner["contacts"]![0]!.AsObject().Remove("contactTypeCode"); break;
+            case "string-contact-bool": partner["contacts"]![0]!["isPrimary"] = "true"; break;
+            case "numeric-contact-code": partner["contacts"]![0]!["contactTypeCode"] = 7; break;
+            default: throw new ArgumentOutOfRangeException(nameof(mutation), mutation, null);
+        }
+
+        return context with { PayloadJson = root.ToJsonString() };
+    }
 
     private static BusinessPartnerCanonicalSnapshot Snapshot() =>
         new(PartnerId, "BP-10000000000000000000000000000009", "Partner", null, "Customer", "RUC",

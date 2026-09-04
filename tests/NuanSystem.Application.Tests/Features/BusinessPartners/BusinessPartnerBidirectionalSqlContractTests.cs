@@ -75,6 +75,7 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
             "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_ACCEPT",
             "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_CONFLICT",
             "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_REJECT",
+            "SP_NA_POST_BUSINESSPARTNER_BRANCH_APPLY_PREFLIGHT",
             "SP_NA_POST_BUSINESSPARTNER_CANONICAL_APPLY",
             "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_RESULT_APPLY",
             "SP_NA_GET_BUSINESSPARTNER_SYNCCONFLICTS_LISTAR",
@@ -124,8 +125,12 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
         var procedure = Procedure("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_RESULT_APPLY");
 
         procedure.Should().Contain("FROM dbo.BusinessPartners WITH (UPDLOCK,HOLDLOCK)")
-            .And.Contain("@HasCanonical=1 AND @CurrentVersion > @CanonicalVersion")
+            .And.Contain("@Status<>'Accepted' AND @CurrentVersion > @CanonicalVersion")
             .And.Contain("IF @Status='Rejected' AND @HasCanonical=1")
+            .And.Contain("IF @Status='Conflict' AND @HasCanonical=0")
+            .And.Contain("@Status='Rejected' AND @HasCanonical=0")
+            .And.Contain("@CanonicalVersion<>0")
+            .And.Contain("@CurrentVersion<>0")
             .And.Contain("SELECT 3 AS ResultCode")
             .And.NotContain("IF @HasCanonical=1 AND @CurrentVersion = @CanonicalVersion")
             .And.NotContain("CanonicalVersion=CASE");
@@ -138,7 +143,7 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
 
         var acceptedGuard = procedure.IndexOf("IF @Status='Accepted'", StringComparison.Ordinal);
         var staleGuard = procedure.IndexOf(
-            "IF @HasCanonical=1 AND @CurrentVersion > @CanonicalVersion",
+            "IF @Status<>'Accepted' AND @CurrentVersion > @CanonicalVersion",
             StringComparison.Ordinal);
         var conflictGuard = procedure.IndexOf("IF @Status='Conflict'", StringComparison.Ordinal);
         var rejectedRestoreGuard = procedure.IndexOf(
@@ -151,11 +156,29 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
         acceptedGuard.Should().BeGreaterThan(0).And.BeLessThan(staleGuard);
         conflictGuard.Should().BeGreaterThan(staleGuard).And.BeLessThan(rejectedRestoreGuard);
         rejectedRestoreGuard.Should().BeGreaterThan(conflictGuard).And.BeLessThan(canonicalUpsert);
-        procedure.Should().Contain("IF @Status='Rejected' AND @HasCanonical=0 AND @BusinessPartnerId IS NULL")
+        procedure.Should().Contain("IF @Status='Rejected' AND @HasCanonical=0")
             .And.Contain("MasterSyncStatus='Conflict',MasterSyncMessage=@Message")
             .And.Contain("MasterSyncStatus='Rejected',MasterSyncMessage=@Message")
             .And.NotContain("IF @HasCanonical=1 AND @CurrentVersion = @CanonicalVersion")
             .And.NotContain("IF @HasCanonical=1\n        BEGIN");
+    }
+
+    [Fact]
+    public void BranchApplyPreflight_ClosesInboxAndVersionOutcomesBeforeMutableReferences()
+    {
+        var procedure = Procedure("SP_NA_POST_BUSINESSPARTNER_BRANCH_APPLY_PREFLIGHT");
+
+        procedure.Should().Contain("IF @@TRANCOUNT = 0")
+            .And.Contain("requires an ambient transaction")
+            .And.Contain("EXEC dbo.SP_NA_POST_BUSINESSPARTNER_SYNCINBOX_ENSURE")
+            .And.Contain("FROM dbo.BusinessPartners WITH (UPDLOCK,HOLDLOCK)")
+            .And.Contain("@CompareCanonicalVersion=1 AND @CurrentVersion>@CanonicalVersion")
+            .And.Contain("@EqualVersionIsReplay=1 AND @CurrentVersion=@CanonicalVersion")
+            .And.Contain("SET Status=N'Ignored'")
+            .And.Contain("SET Status=N'Applied'")
+            .And.ContainAll("SELECT 0 AS ResultCode", "SELECT 2 AS ResultCode", "SELECT 3 AS ResultCode", "SELECT 4 AS ResultCode")
+            .And.NotContain("BEGIN TRANSACTION")
+            .And.NotContain("SP_NA_GET_BUSINESSPARTNER_STABLE_REFERENCES_RESOLVE");
     }
 
     [Theory]
@@ -211,12 +234,15 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
             "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_ACCEPT",
             "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_CONFLICT",
             "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_REJECT",
-            "SP_NA_POST_BUSINESSPARTNER_CANONICAL_APPLY",
-            "SP_NA_POST_BUSINESSPARTNER_PROPOSAL_RESULT_APPLY"
+            "SP_NA_POST_BUSINESSPARTNER_BRANCH_APPLY_PREFLIGHT",
+            "SP_NA_POST_BUSINESSPARTNER_CANONICAL_APPLY"
         ];
         foreach (var name in inboxProcedures)
             Procedure(name).Should().Contain("EXEC dbo.SP_NA_POST_BUSINESSPARTNER_SYNCINBOX_ENSURE")
                 .And.Contain("SELECT 4 AS ResultCode");
+        Procedure("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_RESULT_APPLY")
+            .Should().Contain("EXEC dbo.SP_NA_POST_BUSINESSPARTNER_SYNCINBOX_ENSURE")
+            .And.Contain("SELECT 6 AS ResultCode");
 
         string[] outboxProcedures =
         [

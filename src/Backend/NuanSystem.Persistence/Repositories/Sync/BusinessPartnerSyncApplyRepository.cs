@@ -16,6 +16,8 @@ public sealed class BusinessPartnerSyncApplyRepository(ICompanyResolver companyR
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     internal const string StableReferencesProcedure =
         "dbo.SP_NA_GET_BUSINESSPARTNER_STABLE_REFERENCES_RESOLVE";
+    internal const string BranchApplyPreflightProcedure =
+        "dbo.SP_NA_POST_BUSINESSPARTNER_BRANCH_APPLY_PREFLIGHT";
     internal const string CanonicalApplyProcedure =
         "dbo.SP_NA_POST_BUSINESSPARTNER_CANONICAL_APPLY";
     internal const string ProposalResultApplyProcedure =
@@ -36,6 +38,19 @@ public sealed class BusinessPartnerSyncApplyRepository(ICompanyResolver companyR
 
         try
         {
+            var preflightRow = await connection.QuerySingleAsync<ApplyResultRow>(new CommandDefinition(
+                BranchApplyPreflightProcedure,
+                CreateCanonicalPreflightParameters(context, payload),
+                transaction,
+                commandType: CommandType.StoredProcedure,
+                cancellationToken: cancellationToken));
+            var preflightResult = MapCanonicalPreflightResult(preflightRow);
+            if (preflightResult is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+                return preflightResult;
+            }
+
             var references = await ResolveStableReferencesAsync(
                 connection,
                 transaction,
@@ -79,6 +94,19 @@ public sealed class BusinessPartnerSyncApplyRepository(ICompanyResolver companyR
 
         try
         {
+            var preflightRow = await connection.QuerySingleAsync<ApplyResultRow>(new CommandDefinition(
+                BranchApplyPreflightProcedure,
+                CreateProposalResultPreflightParameters(context, payload),
+                transaction,
+                commandType: CommandType.StoredProcedure,
+                cancellationToken: cancellationToken));
+            var preflightResult = MapProposalResultPreflightResult(preflightRow);
+            if (preflightResult is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+                return preflightResult;
+            }
+
             StableReferenceResolution? references = null;
             if (payload.Status == "Rejected" && payload.Canonical is not null)
             {
@@ -177,6 +205,34 @@ public sealed class BusinessPartnerSyncApplyRepository(ICompanyResolver companyR
                 ?? throw new InvalidOperationException("Resolved contacts are required."));
     }
 
+    internal static PreflightParameters CreateCanonicalPreflightParameters(
+        SyncEventApplyContext context,
+        BusinessPartnerCanonicalPayloadV2 payload) =>
+        new(
+            context.EventId,
+            context.SourceCompanyId,
+            "BusinessPartner",
+            context.EntityGlobalId,
+            context.Operation,
+            context.PayloadJson,
+            payload.CanonicalVersion,
+            CompareCanonicalVersion: true,
+            EqualVersionIsReplay: true);
+
+    internal static PreflightParameters CreateProposalResultPreflightParameters(
+        SyncEventApplyContext context,
+        BusinessPartnerProposalResultPayloadV1 payload) =>
+        new(
+            context.EventId,
+            context.SourceCompanyId,
+            "BusinessPartnerProposalResult",
+            context.EntityGlobalId,
+            "Updated",
+            context.PayloadJson,
+            payload.CanonicalVersion,
+            CompareCanonicalVersion: payload.Status != "Accepted",
+            EqualVersionIsReplay: false);
+
     internal static ProposalResultApplyParameters CreateProposalResultParameters(
         SyncEventApplyContext context,
         BusinessPartnerProposalResultPayloadV1 payload,
@@ -226,6 +282,17 @@ public sealed class BusinessPartnerSyncApplyRepository(ICompanyResolver companyR
             _ => throw new InvalidOperationException($"Unexpected canonical apply result {row.ResultCode}.")
         };
 
+    internal static BusinessPartnerSyncApplyResult? MapCanonicalPreflightResult(ApplyResultRow row) =>
+        row.ResultCode switch
+        {
+            0 => null,
+            2 => new(true, true, row.BusinessPartnerId, "Canonico de socio ya aplicado."),
+            3 => new(true, true, row.BusinessPartnerId, "Canonico anterior ignorado.", Ignored: true),
+            4 => new(false, false, row.BusinessPartnerId, "El EventId ya pertenece a otro sobre.",
+                "BP_SYNC_EVENT_ID_COLLISION", Terminal: true),
+            _ => throw new InvalidOperationException($"Unexpected canonical preflight result {row.ResultCode}.")
+        };
+
     internal static BusinessPartnerSyncApplyResult MapProposalResult(ApplyResultRow row) =>
         row.ResultCode switch
         {
@@ -236,7 +303,20 @@ public sealed class BusinessPartnerSyncApplyRepository(ICompanyResolver companyR
                 "BP_SYNC_RESULT_INVALID", Terminal: true),
             5 => new(false, false, row.BusinessPartnerId, "El resultado contradice identidad inmutable local.",
                 "BP_SYNC_RESULT_IDENTITY_CONFLICT", Terminal: true),
+            6 => new(false, false, row.BusinessPartnerId, "El EventId ya pertenece a otro sobre.",
+                "BP_SYNC_EVENT_ID_COLLISION", Terminal: true),
             _ => throw new InvalidOperationException($"Unexpected proposal result apply result {row.ResultCode}.")
+        };
+
+    internal static BusinessPartnerSyncApplyResult? MapProposalResultPreflightResult(ApplyResultRow row) =>
+        row.ResultCode switch
+        {
+            0 => null,
+            2 => new(true, true, row.BusinessPartnerId, "Resultado de propuesta ya aplicado."),
+            3 => new(true, true, row.BusinessPartnerId, "Resultado canonico anterior ignorado.", Ignored: true),
+            4 => new(false, false, row.BusinessPartnerId, "El EventId ya pertenece a otro sobre.",
+                "BP_SYNC_EVENT_ID_COLLISION", Terminal: true),
+            _ => throw new InvalidOperationException($"Unexpected proposal result preflight result {row.ResultCode}.")
         };
 
     private async Task<CompanyConnectionInfo> ResolveBranchAsync(
@@ -278,6 +358,17 @@ public sealed class BusinessPartnerSyncApplyRepository(ICompanyResolver companyR
         int? IdentificationTypeId,
         string? AddressesJson,
         string? ContactsJson);
+
+    internal sealed record PreflightParameters(
+        Guid EventId,
+        int SourceCompanyId,
+        string EntityName,
+        Guid EntityGlobalId,
+        string Operation,
+        string PayloadJson,
+        long CanonicalVersion,
+        bool CompareCanonicalVersion,
+        bool EqualVersionIsReplay);
 
     internal sealed record CanonicalApplyParameters(
         Guid EventId,

@@ -24,6 +24,8 @@ public sealed class BusinessPartnerProposalResultSyncEventApplier(
             return Terminal("Entidad de resultado no soportada.", "BP_SYNC_ENTITY_UNSUPPORTED");
         if (context.TargetCompanyId is null)
             return Terminal("El resultado requiere sucursal destino.", "BP_SYNC_TARGET_REQUIRED");
+        if (context.Operation != "Updated")
+            return Terminal("Operacion de resultado no soportada.", "BP_SYNC_OPERATION_UNSUPPORTED");
 
         BusinessPartnerProposalResultPayloadV1 payload;
         try
@@ -41,13 +43,14 @@ public sealed class BusinessPartnerProposalResultSyncEventApplier(
             return Terminal("Payload de resultado de socio incompleto.", "SYNC_PAYLOAD_INVALID");
         if (payload.Status is not ("Accepted" or "Rejected" or "Conflict"))
             return Terminal("Estado de resultado no soportado.", "BP_SYNC_RESULT_STATUS_UNSUPPORTED");
+        if (payload.Status == "Conflict" && payload.Canonical is null)
+            return Terminal("Payload de resultado de socio incompleto.", "SYNC_PAYLOAD_INVALID");
+        if (payload.Status == "Rejected" && payload.Canonical is null && payload.CanonicalVersion != 0)
+            return Terminal("Payload de resultado de socio incompleto.", "SYNC_PAYLOAD_INVALID");
         if (payload.GlobalId != context.EntityGlobalId)
             return Terminal("El resultado no coincide con EntityGlobalId.", "BP_SYNC_GLOBAL_ID_MISMATCH");
         if (context.TargetCompanyId != payload.OriginCompanyId)
             return Terminal("El resultado solo puede llegar a su sucursal origen.", "BP_SYNC_RESULT_TARGET_MISMATCH");
-        if (context.Operation != "Updated")
-            return Terminal("Operacion de resultado no soportada.", "BP_SYNC_OPERATION_UNSUPPORTED");
-
         var source = await companyResolver.ResolveByIdAsync(context.SourceCompanyId, cancellationToken);
         if (source is null || !source.IsMaster)
             return Terminal("La empresa origen debe ser central.", "BP_SYNC_SOURCE_CENTRAL_REQUIRED");
@@ -71,10 +74,7 @@ public sealed class BusinessPartnerProposalResultSyncEventApplier(
     private static BusinessPartnerProposalResultPayloadV1 ReadPayload(string payloadJson)
     {
         using var document = JsonDocument.Parse(payloadJson);
-        if (document.RootElement.ValueKind != JsonValueKind.Object ||
-            !document.RootElement.TryGetProperty("payload", out var payloadElement) ||
-            payloadElement.ValueKind != JsonValueKind.Object)
-            throw new JsonException("El evento no contiene payload objeto.");
+        var payloadElement = BusinessPartnerSyncWireValidator.ValidateResultEnvelope(document.RootElement);
         return payloadElement.Deserialize<BusinessPartnerProposalResultPayloadV1>(JsonOptions)
             ?? throw new JsonException("El resultado no pudo deserializarse.");
     }
@@ -96,8 +96,11 @@ public sealed class BusinessPartnerProposalResultSyncEventApplier(
         !string.IsNullOrWhiteSpace(canonical.NormalizedIdentificationNumber) &&
         canonical.Addresses is not null &&
         canonical.Contacts is not null &&
-        canonical.Addresses.All(item => item is not null && item.GlobalId != Guid.Empty) &&
-        canonical.Contacts.All(item => item is not null && item.GlobalId != Guid.Empty) &&
+        canonical.Addresses.All(item =>
+            item is not null && item.GlobalId != Guid.Empty &&
+            !string.IsNullOrWhiteSpace(item.AddressType) && !string.IsNullOrWhiteSpace(item.Line1)) &&
+        canonical.Contacts.All(item =>
+            item is not null && item.GlobalId != Guid.Empty && !string.IsNullOrWhiteSpace(item.Name)) &&
         HasUniqueGlobalIds(canonical.Addresses.Select(item => item.GlobalId)) &&
         HasUniqueGlobalIds(canonical.Contacts.Select(item => item.GlobalId));
 

@@ -103,6 +103,77 @@ BEGIN
 END;
 GO
 
+CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_BUSINESSPARTNER_BRANCH_APPLY_PREFLIGHT
+    @EventId uniqueidentifier,
+    @SourceCompanyId int,
+    @EntityName nvarchar(120),
+    @EntityGlobalId uniqueidentifier,
+    @Operation nvarchar(30),
+    @PayloadJson nvarchar(max),
+    @CanonicalVersion bigint,
+    @CompareCanonicalVersion bit,
+    @EqualVersionIsReplay bit
+AS
+BEGIN
+    SET NOCOUNT ON;
+    IF @@TRANCOUNT = 0
+        THROW 52030, 'BusinessPartner branch apply preflight requires an ambient transaction.', 1;
+    IF @EntityName NOT IN (N'BusinessPartner',N'BusinessPartnerProposalResult')
+        THROW 52030, 'BusinessPartner branch apply preflight entity is invalid.', 1;
+
+    DECLARE @InboxId bigint,@InboxStatus nvarchar(30),@InboxEnvelopeResult int,
+            @BusinessPartnerId int,@CurrentVersion bigint;
+    EXEC dbo.SP_NA_POST_BUSINESSPARTNER_SYNCINBOX_ENSURE
+        @EventId=@EventId,@SourceCompanyId=@SourceCompanyId,
+        @EntityName=@EntityName,@EntityGlobalId=@EntityGlobalId,
+        @Operation=@Operation,@PayloadJson=@PayloadJson,
+        @InboxId=@InboxId OUTPUT,@InboxStatus=@InboxStatus OUTPUT,
+        @EnvelopeResult=@InboxEnvelopeResult OUTPUT;
+
+    IF @InboxEnvelopeResult=4
+    BEGIN
+        SELECT 4 AS ResultCode,CAST(NULL AS int) AS BusinessPartnerId;
+        RETURN;
+    END;
+    IF @InboxStatus=N'Applied'
+    BEGIN
+        SELECT 2 AS ResultCode,CAST(NULL AS int) AS BusinessPartnerId;
+        RETURN;
+    END;
+    IF @InboxStatus=N'Ignored'
+    BEGIN
+        SELECT 3 AS ResultCode,CAST(NULL AS int) AS BusinessPartnerId;
+        RETURN;
+    END;
+
+    SELECT @BusinessPartnerId=Id,@CurrentVersion=CanonicalVersion
+    FROM dbo.BusinessPartners WITH (UPDLOCK,HOLDLOCK)
+    WHERE GlobalId=@EntityGlobalId;
+
+    IF @CompareCanonicalVersion=1 AND @CurrentVersion>@CanonicalVersion
+    BEGIN
+        UPDATE dbo.SyncInbox
+        SET Status=N'Ignored',AppliedAt=SYSUTCDATETIME(),ErrorMessage=NULL,
+            LastErrorMessage=N'Stale canonical event ignored.',NextRetryAt=NULL
+        WHERE Id=@InboxId;
+        SELECT 3 AS ResultCode,@BusinessPartnerId AS BusinessPartnerId;
+        RETURN;
+    END;
+
+    IF @CompareCanonicalVersion=1 AND @EqualVersionIsReplay=1 AND @CurrentVersion=@CanonicalVersion
+    BEGIN
+        UPDATE dbo.SyncInbox
+        SET Status=N'Applied',AppliedAt=SYSUTCDATETIME(),ErrorMessage=NULL,
+            LastErrorMessage=NULL,NextRetryAt=NULL
+        WHERE Id=@InboxId;
+        SELECT 2 AS ResultCode,@BusinessPartnerId AS BusinessPartnerId;
+        RETURN;
+    END;
+
+    SELECT 0 AS ResultCode,@BusinessPartnerId AS BusinessPartnerId;
+END;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_BUSINESSPARTNER_LOCALOUTBOX_ENSURE
     @EventId uniqueidentifier,
     @CompanyId int,
@@ -1222,7 +1293,7 @@ BEGIN
         IF @InboxEnvelopeResult=4
         BEGIN
             IF @StartedTransaction = 1 COMMIT TRANSACTION;
-            SELECT 4 AS ResultCode;
+            SELECT 6 AS ResultCode;
             RETURN;
         END;
         IF @InboxStatus=N'Applied'
@@ -1254,7 +1325,7 @@ BEGIN
             RETURN;
         END;
 
-        IF @HasCanonical=1 AND @CurrentVersion > @CanonicalVersion
+        IF @Status<>'Accepted' AND @CurrentVersion > @CanonicalVersion
         BEGIN
             UPDATE dbo.SyncInbox
             SET Status=N'Ignored',AppliedAt=SYSUTCDATETIME(),
@@ -1262,6 +1333,17 @@ BEGIN
             WHERE Id=@InboxId;
             IF @StartedTransaction = 1 COMMIT TRANSACTION;
             SELECT 3 AS ResultCode;
+            RETURN;
+        END;
+
+        IF @Status='Conflict' AND @HasCanonical=0
+        BEGIN
+            UPDATE dbo.SyncInbox
+            SET Status=N'DeadLetter',ErrorMessage=N'Conflict result requires a canonical snapshot.',
+                LastErrorMessage=N'Conflict result requires a canonical snapshot.',NextRetryAt=NULL
+            WHERE Id=@InboxId;
+            IF @StartedTransaction = 1 COMMIT TRANSACTION;
+            SELECT 4 AS ResultCode;
             RETURN;
         END;
 
@@ -1290,7 +1372,8 @@ BEGIN
             RETURN;
         END;
 
-        IF @Status='Rejected' AND @HasCanonical=0 AND @BusinessPartnerId IS NULL
+        IF @Status='Rejected' AND @HasCanonical=0
+           AND (@BusinessPartnerId IS NULL OR @CanonicalVersion<>0 OR @CurrentVersion<>0)
         BEGIN
             UPDATE dbo.SyncInbox
             SET Status=N'DeadLetter',ErrorMessage=N'Rejected result has no local proposal or canonical snapshot.',
