@@ -290,6 +290,8 @@ public sealed class BusinessPartnerSyncApplyRepository(ICompanyResolver companyR
             3 => new(true, true, row.BusinessPartnerId, "Canonico anterior ignorado.", Ignored: true),
             4 => new(false, false, row.BusinessPartnerId, "El EventId ya pertenece a otro sobre.",
                 "BP_SYNC_EVENT_ID_COLLISION", Terminal: true),
+            5 => new(false, false, row.BusinessPartnerId, "El evento ya fue cerrado en DeadLetter.",
+                "BP_SYNC_EVENT_ALREADY_TERMINAL", Terminal: true),
             _ => throw new InvalidOperationException($"Unexpected canonical preflight result {row.ResultCode}.")
         };
 
@@ -316,6 +318,8 @@ public sealed class BusinessPartnerSyncApplyRepository(ICompanyResolver companyR
             3 => new(true, true, row.BusinessPartnerId, "Resultado canonico anterior ignorado.", Ignored: true),
             4 => new(false, false, row.BusinessPartnerId, "El EventId ya pertenece a otro sobre.",
                 "BP_SYNC_EVENT_ID_COLLISION", Terminal: true),
+            5 => new(false, false, row.BusinessPartnerId, "El evento ya fue cerrado en DeadLetter.",
+                "BP_SYNC_EVENT_ALREADY_TERMINAL", Terminal: true),
             _ => throw new InvalidOperationException($"Unexpected proposal result preflight result {row.ResultCode}.")
         };
 

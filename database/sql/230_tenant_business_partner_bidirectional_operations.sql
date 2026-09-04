@@ -135,6 +135,11 @@ BEGIN
         SELECT 4 AS ResultCode,CAST(NULL AS int) AS BusinessPartnerId;
         RETURN;
     END;
+    IF @InboxStatus=N'DeadLetter'
+    BEGIN
+        SELECT 5 AS ResultCode,CAST(NULL AS int) AS BusinessPartnerId;
+        RETURN;
+    END;
     IF @InboxStatus=N'Applied'
     BEGIN
         SELECT 2 AS ResultCode,CAST(NULL AS int) AS BusinessPartnerId;

@@ -276,6 +276,21 @@ public sealed class BusinessPartnerProposalResultSyncEventApplierTests
                 result => result.Terminal && result.ErrorCode == "BP_SYNC_EVENT_ID_COLLISION");
     }
 
+    [Fact]
+    public void ResultPreflight_DeadLetterReplayIsAStableTerminalShortCircuit()
+    {
+        var result = BusinessPartnerSyncApplyRepository.MapProposalResultPreflightResult(
+            new BusinessPartnerSyncApplyRepository.ApplyResultRow { ResultCode = 5 });
+
+        result.Should().NotBeNull();
+        result!.Applied.Should().BeFalse();
+        result.AlreadyApplied.Should().BeFalse();
+        result.Ignored.Should().BeFalse();
+        result.Terminal.Should().BeTrue();
+        result.Retryable.Should().BeFalse();
+        result.ErrorCode.Should().Be("BP_SYNC_EVENT_ALREADY_TERMINAL");
+    }
+
     private static BusinessPartnerProposalResultSyncEventApplier CreateApplier(
         out IBusinessPartnerSyncApplyRepository repository, out ICompanyResolver companies)
     {

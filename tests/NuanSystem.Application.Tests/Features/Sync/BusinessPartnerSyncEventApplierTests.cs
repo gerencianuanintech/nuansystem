@@ -270,6 +270,21 @@ public sealed class BusinessPartnerSyncEventApplierTests
                 result => result.Terminal && result.ErrorCode == "BP_SYNC_EVENT_ID_COLLISION");
     }
 
+    [Fact]
+    public void CanonicalPreflight_DeadLetterReplayIsAStableTerminalShortCircuit()
+    {
+        var result = BusinessPartnerSyncApplyRepository.MapCanonicalPreflightResult(
+            new BusinessPartnerSyncApplyRepository.ApplyResultRow { ResultCode = 5 });
+
+        result.Should().NotBeNull();
+        result!.Applied.Should().BeFalse();
+        result.AlreadyApplied.Should().BeFalse();
+        result.Ignored.Should().BeFalse();
+        result.Terminal.Should().BeTrue();
+        result.Retryable.Should().BeFalse();
+        result.ErrorCode.Should().Be("BP_SYNC_EVENT_ALREADY_TERMINAL");
+    }
+
     private static BusinessPartnerSyncEventApplier CreateApplier(
         out IBusinessPartnerSyncApplyRepository repository, out ICompanyResolver companies)
     {

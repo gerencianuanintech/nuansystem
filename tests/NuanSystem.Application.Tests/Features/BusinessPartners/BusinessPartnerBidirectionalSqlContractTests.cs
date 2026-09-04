@@ -181,6 +181,27 @@ public sealed class BusinessPartnerBidirectionalSqlContractTests
             .And.NotContain("SP_NA_GET_BUSINESSPARTNER_STABLE_REFERENCES_RESOLVE");
     }
 
+    [Fact]
+    public void BranchApplyPreflight_ExactDeadLetterReplayReturnsBeforeLocksWithoutMutation()
+    {
+        var procedure = Procedure("SP_NA_POST_BUSINESSPARTNER_BRANCH_APPLY_PREFLIGHT");
+        var collisionGuard = procedure.IndexOf("IF @InboxEnvelopeResult=4", StringComparison.Ordinal);
+        var deadLetterGuard = procedure.IndexOf("IF @InboxStatus=N'DeadLetter'", StringComparison.Ordinal);
+        var partnerLock = procedure.IndexOf(
+            "FROM dbo.BusinessPartners WITH (UPDLOCK,HOLDLOCK)",
+            StringComparison.Ordinal);
+
+        collisionGuard.Should().BeGreaterThan(-1).And.BeLessThan(deadLetterGuard);
+        deadLetterGuard.Should().BeGreaterThan(-1).And.BeLessThan(partnerLock);
+        var terminalBranch = procedure[deadLetterGuard..partnerLock];
+        terminalBranch.Should().Contain("SELECT 5 AS ResultCode")
+            .And.Contain("RETURN;")
+            .And.NotContain("UPDATE dbo.SyncInbox")
+            .And.NotContain("SP_NA_GET_BUSINESSPARTNER_STABLE_REFERENCES_RESOLVE")
+            .And.NotContain("SP_NA_POST_BUSINESSPARTNER_CANONICAL_APPLY")
+            .And.NotContain("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_RESULT_APPLY");
+    }
+
     [Theory]
     [InlineData("SP_NA_POST_BUSINESSPARTNER_CANONICAL_APPLY", "BpCanonicalApplySavepoint")]
     [InlineData("SP_NA_POST_BUSINESSPARTNER_PROPOSAL_RESULT_APPLY", "BpProposalResultSavepoint")]
