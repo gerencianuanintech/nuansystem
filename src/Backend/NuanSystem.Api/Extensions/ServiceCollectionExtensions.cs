@@ -9,6 +9,7 @@ using NuanSystem.Infrastructure.Authentication;
 using NuanSystem.Api.Options;
 using NuanSystem.Api.Services;
 using NuanSystem.Api.Health;
+using NuanSystem.Api.Middleware;
 using NuanSystem.Application.Abstractions.Authentication;
 using NuanSystem.Application.DependencyInjection;
 using NuanSystem.Infrastructure.DependencyInjection;
@@ -52,6 +53,8 @@ public static class ServiceCollectionExtensions
             });
         });
         services.AddHttpContextAccessor();
+        services.AddScoped<IExceptionResponseMapper, ExceptionResponseMapper>();
+        services.AddScoped<IExceptionAuditWriter, ExceptionAuditWriter>();
 
         var jwtOptions = ReadJwtOptions(configuration);
         services

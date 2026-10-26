@@ -262,6 +262,21 @@ Minimal API endpoint
 
 Impact rule: changing messaging or result contracts requires inspecting handlers, pipeline behaviors, endpoint mapping, frontend error deserialization, and tests.
 
+### 5.1.1 Unexpected dependency failure path
+
+```text
+SQL/SAP/network provider failure
+  -> IDependencyFailureClassifier (Persistence/integration boundary)
+       -> DependencyFailureException (Application-neutral contract)
+            -> ExceptionResponseMapper
+                 -> stable HTTP status + ApiError + TraceIdentifier
+            -> ExceptionAuditWriter
+                 -> IErrorSanitizer
+                      -> bounded redacted audit diagnostics
+```
+
+Forbidden edges: API `-X->` `SqlException`/SAP transport exceptions; raw exception messages, connection strings, tokens, cookies or payloads `-X->` HTTP responses/audit logs.
+
 ### 5.2 Tenant data path
 
 ```text

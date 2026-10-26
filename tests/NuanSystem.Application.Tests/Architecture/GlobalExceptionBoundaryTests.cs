@@ -57,13 +57,17 @@ public sealed class GlobalExceptionBoundaryTests
     [Fact]
     public void Api_middleware_does_not_reference_provider_exceptions_or_raw_messages()
     {
-        var source = ReadSource("src", "Backend", "NuanSystem.Api", "Middleware", "GlobalExceptionMiddleware.cs");
+        var source = string.Join(
+            Environment.NewLine,
+            ReadSource("src", "Backend", "NuanSystem.Api", "Middleware", "GlobalExceptionMiddleware.cs"),
+            ReadSource("src", "Backend", "NuanSystem.Api", "Middleware", "ExceptionResponseMapper.cs"),
+            ReadSource("src", "Backend", "NuanSystem.Api", "Middleware", "ExceptionAuditWriter.cs"));
 
         source.Should().NotContain("Microsoft.Data.SqlClient");
         source.Should().NotContain("SapServiceLayerException");
         source.Should().NotContain("exception.Message");
         source.Should().Contain("IErrorSanitizer");
-        source.Should().Contain("context.TraceIdentifier");
+        source.Should().Contain("TraceIdentifier");
     }
 
     [Fact]
@@ -87,9 +91,16 @@ public sealed class GlobalExceptionBoundaryTests
                 "No fue posible conectar con el servicio externo.",
                 isRetryable: true,
                 diagnosticContext: $"Authorization: Bearer {secret}",
-                innerException: new InvalidOperationException($"Password={secret};Server=db.internal")),
-            NullLogger<GlobalExceptionMiddleware>.Instance,
+                innerException: new InvalidOperationException($"Password={secret};Server=db.internal")));
+        var sanitizer = new ErrorSanitizer();
+        var responseMapper = new ExceptionResponseMapper(
+            new DependencyFailureClassifier(),
+            sanitizer,
             environment);
+        var auditWriter = new ExceptionAuditWriter(
+            audit,
+            sanitizer,
+            NullLogger<ExceptionAuditWriter>.Instance);
         var context = new DefaultHttpContext
         {
             TraceIdentifier = "trace-safe-123"
@@ -101,9 +112,8 @@ public sealed class GlobalExceptionBoundaryTests
 
         await middleware.InvokeAsync(
             context,
-            audit,
-            new DependencyFailureClassifier(),
-            new ErrorSanitizer());
+            responseMapper,
+            auditWriter);
 
         context.Response.Body.Position = 0;
         var responseBody = await new StreamReader(context.Response.Body).ReadToEndAsync();

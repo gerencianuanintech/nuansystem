@@ -221,6 +221,15 @@ Status values:
 - **Current HTTP behavior (2026-10-24 consolidation):** success 200; legacy/Validation failure 400; NotFound 404; Conflict 409; Forbidden 403; Unavailable 503; Unexpected/unknown 500 with sanitized message/errors. `FailureKind` is optional for legacy callers. See `docs/operations/BACKEND-SOLID-VALIDATION.md`; HTTP shape remains compatible with WinForms.
 - **Antipatterns:** new result type, endpoint-local error schema, raw SQL/SAP exception returned to clients.
 
+#### 7.2.1 Dependency failure boundary and diagnostic sanitization
+
+- **Contracts:** `IErrorSanitizer`, `IDependencyFailureClassifier`, and `DependencyFailureException` under `src/Backend/NuanSystem.Application`.
+- **Implementations:** `Infrastructure/Diagnostics/ErrorSanitizer.cs`, `Persistence/Diagnostics/DependencyFailureClassifier.cs`, and the focused API services `ExceptionResponseMapper` / `ExceptionAuditWriter`.
+- **Status:** Active/authoritative for unexpected database, SAP, network, and timeout failures.
+- **Responsibility:** Keep provider exceptions outside API/Application behavior, map failures to stable safe codes, redact bounded diagnostics, and preserve the HTTP trace identifier.
+- **Boundary:** provider classification belongs in Persistence or the owning integration; API coordinates the neutral contract and never returns raw exception messages.
+- **Antipatterns:** catching `SqlException` or SAP transport exceptions in API, logging exception objects with unredacted payloads, or placing credentials/connection strings in responses or audit fields.
+
 ### 7.3 Trusted company context and tenant connection
 
 - **Locations:**

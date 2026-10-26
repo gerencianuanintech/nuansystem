@@ -73,6 +73,8 @@ internal sealed class BackendApiFixture : IAsyncDisposable
         builder.Services.AddApplicationServices();
         builder.Services.AddSingleton<IErrorSanitizer, ErrorSanitizer>();
         builder.Services.AddSingleton<IDependencyFailureClassifier, DependencyFailureClassifier>();
+        builder.Services.AddScoped<IExceptionResponseMapper, ExceptionResponseMapper>();
+        builder.Services.AddScoped<IExceptionAuditWriter, ExceptionAuditWriter>();
         builder.Services.AddScoped<ICompanyContext, CompanyContext>();
         var resolver = Substitute.For<ICompanyResolver>();
         resolver.ResolveByCodeForUserAsync(Arg.Any<string>(), 42, Arg.Any<CancellationToken>()).Returns(call =>
