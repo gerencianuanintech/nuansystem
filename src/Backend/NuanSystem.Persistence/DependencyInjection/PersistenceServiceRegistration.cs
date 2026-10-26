@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NuanSystem.Application.Abstractions.Data;
+using NuanSystem.Application.Abstractions.Diagnostics;
 using NuanSystem.Application.Abstractions.Authentication;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Abstractions.Sap;
@@ -9,6 +10,7 @@ using NuanSystem.Application.Abstractions.Operations;
 using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Abstractions.Sri;
 using NuanSystem.Persistence.Connections;
+using NuanSystem.Persistence.Diagnostics;
 using NuanSystem.Persistence.Options;
 using NuanSystem.Persistence.Repositories;
 using NuanSystem.Persistence.Repositories.Documents;
@@ -62,6 +64,7 @@ public static class PersistenceServiceRegistration
         });
 
         services.AddSingleton<IMasterDatabaseInitializer, SqlServerMasterDatabaseInitializer>();
+        services.AddSingleton<IDependencyFailureClassifier, DependencyFailureClassifier>();
         services.AddScoped<ICompanyContext, CompanyContext>();
         services.AddScoped<MasterConnectionFactory>();
         services.AddScoped<IMasterConnectionFactory>(provider => provider.GetRequiredService<MasterConnectionFactory>());

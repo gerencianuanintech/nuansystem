@@ -10,6 +10,7 @@ using NSubstitute;
 using NuanSystem.Api.Endpoints;
 using NuanSystem.Api.Middleware;
 using NuanSystem.Application.Abstractions.Data;
+using NuanSystem.Application.Abstractions.Diagnostics;
 using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.DependencyInjection;
@@ -21,6 +22,8 @@ using NuanSystem.Application.Features.SapSync.Services;
 using NuanSystem.Application.Features.SecurityAccess.Dtos;
 using NuanSystem.Application.Tests.Infrastructure;
 using NuanSystem.Domain.Tenancy;
+using NuanSystem.Infrastructure.Diagnostics;
+using NuanSystem.Persistence.Diagnostics;
 using NuanSystem.Persistence.Tenancy;
 using NuanSystem.Shared.Constants;
 using NuanSystem.Shared.Contracts.Auth;
@@ -68,6 +71,8 @@ internal sealed class BackendApiFixture : IAsyncDisposable
         builder.Services.AddLogging();
         builder.Services.AddSingleton(this);
         builder.Services.AddApplicationServices();
+        builder.Services.AddSingleton<IErrorSanitizer, ErrorSanitizer>();
+        builder.Services.AddSingleton<IDependencyFailureClassifier, DependencyFailureClassifier>();
         builder.Services.AddScoped<ICompanyContext, CompanyContext>();
         var resolver = Substitute.For<ICompanyResolver>();
         resolver.ResolveByCodeForUserAsync(Arg.Any<string>(), 42, Arg.Any<CancellationToken>()).Returns(call =>

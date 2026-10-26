@@ -1,6 +1,6 @@
 namespace NuanSystem.Application.Common.Exceptions;
 
-public sealed class SapServiceLayerException : Exception
+public sealed class SapServiceLayerException : DependencyFailureException
 {
     public SapServiceLayerException(
         string operation,
@@ -8,7 +8,13 @@ public sealed class SapServiceLayerException : Exception
         string? sapErrorCode = null,
         string? sapErrorMessage = null,
         Exception? innerException = null)
-        : base(BuildMessage(operation, statusCode, sapErrorCode, sapErrorMessage), innerException)
+        : base(
+            DependencyKind.Sap,
+            "SAP_SERVICE_LAYER_REJECTED",
+            "SAP Business One no pudo completar la operacion solicitada.",
+            DetermineRetryability(statusCode),
+            BuildDiagnosticContext(operation, statusCode, sapErrorCode),
+            innerException)
     {
         Operation = operation;
         StatusCode = statusCode;
@@ -21,16 +27,16 @@ public sealed class SapServiceLayerException : Exception
     public string? SapErrorCode { get; }
     public string? SapErrorMessage { get; }
 
-    private static string BuildMessage(
+    private static string BuildDiagnosticContext(
         string operation,
         int? statusCode,
-        string? sapErrorCode,
-        string? sapErrorMessage)
+        string? sapErrorCode)
     {
         var status = statusCode is null ? string.Empty : $" HTTP {statusCode}.";
         var code = string.IsNullOrWhiteSpace(sapErrorCode) ? string.Empty : $" Codigo SAP: {sapErrorCode}.";
-        var message = string.IsNullOrWhiteSpace(sapErrorMessage) ? string.Empty : $" Mensaje SAP: {sapErrorMessage}";
-
-        return $"SAP Service Layer no pudo {operation}.{status}{code}{message}";
+        return $"Operacion SAP: {operation}.{status}{code}";
     }
+
+    private static bool DetermineRetryability(int? statusCode) =>
+        statusCode is null or 408 or 429 || statusCode >= 500;
 }

@@ -15,7 +15,7 @@ public sealed class SapServiceLayerConnectionTester(SapServiceLayerQueryClient q
         }
         catch (SapServiceLayerException exception)
         {
-            return new(false, exception.SapErrorMessage ?? "No fue posible conectar con SAP Service Layer.");
+            return new(false, exception.Message);
         }
         catch (InvalidOperationException exception)
         {
