@@ -1,10 +1,12 @@
 using NuanSystem.Application.Abstractions.Data;
+using NuanSystem.Application.Abstractions.SapSync;
 using NuanSystem.Application.Features.SapSync.Mapping;
 using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders.Dtos;
+using NuanSystem.Application.Features.SapSync.Constants;
 using NuanSystem.Shared.Responses;
 
 namespace NuanSystem.Application.Features.Purchasing.PurchaseOrders.Commands;
@@ -266,7 +268,8 @@ public sealed class RejectPurchaseOrderCommandHandler(
 public sealed class SyncPurchaseOrderSapCommandHandler(
     IPurchaseOrderRepository repository,
     ISecurityDocumentSeriesAccessRepository seriesAccessRepository,
-    ICompanyContext companyContext)
+    ICompanyContext companyContext,
+    ISapSyncProcessorRegistry sapSyncProcessors)
     : ICommandHandler<SyncPurchaseOrderSapCommand, PurchaseOrderDto>
 {
     public async Task<Result<PurchaseOrderDto>> Handle(SyncPurchaseOrderSapCommand request, CancellationToken cancellationToken)
@@ -276,6 +279,16 @@ public sealed class SyncPurchaseOrderSapCommandHandler(
         {
             return Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.", FailureKind.NotFound,
                 [new ApiError("PURCHASE_ORDER_NOT_FOUND", "La orden de compra no existe.", nameof(request.Id))]);
+        }
+
+        if (sapSyncProcessors.FindExporter(SapSyncEntityCode.PurchaseOrders) is null)
+        {
+            return Result<PurchaseOrderDto>.Failure(
+                "La exportacion de ordenes de compra hacia SAP no esta disponible.",
+                FailureKind.Unavailable,
+                [new ApiError(
+                    "SAP_EXPORT_NOT_AVAILABLE",
+                    "No existe un exportador ejecutable para ordenes de compra.")]);
         }
 
         var validation = PurchaseOrderWorkflowPolicy.EnsureCanRequestSapSync(current.Status);

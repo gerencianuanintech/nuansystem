@@ -1,10 +1,13 @@
 using FluentAssertions;
 using NSubstitute;
 using NuanSystem.Application.Abstractions.Data;
+using NuanSystem.Application.Abstractions.SapSync;
 using NuanSystem.Application.Abstractions.Tenancy;
+using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders.Commands;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders.Dtos;
+using NuanSystem.Application.Features.SapSync.Constants;
 using NuanSystem.Domain.Tenancy;
 
 namespace NuanSystem.Application.Tests.Features.Purchasing.PurchaseOrders;
@@ -19,6 +22,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
     private readonly IPurchaseOrderRepository _repository = Substitute.For<IPurchaseOrderRepository>();
     private readonly ISecurityDocumentSeriesAccessRepository _seriesAccessRepository = Substitute.For<ISecurityDocumentSeriesAccessRepository>();
     private readonly ICompanyContext _companyContext = Substitute.For<ICompanyContext>();
+    private readonly ISapSyncProcessorRegistry _sapSyncProcessors = Substitute.For<ISapSyncProcessorRegistry>();
 
     public PurchaseOrderWorkflowHandlerTests()
     {
@@ -40,6 +44,9 @@ public sealed class PurchaseOrderWorkflowHandlerTests
                 Arg.Any<string>(),
                 Arg.Any<CancellationToken>())
             .Returns(true);
+
+        _sapSyncProcessors.FindExporter(SapSyncEntityCode.PurchaseOrders)
+            .Returns(Substitute.For<ISapSyncExporter>());
     }
 
     [Theory]
@@ -312,6 +319,28 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.Message.Should().Be("No se pudo actualizar el estado de la orden.");
     }
 
+    [Fact]
+    public async Task SyncSap_WhenExporterIsUnavailable_DoesNotMutateOrderOrLogPending()
+    {
+        _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
+            .Returns(CreateOrder(PurchaseOrderStatuses.Approved));
+        _sapSyncProcessors.FindExporter(SapSyncEntityCode.PurchaseOrders)
+            .Returns((ISapSyncExporter?)null);
+        var handler = CreateSyncSapHandler();
+
+        var result = await handler.Handle(CreateSyncSapCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.FailureKind.Should().Be(FailureKind.Unavailable);
+        result.Errors.Should().ContainSingle(error => error.Code == "SAP_EXPORT_NOT_AVAILABLE");
+        await _repository.DidNotReceive().AddSapLogAsync(
+            Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(),
+            Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+        await _repository.DidNotReceive().UpdateStatusIfCurrentAsync(
+            Arg.Any<int>(), Arg.Any<string>(), Arg.Any<IReadOnlyCollection<string>>(),
+            Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+    }
+
     [Theory]
     [InlineData(PurchaseOrderStatuses.PendingApproval)]
     [InlineData(PurchaseOrderStatuses.Approved)]
@@ -476,7 +505,11 @@ public sealed class PurchaseOrderWorkflowHandlerTests
 
     private SyncPurchaseOrderSapCommandHandler CreateSyncSapHandler()
     {
-        return new SyncPurchaseOrderSapCommandHandler(_repository, _seriesAccessRepository, _companyContext);
+        return new SyncPurchaseOrderSapCommandHandler(
+            _repository,
+            _seriesAccessRepository,
+            _companyContext,
+            _sapSyncProcessors);
     }
 
     private UpdatePurchaseOrderCommandHandler CreateUpdateHandler()
