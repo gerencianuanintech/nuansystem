@@ -23,6 +23,8 @@ public sealed class SqlTransactionRunner(ITenantConnectionFactory connectionFact
         Func<IDbConnection, IDbTransaction, CancellationToken, Task<T>> operation,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(operation);
+        cancellationToken.ThrowIfCancellationRequested();
         using var connection = connectionFactory.CreateConnection();
         await OpenAsync(connection, cancellationToken);
 
@@ -30,12 +32,20 @@ public sealed class SqlTransactionRunner(ITenantConnectionFactory connectionFact
         try
         {
             var result = await operation(connection, transaction, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             transaction.Commit();
             return result;
         }
-        catch
+        catch (Exception exception)
         {
-            transaction.Rollback();
+            try
+            {
+                transaction.Rollback();
+            }
+            catch (Exception rollbackException)
+            {
+                exception.Data["NuanSystem.Transaction.RollbackException"] = rollbackException;
+            }
             throw;
         }
     }

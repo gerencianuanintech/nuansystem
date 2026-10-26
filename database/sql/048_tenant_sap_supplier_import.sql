@@ -1,4 +1,5 @@
 CREATE OR ALTER PROCEDURE dbo.SP_NA_POST_BUSINESSPARTNERS_IMPORTARSAP
+    @InternalCode nvarchar(50),
     @CardCode nvarchar(50),
     @CardName nvarchar(200),
     @TaxIdentification nvarchar(50) = NULL,
@@ -68,7 +69,7 @@ BEGIN
             (Code, Name, CommercialName, PartnerType, IdentificationTypeId, IdentificationNumber,
              Email, Phone, Website, Remarks, IsActive, CreatedByUserId, CreatedByUserName, CreatedAt)
         VALUES
-            (@NormalizedCardCode, @NormalizedCardName, @NormalizedCardName, N'Supplier', @IdentificationTypeId,
+            (NULLIF(LTRIM(RTRIM(@InternalCode)), N''), @NormalizedCardName, @NormalizedCardName, N'Supplier', @IdentificationTypeId,
              ISNULL(@NormalizedTaxIdentification, @NormalizedCardCode), @Email, @Phone, NULL,
              N'Creado desde sincronizacion SAP Business One.', @IsActive, @AuditUserId, @AuditUserName, SYSUTCDATETIME());
 

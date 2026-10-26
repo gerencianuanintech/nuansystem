@@ -9,6 +9,8 @@ public sealed class SapCityExecutionRetryProcessor(SapCityRecordProcessor record
     : ISapSyncExecutionRetryProcessor
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    public string EntityCode => "Cities";
+
     public string ApprovedSnapshotType => SapSyncApprovedSnapshotTypes.CityV1;
 
     public async Task<SapSyncExecutionRetryProcessResult> ProcessAsync(

@@ -21,6 +21,23 @@ public sealed class BusinessPartnerSyncPublishingTests
     private readonly ImmediateTransactionRunner _transactionRunner = new();
 
     [Fact]
+    public async Task Repeated_create_keeps_original_identity_and_does_not_publish_a_second_event()
+    {
+        var partner = CreatePartner();
+        _repository.ExistsByCodeAsync("CLI-001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false, true);
+        _repository.ExistsByIdentificationAsync(1, "0999999999001", null, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(false);
+        _repository.CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner.Id);
+        _repository.GetByIdAsync(partner.Id, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>()).Returns(partner);
+        var handler = CreateCreateHandler();
+        var first = await handler.Handle(CreateCommand(), CancellationToken.None);
+        var second = await handler.Handle(CreateCommand(), CancellationToken.None);
+        Assert.Same(partner, first.Value);
+        Assert.False(second.IsSuccess);
+        await _repository.Received(1).CreateAsync(Arg.Any<CreateBusinessPartnerData>(), _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+        await _writer.Received(1).EnqueueAsync(partner, SyncOperation.Created, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Create_WritesLocalOutboxInsideTheSameTransaction()
     {
         var partner = CreatePartner();
@@ -33,9 +50,13 @@ public sealed class BusinessPartnerSyncPublishingTests
         var result = await handler.Handle(CreateCommand(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeSameAs(partner);
         await _writer.Received(1).EnqueueAsync(
             partner, SyncOperation.Created, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
         _transactionRunner.Committed.Should().BeTrue();
+        await _repository.Received(1).CreateAsync(
+            Arg.Is<CreateBusinessPartnerData>(data => data.CreatedByUserId == 7 && data.CreatedByUserName == "admin"),
+            _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -51,8 +72,12 @@ public sealed class BusinessPartnerSyncPublishingTests
         var result = await handler.Handle(UpdateCommand(partner.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeSameAs(partner);
         await _writer.Received(1).EnqueueAsync(
             partner, SyncOperation.Updated, _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
+        await _repository.Received(1).UpdateAsync(
+            Arg.Is<UpdateBusinessPartnerData>(data => data.Id == partner.Id && data.UpdatedByUserId == 7 && data.UpdatedByUserName == "admin"),
+            _transactionRunner.Connection, _transactionRunner.Transaction, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -136,19 +161,28 @@ public sealed class BusinessPartnerSyncPublishingTests
             .And.NotContain("S0001");
     }
 
+    private IBusinessPartnerUnitOfWork CreateUnitOfWork()
+    {
+        var companyContext = Substitute.For<ICompanyContext>();
+        companyContext.HasActiveCompany.Returns(true);
+        companyContext.CurrentCompany.Returns(Company(syncEnabled: true));
+        return new NuanSystem.Persistence.Transactions.BusinessPartnerUnitOfWork(
+            _transactionRunner, _repository, _writer, companyContext);
+    }
+
     private CreateBusinessPartnerCommandHandler CreateCreateHandler()
     {
-        return new CreateBusinessPartnerCommandHandler(_repository, _transactionRunner, _writer);
+        return new CreateBusinessPartnerCommandHandler(CreateUnitOfWork());
     }
 
     private UpdateBusinessPartnerCommandHandler CreateUpdateHandler()
     {
-        return new UpdateBusinessPartnerCommandHandler(_repository, _transactionRunner, _writer);
+        return new UpdateBusinessPartnerCommandHandler(CreateUnitOfWork());
     }
 
     private DeleteBusinessPartnerCommandHandler CreateDeleteHandler()
     {
-        return new DeleteBusinessPartnerCommandHandler(_repository, _transactionRunner, _writer);
+        return new DeleteBusinessPartnerCommandHandler(CreateUnitOfWork());
     }
 
     private static CompanyConnectionInfo Company(bool syncEnabled) =>

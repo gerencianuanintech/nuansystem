@@ -42,6 +42,67 @@ public sealed class PurchaseOrderWorkflowHandlerTests
             .Returns(true);
     }
 
+    [Theory]
+    [InlineData("", true)]
+    [InlineData("OC-AUTH", false)]
+    public async Task Creation_uses_authorized_series_and_reserved_number_or_rejects_missing_code(string code, bool reject)
+    {
+        var seriesRepository = Substitute.For<ISecurityDocumentSeriesRepository>();
+        var numbering = Substitute.For<ISecurityDocumentNumberingService>();
+        seriesRepository.GetByIdAsync(3, Arg.Any<CancellationToken>()).Returns(
+            new NuanSystem.Application.Features.Documents.SecurityDocumentSeries.Dtos.SecurityDocumentSeriesDto
+            { Id = 3, Code = code, DocumentType = PurchaseOrderSecurity.DocumentType, IsActive = true });
+        numbering.ReserveNumberAsync(3, AuditUserId, AuditUserName, Arg.Any<CancellationToken>()).Returns(
+            new NuanSystem.Application.Features.Documents.SecurityDocumentSeries.Dtos.ReserveSecurityDocumentNumberResult(
+                true, 42, "OC-RESERVED-42", "42", "Reserved"));
+        _repository.CreateAsync(Arg.Any<PurchaseOrderPersistData>(), Arg.Any<CancellationToken>()).Returns(OrderId);
+        _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>()).Returns(CreateOrder(PurchaseOrderStatuses.Draft));
+        var handler = new CreatePurchaseOrderCommandHandler(_repository, seriesRepository, numbering, _seriesAccessRepository, _companyContext);
+        var data = PurchaseOrderCalculationCharacterizationTests.Request(PurchaseOrderCalculationCharacterizationTests.Line(2m, 100m, 10m, 0.15m)) with { DiscountPercent = 10m };
+        var command = new CreatePurchaseOrderCommand(
+            data.BranchId, data.DocumentSeriesId, "UNTRUSTED-SERIES", "UNTRUSTED-NUMBER",
+            data.SupplierId, data.SupplierCode, data.SupplierName, data.SupplierTaxId, data.ContactName, data.Phone, data.Email,
+            data.DocumentDate, data.DeliveryDate, data.CurrencyCode, data.ExchangeRate, data.PaymentTermId, data.PriceListId,
+            data.BuyerId, data.MainWarehouseId, data.ProjectId, data.CostCenterId, data.PurchaseTypeId, data.Comments,
+            data.DiscountPercent, data.Lines, data.Addresses, data.RelatedDocuments, data.Attachments, AuditUserId, AuditUserName);
+        var result = await handler.Handle(command, CancellationToken.None);
+        Assert.Equal(!reject, result.IsSuccess);
+        if (reject)
+        {
+            Assert.Empty(numbering.ReceivedCalls());
+            await _repository.DidNotReceive().CreateAsync(Arg.Any<PurchaseOrderPersistData>(), Arg.Any<CancellationToken>());
+        }
+        else
+        {
+            await _repository.Received(1).CreateAsync(Arg.Is<PurchaseOrderPersistData>(order =>
+                order.DocumentSeriesId == 3 && order.SeriesCode == "OC-AUTH" && order.DocumentNumber == "OC-RESERVED-42"
+                && order.TotalAmount == 186.3m && order.SapObjectType == "22"
+                && order.AuditUserId == AuditUserId && order.AuditUserName == AuditUserName), Arg.Any<CancellationToken>());
+        }
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    public async Task Missing_persisted_numbering_is_rejected_without_inventing_a_number(bool missingSeries, bool collection)
+    {
+        var order = CreateOrder(PurchaseOrderStatuses.Draft);
+        if (missingSeries) order.SeriesCode = " "; else order.DocumentNumber = " ";
+        _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>()).Returns(order);
+        _repository.UpdateIfEditableAsync(Arg.Any<PurchaseOrderPersistData>(), Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>()).Returns(true);
+        _repository.UpdateAsync(Arg.Any<PurchaseOrderPersistData>(), Arg.Any<CancellationToken>()).Returns(true);
+        var result = collection
+            ? await PurchaseOrderCollections.UpdateAsync(_repository, OrderId, current => PurchaseOrderMapping.ToSaveRequest(current),
+                "Updated", AuditUserId, AuditUserName, CancellationToken.None)
+            : await CreateUpdateHandler().Handle(CreateUpdateCommand(), CancellationToken.None);
+        Assert.False(result.IsSuccess);
+        Assert.Contains(result.Errors, error => error.Code == "PURCHASE_ORDER_NUMBERING_MISSING");
+        await _repository.DidNotReceive().UpdateAsync(Arg.Any<PurchaseOrderPersistData>(), Arg.Any<CancellationToken>());
+        await _repository.DidNotReceive().UpdateIfEditableAsync(Arg.Any<PurchaseOrderPersistData>(), Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
+    }
+
     [Fact]
     public async Task SendToApproval_ReturnsFailure_WhenOrderIsApproved()
     {

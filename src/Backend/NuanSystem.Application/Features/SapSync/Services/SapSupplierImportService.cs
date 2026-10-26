@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.Application.Abstractions.SapSync;
@@ -6,17 +7,21 @@ using NuanSystem.Application.Features.BusinessPartners.Dtos;
 using NuanSystem.Application.Features.SapSync.Constants;
 using NuanSystem.Application.Features.SapSync.Dtos;
 using NuanSystem.Application.Features.SapSync.Enums;
+using NuanSystem.Application.Features.SapSync.Mapping;
 
 namespace NuanSystem.Application.Features.SapSync.Services;
 
 public sealed class SapSupplierImportService(
     ISapSupplierReader sapSupplierReader,
     IBusinessPartnerRepository businessPartnerRepository,
+    ISapSupplierImportRepository supplierImportRepository,
     ISapSyncLogRepository sapSyncLogRepository,
     ISapSyncInboxRepository? inboxRepository = null,
-    ISapSyncWatermarkService? watermarkService = null)
+    ISapSyncWatermarkService? watermarkService = null,
+    ILogger<SapSupplierImportService>? logger = null)
     : ISapSupplierImportService
 {
+    private const string ImportFailedCode = "SUPPLIER_IMPORT_FAILED";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public async Task<IReadOnlyCollection<SapSupplierPreviewItemDto>> PreviewAsync(
@@ -34,15 +39,18 @@ public sealed class SapSupplierImportService(
         SapSupplierImportOptions options,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var watermark = options.UseIncrementalWatermark && watermarkService is not null
             ? await watermarkService.GetAsync(companyId, SapSyncEntityCode.Suppliers, SapSyncDirection.SapToErp, cancellationToken)
             : null;
 
+        cancellationToken.ThrowIfCancellationRequested();
         var sapSuppliers = watermark?.LastSuccessfulSyncAtUtc is not null
             ? await sapSupplierReader.GetSuppliersChangedSinceAsync(companyId, watermark.LastSuccessfulSyncAtUtc.Value, cancellationToken)
             : await sapSupplierReader.GetSuppliersAsync(companyId, cancellationToken);
 
         var summary = await ImportBatchAsync(companyId, sapSuppliers, options, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (options.UseIncrementalWatermark && watermarkService is not null && summary.Failed == 0)
         {
@@ -63,6 +71,7 @@ public sealed class SapSupplierImportService(
                 cancellationToken);
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         return summary;
     }
 
@@ -72,12 +81,18 @@ public sealed class SapSupplierImportService(
         SapSupplierImportOptions options,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        var correlationId = string.IsNullOrWhiteSpace(options.CorrelationId)
+            ? Guid.NewGuid().ToString("N")
+            : options.CorrelationId;
         var localBusinessPartners = await businessPartnerRepository.GetAllAsync(null, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         var localIndex = BuildLocalIndex(localBusinessPartners);
         var results = new List<SapSupplierImportItemResultDto>();
 
         foreach (var supplier in sapSuppliers.OrderBy(item => item.CardCode))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             long? inboxId = null;
             if (options.WriteInbox && inboxRepository is not null && !string.IsNullOrWhiteSpace(supplier.CardCode))
             {
@@ -87,11 +102,12 @@ public sealed class SapSupplierImportService(
                     JsonSerializer.Serialize(supplier, JsonOptions),
                     SapSyncStatus.Processing,
                     options.WorkerInstance,
-                    options.CorrelationId,
+                    correlationId,
                     cancellationToken);
             }
 
-            var itemResult = await ImportOneCoreAsync(supplier, localIndex, options.AuditUserId, options.AuditUserName, cancellationToken);
+            var itemResult = await ImportOneCoreAsync(supplier, localIndex, options.AuditUserId, options.AuditUserName,
+                companyId, correlationId, cancellationToken);
             results.Add(itemResult);
             TrackImportedSupplier(localIndex, supplier, itemResult);
 
@@ -101,6 +117,7 @@ public sealed class SapSupplierImportService(
             }
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         var summary = BuildSummary(sapSuppliers.Count, results);
 
         if (options.WritePublicSapLog)
@@ -108,6 +125,7 @@ public sealed class SapSupplierImportService(
             await RegisterPublicSyncLogAsync(companyId, summary, cancellationToken);
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         return summary;
     }
 
@@ -117,9 +135,11 @@ public sealed class SapSupplierImportService(
         string? auditUserName,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var localBusinessPartners = await businessPartnerRepository.GetAllAsync(null, cancellationToken);
         var localIndex = BuildLocalIndex(localBusinessPartners);
-        return await ImportOneCoreAsync(supplier, localIndex, auditUserId, auditUserName, cancellationToken);
+        return await ImportOneCoreAsync(supplier, localIndex, auditUserId, auditUserName,
+            null, Guid.NewGuid().ToString("N"), cancellationToken);
     }
 
     private async Task<SapSupplierImportItemResultDto> ImportOneCoreAsync(
@@ -127,8 +147,11 @@ public sealed class SapSupplierImportService(
         LocalSupplierIndex localIndex,
         int? auditUserId,
         string? auditUserName,
+        int? companyId,
+        string correlationId,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrWhiteSpace(supplier.CardCode) || string.IsNullOrWhiteSpace(supplier.CardName))
         {
             return ToItemResult(supplier, "Skipped", "El proveedor SAP no tiene codigo o nombre.", null);
@@ -147,8 +170,12 @@ public sealed class SapSupplierImportService(
 
         try
         {
-            var importResult = await businessPartnerRepository.ImportSupplierFromSapAsync(
+            var importResult = await supplierImportRepository.ImportSupplierFromSapAsync(
                 new BusinessPartnerSapImportData(
+                    SapBusinessPartnerIdentityGenerator.GenerateSupplierCode(
+                        NormalizeRequired(supplier.TaxIdentification ?? supplier.CardCode),
+                        SapBusinessPartnerIdentityGenerator.LooksLikePassport(supplier.TaxIdentification),
+                        match.Supplier?.Code),
                     NormalizeRequired(supplier.CardCode),
                     NormalizeRequired(supplier.CardName),
                     Normalize(supplier.TaxIdentification),
@@ -161,11 +188,20 @@ public sealed class SapSupplierImportService(
                     Normalize(auditUserName)),
                 cancellationToken);
 
+            cancellationToken.ThrowIfCancellationRequested();
             return ToItemResult(supplier, importResult.Action, importResult.Message, importResult.BusinessPartnerId);
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            return ToItemResult(supplier, "Failed", exception.Message, match.Supplier?.Id);
+            logger?.LogError(
+                "Fallo de importacion de proveedor SAP. ErrorCode={ErrorCode} CompanyId={CompanyId} CorrelationId={CorrelationId} ExceptionType={ExceptionType}.",
+                ImportFailedCode, companyId, correlationId, exception.GetType().FullName);
+            return ToItemResult(supplier, "Failed",
+                $"No fue posible importar el proveedor. Referencia: {correlationId}.", match.Supplier?.Id) with
+            {
+                ErrorCode = ImportFailedCode,
+                CorrelationId = correlationId
+            };
         }
     }
 
@@ -263,7 +299,7 @@ public sealed class SapSupplierImportService(
                 await inboxRepository.MarkFailedAsync(inboxId, "SKIPPED", result.Message, null, cancellationToken);
                 break;
             default:
-                await inboxRepository.MarkFailedAsync(inboxId, "FAILED", result.Message, null, cancellationToken);
+                await inboxRepository.MarkFailedAsync(inboxId, result.ErrorCode ?? "FAILED", result.Message, null, cancellationToken);
                 break;
         }
     }

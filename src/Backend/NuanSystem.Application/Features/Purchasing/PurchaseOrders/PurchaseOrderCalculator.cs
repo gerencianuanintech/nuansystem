@@ -1,4 +1,6 @@
 using NuanSystem.Application.Abstractions.Data;
+using NuanSystem.Domain.Purchasing;
+using NuanSystem.Application.Features.SapSync.Mapping;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders.Dtos;
 
 namespace NuanSystem.Application.Features.Purchasing.PurchaseOrders;
@@ -13,27 +15,18 @@ internal static class PurchaseOrderCalculator
         string? auditUserName,
         string? sapStatus = null)
     {
-        var lines = request.Lines
-            .Where(line => line.ItemId > 0 && line.Quantity > 0)
-            .Select((line, index) => CalculateLine(line, index + 1))
-            .ToArray();
-
-        var subtotal = lines.Sum(line => line.LineSubtotal);
-        var discountPercent = NormalizePercent(request.DiscountPercent);
-        var discountAmount = Math.Round(subtotal * discountPercent / 100m, 6);
-        var taxableBase = Math.Max(0m, subtotal - discountAmount);
-        var lineTaxBase = lines.Sum(line => line.LineSubtotal) == 0
-            ? 0m
-            : taxableBase / lines.Sum(line => line.LineSubtotal);
-        var taxAmount = Math.Round(lines.Sum(line => line.TaxAmount * lineTaxBase), 6);
-        var totalAmount = taxableBase + taxAmount;
+        var selectedLines = request.Lines.Where(line => line.ItemId > 0 && line.Quantity > 0).ToArray();
+        var amounts = PurchaseOrderAmountCalculator.Calculate(
+            selectedLines.Select(line => new PurchaseOrderLineValues(line.Quantity, line.UnitPrice, line.DiscountPercent, line.TaxRate)),
+            request.DiscountPercent);
+        var lines = selectedLines.Select((line, index) => MapLine(line, amounts.Lines[index], index + 1)).ToArray();
 
         return new PurchaseOrderPersistData(
             id,
             request.BranchId,
             request.DocumentSeriesId,
-            Trim(request.SeriesCode, 50) ?? "OC-2026",
-            Trim(request.DocumentNumber, 50) ?? "OC-000001",
+            RequireIdentifier(request.SeriesCode, nameof(request.SeriesCode)),
+            RequireIdentifier(request.DocumentNumber, nameof(request.DocumentNumber)),
             request.SupplierId,
             Trim(request.SupplierCode, 50) ?? string.Empty,
             Trim(request.SupplierName, 200) ?? string.Empty,
@@ -54,15 +47,15 @@ internal static class PurchaseOrderCalculator
             request.PurchaseTypeId,
             Trim(request.Comments, 2000),
             status,
-            subtotal,
-            discountPercent,
-            discountAmount,
-            taxAmount,
-            totalAmount,
+            amounts.Subtotal,
+            amounts.DiscountPercent,
+            amounts.DiscountAmount,
+            amounts.TaxAmount,
+            amounts.Total,
             lines.Length,
-            lines.Sum(line => line.Quantity),
+            amounts.TotalQuantity,
             0m,
-            "22",
+            SapPurchaseOrderMapping.ObjectType,
             sapStatus ?? PurchaseOrderSapStatuses.Pending,
             lines,
             request.Addresses ?? Array.Empty<PurchaseOrderAddressSaveRequest>(),
@@ -72,17 +65,9 @@ internal static class PurchaseOrderCalculator
             auditUserName);
     }
 
-    private static PurchaseOrderLinePersistData CalculateLine(PurchaseOrderLineSaveRequest line, int fallbackLineNumber)
+    private static PurchaseOrderLinePersistData MapLine(
+        PurchaseOrderLineSaveRequest line, PurchaseOrderLineAmounts amounts, int fallbackLineNumber)
     {
-        var quantity = Math.Max(0m, line.Quantity);
-        var unitPrice = Math.Max(0m, line.UnitPrice);
-        var discountPercent = NormalizePercent(line.DiscountPercent);
-        var lineGross = Math.Round(quantity * unitPrice, 6);
-        var discountAmount = Math.Round(lineGross * discountPercent / 100m, 6);
-        var lineSubtotal = Math.Max(0m, lineGross - discountAmount);
-        var taxRate = Math.Max(0m, line.TaxRate);
-        var taxAmount = Math.Round(lineSubtotal * taxRate, 6);
-
         return new PurchaseOrderLinePersistData(
             line.Id,
             line.LineNumber > 0 ? line.LineNumber : fallbackLineNumber,
@@ -91,34 +76,27 @@ internal static class PurchaseOrderCalculator
             Trim(line.ItemName, 200) ?? string.Empty,
             line.UnitId,
             Trim(line.UnitCode, 50),
-            quantity,
-            quantity,
-            unitPrice,
-            discountPercent,
-            discountAmount,
+            amounts.Quantity,
+            amounts.Quantity,
+            amounts.UnitPrice,
+            amounts.DiscountPercent,
+            amounts.DiscountAmount,
             line.TaxId,
             Trim(line.TaxCode, 50) ?? string.Empty,
-            taxRate,
-            taxAmount,
+            amounts.TaxRate,
+            amounts.TaxAmount,
             line.WarehouseId,
             Trim(line.WarehouseCode, 50) ?? string.Empty,
             line.DeliveryDate.Date,
             line.CostCenterId,
             line.ProjectId,
-            lineSubtotal,
-            lineSubtotal + taxAmount,
+            amounts.Subtotal,
+            amounts.Total,
             PurchaseOrderLineStatuses.Open);
     }
 
-    private static decimal NormalizePercent(decimal value)
-    {
-        if (value < 0)
-        {
-            return 0;
-        }
-
-        return value > 100 ? 100 : value;
-    }
+    private static string RequireIdentifier(string? value, string field) =>
+        Trim(value, 50) ?? throw new ArgumentException("La numeracion del documento es obligatoria.", field);
 
     private static string? Trim(string? value, int maxLength)
     {

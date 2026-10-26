@@ -1,0 +1,13 @@
+# Integración de capturas del monitor con evidencias
+
+Decisión y plan, 2026-10-25. Solo implementación y pruebas offline; no ejecutar SAP, SQL ni abrir conexiones.
+
+Descubrimiento: el monitor genera cinco documentos y un capture-index.json cuyo hash devuelve al responsable. El empaquetador recibe objetos monitor/testigo pero todavía no carga ni verifica esos archivos. Reutilizar EvidenceFiles, MonitorExecutor.InputPaths, GlobalControls y la verificación ZIP existente. No introducir API, servicios ni migraciones.
+
+Agregar BuildFromMonitorCapture manteniendo compatible Build. Un lector offline verificará la huella externa del índice, el inventario cerrado, rutas, enlaces, límites, duplicados, hashes y tamaños. Validará el vínculo de aprobación, RunId, principal, origen, informe e índice de seis entradas con la corrida. Comparará coherencia, no autenticidad. Las observaciones negativas se empaquetan con bloqueos; las simulaciones mantienen Offline.
+
+Congelar los bytes verificados de captura y de las seis entradas; BuildCore consumirá esos bytes y archivará los seis documentos originales más la referencia de aprobación y huella externa, sin relecturas de la captura ni de las entradas congeladas. VerifyZip también volverá a comprobar la captura incluida y su vínculo con los artefactos del paquete. Un índice o archivo alterado, una captura incompleta o de otra corrida fallan antes de crear salida. No sobrescribir, borrar ni promover etiquetas de origen.
+
+Plan: pruebas offline primero; lector y contratos estrictos; integración y verificación ZIP; documentación de consumo; revisión independiente final; compilación y regresión offline. Mantener EvidenceAuthenticityVerified y GlobalPhase7Closed en false. Las fabricaciones de formato en pruebas no acreditan SQL real.
+
+Resultado de implementación: lector estricto y BuildFromMonitorCapture agregados; Build permanece compatible. Se congelan captura y seis entradas, se archivan con referencia al hash externo y se reverifican dentro del ZIP. Las primeras 28 pruebas pasaron. Nuevas regresiones reprodujeron la aceptación de Environment contradictorio y la promoción de controles offline al recalcular el sello; se corrigieron cruzando objetos y recalculando tres controles. Las 33 pruebas específicas finales aprobaron, incluida una captura generada por el simulador y una fabricación de formato rotulada como laboratorio, siempre sin autenticidad ni cierre global. Revisión independiente final sin defectos importantes confirmados. Compilación de solución sin errores ni advertencias. Solo se modifica el empaquetador y se amplían dos documentos existentes; copias previas y hashes en `artifacts/backend-solid-phase7-sql-monitor-packaging/`.

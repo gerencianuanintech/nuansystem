@@ -19,6 +19,7 @@ public sealed class SapCityExecutionProcessor(
     private const int RetryBackoffSeconds = 30;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     public string EntityCode => SapSyncEntityCode.Cities;
+    public IReadOnlyCollection<string> SupportedModes => ["Full"];
 
     public async Task ProcessAsync(
         SapSyncScheduledExecutionContext context,

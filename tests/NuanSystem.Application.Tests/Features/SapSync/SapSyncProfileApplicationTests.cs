@@ -14,10 +14,30 @@ public sealed class SapSyncProfileApplicationTests
     private const int UserId = 17;
 
     [Fact]
+    public async Task ValidationAndCatalog_DoNotTrustConfiguredCapabilitiesWithoutProcessors()
+    {
+        var (repository, _) = ValidService();
+        repository.GetHandlerCapabilitiesAsync(true, Arg.Any<CancellationToken>())
+            .Returns([Capability("Suppliers", implemented: true, incremental: true)]);
+        var registry = new NuanSystem.Application.Features.SapSync.Services.SapSyncProcessorRegistry(
+            [SapSyncRegistryFixture.Importer()], [], [], []);
+        var service = new SapSyncProfileValidationService(repository, registry);
+        var result = await service.ValidateAsync(Profile(Entity()), UserId, requireActiveEntity: true);
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.Code == SapSyncProfileErrorCodes.EntityNotImplemented);
+        Assert.Contains(result.Errors, error => error.Code == SapSyncProfileErrorCodes.NoActiveSupportedEntities);
+        var catalog = await new GetSapSyncProfileCatalogQueryHandler(repository, registry)
+            .Handle(new GetSapSyncProfileCatalogQuery(UserId), CancellationToken.None);
+        Assert.Empty(catalog.Value!.Entities);
+        Assert.Empty(catalog.Value.Directions);
+        Assert.Empty(catalog.Value.SyncModes);
+    }
+
+    [Fact]
     public async Task ValidateCompany_DistinguishesMissingInactiveSapDisabledAndUnauthorized()
     {
         var repository = Substitute.For<ISapSyncProfileRepository>();
-        var service = new SapSyncProfileValidationService(repository);
+        var service = new SapSyncProfileValidationService(repository, SapSyncRegistryFixture.Create());
 
         (await service.ValidateCompanyAsync(1, UserId, true)).Errors
             .Should().ContainSingle(error => error.Code == SapSyncProfileErrorCodes.CompanyNotFound);
@@ -72,7 +92,7 @@ public sealed class SapSyncProfileApplicationTests
                 Capability("Suppliers", implemented: true, incremental: true),
                 Capability("PurchaseOrders", implemented: false)
             ]);
-        var service = new SapSyncProfileValidationService(repository);
+        var service = new SapSyncProfileValidationService(repository, SapSyncRegistryFixture.Create());
         var request = Profile(
             Entity(direction: "Both"),
             Entity(direction: "Both"),
@@ -100,7 +120,7 @@ public sealed class SapSyncProfileApplicationTests
                 Capability("Suppliers", implemented: true),
                 Capability("PurchaseOrders", implemented: false)
             ]);
-        var service = new SapSyncProfileValidationService(repository);
+        var service = new SapSyncProfileValidationService(repository, SapSyncRegistryFixture.Create());
 
         var editable = await service.ValidateAsync(
             Profile(
@@ -405,7 +425,7 @@ public sealed class SapSyncProfileApplicationTests
                 Capability("Suppliers", implemented: true),
                 Capability("PurchaseOrders", implemented: false)
             ]);
-        var handler = new GetSapSyncProfileCatalogQueryHandler(repository);
+        var handler = new GetSapSyncProfileCatalogQueryHandler(repository, SapSyncRegistryFixture.Create());
 
         var result = await handler.Handle(
             new GetSapSyncProfileCatalogQuery(UserId),
@@ -423,7 +443,7 @@ public sealed class SapSyncProfileApplicationTests
         var repository = Substitute.For<ISapSyncProfileRepository>();
         repository.GetCompanyAccessAsync(UserId, 1, Arg.Any<CancellationToken>())
             .Returns([Company(isAuthorized: false)]);
-        var service = new SapSyncProfileValidationService(repository);
+        var service = new SapSyncProfileValidationService(repository, SapSyncRegistryFixture.Create());
         var handler = new GetSapSyncProfilesQueryHandler(repository, service);
 
         var result = await handler.Handle(
@@ -468,7 +488,7 @@ public sealed class SapSyncProfileApplicationTests
             .Returns([Company()]);
         repository.GetHandlerCapabilitiesAsync(false, Arg.Any<CancellationToken>())
             .Returns([Capability("Suppliers", implemented: true, incremental: false)]);
-        return (repository, new SapSyncProfileValidationService(repository));
+        return (repository, new SapSyncProfileValidationService(repository, SapSyncRegistryFixture.Create()));
     }
 
     private static SapSyncProfileCompanyAccessDto Company(

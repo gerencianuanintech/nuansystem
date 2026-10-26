@@ -24,7 +24,7 @@ public sealed class SapProvinceApiContractTests
         var integration = Read("src", "Backend", "NuanSystem.SapIntegration", "DependencyInjection", "SapIntegrationServiceRegistration.cs");
 
         application.Should().Contain("ISapProvinceImportService, SapProvinceImportService")
-            .And.Contain("ISapSyncEntityHandler, SapProvinceSyncHandler")
+            .And.Contain("ISapSyncImporter, SapProvinceSyncHandler")
             .And.Contain("ISapSyncScheduledExecutionProcessor, SapProvinceExecutionProcessor")
             .And.Contain("ISapSyncExecutionRetryProcessor, SapProvinceExecutionRetryProcessor")
             .And.Contain("AddScoped<SapProvinceRecordProcessor>()");

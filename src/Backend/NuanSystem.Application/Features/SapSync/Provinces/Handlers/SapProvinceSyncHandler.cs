@@ -11,14 +11,16 @@ namespace NuanSystem.Application.Features.SapSync.Provinces.Handlers;
 
 public sealed class SapProvinceSyncHandler(
     ISapProvinceReader reader,
-    SapProvinceRecordProcessor recordProcessor) : ISapSyncEntityHandler
+    SapProvinceRecordProcessor recordProcessor) : ISapSyncImporter
 {
     public string EntityCode => SapSyncEntityCode.Provinces;
+    public IReadOnlyCollection<string> SupportedModes => ["Full"];
 
     public async Task<SapSyncExecutionResult> ImportFromSapAsync(
         SapSyncExecutionContext context,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var rows = await reader.GetProvincesAsync(context.CompanyId, cancellationToken);
         var results = new List<SapProvinceRecordProcessResult>(rows.Count);
 
@@ -63,12 +65,6 @@ public sealed class SapProvinceSyncHandler(
             failed > 0 ? "PROVINCE_IMPORT_FAILED" : null,
             failed > 0 ? "Una o mas provincias no pudieron importarse." : null);
     }
-
-    public Task<SapSyncExecutionResult> ExportToSapAsync(
-        SapSyncExecutionContext context,
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult(SapSyncExecutionResult.NotImplemented(
-            "Provincias ERP a SAP no forman parte del alcance aprobado."));
 
     private static int Count(IEnumerable<SapProvinceRecordProcessResult> results, string status) =>
         results.Count(item => item.Status == status);

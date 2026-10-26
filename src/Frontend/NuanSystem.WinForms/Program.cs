@@ -129,6 +129,7 @@ using NuanSystem.WinForms.Services.GeneralInventory.Warehouses;
 using NuanSystem.WinForms.Services.InventoryItems;
 using NuanSystem.WinForms.Services.Purchasing.PurchaseOrders;
 using NuanSystem.WinForms.Services.Sap;
+using NuanSystem.WinForms.Services.SapSync.IdentityPolicy;
 using NuanSystem.WinForms.Services.Sync;
 using NuanSystem.WinForms.Services.Sync.EntityDefinitions;
 using NuanSystem.WinForms.Services.Security.Operations;
@@ -176,6 +177,7 @@ using NuanSystem.WinForms.ViewModels.Security.Forms;
 using NuanSystem.WinForms.ViewModels.Security.Fields;
 using NuanSystem.WinForms.ViewModels.Security.Access;
 using NuanSystem.WinForms.ViewModels.Settings;
+using NuanSystem.WinForms.ViewModels.SapSync;
 using NuanSystem.WinForms.ViewModels.Shell;
 using NuanSystem.WinForms.ViewModels.Security.Users;
 using RoleMaintenanceClient = NuanSystem.WinForms.Services.Security.Roles.RoleClient;
@@ -311,6 +313,9 @@ internal sealed class FrontendComposition : IDisposable
     private readonly PurchaseOrderClient purchaseOrderClient;
     private readonly SapClient sapClient;
     private readonly SapSyncManagementClient sapSyncManagementClient;
+    private readonly SapMasterDataMappingClient sapMasterDataMappingClient;
+    private readonly SapIntegrationSettingsClient sapIntegrationSettingsClient;
+    private readonly SapIdentityPolicyClient sapIdentityPolicyClient;
     private readonly SyncMonitorClient syncMonitorClient;
     private readonly SriDocumentMonitorClient sriDocumentMonitorClient;
     private readonly SriTxtImportClient sriTxtImportClient;
@@ -378,6 +383,9 @@ internal sealed class FrontendComposition : IDisposable
         purchaseOrderClient = new PurchaseOrderClient(apiClient);
         sapClient = new SapClient(apiClient);
         sapSyncManagementClient = new SapSyncManagementClient(apiClient);
+        sapMasterDataMappingClient = new SapMasterDataMappingClient(apiClient);
+        sapIntegrationSettingsClient = new SapIntegrationSettingsClient(apiClient);
+        sapIdentityPolicyClient = new SapIdentityPolicyClient(apiClient);
         syncMonitorClient = new SyncMonitorClient(apiClient);
         sriDocumentMonitorClient = new SriDocumentMonitorClient(apiClient);
         sriTxtImportClient = new SriTxtImportClient(apiClient);
@@ -484,7 +492,9 @@ internal sealed class FrontendComposition : IDisposable
             CreateSyncEntityListForm,
             CreateSyncExecutionListForm,
             CreateAuditLogsForm,
-            CreateSettingsForm);
+            CreateSettingsForm,
+            CreateSapIntegrationSettingsForm,
+            CreateSapIdentityPolicyForm);
     }
 
     public void ClearSession()
@@ -1113,6 +1123,7 @@ internal sealed class FrontendComposition : IDisposable
         return new SapSyncProfileListForm(
             new SapSyncProfilesViewModel(sapSyncManagementClient),
             sapSyncManagementClient,
+            sapMasterDataMappingClient,
             session,
             gridColumnSettingsClient);
     }
@@ -1190,6 +1201,18 @@ internal sealed class FrontendComposition : IDisposable
     public SettingsForm CreateSettingsForm()
     {
         return new SettingsForm(new ConfigurationSettingsViewModel(configurationSettingClient), session, auditClient, gridColumnSettingsClient);
+    }
+
+    public SapIdentityPolicyForm CreateSapIdentityPolicyForm()
+    {
+        return new SapIdentityPolicyForm(new SapIdentityPolicyViewModel(sapIdentityPolicyClient));
+    }
+
+    public SapIntegrationSettingsForm CreateSapIntegrationSettingsForm()
+    {
+        return new SapIntegrationSettingsForm(
+            new SapIntegrationSettingsViewModel(sapIntegrationSettingsClient),
+            CreateSapIdentityPolicyForm);
     }
 
     public void Dispose()

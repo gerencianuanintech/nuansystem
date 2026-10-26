@@ -481,3 +481,4 @@ Fase 0 termina cuando el propietario:
 4. mantiene deshabilitados workers, perfiles y migraciones reales hasta aprobar sus gates independientes.
 
 Después de esa aprobación se redactará el plan técnico detallado, archivo por archivo y con desarrollo guiado por pruebas, para los bloques 1 y 2.
+> El contrato operativo de campos, identidades y direcciones para Proveedores, Clientes e Ítems está definido en `docs/architecture/SAP-MASTER-DATA-MAPPING-CONTRACT.md`.

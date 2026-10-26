@@ -16,6 +16,42 @@ public sealed class SapSyncSchedulerTests
     private static readonly DateTime UtcNow =
         new(2026, 7, 30, 12, 0, 0, DateTimeKind.Utc);
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PollAsync_DoesNotReserveWhenOnlyAnImporterExists(bool legacy)
+    {
+        var repository = new FakeScheduleRepository([Candidate() with
+        {
+            CandidateSource = legacy ? SapSyncScheduleCandidateSources.LegacyFallback : SapSyncScheduleCandidateSources.Profile,
+            LegacyFallbackEnabled = true
+        }]);
+        var clock = Substitute.For<ISystemClock>();
+        clock.UtcNow.Returns(new DateTimeOffset(UtcNow));
+        var registry = new SapSyncProcessorRegistry([SapSyncRegistryFixture.Importer()], [], [], []);
+        var scheduler = new SapSyncScheduler(repository, registry, new SapSyncScheduleCalculator(), clock);
+        var result = await scheduler.PollAsync(SapSyncScheduleCursor.Start, 10, "worker");
+        Assert.Empty(result.Executions);
+        Assert.Equal(SapSyncScheduleRejectionCodes.HandlerNotImplemented, Assert.Single(result.Rejections).Code);
+        Assert.Equal(0, repository.ReserveCalls);
+    }
+
+    [Fact]
+    public async Task PollAsync_DoesNotReserveModeThatOnlyConfigurationAdvertises()
+    {
+        var repository = new FakeScheduleRepository([Candidate() with { SyncMode = SapSyncModes.Incremental }]);
+        var clock = Substitute.For<ISystemClock>();
+        clock.UtcNow.Returns(new DateTimeOffset(UtcNow));
+        var processor = SapSyncRegistryFixture.Processor();
+        processor.SupportedModes.Returns(new[] { "Full" });
+        var registry = new SapSyncProcessorRegistry([SapSyncRegistryFixture.Importer()], [], [processor], []);
+        var scheduler = new SapSyncScheduler(repository, registry, new SapSyncScheduleCalculator(), clock);
+        var result = await scheduler.PollAsync(SapSyncScheduleCursor.Start, 10, "worker");
+        Assert.Empty(result.Executions);
+        Assert.Equal(SapSyncScheduleRejectionCodes.ModeUnsupported, Assert.Single(result.Rejections).Code);
+        Assert.Equal(0, repository.ReserveCalls);
+    }
+
     [Fact]
     public async Task PollAsync_ExcludesInactiveProfileEntityAndSchedule()
     {
@@ -229,13 +265,13 @@ public sealed class SapSyncSchedulerTests
 
     private static SapSyncScheduler CreateScheduler(
         ISapSyncScheduleRepository repository,
-        params ISapSyncEntityHandler[] handlers)
+        params ISapSyncImporter[] handlers)
     {
         var clock = Substitute.For<ISystemClock>();
         clock.UtcNow.Returns(new DateTimeOffset(UtcNow));
         return new SapSyncScheduler(
             repository,
-            handlers,
+            new SapSyncProcessorRegistry(handlers, [], handlers.Select(handler => SapSyncRegistryFixture.Processor(handler.EntityCode)), []),
             new SapSyncScheduleCalculator(),
             clock);
     }
@@ -286,9 +322,10 @@ public sealed class SapSyncSchedulerTests
             profileId,
             entityId);
 
-    private sealed class RejectingHandler(string entityCode) : ISapSyncEntityHandler
+    private sealed class RejectingHandler(string entityCode) : ISapSyncImporter
     {
         public string EntityCode { get; } = entityCode;
+        public IReadOnlyCollection<string> SupportedModes => ["Full", "Incremental"];
         public int CallCount { get; private set; }
 
         public Task<SapSyncExecutionResult> ImportFromSapAsync(
@@ -299,13 +336,6 @@ public sealed class SapSyncSchedulerTests
             throw new InvalidOperationException("El scheduler no debe invocar handlers en Fase 10.4.");
         }
 
-        public Task<SapSyncExecutionResult> ExportToSapAsync(
-            SapSyncExecutionContext context,
-            CancellationToken cancellationToken = default)
-        {
-            CallCount++;
-            throw new InvalidOperationException("El scheduler no debe invocar handlers en Fase 10.4.");
-        }
     }
 
     private sealed class FakeScheduleRepository(

@@ -1,9 +1,11 @@
 using NuanSystem.Application.Abstractions.Data;
+using NuanSystem.Application.Features.SapSync.Mapping;
 using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Abstractions.Tenancy;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders.Dtos;
+using NuanSystem.Shared.Responses;
 
 namespace NuanSystem.Application.Features.Purchasing.PurchaseOrders.Commands;
 
@@ -26,11 +28,12 @@ public sealed class CreatePurchaseOrderCommandHandler(
             cancellationToken);
         if (!seriesValidation.IsSuccess)
         {
-            return Result<PurchaseOrderDto>.Failure(seriesValidation.Message);
+            return Result<PurchaseOrderDto>.Failure(seriesValidation.Message,
+                seriesValidation.FailureKind ?? FailureKind.Validation, seriesValidation.Errors);
         }
 
         var series = await seriesRepository.GetByIdAsync(request.DocumentSeriesId!.Value, cancellationToken);
-        if (series is null || !series.IsActive || series.DocumentType != PurchaseOrderSecurity.DocumentType)
+        if (series is null || !series.IsActive || series.DocumentType != PurchaseOrderSecurity.DocumentType || string.IsNullOrWhiteSpace(series.Code))
         {
             return Result<PurchaseOrderDto>.Failure("La serie seleccionada no existe, no esta activa o no corresponde a Orden de Compra.");
         }
@@ -63,7 +66,7 @@ public sealed class CreatePurchaseOrderCommandHandler(
         var order = await repository.GetByIdAsync(id, cancellationToken);
 
         return order is null
-            ? Result<PurchaseOrderDto>.Failure("No se pudo recuperar la orden de compra creada.")
+            ? Result<PurchaseOrderDto>.Failure("No se pudo recuperar la orden de compra creada.", FailureKind.Unexpected)
             : Result<PurchaseOrderDto>.Success(order, "Orden de compra guardada correctamente.");
     }
 }
@@ -79,13 +82,15 @@ public sealed class UpdatePurchaseOrderCommandHandler(
         var current = await repository.GetByIdAsync(request.Id, cancellationToken);
         if (current is null)
         {
-            return Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.");
+            return Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.", FailureKind.NotFound,
+                [new ApiError("PURCHASE_ORDER_NOT_FOUND", "La orden de compra no existe.", nameof(request.Id))]);
         }
 
         var validation = PurchaseOrderWorkflowPolicy.EnsureCanEdit(current.Status);
         if (!validation.IsSuccess)
         {
-            return Result<PurchaseOrderDto>.Failure(validation.Message);
+            return Result<PurchaseOrderDto>.Failure(validation.Message, FailureKind.Conflict,
+                [new ApiError("PURCHASE_ORDER_STATE_CONFLICT", validation.Message)]);
         }
 
         var seriesValidation = await PurchaseOrderSecurityGuard.ValidateSeriesOperationAsync(
@@ -97,7 +102,13 @@ public sealed class UpdatePurchaseOrderCommandHandler(
             cancellationToken);
         if (!seriesValidation.IsSuccess)
         {
-            return Result<PurchaseOrderDto>.Failure(seriesValidation.Message);
+            return Result<PurchaseOrderDto>.Failure(seriesValidation.Message,
+                seriesValidation.FailureKind ?? FailureKind.Validation, seriesValidation.Errors);
+        }
+
+        if (string.IsNullOrWhiteSpace(current.SeriesCode) || string.IsNullOrWhiteSpace(current.DocumentNumber))
+        {
+            return PurchaseOrderNumberingFailure.Missing();
         }
 
         var saveRequest = request.ToRequest() with
@@ -121,12 +132,13 @@ public sealed class UpdatePurchaseOrderCommandHandler(
             cancellationToken);
         if (!updated)
         {
-            return Result<PurchaseOrderDto>.Failure("No se pudo actualizar la orden de compra.");
+            return Result<PurchaseOrderDto>.Failure("No se pudo actualizar la orden de compra.", FailureKind.Conflict,
+                [new ApiError("PURCHASE_ORDER_STATE_CONFLICT", "La orden no admite la actualizacion solicitada.")]);
         }
 
         var order = await repository.GetByIdAsync(request.Id, cancellationToken);
         return order is null
-            ? Result<PurchaseOrderDto>.Failure("No se pudo recuperar la orden de compra actualizada.")
+            ? Result<PurchaseOrderDto>.Failure("No se pudo recuperar la orden de compra actualizada.", FailureKind.Unexpected)
             : Result<PurchaseOrderDto>.Success(order, "Orden de compra actualizada correctamente.");
     }
 }
@@ -142,13 +154,15 @@ public sealed class DeletePurchaseOrderCommandHandler(
         var current = await repository.GetByIdAsync(request.Id, cancellationToken);
         if (current is null)
         {
-            return Result<bool>.Failure("No se encontro la orden de compra.");
+            return Result<bool>.Failure("No se encontro la orden de compra.", FailureKind.NotFound,
+                [new ApiError("PURCHASE_ORDER_NOT_FOUND", "La orden de compra no existe.", nameof(request.Id))]);
         }
 
         var validation = PurchaseOrderWorkflowPolicy.EnsureCanDelete(current.Status);
         if (!validation.IsSuccess)
         {
-            return Result<bool>.Failure(validation.Message);
+            return Result<bool>.Failure(validation.Message, FailureKind.Conflict,
+                [new ApiError("PURCHASE_ORDER_STATE_CONFLICT", validation.Message)]);
         }
 
         var seriesValidation = await PurchaseOrderSecurityGuard.ValidateSeriesOperationAsync(
@@ -160,7 +174,8 @@ public sealed class DeletePurchaseOrderCommandHandler(
             cancellationToken);
         if (!seriesValidation.IsSuccess)
         {
-            return Result<bool>.Failure(seriesValidation.Message);
+            return Result<bool>.Failure(seriesValidation.Message,
+                seriesValidation.FailureKind ?? FailureKind.Validation, seriesValidation.Errors);
         }
 
         var deleted = await repository.DeleteIfCurrentAsync(
@@ -171,7 +186,8 @@ public sealed class DeletePurchaseOrderCommandHandler(
             cancellationToken);
         return deleted
             ? Result<bool>.Success(true, "Orden de compra eliminada correctamente.")
-            : Result<bool>.Failure("No se pudo eliminar la orden de compra.");
+            : Result<bool>.Failure("No se pudo eliminar la orden de compra.", FailureKind.Conflict,
+                [new ApiError("PURCHASE_ORDER_STATE_CONFLICT", "La orden no admite la anulacion solicitada.")]);
     }
 }
 
@@ -258,19 +274,22 @@ public sealed class SyncPurchaseOrderSapCommandHandler(
         var current = await repository.GetByIdAsync(request.Id, cancellationToken);
         if (current is null)
         {
-            return Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.");
+            return Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.", FailureKind.NotFound,
+                [new ApiError("PURCHASE_ORDER_NOT_FOUND", "La orden de compra no existe.", nameof(request.Id))]);
         }
 
         var validation = PurchaseOrderWorkflowPolicy.EnsureCanRequestSapSync(current.Status);
         if (!validation.IsSuccess)
         {
             await repository.AddSapLogAsync(request.Id, "PurchaseOrderSync", "Skipped", validation.Message, request.AuditUserId, request.AuditUserName, cancellationToken);
-            return Result<PurchaseOrderDto>.Failure(validation.Message);
+            return Result<PurchaseOrderDto>.Failure(validation.Message, FailureKind.Conflict,
+                [new ApiError("PURCHASE_ORDER_STATE_CONFLICT", validation.Message)]);
         }
 
         if (current.SapStatus == PurchaseOrderSapStatuses.Synced)
         {
-            return Result<PurchaseOrderDto>.Failure("La orden ya fue sincronizada con SAP.");
+            return Result<PurchaseOrderDto>.Failure("La orden ya fue sincronizada con SAP.", FailureKind.Conflict,
+                [new ApiError("PURCHASE_ORDER_STATE_CONFLICT", "La orden ya fue sincronizada con SAP.")]);
         }
 
         var seriesValidation = await PurchaseOrderSecurityGuard.ValidateSeriesOperationAsync(
@@ -283,10 +302,11 @@ public sealed class SyncPurchaseOrderSapCommandHandler(
         if (!seriesValidation.IsSuccess)
         {
             await repository.AddSapLogAsync(request.Id, "PurchaseOrderSync", "Skipped", seriesValidation.Message, request.AuditUserId, request.AuditUserName, cancellationToken);
-            return Result<PurchaseOrderDto>.Failure(seriesValidation.Message);
+            return Result<PurchaseOrderDto>.Failure(seriesValidation.Message,
+                seriesValidation.FailureKind ?? FailureKind.Validation, seriesValidation.Errors);
         }
 
-        await repository.AddSapLogAsync(request.Id, "PurchaseOrderSync", "Pending", "Pendiente de envio a SAP Business One. ObjectType 22.", request.AuditUserId, request.AuditUserName, cancellationToken);
+        await repository.AddSapLogAsync(request.Id, "PurchaseOrderSync", "Pending", $"Pendiente de envio a SAP Business One. ObjectType {SapPurchaseOrderMapping.ObjectType}.", request.AuditUserId, request.AuditUserName, cancellationToken);
         var updated = await repository.UpdateStatusIfCurrentAsync(
             request.Id,
             PurchaseOrderStatuses.SapPending,
@@ -296,12 +316,13 @@ public sealed class SyncPurchaseOrderSapCommandHandler(
             cancellationToken);
         if (!updated)
         {
-            return Result<PurchaseOrderDto>.Failure("No se pudo actualizar el estado de la orden.");
+            return Result<PurchaseOrderDto>.Failure("No se pudo actualizar el estado de la orden.", FailureKind.Conflict,
+                [new ApiError("PURCHASE_ORDER_STATE_CONFLICT", "La orden ya no admite la transicion solicitada.")]);
         }
 
         var order = await repository.GetByIdAsync(request.Id, cancellationToken);
         return order is null
-            ? Result<PurchaseOrderDto>.Failure("No se pudo recuperar la orden de compra.")
+            ? Result<PurchaseOrderDto>.Failure("No se pudo recuperar la orden de compra.", FailureKind.Unexpected)
             : Result<PurchaseOrderDto>.Success(order, "Orden marcada como pendiente de sincronizacion SAP.");
     }
 }
@@ -409,13 +430,15 @@ internal static class PurchaseOrderWorkflow
         var current = await repository.GetByIdAsync(id, cancellationToken);
         if (current is null)
         {
-            return Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.");
+            return Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.", FailureKind.NotFound,
+                [new ApiError("PURCHASE_ORDER_NOT_FOUND", "La orden de compra no existe.", "Id")]);
         }
 
         var validation = validateCurrentStatus(current.Status);
         if (!validation.IsSuccess)
         {
-            return Result<PurchaseOrderDto>.Failure(validation.Message);
+            return Result<PurchaseOrderDto>.Failure(validation.Message, FailureKind.Conflict,
+                [new ApiError("PURCHASE_ORDER_STATE_CONFLICT", validation.Message)]);
         }
 
         var seriesValidation = await PurchaseOrderSecurityGuard.ValidateSeriesOperationAsync(
@@ -427,19 +450,21 @@ internal static class PurchaseOrderWorkflow
             cancellationToken);
         if (!seriesValidation.IsSuccess)
         {
-            return Result<PurchaseOrderDto>.Failure(seriesValidation.Message);
+            return Result<PurchaseOrderDto>.Failure(seriesValidation.Message,
+                seriesValidation.FailureKind ?? FailureKind.Validation, seriesValidation.Errors);
         }
 
         // TODO: Persistir aprobador, fecha, observacion y nivel de aprobacion.
         var updated = await repository.UpdateStatusIfCurrentAsync(id, status, expectedCurrentStatuses, userId, userName, cancellationToken);
         if (!updated)
         {
-            return Result<PurchaseOrderDto>.Failure("No se pudo actualizar el estado de la orden.");
+            return Result<PurchaseOrderDto>.Failure("No se pudo actualizar el estado de la orden.", FailureKind.Conflict,
+                [new ApiError("PURCHASE_ORDER_STATE_CONFLICT", "La orden ya no admite la transicion solicitada.")]);
         }
 
         var order = await repository.GetByIdAsync(id, cancellationToken);
         return order is null
-            ? Result<PurchaseOrderDto>.Failure("No se pudo recuperar la orden de compra.")
+            ? Result<PurchaseOrderDto>.Failure("No se pudo recuperar la orden de compra.", FailureKind.Unexpected)
             : Result<PurchaseOrderDto>.Success(order, message);
     }
 }
@@ -480,7 +505,8 @@ internal static class PurchaseOrderSecurityGuard
 
         return isAllowed
             ? Result<bool>.Success(true)
-            : Result<bool>.Failure("No tienes permiso para ejecutar esta operacion con la serie seleccionada.");
+            : Result<bool>.Failure("No tienes permiso para ejecutar esta operacion con la serie seleccionada.", FailureKind.Forbidden,
+                [new ApiError("PURCHASE_ORDER_SERIES_FORBIDDEN", "No tienes permiso para operar con la serie seleccionada.", "DocumentSeriesId")]);
     }
 }
 
@@ -498,13 +524,20 @@ internal static class PurchaseOrderCollections
         var current = await repository.GetByIdAsync(id, cancellationToken);
         if (current is null)
         {
-            return Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.");
+            return Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.", FailureKind.NotFound,
+                [new ApiError("PURCHASE_ORDER_NOT_FOUND", "La orden de compra no existe.", nameof(id))]);
         }
 
         var validation = PurchaseOrderWorkflowPolicy.EnsureCanModifyAttachmentsOrRelatedDocuments(current.Status);
         if (!validation.IsSuccess)
         {
-            return Result<PurchaseOrderDto>.Failure(validation.Message);
+            return Result<PurchaseOrderDto>.Failure(validation.Message, FailureKind.Conflict,
+                [new ApiError("PURCHASE_ORDER_STATE_CONFLICT", validation.Message)]);
+        }
+
+        if (string.IsNullOrWhiteSpace(current.SeriesCode) || string.IsNullOrWhiteSpace(current.DocumentNumber))
+        {
+            return PurchaseOrderNumberingFailure.Missing();
         }
 
         var data = PurchaseOrderCalculator.BuildPersistData(
@@ -518,12 +551,13 @@ internal static class PurchaseOrderCollections
         var updated = await repository.UpdateAsync(data, cancellationToken);
         if (!updated)
         {
-            return Result<PurchaseOrderDto>.Failure("No se pudo actualizar la orden de compra.");
+            return Result<PurchaseOrderDto>.Failure("No se pudo actualizar la orden de compra.", FailureKind.Conflict,
+                [new ApiError("PURCHASE_ORDER_STATE_CONFLICT", "La orden no admite la actualizacion solicitada.")]);
         }
 
         var order = await repository.GetByIdAsync(id, cancellationToken);
         return order is null
-            ? Result<PurchaseOrderDto>.Failure("No se pudo recuperar la orden de compra.")
+            ? Result<PurchaseOrderDto>.Failure("No se pudo recuperar la orden de compra.", FailureKind.Unexpected)
             : Result<PurchaseOrderDto>.Success(order, message);
     }
 }
@@ -635,4 +669,12 @@ internal static class PurchaseOrderMapping
             address.Email,
             address.IsModified);
     }
+}
+
+internal static class PurchaseOrderNumberingFailure
+{
+    public static Result<PurchaseOrderDto> Missing() => Result<PurchaseOrderDto>.Failure(
+        "La orden de compra no tiene una serie y numero validos. Revise su configuracion sin renumerar el documento.",
+        FailureKind.Conflict,
+        [new ApiError("PURCHASE_ORDER_NUMBERING_MISSING", "La serie y el numero persistidos son obligatorios.")]);
 }

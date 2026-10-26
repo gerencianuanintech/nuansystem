@@ -1,0 +1,56 @@
+{
+  "AssessmentDate": "2026-10-26",
+  "Method": "DockerMetadataAndAuthorizedSsmsReadOnlyInspection",
+  "ContainerName": "cial_sqlserver",
+  "ConfiguredImage": "mcr.microsoft.com/mssql/server:2022-latest",
+  "ObservedState": "running",
+  "ObservedRunning": true,
+  "PublishedBindings": [
+    { "HostIp": "0.0.0.0", "HostPort": "1433" },
+    { "HostIp": "::", "HostPort": "1433" }
+  ],
+  "ConfiguredPortBinding": {
+    "ContainerPort": "1433/tcp",
+    "HostPort": "1433",
+    "HostIp": ""
+  },
+  "Mount": {
+    "Type": "volume",
+    "Name": "cial_sqlserver_data",
+    "Destination": "/var/opt/mssql",
+    "ReadWrite": true
+  },
+  "NetworkModeObserved": "bridge",
+  "DedicatedLaboratoryConfirmed": false,
+  "ProductionDataExcludedConfirmed": true,
+  "DataClassificationSource": "UserDeclaration",
+  "UserConfirmedUse": "Development and test data only",
+  "SqlContentsIndependentlyVerified": false,
+  "ActualSqlProductVersion": "16.0.4205.1",
+  "SqlServerName": "35ebf67b63c9",
+  "TlsValidated": true,
+  "TlsValidationScope": "ExistingWindowsUserTrustAndReconnectedSsmsSessionAtLocalhost",
+  "TlsCertificateInstalled": true,
+  "TlsServerCertificateLoaded": true,
+  "TlsForceEncryptionConfigured": true,
+  "WindowsCertificateTrustVerified": true,
+  "TlsAuthenticatedSessionVerificationPending": false,
+  "AuthenticationModeVerified": true,
+  "AuthenticationModeObserved": "Mixed",
+  "SsmsSessionEncryptionObserved": true,
+  "ModelUserObjectCountObserved": 0,
+  "ReadOnlyInspectionAuthorizedByUser": true,
+  "ReadOnlyInspectionResult": "SucceededViaExistingSsmsSession",
+  "TrustedTlsAttemptResult": "RejectedSelfSignedCertificate",
+  "DiagnosticLoginResult": "LoginRejectedUsingExistingContainerCredential",
+  "ExecutionAuthorized": false,
+  "SqlConnectionsOpened": 0,
+  "ExistingSsmsSessionUsedForReadOnlyQuery": true,
+  "SapExecuted": false,
+  "Pending": [
+    "Confirm whether the development instance can be reserved for controlled validation without other processes using it",
+    "Select fresh run-specific laboratory databases without modifying existing development databases",
+    "Agree on a loopback-only host port and a pinned SQL image",
+    "Arrange secure credential delivery for the operational host before authorized provisioning; SSMS TLS verified"
+  ]
+}

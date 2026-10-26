@@ -25,7 +25,7 @@ public sealed class SapCityApiContractTests
         var application = Read("src", "Backend", "NuanSystem.Application", "DependencyInjection", "ApplicationServiceRegistration.cs");
         var integration = Read("src", "Backend", "NuanSystem.SapIntegration", "DependencyInjection", "SapIntegrationServiceRegistration.cs");
         application.Should().Contain("ISapCityImportService, SapCityImportService")
-            .And.Contain("ISapSyncEntityHandler, SapCitySyncHandler")
+            .And.Contain("ISapSyncImporter, SapCitySyncHandler")
             .And.Contain("ISapSyncScheduledExecutionProcessor, SapCityExecutionProcessor")
             .And.Contain("ISapSyncExecutionRetryProcessor, SapCityExecutionRetryProcessor")
             .And.Contain("AddScoped<SapCityRecordProcessor>()");

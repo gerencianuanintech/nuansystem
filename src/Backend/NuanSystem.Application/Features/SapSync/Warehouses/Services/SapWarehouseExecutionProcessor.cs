@@ -20,6 +20,7 @@ public sealed class SapWarehouseExecutionProcessor(
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public string EntityCode => SapSyncEntityCode.Warehouses;
+    public IReadOnlyCollection<string> SupportedModes => ["Full"];
 
     public async Task ProcessAsync(
         SapSyncScheduledExecutionContext context,

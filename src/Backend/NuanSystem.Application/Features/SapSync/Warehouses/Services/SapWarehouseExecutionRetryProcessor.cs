@@ -10,6 +10,8 @@ public sealed class SapWarehouseExecutionRetryProcessor(
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
+    public string EntityCode => "Warehouses";
+
     public string ApprovedSnapshotType => SapSyncApprovedSnapshotTypes.WarehouseV1;
 
     public async Task<SapSyncExecutionRetryProcessResult> ProcessAsync(

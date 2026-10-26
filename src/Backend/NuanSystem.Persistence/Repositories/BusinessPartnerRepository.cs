@@ -2,11 +2,12 @@ using System.Data;
 using System.Text.Json;
 using Dapper;
 using NuanSystem.Application.Abstractions.Data;
+using NuanSystem.Application.Abstractions.Sap;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
 
 namespace NuanSystem.Persistence.Repositories;
 
-public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectionFactory) : IBusinessPartnerRepository
+public sealed class BusinessPartnerRepository(ITenantConnectionFactory connectionFactory) : IBusinessPartnerRepository, ISapSupplierImportRepository
 {
     private const string ListProcedure = "dbo.SP_NA_GET_BUSINESSPARTNERS_LISTAR";
     private const string GetByIdProcedure = "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORID";

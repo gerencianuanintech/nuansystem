@@ -21,6 +21,7 @@ public interface ISapSyncScheduledExecutionPreparer
 public interface ISapSyncScheduledExecutionProcessor
 {
     string EntityCode { get; }
+    IReadOnlyCollection<string> SupportedModes { get; }
 
     Task ProcessAsync(
         SapSyncScheduledExecutionContext context,

@@ -1,0 +1,16 @@
+{
+  "SchemaVersion": 1,
+  "RunId": null,
+  "PreparationAuthorizationId": null,
+  "AdminPrincipal": null,
+  "ExpectedServerName": null,
+  "ProductVersion": null,
+  "CompanyIdA": null,
+  "CompanyIdB": null,
+  "CompatibilityLevel": null,
+  "Collation": null,
+  "ReadCommittedSnapshot": null,
+  "IdentificationTypeId": null,
+  "NotBeforeUtc": null,
+  "ExpiresAtUtc": null
+}

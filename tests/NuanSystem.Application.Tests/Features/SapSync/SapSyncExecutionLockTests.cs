@@ -122,6 +122,20 @@ public sealed class SapSyncExecutionLockTests
         preparer.WasCancelled.Should().BeTrue();
     }
 
+    [Theory]
+    [InlineData(SapSyncDirection.Both, "Full")]
+    [InlineData(SapSyncDirection.ErpToSap, "Full")]
+    [InlineData(SapSyncDirection.SapToErp, "Incremental")]
+    public async Task ScheduledPreparer_RejectsUnsupportedDirectionOrModeBeforeCallingProcessor(SapSyncDirection direction, string mode)
+    {
+        var processor = SapSyncRegistryFixture.Processor(Context().EntityCode);
+        processor.SupportedModes.Returns(new[] { "Full" });
+        var registry = new SapSyncProcessorRegistry([SapSyncRegistryFixture.Importer(processor.EntityCode)], [], [processor], []);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => new SapSyncScheduledExecutionPreparer(registry)
+            .PrepareAsync(Context() with { Direction = direction, SyncMode = mode }));
+        Assert.DoesNotContain(processor.ReceivedCalls(), call => call.GetMethodInfo().Name == "ProcessAsync");
+    }
+
     [Fact]
     public async Task ScheduledExecutionPreparer_ValidatesContextAtThePhaseBoundary()
     {
@@ -129,7 +143,8 @@ public sealed class SapSyncExecutionLockTests
         processor.EntityCode.Returns(Context().EntityCode);
         processor.ProcessAsync(Arg.Any<SapSyncScheduledExecutionContext>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
-        var preparer = new SapSyncScheduledExecutionPreparer([processor]);
+        processor.SupportedModes.Returns(new[] { SapSyncModes.Full });
+        var preparer = new SapSyncScheduledExecutionPreparer(new SapSyncProcessorRegistry([SapSyncRegistryFixture.Importer(processor.EntityCode)], [], [processor], []));
 
         await preparer.Invoking(service =>
                 service.PrepareAsync(Context() with { ExecutionUid = Guid.Empty }))

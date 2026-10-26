@@ -1,6 +1,5 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
-using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
 using NuanSystem.Shared.Sync;
@@ -9,9 +8,7 @@ using NuanSystem.Shared.Responses;
 namespace NuanSystem.Application.Features.BusinessPartners.Commands;
 
 public sealed class CreateBusinessPartnerCommandHandler(
-    IBusinessPartnerRepository repository,
-    ITransactionRunner transactionRunner,
-    IBusinessPartnerLocalOutboxWriter localOutboxWriter)
+    IBusinessPartnerUnitOfWork unitOfWork)
     : ICommandHandler<CreateBusinessPartnerCommand, BusinessPartnerDto>
 {
     public async Task<Result<BusinessPartnerDto>> Handle(CreateBusinessPartnerCommand request, CancellationToken cancellationToken)
@@ -19,31 +16,31 @@ public sealed class CreateBusinessPartnerCommandHandler(
         var code = request.Code.Trim().ToUpperInvariant();
         var identificationNumber = request.IdentificationNumber.Trim();
 
-        return await transactionRunner.ExecuteInTenantTransactionAsync(
-            async (connection, transaction, token) =>
+        return await unitOfWork.ExecuteAsync(
+            async (transaction, token) =>
             {
-                if (await repository.ExistsByCodeAsync(code, null, connection, transaction, token))
+                if (await transaction.ExistsByCodeAsync(code, null, token))
                 {
                     return Result<BusinessPartnerDto>.Failure(
                         "Ya existe un tercero comercial con el codigo indicado.",
                         [new ApiError("BusinessPartnerCodeAlreadyExists", "El codigo ya existe.", nameof(request.Code))]);
                 }
 
-                if (await repository.ExistsByIdentificationAsync(
-                        request.IdentificationTypeId, identificationNumber, null, connection, transaction, token))
+                if (await transaction.ExistsByIdentificationAsync(
+                        request.IdentificationTypeId, identificationNumber, null, token))
                 {
                     return Result<BusinessPartnerDto>.Failure(
                         "Ya existe un tercero comercial con la identificacion indicada.",
                         [new ApiError("BusinessPartnerIdentificationAlreadyExists", "La identificacion ya existe.", nameof(request.IdentificationNumber))]);
                 }
 
-                var id = await repository.CreateAsync(
-                    ToCreateData(request, code, identificationNumber), connection, transaction, token);
-                var partner = await repository.GetByIdAsync(id, connection, transaction, token)
+                var id = await transaction.CreateAsync(
+                    ToCreateData(request, code, identificationNumber), token);
+                var partner = await transaction.GetByIdAsync(id, token)
                     ?? throw new InvalidOperationException("El tercero comercial fue creado pero no pudo consultarse.");
 
-                await localOutboxWriter.EnqueueAsync(
-                    partner, SyncOperation.Created, connection, transaction, token);
+                await transaction.EnqueueAsync(
+                    partner, SyncOperation.Created, token);
                 return Result<BusinessPartnerDto>.Success(partner, "Tercero comercial creado correctamente.");
             },
             cancellationToken);

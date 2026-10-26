@@ -124,7 +124,7 @@ public sealed class GetSapSyncProfileByIdQueryHandler(
     }
 }
 
-public sealed class GetSapSyncProfileCatalogQueryHandler(ISapSyncProfileRepository repository)
+public sealed class GetSapSyncProfileCatalogQueryHandler(ISapSyncProfileRepository repository, ISapSyncProcessorRegistry processors)
     : IQueryHandler<GetSapSyncProfileCatalogQuery, SapSyncProfileCatalogDto>
 {
     public async Task<Result<SapSyncProfileCatalogDto>> Handle(
@@ -149,8 +149,9 @@ public sealed class GetSapSyncProfileCatalogQueryHandler(ISapSyncProfileReposito
         var capabilities = (await repository.GetHandlerCapabilitiesAsync(
                 activeOnly: true,
                 cancellationToken))
+            .Select(processors.Intersect)
             .Where(capability =>
-                capability.IsImplemented
+                capability.IsActive && capability.IsImplemented
                 && !capability.EntityCode.Equals("PurchaseOrders", StringComparison.OrdinalIgnoreCase))
             .ToArray();
 
@@ -168,10 +169,13 @@ public sealed class GetSapSyncProfileCatalogQueryHandler(ISapSyncProfileReposito
             companies,
             capabilities,
             directions,
-            [
+            new[]
+            {
                 new SapSyncProfileCatalogItemDto(SapSyncModes.Full, "Completa"),
                 new SapSyncProfileCatalogItemDto(SapSyncModes.Incremental, "Incremental")
-            ],
+            }.Where(mode => mode.Code == SapSyncModes.Full
+                ? capabilities.Any(capability => capability.SupportsFull)
+                : capabilities.Any(capability => capability.SupportsIncremental)).ToArray(),
             [
                 new SapSyncProfileCatalogItemDto(SapSyncScheduleTypes.Manual, "Manual"),
                 new SapSyncProfileCatalogItemDto(SapSyncScheduleTypes.Interval, "Intervalo"),

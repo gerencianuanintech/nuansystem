@@ -142,6 +142,8 @@ public sealed class MainForm : RibbonForm
     private readonly Func<SyncExecutionListForm> syncExecutionListFormFactory;
     private readonly Func<AuditLogsForm> auditLogsFormFactory;
     private readonly Func<SettingsForm> settingsFormFactory;
+    private readonly Func<SapIntegrationSettingsForm> sapIntegrationSettingsFormFactory;
+    private readonly Func<SapIdentityPolicyForm> sapIdentityPolicyFormFactory;
 
     private readonly AccordionControl navigationMenu = new();
     private readonly XtraTabControl tabControl = new();
@@ -239,6 +241,8 @@ public sealed class MainForm : RibbonForm
         syncExecutionListFormFactory = null!;
         auditLogsFormFactory = null!;
         settingsFormFactory = null!;
+        sapIntegrationSettingsFormFactory = null!;
+        sapIdentityPolicyFormFactory = null!;
         BuildLayout();
     }
 
@@ -307,7 +311,9 @@ public sealed class MainForm : RibbonForm
         Func<SyncEntityListForm> syncEntityListFormFactory,
         Func<SyncExecutionListForm> syncExecutionListFormFactory,
         Func<AuditLogsForm> auditLogsFormFactory,
-        Func<SettingsForm> settingsFormFactory)
+        Func<SettingsForm> settingsFormFactory,
+        Func<SapIntegrationSettingsForm> sapIntegrationSettingsFormFactory,
+        Func<SapIdentityPolicyForm> sapIdentityPolicyFormFactory)
     {
         this.viewModel = viewModel;
         this.configurationCompaniesFormFactory = configurationCompaniesFormFactory;
@@ -374,6 +380,8 @@ public sealed class MainForm : RibbonForm
         this.syncExecutionListFormFactory = syncExecutionListFormFactory;
         this.auditLogsFormFactory = auditLogsFormFactory;
         this.settingsFormFactory = settingsFormFactory;
+        this.sapIntegrationSettingsFormFactory = sapIntegrationSettingsFormFactory;
+        this.sapIdentityPolicyFormFactory = sapIdentityPolicyFormFactory;
         BuildLayout();
     }
 
@@ -1332,6 +1340,8 @@ public sealed class MainForm : RibbonForm
             sriTxtImportForm.OpenMonitorRequested += SriTxtImportForm_OpenMonitorRequested;
         }
 
+        form.FormClosed += EmbeddedModuleForm_FormClosed;
+
         page.Controls.Add(form);
         openModuleTabs[module.Key] = page;
         tabControl.TabPages.Add(page);
@@ -1343,6 +1353,48 @@ public sealed class MainForm : RibbonForm
         }
 
         UpdateStatusBar(pageTitle);
+        UpdateRibbonActionState();
+    }
+
+    private void EmbeddedModuleForm_FormClosed(object? sender, FormClosedEventArgs e)
+    {
+        if (sender is Form form)
+        {
+            RemoveModulePage(form, disposeForm: false);
+        }
+    }
+
+    private void RemoveModulePage(Form form, bool disposeForm)
+    {
+        var entry = openModuleTabs.FirstOrDefault(pair => ReferenceEquals(pair.Value.Tag, form));
+        if (string.IsNullOrWhiteSpace(entry.Key))
+        {
+            return;
+        }
+
+        var page = entry.Value;
+        openModuleTabs.Remove(entry.Key);
+        form.FormClosed -= EmbeddedModuleForm_FormClosed;
+
+        if (form is BaseCrudListForm crudForm)
+        {
+            crudForm.ActionStateChanged -= ActiveCrudForm_ActionStateChanged;
+            crudFormOperations.Remove(crudForm);
+        }
+
+        if (disposeForm && !form.IsDisposed)
+        {
+            form.Dispose();
+        }
+
+        if (tabControl.TabPages.Contains(page))
+        {
+            tabControl.TabPages.Remove(page);
+        }
+
+        page.Dispose();
+        OpenHomePage();
+        UpdateStatusBar(homePage?.Text ?? "Inicio");
         UpdateRibbonActionState();
     }
 
@@ -2001,6 +2053,8 @@ public sealed class MainForm : RibbonForm
             "purchase-orders" => purchaseOrdersFormFactory(),
             "sap" => sapSyncLogFormFactory(),
             "sap-sync-profiles" => sapSyncProfileListFormFactory(),
+            "sap-integration-settings" => sapIntegrationSettingsFormFactory(),
+            "sap-identity-policy" => sapIdentityPolicyFormFactory(),
             "sap-sync-executions" => sapSyncExecutionListFormFactory(),
             "sync-monitor" => syncMonitorFormFactory(),
             "sri-document-monitor" => sriDocumentMonitorFormFactory(null),
@@ -2147,13 +2201,8 @@ public sealed class MainForm : RibbonForm
 
         if (page.Tag is Form form)
         {
-            if (form is BaseCrudListForm crudForm)
-            {
-                crudForm.ActionStateChanged -= ActiveCrudForm_ActionStateChanged;
-                crudFormOperations.Remove(crudForm);
-            }
-
-            form.Dispose();
+            RemoveModulePage(form, disposeForm: true);
+            return;
         }
 
         tabControl.TabPages.Remove(page);

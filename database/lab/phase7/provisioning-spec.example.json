@@ -1,0 +1,16 @@
+{
+  "SchemaVersion": 1,
+  "RunId": "12345678-1234-1234-1234-123456789abc",
+  "PreparationAuthorizationId": "OFFLINE-REVIEW-NOT-AUTHORIZED",
+  "AdminPrincipal": "OFFLINE_LAB_DBA",
+  "ExpectedServerName": "OFFLINE-LAB-REPLACE",
+  "ProductVersion": "16.0.1000.6",
+  "CompanyIdA": 901,
+  "CompanyIdB": 902,
+  "CompatibilityLevel": 160,
+  "Collation": "SQL_Latin1_General_CP1_CI_AS",
+  "ReadCommittedSnapshot": false,
+  "IdentificationTypeId": 900001,
+  "NotBeforeUtc": "2000-01-01T00:00:00+00:00",
+  "ExpiresAtUtc": "2000-01-01T01:00:00+00:00"
+}

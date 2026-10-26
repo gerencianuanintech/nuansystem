@@ -67,12 +67,15 @@ public static class PersistenceServiceRegistration
         services.AddScoped<IMasterConnectionFactory>(provider => provider.GetRequiredService<MasterConnectionFactory>());
         services.AddScoped<ITenantConnectionFactory, TenantConnectionFactory>();
         services.AddScoped<ITransactionRunner, SqlTransactionRunner>();
+        services.AddScoped<IBusinessPartnerUnitOfWork, BusinessPartnerUnitOfWork>();
         services.AddScoped<ITenantDatabaseInitializer, SqlServerTenantDatabaseInitializer>();
         services.AddScoped<ICompanyResolver, SqlServerCompanyResolver>();
         services.AddScoped<ITenantConnectionStringResolver, TenantConnectionStringResolver>();
         services.AddScoped<IAuthService, SqlServerAuthService>();
         services.AddScoped<IUserSecurityStateService, UserSecurityStateService>();
-        services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
+        services.AddScoped<BusinessPartnerRepository>();
+        services.AddScoped<IBusinessPartnerRepository>(provider => provider.GetRequiredService<BusinessPartnerRepository>());
+        services.AddScoped<ISapSupplierImportRepository>(provider => provider.GetRequiredService<BusinessPartnerRepository>());
         services.AddScoped<ICarrierRepository, CarrierRepository>();
         services.AddScoped<ISriDocumentQueueRepository, SriDocumentQueueRepository>();
         services.AddScoped<ISriTxtImportRepository, SriTxtImportRepository>();
@@ -119,6 +122,8 @@ public static class PersistenceServiceRegistration
         services.AddScoped<ISapSyncLogRepository, SapSyncLogRepository>();
         services.AddScoped<ISapSyncCompanyRepository, SapSyncCompanyRepository>();
         services.AddScoped<ISapSyncProfileRepository, SapSyncProfileRepository>();
+        services.AddScoped<ISapMasterDataMappingRepository, SapMasterDataMappingRepository>();
+        services.AddScoped<ISapBusinessPartnerIdentityPolicyRepository, SapBusinessPartnerIdentityPolicyRepository>();
         services.AddScoped<ISapSyncScheduleRepository, SapSyncScheduleRepository>();
         services.AddScoped<ISapSyncExecutionRepository, SapSyncExecutionRepository>();
         services.AddScoped<ISapSyncSettingsRepository, SapSyncSettingsRepository>();

@@ -30,16 +30,15 @@ public sealed class SapProvinceSyncHandlerTests
     }
 
     [Fact]
-    public async Task Export_RemainsOutsideApprovedSapToErpScope()
+    public void Importer_DoesNotImplementExportContract()
     {
         var handler = new SapProvinceSyncHandler(
             Substitute.For<ISapProvinceReader>(),
             new SapProvinceRecordProcessor(
                 Substitute.For<IGeographyRepository>(), Substitute.For<ISender>()));
 
-        var result = await handler.ExportToSapAsync(Context());
-
-        result.Status.Should().Be(SapSyncStatus.NotImplemented);
+        typeof(NuanSystem.Application.Abstractions.SapSync.ISapSyncExporter)
+            .IsAssignableFrom(handler.GetType()).Should().BeFalse();
     }
 
     private static NuanSystem.Application.Features.SapSync.Dtos.SapSyncExecutionContext Context() => new(

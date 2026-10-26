@@ -141,6 +141,11 @@ public partial class BaseEditForm : XtraForm
         XtraMessageBox.Show(this, message, Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
     }
 
+    protected void ShowSuccess(string message)
+    {
+        XtraMessageBox.Show(this, message, Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
     protected void ShowError(Exception exception)
     {
         UiExceptionHandler.ShowError(this, Text, exception);

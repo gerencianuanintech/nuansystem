@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace NuanSystem.Application.Features.SapSync.Dtos;
 
 public sealed record SapSupplierImportResultDto(
@@ -14,4 +16,11 @@ public sealed record SapSupplierImportItemResultDto(
     string SapCardName,
     string Status,
     string Message,
-    int? LocalBusinessPartnerId);
+    int? LocalBusinessPartnerId)
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ErrorCode { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? CorrelationId { get; init; }
+}

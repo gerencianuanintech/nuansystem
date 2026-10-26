@@ -14,6 +14,25 @@ public sealed class SapServiceLayerQueryClient(
     ISapCompanySettingsRepository settingsRepository,
     ISecretProtector secretProtector)
 {
+    public async Task TestConnectionAsync(int companyId, CancellationToken cancellationToken)
+    {
+        var settings = await settingsRepository.GetByCompanyIdAsync(companyId, cancellationToken);
+        ValidateSettings(settings);
+
+        var baseUri = BuildBaseUri(settings!.ServiceLayerUrl!);
+        var client = httpClientFactory.CreateClient("SapServiceLayer");
+        var cookie = await LoginAsync(client, baseUri, settings, cancellationToken);
+
+        try
+        {
+            // El inicio de sesión exitoso valida URL, empresa, usuario y contraseña.
+        }
+        finally
+        {
+            await TryLogoutAsync(client, baseUri, cookie, cancellationToken);
+        }
+    }
+
     public Task<IReadOnlyCollection<JsonElement>> ReadAllAsync(
         int companyId,
         string relativeQuery,

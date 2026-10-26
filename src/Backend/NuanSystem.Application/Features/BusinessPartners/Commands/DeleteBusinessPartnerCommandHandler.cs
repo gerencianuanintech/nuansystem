@@ -1,6 +1,5 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
-using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Shared.Sync;
 using NuanSystem.Shared.Responses;
@@ -8,17 +7,15 @@ using NuanSystem.Shared.Responses;
 namespace NuanSystem.Application.Features.BusinessPartners.Commands;
 
 public sealed class DeleteBusinessPartnerCommandHandler(
-    IBusinessPartnerRepository repository,
-    ITransactionRunner transactionRunner,
-    IBusinessPartnerLocalOutboxWriter localOutboxWriter)
+    IBusinessPartnerUnitOfWork unitOfWork)
     : ICommandHandler<DeleteBusinessPartnerCommand, bool>
 {
     public async Task<Result<bool>> Handle(DeleteBusinessPartnerCommand request, CancellationToken cancellationToken)
     {
-        return await transactionRunner.ExecuteInTenantTransactionAsync(
-            async (connection, transaction, token) =>
+        return await unitOfWork.ExecuteAsync(
+            async (transaction, token) =>
             {
-                var current = await repository.GetByIdAsync(request.Id, connection, transaction, token);
+                var current = await transaction.GetByIdAsync(request.Id, token);
                 if (current is null)
                 {
                     return Result<bool>.Failure(
@@ -26,15 +23,15 @@ public sealed class DeleteBusinessPartnerCommandHandler(
                         [new ApiError("BusinessPartnerNotFound", "Tercero comercial no encontrado.", nameof(request.Id))]);
                 }
 
-                var deleted = await repository.DeleteAsync(
-                    request.Id, request.AuditUserId, request.AuditUserName, connection, transaction, token);
+                var deleted = await transaction.DeleteAsync(
+                    request.Id, request.AuditUserId, request.AuditUserName, token);
                 if (!deleted)
                 {
                     return Result<bool>.Failure("No se pudo eliminar el tercero comercial.");
                 }
 
-                await localOutboxWriter.EnqueueAsync(
-                    current, SyncOperation.Deleted, connection, transaction, token);
+                await transaction.EnqueueAsync(
+                    current, SyncOperation.Deleted, token);
                 return Result<bool>.Success(true, "Tercero comercial eliminado correctamente.");
             },
             cancellationToken);

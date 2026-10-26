@@ -1,0 +1,498 @@
+{
+  "PreparationTemplateVersion": 1,
+  "TemplateKind": "Phase7SqlLaboratoryPreparation",
+  "RuntimeConfiguration": false,
+  "Status": "Draft",
+  "Mode": "Review",
+  "ExecutionAuthorized": false,
+  "IncludesSecretValues": false,
+  "InstructionsFile": "../../../docs/operations/BACKEND-SOLID-PHASE-7-SQL-LAB-CHECKLIST.md",
+  "Contacts": {
+    "SqlAdministrator": null,
+    "ValidationOperator": null,
+    "IndependentReviewer": null,
+    "AuthorizationOwner": null
+  },
+  "Laboratory": {
+    "DataSource": null,
+    "ExpectedServerName": null,
+    "ProductVersion": null,
+    "Edition": null,
+    "DedicatedInstanceConfirmed": false,
+    "ProductionDataExcludedConfirmed": false,
+    "MixedAuthenticationConfirmed": false,
+    "ModelDatabaseEmptyConfirmed": false,
+    "Network": {
+      "Host": null,
+      "PortOrInstance": null,
+      "AccessApprovalReference": null
+    },
+    "Tls": {
+      "CertificateSubject": null,
+      "CertificateThumbprint": null,
+      "TrustValidated": false
+    },
+    "DatabaseDefaults": {
+      "CompatibilityLevel": null,
+      "Collation": null,
+      "ReadCommittedSnapshot": null
+    },
+    "SyntheticData": {
+      "CompanyIdA": null,
+      "CompanyIdB": null,
+      "IdentificationTypeId": null
+    }
+  },
+  "Executor": {
+    "ComputerName": null,
+    "OperatingSystem": null,
+    "DotnetVersion": null,
+    "PowerShellVersion": null,
+    "LocalPipePermissionConfirmed": false,
+    "ChildProcessExecutionPermissionConfirmed": false,
+    "OutputWritePermissionConfirmed": false,
+    "HostFiles": {
+      "ProvisioningEntry": {
+        "Path": null,
+        "Sha256": null
+      },
+      "ProvisioningModule": {
+        "Path": null,
+        "Sha256": null
+      },
+      "AutomationAssembly": {
+        "Path": null,
+        "Sha256": null
+      },
+      "Dotnet": {
+        "Path": null,
+        "Sha256": null
+      },
+      "TestAssembly": {
+        "Path": null,
+        "Sha256": null
+      },
+      "TestDependencies": {
+        "Path": null,
+        "Sha256": null
+      },
+      "TestRuntimeConfiguration": {
+        "Path": null,
+        "Sha256": null
+      }
+    },
+    "OptionsSha256": null
+  },
+  "Candidate": {
+    "RootPath": null,
+    "SourceInventoryPath": null,
+    "BinaryInventoryPath": null,
+    "SourceSha256": null,
+    "BinarySha256": null,
+    "OfflineBaselinePath": null,
+    "OfflineBaselineSha256": null,
+    "FrozenConfirmed": false
+  },
+  "SecureDelivery": {
+    "MechanismReference": null,
+    "ResponsibleOperator": null,
+    "CreationSecretKeys": [
+      "AppA",
+      "ObserverA",
+      "AppB",
+      "ObserverB",
+      "Monitor"
+    ],
+    "SuiteEnvironmentVariableNames": [
+      "NUANSYSTEM_PHASE7_TENANT_A_CONNECTION_STRING",
+      "NUANSYSTEM_PHASE7_OBSERVER_A_CONNECTION_STRING",
+      "NUANSYSTEM_PHASE7_TENANT_B_CONNECTION_STRING",
+      "NUANSYSTEM_PHASE7_OBSERVER_B_CONNECTION_STRING"
+    ],
+    "AdministrativeSessionProvided": false,
+    "IndependentMonitorSessionProvided": false
+  },
+  "ExecutionGatesWhilePreparing": {
+    "NUANSYSTEM_RUN_SQL_INTEGRATION_TESTS": "0",
+    "NUANSYSTEM_RUN_PHASE7_SQL_TESTS": "0",
+    "NUAN_RUN_SAP_PO_PILOT": "0"
+  },
+  "Runs": [
+    {
+      "Sequence": 1,
+      "RunId": null,
+      "Status": "Draft",
+      "ExpectedDatabasePatterns": [
+        "NuanSystem_Phase7_{RunId:N}_A",
+        "NuanSystem_Phase7_{RunId:N}_B"
+      ],
+      "Directories": {
+        "ProvisioningBundle": null,
+        "OrchestrationOutput": null,
+        "EvidencePackage": null
+      },
+      "WindowsUtc": {
+        "Provisioning": {
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null
+        },
+        "Suite": {
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null
+        },
+        "Monitor": {
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null
+        }
+      },
+      "BudgetsSeconds": {
+        "ProvisioningCommand": null,
+        "ProvisioningTotal": null,
+        "SuiteCommand": null,
+        "SuiteTotal": null,
+        "MonitorCommand": null,
+        "MonitorTotal": null,
+        "OrchestrationStage": null,
+        "OrchestrationTotal": null
+      },
+      "Authorizations": {
+        "Preparation": {
+          "Reference": null,
+          "Decision": "Pending",
+          "ExecutionAuthorized": false,
+          "ApprovedBy": null,
+          "ApprovedAtUtc": null,
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null,
+          "ApprovedHashes": {}
+        },
+        "ProvisioningExecution": {
+          "Reference": null,
+          "Decision": "Pending",
+          "ExecutionAuthorized": false,
+          "ApprovedBy": null,
+          "ApprovedAtUtc": null,
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null,
+          "ApprovedHashes": {}
+        },
+        "SuiteExecution": {
+          "Reference": null,
+          "Decision": "Pending",
+          "ExecutionAuthorized": false,
+          "ApprovedBy": null,
+          "ApprovedAtUtc": null,
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null,
+          "ApprovedHashes": {}
+        },
+        "IndependentMonitor": {
+          "Reference": null,
+          "Decision": "Pending",
+          "ExecutionAuthorized": false,
+          "ApprovedBy": null,
+          "ApprovedAtUtc": null,
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null,
+          "ApprovedHashes": {}
+        },
+        "OrchestratorExecution": {
+          "Reference": null,
+          "Decision": "Pending",
+          "ExecutionAuthorized": false,
+          "ApprovedBy": null,
+          "ApprovedAtUtc": null,
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null,
+          "ApprovedHashes": {}
+        },
+        "OperationalHost": {
+          "Reference": null,
+          "Decision": "Pending",
+          "ExecutionAuthorized": false,
+          "ApprovedBy": null,
+          "ApprovedAtUtc": null,
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null,
+          "ApprovedHashes": {}
+        }
+      },
+      "WorkersIsolation": {
+        "Inspector": null,
+        "AuthorizationReference": null,
+        "OffFromUtc": null,
+        "OffThroughUtc": null,
+        "DisabledComponents": [
+          "SyncWorker",
+          "MasterBranchSyncWorker",
+          "SriWorker",
+          "Relay"
+        ],
+        "Confirmed": false
+      },
+      "ObservedAfterProvisioning": {
+        "Status": "NotObserved",
+        "TenantA": {
+          "DatabaseName": null,
+          "DatabaseId": null,
+          "CompanyId": null,
+          "RunMarker": null,
+          "Purpose": null,
+          "ApplicationPrincipal": null,
+          "ObserverPrincipal": null,
+          "EffectivePermissionsEvidence": null,
+          "SchemaSha256": null,
+          "ProcedureSha256": {
+            "dbo.SP_NA_POST_BUSINESSPARTNERS_CREAR": null,
+            "dbo.SP_NA_PUT_BUSINESSPARTNERS_ACTUALIZAR": null,
+            "dbo.SP_NA_DELETE_BUSINESSPARTNERS_ELIMINAR": null,
+            "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORID": null,
+            "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORCODIGO": null,
+            "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORIDENTIFICACION": null
+          },
+          "CompatibilityLevel": null,
+          "Collation": null,
+          "ReadCommittedSnapshot": null,
+          "ApplicationPermissions": null,
+          "ObserverPermissions": null,
+          "ObservationEvidenceReference": null
+        },
+        "TenantB": {
+          "DatabaseName": null,
+          "DatabaseId": null,
+          "CompanyId": null,
+          "RunMarker": null,
+          "Purpose": null,
+          "ApplicationPrincipal": null,
+          "ObserverPrincipal": null,
+          "EffectivePermissionsEvidence": null,
+          "SchemaSha256": null,
+          "ProcedureSha256": {
+            "dbo.SP_NA_POST_BUSINESSPARTNERS_CREAR": null,
+            "dbo.SP_NA_PUT_BUSINESSPARTNERS_ACTUALIZAR": null,
+            "dbo.SP_NA_DELETE_BUSINESSPARTNERS_ELIMINAR": null,
+            "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORID": null,
+            "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORCODIGO": null,
+            "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORIDENTIFICACION": null
+          },
+          "CompatibilityLevel": null,
+          "Collation": null,
+          "ReadCommittedSnapshot": null,
+          "ApplicationPermissions": null,
+          "ObserverPermissions": null,
+          "ObservationEvidenceReference": null
+        },
+        "MonitorPrincipal": null,
+        "MonitorPermissionsEvidence": null,
+        "ProvisioningJournalSha256": null
+      },
+      "Evidence": {
+        "ManifestSha256": null,
+        "ProvisioningBundleManifestSha256": null,
+        "MonitorInputsSha256": null,
+        "MonitorCaptureIndexSha256": null,
+        "SqlTrxRunId": null,
+        "SqlTrxSha256": null,
+        "ArchiveSha256": null,
+        "OrchestrationResult": null,
+        "ReviewReference": null,
+        "HumanAuthenticityReview": "Pending",
+        "ClosureAccepted": false
+      }
+    },
+    {
+      "Sequence": 2,
+      "RunId": null,
+      "Status": "Draft",
+      "ExpectedDatabasePatterns": [
+        "NuanSystem_Phase7_{RunId:N}_A",
+        "NuanSystem_Phase7_{RunId:N}_B"
+      ],
+      "Directories": {
+        "ProvisioningBundle": null,
+        "OrchestrationOutput": null,
+        "EvidencePackage": null
+      },
+      "WindowsUtc": {
+        "Provisioning": {
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null
+        },
+        "Suite": {
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null
+        },
+        "Monitor": {
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null
+        }
+      },
+      "BudgetsSeconds": {
+        "ProvisioningCommand": null,
+        "ProvisioningTotal": null,
+        "SuiteCommand": null,
+        "SuiteTotal": null,
+        "MonitorCommand": null,
+        "MonitorTotal": null,
+        "OrchestrationStage": null,
+        "OrchestrationTotal": null
+      },
+      "Authorizations": {
+        "Preparation": {
+          "Reference": null,
+          "Decision": "Pending",
+          "ExecutionAuthorized": false,
+          "ApprovedBy": null,
+          "ApprovedAtUtc": null,
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null,
+          "ApprovedHashes": {}
+        },
+        "ProvisioningExecution": {
+          "Reference": null,
+          "Decision": "Pending",
+          "ExecutionAuthorized": false,
+          "ApprovedBy": null,
+          "ApprovedAtUtc": null,
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null,
+          "ApprovedHashes": {}
+        },
+        "SuiteExecution": {
+          "Reference": null,
+          "Decision": "Pending",
+          "ExecutionAuthorized": false,
+          "ApprovedBy": null,
+          "ApprovedAtUtc": null,
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null,
+          "ApprovedHashes": {}
+        },
+        "IndependentMonitor": {
+          "Reference": null,
+          "Decision": "Pending",
+          "ExecutionAuthorized": false,
+          "ApprovedBy": null,
+          "ApprovedAtUtc": null,
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null,
+          "ApprovedHashes": {}
+        },
+        "OrchestratorExecution": {
+          "Reference": null,
+          "Decision": "Pending",
+          "ExecutionAuthorized": false,
+          "ApprovedBy": null,
+          "ApprovedAtUtc": null,
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null,
+          "ApprovedHashes": {}
+        },
+        "OperationalHost": {
+          "Reference": null,
+          "Decision": "Pending",
+          "ExecutionAuthorized": false,
+          "ApprovedBy": null,
+          "ApprovedAtUtc": null,
+          "NotBeforeUtc": null,
+          "ExpiresAtUtc": null,
+          "ApprovedHashes": {}
+        }
+      },
+      "WorkersIsolation": {
+        "Inspector": null,
+        "AuthorizationReference": null,
+        "OffFromUtc": null,
+        "OffThroughUtc": null,
+        "DisabledComponents": [
+          "SyncWorker",
+          "MasterBranchSyncWorker",
+          "SriWorker",
+          "Relay"
+        ],
+        "Confirmed": false
+      },
+      "ObservedAfterProvisioning": {
+        "Status": "NotObserved",
+        "TenantA": {
+          "DatabaseName": null,
+          "DatabaseId": null,
+          "CompanyId": null,
+          "RunMarker": null,
+          "Purpose": null,
+          "ApplicationPrincipal": null,
+          "ObserverPrincipal": null,
+          "EffectivePermissionsEvidence": null,
+          "SchemaSha256": null,
+          "ProcedureSha256": {
+            "dbo.SP_NA_POST_BUSINESSPARTNERS_CREAR": null,
+            "dbo.SP_NA_PUT_BUSINESSPARTNERS_ACTUALIZAR": null,
+            "dbo.SP_NA_DELETE_BUSINESSPARTNERS_ELIMINAR": null,
+            "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORID": null,
+            "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORCODIGO": null,
+            "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORIDENTIFICACION": null
+          },
+          "CompatibilityLevel": null,
+          "Collation": null,
+          "ReadCommittedSnapshot": null,
+          "ApplicationPermissions": null,
+          "ObserverPermissions": null,
+          "ObservationEvidenceReference": null
+        },
+        "TenantB": {
+          "DatabaseName": null,
+          "DatabaseId": null,
+          "CompanyId": null,
+          "RunMarker": null,
+          "Purpose": null,
+          "ApplicationPrincipal": null,
+          "ObserverPrincipal": null,
+          "EffectivePermissionsEvidence": null,
+          "SchemaSha256": null,
+          "ProcedureSha256": {
+            "dbo.SP_NA_POST_BUSINESSPARTNERS_CREAR": null,
+            "dbo.SP_NA_PUT_BUSINESSPARTNERS_ACTUALIZAR": null,
+            "dbo.SP_NA_DELETE_BUSINESSPARTNERS_ELIMINAR": null,
+            "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORID": null,
+            "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORCODIGO": null,
+            "dbo.SP_NA_GET_BUSINESSPARTNERS_BUSCARPORIDENTIFICACION": null
+          },
+          "CompatibilityLevel": null,
+          "Collation": null,
+          "ReadCommittedSnapshot": null,
+          "ApplicationPermissions": null,
+          "ObserverPermissions": null,
+          "ObservationEvidenceReference": null
+        },
+        "MonitorPrincipal": null,
+        "MonitorPermissionsEvidence": null,
+        "ProvisioningJournalSha256": null
+      },
+      "Evidence": {
+        "ManifestSha256": null,
+        "ProvisioningBundleManifestSha256": null,
+        "MonitorInputsSha256": null,
+        "MonitorCaptureIndexSha256": null,
+        "SqlTrxRunId": null,
+        "SqlTrxSha256": null,
+        "ArchiveSha256": null,
+        "OrchestrationResult": null,
+        "ReviewReference": null,
+        "HumanAuthenticityReview": "Pending",
+        "ClosureAccepted": false
+      }
+    }
+  ],
+  "FinalAcceptance": {
+    "TwoOrderedFreshRunsConfirmed": false,
+    "SameCandidateConfirmed": false,
+    "RealSqlCasesPassedPerRun": null,
+    "GlobalControlsPassedPerRun": null,
+    "ArtifactKindsPerRun": null,
+    "IndependentAuthenticityReview": "Pending",
+    "ApprovalReference": null,
+    "ApprovedBy": null,
+    "ApprovedAtUtc": null,
+    "Phase7Closed": false
+  }
+}

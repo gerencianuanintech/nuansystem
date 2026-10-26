@@ -381,10 +381,10 @@ public sealed class SapSyncProfilePersistenceContractTests
         foreach (var handler in new[]
                  {
                      "SapSupplierSyncHandler", "SapItemSyncHandler",
-                     "SapPurchaseOrderSyncHandler", "SapPaymentTermSyncHandler"
+                     "SapPaymentTermSyncHandler"
                  })
         {
-            registration.Should().Contain($"AddScoped<ISapSyncEntityHandler, {handler}>()");
+            registration.Should().Contain($"AddScoped<ISapSyncImporter, {handler}>()");
         }
 
         sql.Should().Contain("(N'Suppliers', N'Proveedores', 1, 0, 1, 1, 1)")

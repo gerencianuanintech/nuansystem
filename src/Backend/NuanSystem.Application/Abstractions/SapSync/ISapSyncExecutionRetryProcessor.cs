@@ -4,6 +4,7 @@ namespace NuanSystem.Application.Abstractions.SapSync;
 
 public interface ISapSyncExecutionRetryProcessor
 {
+    string EntityCode { get; }
     string ApprovedSnapshotType { get; }
 
     Task<SapSyncExecutionRetryProcessResult> ProcessAsync(

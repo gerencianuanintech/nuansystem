@@ -10,13 +10,15 @@ using NuanSystem.Application.Features.SapSync.Executions;
 namespace NuanSystem.Application.Features.SapSync.Cities.Handlers;
 
 public sealed class SapCitySyncHandler(ISapCityReader reader, SapCityRecordProcessor recordProcessor)
-    : ISapSyncEntityHandler
+    : ISapSyncImporter
 {
     public string EntityCode => SapSyncEntityCode.Cities;
+    public IReadOnlyCollection<string> SupportedModes => ["Full"];
 
     public async Task<SapSyncExecutionResult> ImportFromSapAsync(
         SapSyncExecutionContext context, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var rows = await reader.GetCitiesAsync(context.CompanyId, cancellationToken);
         var results = new List<SapCityRecordProcessResult>(rows.Count);
         foreach (var row in rows.OrderBy(x => x.CountryCode, StringComparer.OrdinalIgnoreCase)
@@ -48,11 +50,6 @@ public sealed class SapCitySyncHandler(ISapCityReader reader, SapCityRecordProce
             rows.Count, failed, failed > 0 ? "CITY_IMPORT_FAILED" : null,
             failed > 0 ? "Una o mas ciudades no pudieron importarse." : null);
     }
-
-    public Task<SapSyncExecutionResult> ExportToSapAsync(
-        SapSyncExecutionContext context, CancellationToken cancellationToken = default) =>
-        Task.FromResult(SapSyncExecutionResult.NotImplemented(
-            "Ciudades ERP a SAP no forman parte del alcance aprobado."));
 
     private static int Count(IEnumerable<SapCityRecordProcessResult> rows, string status) => rows.Count(x => x.Status == status);
 }

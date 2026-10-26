@@ -286,6 +286,7 @@ public sealed record BusinessPartnerLookupsDto(
     IReadOnlyCollection<BusinessPartnerLookupOptionDto> Projects);
 
 public sealed record BusinessPartnerSapImportData(
+    string InternalCode,
     string CardCode,
     string CardName,
     string? TaxIdentification,

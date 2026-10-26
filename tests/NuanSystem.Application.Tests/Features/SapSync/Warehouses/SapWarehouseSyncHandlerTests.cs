@@ -67,16 +67,15 @@ public sealed class SapWarehouseSyncHandlerTests
     }
 
     [Fact]
-    public async Task ExportToSapAsync_RemainsOutsideApprovedScope()
+    public void Importer_DoesNotImplementExportContract()
     {
         var handler = new SapWarehouseSyncHandler(
             Substitute.For<ISapWarehouseReader>(),
             new SapWarehouseRecordProcessor(
                 Substitute.For<IWarehouseRepository>(), Substitute.For<ISender>()));
 
-        var result = await handler.ExportToSapAsync(Context());
-
-        result.Status.Should().Be(SapSyncStatus.NotImplemented);
+        typeof(NuanSystem.Application.Abstractions.SapSync.ISapSyncExporter)
+            .IsAssignableFrom(handler.GetType()).Should().BeFalse();
     }
 
     private static SapSyncExecutionContext Context() => new(

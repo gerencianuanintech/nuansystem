@@ -5,11 +5,13 @@ using NuanSystem.Application.Features.SapSync.Dtos;
 
 namespace NuanSystem.Application.Features.SapSync.Handlers;
 
-public sealed class SapItemSyncHandler(ISapItemImportService itemImportService) : ISapSyncEntityHandler
+public sealed class SapItemSyncHandler(ISapItemImportService itemImportService) : ISapSyncImporter
 {
     public string EntityCode => SapSyncEntityCode.Items;
+    public IReadOnlyCollection<string> SupportedModes => ["Full"];
     public async Task<SapSyncExecutionResult> ImportFromSapAsync(SapSyncExecutionContext context, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var summary = await itemImportService.ImportAsync(
             context.CompanyId, null, null, "SAP Sync Worker", false, cancellationToken);
 
@@ -26,6 +28,4 @@ public sealed class SapItemSyncHandler(ISapItemImportService itemImportService) 
             summary.Failed > 0 ? "ITEM_IMPORT_FAILED" : null,
             summary.Failed > 0 ? "Uno o mas articulos no pudieron importarse." : null);
     }
-    public Task<SapSyncExecutionResult> ExportToSapAsync(SapSyncExecutionContext context, CancellationToken cancellationToken = default)
-        => Task.FromResult(SapSyncExecutionResult.NotImplemented("Items ERP a SAP queda pendiente."));
 }

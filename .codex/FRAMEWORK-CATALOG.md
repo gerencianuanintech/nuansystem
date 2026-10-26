@@ -218,7 +218,7 @@ Status values:
 - **Responsibility:** Stable success/failure contracts and field-aware `ApiError` values mapped by the API.
 - **Use when:** a handler can produce an expected non-success outcome.
 - **Do not use when:** hiding unexpected infrastructure exceptions or fabricating success.
-- **Current HTTP behavior:** `ResultExtensions.ToHttpResult()` returns HTTP 200 for success and HTTP 400 for every failed `Result<T>`; do not assume 404/409 mapping without a deliberate shared-contract migration.
+- **Current HTTP behavior (2026-10-24 consolidation):** success 200; legacy/Validation failure 400; NotFound 404; Conflict 409; Forbidden 403; Unavailable 503; Unexpected/unknown 500 with sanitized message/errors. `FailureKind` is optional for legacy callers. See `docs/operations/BACKEND-SOLID-VALIDATION.md`; HTTP shape remains compatible with WinForms.
 - **Antipatterns:** new result type, endpoint-local error schema, raw SQL/SAP exception returned to clients.
 
 ### 7.3 Trusted company context and tenant connection
@@ -403,3 +403,13 @@ backups and SRI payloads. All workers remain disabled. This framework packages
 and verifies binaries only; it does not own SCM installation, external
 configuration, process startup or production promotion. The operational
 contract is `docs/operations/DOTNET-10-RELEASE-ARTIFACTS.md`.
+
+
+## Backend SOLID consolidation (2026-10-24)
+
+- SAP execution contracts: ISapSyncImporter / ISapSyncExporter and ISapSyncProcessorRegistry. No exporter is registered. Profiles/scheduler intersect configured capabilities with real processors; scheduled Full currently supports Warehouses, Countries, Provinces and Cities. Both is rejected. Supplier/Item/PaymentTerm command imports remain available. Outbox delivery remains incomplete.
+- Supplier persistence: ISapSupplierImportRepository segregates SAP import from IBusinessPartnerRepository; both resolve one scoped BusinessPartnerRepository.
+- Purchase amounts: Domain/Purchasing/PurchaseOrderAmountCalculator owns pure six-decimal ToEven arithmetic; Application adapts persistence data. SAP object type 22 is in SapPurchaseOrderMapping. Missing stored numbering is rejected, never synthesized.
+- Transaction pilot: BusinessPartner CRUD handlers use IBusinessPartnerUnitOfWork / IBusinessPartnerTransaction without ADO.NET. BusinessPartnerUnitOfWork bridges to ITransactionRunner and existing transaction overloads. Legacy contracts remain for other verticals. The new pilot has in-memory validation only; SQL atomicity and broad migration are pending. Callbacks await operations sequentially.
+- Company: Domain Company contains business fields only. CompanyConnectionInfo remains technical and does not serialize/print ConnectionString. Internal CompanyDatabaseConfiguration builds SQL Server connections with the existing protector/TLS policy. Technical enums retain legacy placement; MySQL is not implemented.
+- Evidence and release gate: docs/operations/BACKEND-SOLID-VALIDATION.md and docs/architecture/BACKEND-SOLID-STATUS.md. No SQL, SAP or production rollout was executed by this consolidation. Existing historical validation elsewhere in this catalog is not proof of the new transaction pilot.

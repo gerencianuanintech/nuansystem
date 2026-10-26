@@ -39,6 +39,15 @@ public static class SapEndpoints
         })
         .RequirePermission(PermissionCodes.SapManage);
 
+        app.MapPost("/api/sap/settings/service-layer/test", async (
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await sender.Send(new TestSapServiceLayerConnectionQuery(), cancellationToken);
+            return result.ToHttpResult();
+        })
+        .RequirePermission(PermissionCodes.SapManage);
+
         app.MapPost("/api/sap/purchase-orders/{id:int}/route", async (int id,ISender sender,ClaimsPrincipal user,CancellationToken cancellationToken) =>
         {
             var audit=EndpointContextHelper.GetAuditUser(user);

@@ -6,7 +6,7 @@ using NuanSystem.Application.Features.SapSync.Enums;
 namespace NuanSystem.Application.Features.SapSync.Services;
 
 public sealed class SapSyncOrchestrator(
-    IEnumerable<ISapSyncEntityHandler> handlers,
+    ISapSyncProcessorRegistry processors,
     ISapSyncLockService lockService,
     ISapSyncLogService logService)
     : ISapSyncOrchestrator
@@ -19,6 +19,7 @@ public sealed class SapSyncOrchestrator(
         TimeSpan lockTimeout,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var correlationId = Guid.NewGuid().ToString("N");
         var startedAt = DateTime.UtcNow;
         var stopwatch = Stopwatch.StartNew();
@@ -28,6 +29,15 @@ public sealed class SapSyncOrchestrator(
 
         try
         {
+            if (direction != SapSyncDirection.SapToErp && direction != SapSyncDirection.ErpToSap
+                || direction == SapSyncDirection.SapToErp && processors.FindImporter(settings.EntityCode) is null
+                || direction == SapSyncDirection.ErpToSap && processors.FindExporter(settings.EntityCode) is null)
+            {
+                var unsupported = SapSyncExecutionResult.NotImplemented("No existe procesador SAP para la entidad y direccion solicitadas.");
+                await WriteLogAsync(context, unsupported, stopwatch.ElapsedMilliseconds, cancellationToken);
+                return unsupported;
+            }
+
             syncLock = await lockService.TryAcquireAsync(company.CompanyId, settings.EntityCode, direction, workerInstance, correlationId, lockTimeout, cancellationToken);
             if (syncLock is null)
             {
@@ -36,16 +46,14 @@ public sealed class SapSyncOrchestrator(
                 return skipped;
             }
 
-            var handler = handlers.FirstOrDefault(item => string.Equals(item.EntityCode, settings.EntityCode, StringComparison.OrdinalIgnoreCase));
-            var result = handler is null
-                ? SapSyncExecutionResult.NotImplemented($"No existe handler SAP para la entidad {settings.EntityCode}.")
-                : direction switch
-                {
-                    SapSyncDirection.SapToErp => await handler.ImportFromSapAsync(context, cancellationToken),
-                    SapSyncDirection.ErpToSap => await handler.ExportToSapAsync(context, cancellationToken),
-                    SapSyncDirection.Both => await handler.ImportFromSapAsync(context with { Direction = SapSyncDirection.SapToErp, Operation = SapSyncOperation.Import }, cancellationToken),
-                    _ => SapSyncExecutionResult.Skipped($"Direccion SAP no soportada: {direction}.")
-                };
+            var result = direction switch
+            {
+                SapSyncDirection.SapToErp when processors.FindImporter(settings.EntityCode) is { } importer
+                    => await importer.ImportFromSapAsync(context, cancellationToken),
+                SapSyncDirection.ErpToSap when processors.FindExporter(settings.EntityCode) is { } exporter
+                    => await exporter.ExportToSapAsync(context, cancellationToken),
+                _ => SapSyncExecutionResult.NotImplemented("No existe procesador SAP para la entidad y direccion solicitadas.")
+            };
 
             await WriteLogAsync(context, result, stopwatch.ElapsedMilliseconds, cancellationToken);
             return result;

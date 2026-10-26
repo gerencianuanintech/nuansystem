@@ -6,14 +6,16 @@ using NuanSystem.Application.Features.SapSync.Enums;
 
 namespace NuanSystem.Application.Features.SapSync.Handlers;
 
-public sealed class SapPaymentTermSyncHandler(ISapPaymentTermImportService service) : ISapSyncEntityHandler
+public sealed class SapPaymentTermSyncHandler(ISapPaymentTermImportService service) : ISapSyncImporter
 {
     public string EntityCode => SapSyncEntityCode.PaymentTerms;
+    public IReadOnlyCollection<string> SupportedModes => ["Full"];
 
     public async Task<SapSyncExecutionResult> ImportFromSapAsync(
         SapSyncExecutionContext context,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var result = await service.ImportFullAsync(context.CompanyId, null, "SAP Sync Worker", cancellationToken);
         var details = result.Items
             .Where(item => item.Status is "Conflict" or "Failed")
@@ -27,8 +29,4 @@ public sealed class SapPaymentTermSyncHandler(ISapPaymentTermImportService servi
             : new(SapSyncStatus.Synced, message, result.TotalRead);
     }
 
-    public Task<SapSyncExecutionResult> ExportToSapAsync(
-        SapSyncExecutionContext context,
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult(SapSyncExecutionResult.NotImplemented("Condiciones de pago ERP a SAP no forman parte del alcance aprobado."));
 }

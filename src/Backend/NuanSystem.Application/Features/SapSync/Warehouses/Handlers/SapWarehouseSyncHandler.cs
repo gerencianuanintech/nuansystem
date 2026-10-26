@@ -11,14 +11,16 @@ namespace NuanSystem.Application.Features.SapSync.Warehouses.Handlers;
 
 public sealed class SapWarehouseSyncHandler(
     ISapWarehouseReader reader,
-    SapWarehouseRecordProcessor recordProcessor) : ISapSyncEntityHandler
+    SapWarehouseRecordProcessor recordProcessor) : ISapSyncImporter
 {
     public string EntityCode => SapSyncEntityCode.Warehouses;
+    public IReadOnlyCollection<string> SupportedModes => ["Full"];
 
     public async Task<SapSyncExecutionResult> ImportFromSapAsync(
         SapSyncExecutionContext context,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var rows = await reader.GetWarehousesAsync(context.CompanyId, cancellationToken);
         var results = new List<SapWarehouseRecordProcessResult>(rows.Count);
         foreach (var row in rows.OrderBy(item => item.WarehouseCode, StringComparer.OrdinalIgnoreCase))
@@ -61,12 +63,6 @@ public sealed class SapWarehouseSyncHandler(
             failed > 0 ? "WAREHOUSE_IMPORT_FAILED" : null,
             failed > 0 ? "Una o mas bodegas no pudieron importarse." : null);
     }
-
-    public Task<SapSyncExecutionResult> ExportToSapAsync(
-        SapSyncExecutionContext context,
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult(SapSyncExecutionResult.NotImplemented(
-            "Bodegas ERP a SAP no forman parte del alcance aprobado."));
 
     private static int Count(
         IEnumerable<SapWarehouseRecordProcessResult> results,

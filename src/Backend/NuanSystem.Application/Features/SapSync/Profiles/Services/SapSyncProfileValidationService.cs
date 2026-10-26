@@ -31,7 +31,7 @@ public interface ISapSyncProfileValidationService
         CancellationToken cancellationToken = default);
 }
 
-public sealed class SapSyncProfileValidationService(ISapSyncProfileRepository repository)
+public sealed class SapSyncProfileValidationService(ISapSyncProfileRepository repository, ISapSyncProcessorRegistry processors)
     : ISapSyncProfileValidationService
 {
     public const string DefaultTimeZoneId = "America/Guayaquil";
@@ -104,7 +104,7 @@ public sealed class SapSyncProfileValidationService(ISapSyncProfileRepository re
         var capabilities = await repository.GetHandlerCapabilitiesAsync(
             activeOnly: false,
             cancellationToken);
-        var capabilityByCode = capabilities.ToDictionary(
+        var capabilityByCode = capabilities.Select(processors.Intersect).ToDictionary(
             capability => capability.EntityCode,
             StringComparer.OrdinalIgnoreCase);
 

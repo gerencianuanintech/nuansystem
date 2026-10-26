@@ -1,6 +1,5 @@
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
-using NuanSystem.Application.Abstractions.Sync;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.BusinessPartners.Dtos;
 using NuanSystem.Shared.Sync;
@@ -9,9 +8,7 @@ using NuanSystem.Shared.Responses;
 namespace NuanSystem.Application.Features.BusinessPartners.Commands;
 
 public sealed class UpdateBusinessPartnerCommandHandler(
-    IBusinessPartnerRepository repository,
-    ITransactionRunner transactionRunner,
-    IBusinessPartnerLocalOutboxWriter localOutboxWriter)
+    IBusinessPartnerUnitOfWork unitOfWork)
     : ICommandHandler<UpdateBusinessPartnerCommand, BusinessPartnerDto>
 {
     public async Task<Result<BusinessPartnerDto>> Handle(UpdateBusinessPartnerCommand request, CancellationToken cancellationToken)
@@ -19,10 +16,10 @@ public sealed class UpdateBusinessPartnerCommandHandler(
         var code = request.Code.Trim().ToUpperInvariant();
         var identificationNumber = request.IdentificationNumber.Trim();
 
-        return await transactionRunner.ExecuteInTenantTransactionAsync(
-            async (connection, transaction, token) =>
+        return await unitOfWork.ExecuteAsync(
+            async (transaction, token) =>
             {
-                var current = await repository.GetByIdAsync(request.Id, connection, transaction, token);
+                var current = await transaction.GetByIdAsync(request.Id, token);
                 if (current is null)
                 {
                     return Result<BusinessPartnerDto>.Failure(
@@ -30,32 +27,32 @@ public sealed class UpdateBusinessPartnerCommandHandler(
                         [new ApiError("BusinessPartnerNotFound", "Tercero comercial no encontrado.", nameof(request.Id))]);
                 }
 
-                if (await repository.ExistsByCodeAsync(code, request.Id, connection, transaction, token))
+                if (await transaction.ExistsByCodeAsync(code, request.Id, token))
                 {
                     return Result<BusinessPartnerDto>.Failure(
                         "Ya existe un tercero comercial con el codigo indicado.",
                         [new ApiError("BusinessPartnerCodeAlreadyExists", "El codigo ya existe.", nameof(request.Code))]);
                 }
 
-                if (await repository.ExistsByIdentificationAsync(
-                        request.IdentificationTypeId, identificationNumber, request.Id, connection, transaction, token))
+                if (await transaction.ExistsByIdentificationAsync(
+                        request.IdentificationTypeId, identificationNumber, request.Id, token))
                 {
                     return Result<BusinessPartnerDto>.Failure(
                         "Ya existe un tercero comercial con la identificacion indicada.",
                         [new ApiError("BusinessPartnerIdentificationAlreadyExists", "La identificacion ya existe.", nameof(request.IdentificationNumber))]);
                 }
 
-                var updated = await repository.UpdateAsync(
-                    ToUpdateData(request, code, identificationNumber), connection, transaction, token);
+                var updated = await transaction.UpdateAsync(
+                    ToUpdateData(request, code, identificationNumber), token);
                 if (!updated)
                 {
                     return Result<BusinessPartnerDto>.Failure("No se pudo actualizar el tercero comercial.");
                 }
 
-                var partner = await repository.GetByIdAsync(request.Id, connection, transaction, token)
+                var partner = await transaction.GetByIdAsync(request.Id, token)
                     ?? throw new InvalidOperationException("El tercero comercial fue actualizado pero no pudo consultarse.");
-                await localOutboxWriter.EnqueueAsync(
-                    partner, SyncOperation.Updated, connection, transaction, token);
+                await transaction.EnqueueAsync(
+                    partner, SyncOperation.Updated, token);
                 return Result<BusinessPartnerDto>.Success(partner, "Tercero comercial actualizado correctamente.");
             },
             cancellationToken);

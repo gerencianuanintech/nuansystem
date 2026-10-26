@@ -57,6 +57,7 @@ public static class SapIntegrationServiceRegistration
         services.AddScoped<ISapCityReader, SapHanaCityReader>();
         services.AddScoped<ISapItemReader, SapServiceLayerItemReader>();
         services.AddScoped<SapServiceLayerQueryClient>();
+        services.AddScoped<ISapServiceLayerConnectionTester, SapServiceLayerConnectionTester>();
         services.AddScoped<ISapPurchaseOrderReader, SapServiceLayerPurchaseOrderReader>();
         services.AddScoped<ISapDocumentSender, SapDocumentSender>();
         services.AddScoped<ISapPaymentTermReader, SapServiceLayerPaymentTermReader>();

@@ -20,6 +20,7 @@ public sealed class SapProvinceExecutionProcessor(
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public string EntityCode => SapSyncEntityCode.Provinces;
+    public IReadOnlyCollection<string> SupportedModes => ["Full"];
 
     public async Task ProcessAsync(
         SapSyncScheduledExecutionContext context,

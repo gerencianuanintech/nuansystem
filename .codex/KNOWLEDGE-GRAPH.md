@@ -505,7 +505,7 @@ responsibility into Application, the worker, API or WinForms.
 ```text
 NuanSystem.SyncWorker -> active SAP companies -> company context
   -> enabled settings -> SapSyncOrchestrator
-  -> lock -> ISapSyncEntityHandler -> log/watermark -> unlock
+  -> lock -> ISapSyncProcessorRegistry -> directional importer/exporter -> log -> unlock
   -> heartbeat + bounded retry policy
 ```
 
@@ -752,3 +752,31 @@ Warehouse
 Warehouse remains disabled and requires separate runtime authorization. The
 UnitOfMeasure full-profile administrative launcher remains pending because the
 shared pilot profile has unrelated historical dependency defects.
+
+
+## Backend consolidation edges (2026-10-24)
+
+```text
+BusinessPartner CRUD handlers
+  -> IBusinessPartnerUnitOfWork / IBusinessPartnerTransaction (no ADO.NET)
+  -> Persistence BusinessPartnerUnitOfWork
+  -> legacy ITransactionRunner -> one tenant connection/transaction
+  -> existing BusinessPartnerRepository + local Outbox writer
+
+SapSupplierImportService
+  -> IBusinessPartnerRepository (lookup/matching)
+  -> ISapSupplierImportRepository (SAP import)
+  -> one scoped BusinessPartnerRepository
+
+PurchaseOrderCalculator (Application adapter)
+  -> PurchaseOrderAmountCalculator (Domain numeric values only)
+  -> persistence DTO mapping + SAP object metadata mapping
+
+Company (Domain business model)
+  -X-> database credentials / provider selection / SAP transport selection
+CompanyContextMiddleware -> user-authorized resolver -> CompanyConnectionInfo
+  -> internal CompanyDatabaseConfiguration + ISecretProtector + SQL TLS policy
+  -> tenant connection (ConnectionString excluded from JSON/ToString)
+```
+
+Profiles/catalog/scheduler/preparer share effective SAP processor capabilities. No export implementation is registered; Both is not an import alias. SQL verification of the transaction pilot, network/JWT production checks and release remain pending. See docs/architecture/BACKEND-SOLID-STATUS.md and docs/operations/BACKEND-SOLID-VALIDATION.md for scoped evidence; prior historical validation does not close these gates.

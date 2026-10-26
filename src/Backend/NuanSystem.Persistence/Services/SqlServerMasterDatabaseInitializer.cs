@@ -842,6 +842,12 @@ END;
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
         }
 
+        scriptPath = FindDatabaseScriptPath("089_sap_service_layer_company_settings.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
         scriptPath = FindDatabaseScriptPath("052_master_security_document_series.sql");
         if (scriptPath is not null)
         {
@@ -1179,6 +1185,24 @@ END;
         if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
 
         scriptPath = FindDatabaseScriptPath("227_master_definitions_inventory_sales_channels_navigation.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("231_master_sap_query_definitions.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("232_master_sap_field_mappings.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("233_master_sap_mapping_procedures.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("234_master_sap_identity_policies.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("235_master_sap_identity_policy_navigation.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("236_master_sap_integration_settings_navigation.sql");
         if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
     }
 

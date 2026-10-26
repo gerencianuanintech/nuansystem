@@ -35,7 +35,7 @@ public sealed class PurchaseOrderDto
     public int TotalItems { get; set; }
     public decimal TotalQuantity { get; set; }
     public decimal TotalWeight { get; set; }
-    public string SapObjectType { get; set; } = "22";
+    public string SapObjectType { get; set; } = NuanSystem.Application.Features.SapSync.Mapping.SapPurchaseOrderMapping.ObjectType;
     public string SapStatus { get; set; } = PurchaseOrderSapStatuses.Pending;
     public int? SapDocEntry { get; set; }
     public int? SapDocNum { get; set; }

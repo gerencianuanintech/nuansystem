@@ -9,13 +9,10 @@ namespace NuanSystem.Application.Features.SapSync.Services;
 
 public sealed class SapSyncScheduler(
     ISapSyncScheduleRepository repository,
-    IEnumerable<ISapSyncEntityHandler> handlers,
+    ISapSyncProcessorRegistry processors,
     SapSyncScheduleCalculator calculator,
     ISystemClock clock) : ISapSyncScheduler
 {
-    private readonly IReadOnlySet<string> registeredHandlers = handlers
-        .Select(handler => handler.EntityCode)
-        .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     public async Task<SapSyncPollResult> PollAsync(
         SapSyncScheduleCursor cursor,
@@ -150,7 +147,7 @@ public sealed class SapSyncScheduler(
 
         if (!candidate.CapabilityIsActive
             || !candidate.CapabilityIsImplemented
-            || !registeredHandlers.Contains(candidate.EntityCode))
+            || processors.FindScheduledProcessor(candidate.EntityCode) is null || processors.FindImporter(candidate.EntityCode) is null)
         {
             return SapSyncScheduleRejectionCodes.HandlerNotImplemented;
         }
@@ -166,7 +163,7 @@ public sealed class SapSyncScheduler(
                 ? candidate.SupportsFull
                 : candidate.SyncMode.Equals(SapSyncModes.Incremental, StringComparison.OrdinalIgnoreCase)
                   && candidate.SupportsIncremental;
-        if (!modeSupported)
+        if (!modeSupported || !processors.SupportsScheduled(candidate.EntityCode, candidate.Direction, candidate.SyncMode))
         {
             return SapSyncScheduleRejectionCodes.ModeUnsupported;
         }

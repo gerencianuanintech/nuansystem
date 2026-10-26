@@ -2,6 +2,7 @@ using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Application.Abstractions.Messaging;
 using NuanSystem.Application.Common.Models;
 using NuanSystem.Application.Features.Purchasing.PurchaseOrders.Dtos;
+using NuanSystem.Shared.Responses;
 
 namespace NuanSystem.Application.Features.Purchasing.PurchaseOrders.Queries;
 
@@ -26,7 +27,8 @@ public sealed class GetPurchaseOrderByIdQueryHandler(IPurchaseOrderRepository re
     {
         var order = await repository.GetByIdAsync(request.Id, cancellationToken);
         return order is null
-            ? Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.")
+            ? Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.", FailureKind.NotFound,
+                [new ApiError("PURCHASE_ORDER_NOT_FOUND", "La orden de compra no existe.", nameof(request.Id))])
             : Result<PurchaseOrderDto>.Success(order);
     }
 }

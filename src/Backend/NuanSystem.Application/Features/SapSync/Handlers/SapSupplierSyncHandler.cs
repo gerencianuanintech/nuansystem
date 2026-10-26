@@ -5,12 +5,14 @@ using NuanSystem.Application.Features.SapSync.Dtos;
 
 namespace NuanSystem.Application.Features.SapSync.Handlers;
 
-public sealed class SapSupplierSyncHandler(ISapSupplierImportService supplierImportService) : ISapSyncEntityHandler
+public sealed class SapSupplierSyncHandler(ISapSupplierImportService supplierImportService) : ISapSyncImporter
 {
     public string EntityCode => SapSyncEntityCode.Suppliers;
+    public IReadOnlyCollection<string> SupportedModes => ["Incremental"];
 
     public async Task<SapSyncExecutionResult> ImportFromSapAsync(SapSyncExecutionContext context, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var summary = await supplierImportService.ImportAsync(
             context.CompanyId,
             new SapSupplierImportOptions(
@@ -37,6 +39,4 @@ public sealed class SapSupplierSyncHandler(ISapSupplierImportService supplierImp
             summary.Failed > 0 ? "Uno o mas proveedores no pudieron importarse." : null);
     }
 
-    public Task<SapSyncExecutionResult> ExportToSapAsync(SapSyncExecutionContext context, CancellationToken cancellationToken = default)
-        => Task.FromResult(SapSyncExecutionResult.NotImplemented("Exportacion de proveedores a SAP queda pendiente para fase 3."));
 }

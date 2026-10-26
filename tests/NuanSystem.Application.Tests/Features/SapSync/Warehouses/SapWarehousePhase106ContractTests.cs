@@ -38,7 +38,7 @@ public sealed class SapWarehousePhase106ContractTests
             "src", "Backend", "NuanSystem.Application", "DependencyInjection",
             "ApplicationServiceRegistration.cs");
 
-        registration.Should().Contain("ISapSyncEntityHandler, SapWarehouseSyncHandler");
+        registration.Should().Contain("ISapSyncImporter, SapWarehouseSyncHandler");
         registration.Should().Contain("ISapSyncScheduledExecutionProcessor, SapWarehouseExecutionProcessor");
         registration.Should().Contain("ISapSyncExecutionRetryProcessor, SapWarehouseExecutionRetryProcessor");
     }

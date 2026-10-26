@@ -197,10 +197,12 @@ public sealed class SyncInfrastructureContractTests
         policyOptions.Should().Contain("public bool TrustServerCertificate { get; set; }");
         serviceRegistration.Should().Contain("services.Configure<SqlConnectionPolicyOptions>");
         companyResolver.Should().Contain("IOptions<SqlConnectionPolicyOptions>");
-        companyResolver.Should().Contain("Encrypt = sqlConnectionPolicy.Encrypt");
-        companyResolver.Should().Contain("TrustServerCertificate = sqlConnectionPolicy.TrustServerCertificate");
-        companyResolver.Should().NotContain("TrustServerCertificate = true");
-        companyResolver.Should().NotContain("Encrypt = false");
+        var connectionConfiguration = ReadSourceFile("src", "Backend", "NuanSystem.Persistence", "Tenancy", "CompanyDatabaseConfiguration.cs");
+        companyResolver.Should().Contain("configuration.BuildConnectionString(secretProtector, sqlConnectionPolicy)");
+        connectionConfiguration.Should().Contain("Encrypt = sqlConnectionPolicy.Encrypt");
+        connectionConfiguration.Should().Contain("TrustServerCertificate = sqlConnectionPolicy.TrustServerCertificate");
+        connectionConfiguration.Should().NotContain("TrustServerCertificate = true");
+        connectionConfiguration.Should().NotContain("Encrypt = false");
     }
 
     [Fact]

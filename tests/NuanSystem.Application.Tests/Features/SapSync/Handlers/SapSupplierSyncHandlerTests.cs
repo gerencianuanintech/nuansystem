@@ -104,15 +104,13 @@ public sealed class SapSupplierSyncHandlerTests
     }
 
     [Fact]
-    public async Task ExportToSapAsync_RemainsNotImplemented()
+    public void Importer_DoesNotImplementExportContract()
     {
         var service = Substitute.For<ISapSupplierImportService>();
         var handler = new SapSupplierSyncHandler(service);
 
-        var result = await handler.ExportToSapAsync(Context());
-
-        result.Status.Should().Be(SapSyncStatus.NotImplemented);
-        result.Message.Should().Contain("pendiente para fase 3");
+        typeof(NuanSystem.Application.Abstractions.SapSync.ISapSyncExporter)
+            .IsAssignableFrom(handler.GetType()).Should().BeFalse();
     }
 
     private static SapSyncExecutionContext Context()

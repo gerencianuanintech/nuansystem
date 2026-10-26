@@ -11,14 +11,16 @@ namespace NuanSystem.Application.Features.SapSync.Countries.Handlers;
 
 public sealed class SapCountrySyncHandler(
     ISapCountryReader reader,
-    SapCountryRecordProcessor recordProcessor) : ISapSyncEntityHandler
+    SapCountryRecordProcessor recordProcessor) : ISapSyncImporter
 {
     public string EntityCode => SapSyncEntityCode.Countries;
+    public IReadOnlyCollection<string> SupportedModes => ["Full"];
 
     public async Task<SapSyncExecutionResult> ImportFromSapAsync(
         SapSyncExecutionContext context,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var rows = await reader.GetCountriesAsync(context.CompanyId, cancellationToken);
         var results = new List<SapCountryRecordProcessResult>(rows.Count);
 
@@ -61,12 +63,6 @@ public sealed class SapCountrySyncHandler(
             failed > 0 ? "COUNTRY_IMPORT_FAILED" : null,
             failed > 0 ? "Uno o mas paises no pudieron importarse." : null);
     }
-
-    public Task<SapSyncExecutionResult> ExportToSapAsync(
-        SapSyncExecutionContext context,
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult(SapSyncExecutionResult.NotImplemented(
-            "Paises ERP a SAP no forman parte del alcance aprobado."));
 
     private static int Count(IEnumerable<SapCountryRecordProcessResult> results, string status) =>
         results.Count(item => item.Status == status);

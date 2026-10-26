@@ -14,7 +14,7 @@ public sealed class SqlServerIntegrationFactAttribute : FactAttribute
         }
     }
 
-    private static bool IsEnabled(string? value)
+    internal static bool IsEnabled(string? value)
     {
         return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
             || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);

@@ -6,17 +6,11 @@ namespace NuanSystem.Application.Features.SapSync.Services;
 
 public sealed class SapSyncScheduledExecutionPreparer : ISapSyncScheduledExecutionPreparer
 {
-    private readonly IReadOnlyDictionary<string, ISapSyncScheduledExecutionProcessor> processors;
+    private readonly ISapSyncProcessorRegistry processors;
 
-    public SapSyncScheduledExecutionPreparer(
-        IEnumerable<ISapSyncScheduledExecutionProcessor> processors)
+    public SapSyncScheduledExecutionPreparer(ISapSyncProcessorRegistry processors)
     {
-        this.processors = processors
-            .GroupBy(processor => processor.EntityCode, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(
-                group => group.Key,
-                group => group.Single(),
-                StringComparer.OrdinalIgnoreCase);
+        this.processors = processors;
     }
 
     public async Task PrepareAsync(
@@ -38,7 +32,8 @@ public sealed class SapSyncScheduledExecutionPreparer : ISapSyncScheduledExecuti
                 "El contexto programado SAP no cumple el contrato de preparacion.");
         }
 
-        if (!processors.TryGetValue(context.EntityCode, out var processor))
+        var processor = processors.FindScheduledProcessor(context.EntityCode);
+        if (processor is null || !processors.SupportsScheduled(context.EntityCode, context.Direction, context.SyncMode))
         {
             throw new InvalidOperationException(
                 "SAP_SYNC_SCHEDULED_PROCESSOR_NOT_IMPLEMENTED");

@@ -1,0 +1,4 @@
+namespace NuanSystem.WinForms.Services.SapSync.IdentityPolicy.Models;
+
+public sealed record SapIdentityPolicyItem(string CustomerNationalPrefix, string CustomerForeignPrefix, string SupplierNationalPrefix, string SupplierForeignPrefix, string PassportTaxpayerTypeCodes, string PassportIdentificationTypeCode);
+public sealed record SaveSapIdentityPolicyRequest(string CustomerNationalPrefix, string CustomerForeignPrefix, string SupplierNationalPrefix, string SupplierForeignPrefix, string PassportTaxpayerTypeCodes, string PassportIdentificationTypeCode);

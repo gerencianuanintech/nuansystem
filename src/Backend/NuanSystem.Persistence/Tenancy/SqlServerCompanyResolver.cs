@@ -59,8 +59,7 @@ WHERE Code = @code;
         }
 
         var databaseEngine = (DatabaseEngine)reader.GetInt32(reader.GetOrdinal("DatabaseEngine"));
-        var password = secretProtector.Unprotect(reader.GetString(reader.GetOrdinal("DatabasePasswordEncrypted")));
-        var connectionString = BuildConnectionString(databaseEngine, reader, password, sqlConnectionPolicyOptions.Value);
+        var connectionString = BuildConnectionString(databaseEngine, reader, secretProtector, sqlConnectionPolicyOptions.Value);
 
         return new CompanyConnectionInfo(
             reader.GetInt32(reader.GetOrdinal("Id")),
@@ -121,8 +120,7 @@ WHERE Id = @id;
         }
 
         var databaseEngine = (DatabaseEngine)reader.GetInt32(reader.GetOrdinal("DatabaseEngine"));
-        var password = secretProtector.Unprotect(reader.GetString(reader.GetOrdinal("DatabasePasswordEncrypted")));
-        var connectionString = BuildConnectionString(databaseEngine, reader, password, sqlConnectionPolicyOptions.Value);
+        var connectionString = BuildConnectionString(databaseEngine, reader, secretProtector, sqlConnectionPolicyOptions.Value);
 
         return new CompanyConnectionInfo(
             reader.GetInt32(reader.GetOrdinal("Id")),
@@ -183,8 +181,7 @@ WHERE c.Code = @code
         }
 
         var databaseEngine = (DatabaseEngine)reader.GetInt32(reader.GetOrdinal("DatabaseEngine"));
-        var password = secretProtector.Unprotect(reader.GetString(reader.GetOrdinal("DatabasePasswordEncrypted")));
-        var connectionString = BuildConnectionString(databaseEngine, reader, password, sqlConnectionPolicyOptions.Value);
+        var connectionString = BuildConnectionString(databaseEngine, reader, secretProtector, sqlConnectionPolicyOptions.Value);
 
         return new CompanyConnectionInfo(
             reader.GetInt32(reader.GetOrdinal("Id")),
@@ -203,33 +200,18 @@ WHERE c.Code = @code
     private static string BuildConnectionString(
         DatabaseEngine databaseEngine,
         SqlDataReader reader,
-        string password,
+        ISecretProtector secretProtector,
         SqlConnectionPolicyOptions sqlConnectionPolicy)
     {
-        if (databaseEngine == DatabaseEngine.SqlServer)
-        {
-            var server = reader.GetString(reader.GetOrdinal("Server"));
-            var portOrdinal = reader.GetOrdinal("Port");
-            if (!reader.IsDBNull(portOrdinal))
-            {
-                server = $"{server},{reader.GetInt32(portOrdinal)}";
-            }
-
-            var builder = new SqlConnectionStringBuilder
-            {
-                DataSource = server,
-                InitialCatalog = reader.GetString(reader.GetOrdinal("DatabaseName")),
-                UserID = reader.GetString(reader.GetOrdinal("DatabaseUser")),
-                Password = password,
-                Encrypt = sqlConnectionPolicy.Encrypt,
-                TrustServerCertificate = sqlConnectionPolicy.TrustServerCertificate,
-                MultipleActiveResultSets = false
-            };
-
-            return builder.ConnectionString;
-        }
-
-        throw new NotSupportedException($"El motor {databaseEngine} todavia no esta implementado.");
+        var portOrdinal = reader.GetOrdinal("Port");
+        var configuration = new CompanyDatabaseConfiguration(
+            databaseEngine,
+            reader.GetString(reader.GetOrdinal("Server")),
+            reader.IsDBNull(portOrdinal) ? null : reader.GetInt32(portOrdinal),
+            reader.GetString(reader.GetOrdinal("DatabaseName")),
+            reader.GetString(reader.GetOrdinal("DatabaseUser")),
+            reader.GetString(reader.GetOrdinal("DatabasePasswordEncrypted")));
+        return configuration.BuildConnectionString(secretProtector, sqlConnectionPolicy);
     }
 
     private static async Task<CompanyProjection> LoadCompanyProjectionAsync(

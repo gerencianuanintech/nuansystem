@@ -110,6 +110,8 @@ try
     app.MapTenancyEndpoints();
     app.MapSapEndpoints();
     app.MapSapSyncProfileEndpoints();
+app.MapSapSyncMappingEndpoints();
+app.MapSapIdentityPolicyEndpoints();
     app.MapSapSyncExecutionEndpoints();
     app.MapSettingsEndpoints();
     app.MapUserEndpoints();

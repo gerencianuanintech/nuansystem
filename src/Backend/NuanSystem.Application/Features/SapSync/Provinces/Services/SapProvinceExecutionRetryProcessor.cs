@@ -10,6 +10,8 @@ public sealed class SapProvinceExecutionRetryProcessor(
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
+    public string EntityCode => "Provinces";
+
     public string ApprovedSnapshotType => SapSyncApprovedSnapshotTypes.ProvinceV1;
 
     public async Task<SapSyncExecutionRetryProcessResult> ProcessAsync(

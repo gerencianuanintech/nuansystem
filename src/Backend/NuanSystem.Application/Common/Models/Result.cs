@@ -8,6 +8,8 @@ public sealed record Result<T>(
     T? Value,
     IReadOnlyCollection<ApiError> Errors)
 {
+    public FailureKind? FailureKind { get; init; }
+
     public static Result<T> Success(T value, string message = "Operacion completada correctamente")
     {
         return new Result<T>(true, message, value, Array.Empty<ApiError>());
@@ -15,6 +17,11 @@ public sealed record Result<T>(
 
     public static Result<T> Failure(string message, IReadOnlyCollection<ApiError>? errors = null)
     {
-        return new Result<T>(false, message, default, errors ?? Array.Empty<ApiError>());
+        return Failure(message, global::NuanSystem.Application.Common.Models.FailureKind.Validation, errors);
+    }
+
+    public static Result<T> Failure(string message, FailureKind kind, IReadOnlyCollection<ApiError>? errors = null)
+    {
+        return new Result<T>(false, message, default, errors ?? Array.Empty<ApiError>()) { FailureKind = kind };
     }
 }

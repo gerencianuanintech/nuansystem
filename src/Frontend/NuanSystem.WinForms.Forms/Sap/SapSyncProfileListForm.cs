@@ -17,6 +17,7 @@ public sealed partial class SapSyncProfileListForm : BaseGridCrudListForm
     public const string FormKey = "sap-sync-profiles";
     private SapSyncProfilesViewModel? viewModel;
     private ISapSyncManagementClient? client;
+    private ISapMasterDataMappingClient? mappingClient;
     private ApiSession? session;
     private IGridColumnSettingsClient? columnSettingsClient;
 
@@ -26,10 +27,11 @@ public sealed partial class SapSyncProfileListForm : BaseGridCrudListForm
         FormStyler.ApplyBase(this);
     }
 
-    public SapSyncProfileListForm(SapSyncProfilesViewModel viewModel, ISapSyncManagementClient client, ApiSession session, IGridColumnSettingsClient columnSettingsClient) : this()
+    public SapSyncProfileListForm(SapSyncProfilesViewModel viewModel, ISapSyncManagementClient client, ISapMasterDataMappingClient mappingClient, ApiSession session, IGridColumnSettingsClient columnSettingsClient) : this()
     {
         this.viewModel = viewModel;
         this.client = client;
+        this.mappingClient = mappingClient;
         this.session = session;
         this.columnSettingsClient = columnSettingsClient;
         ConfigureCrudPermissions(session, new(PermissionCodes.SapSyncProfilesView, PermissionCodes.SapSyncProfilesCreate, PermissionCodes.SapSyncProfilesEdit, PermissionCodes.SapSyncProfilesDelete));
@@ -98,7 +100,7 @@ public sealed partial class SapSyncProfileListForm : BaseGridCrudListForm
         var editor = new SapSyncProfileEditViewModel(Client);
         await editor.InitializeAsync(id);
         using var scope = readOnly ? BaseEditForm.BeginReadOnlyMode() : null;
-        using var form = new SapSyncProfileEditForm(editor);
+        using var form = new SapSyncProfileEditForm(editor, mappingClient ?? throw new InvalidOperationException("El cliente de mapeo SAP no esta configurado."));
         if (form.ShowDialog(this) == DialogResult.OK) await LoadDataAsync();
     }
 
