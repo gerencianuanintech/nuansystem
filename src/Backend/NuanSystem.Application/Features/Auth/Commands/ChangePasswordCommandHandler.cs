@@ -34,7 +34,6 @@ public sealed class ChangePasswordCommandHandler(
             passwordHasher.HashPassword(request.NewPassword),
             cancellationToken);
 
-        // TODO: Rotar SecurityStamp, invalidar tokens/sesiones activas y agregar pruebas automatizadas de autenticacion.
         return Result<object>.Success(new { }, "Clave actualizada correctamente.");
     }
 

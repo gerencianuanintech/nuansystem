@@ -1204,6 +1204,9 @@ END;
 
         scriptPath = FindDatabaseScriptPath("236_master_sap_integration_settings_navigation.sql");
         if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+
+        scriptPath = FindDatabaseScriptPath("238_master_user_security_stamp.sql");
+        if (scriptPath is not null) await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
     }
 
     private static async Task ExecuteScriptFileAsync(
