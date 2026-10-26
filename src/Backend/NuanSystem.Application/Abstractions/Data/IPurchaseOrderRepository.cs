@@ -38,7 +38,49 @@ public interface IPurchaseOrderRepository
         string? userName,
         CancellationToken cancellationToken = default);
 
+    Task<PurchaseOrderWorkflowTransitionResult> TransitionWorkflowAsync(
+        PurchaseOrderWorkflowTransitionData data,
+        CancellationToken cancellationToken = default);
+
     Task<PurchaseOrderSapSyncLogDto> AddSapLogAsync(int id, string process, string status, string? message, int? userId, string? userName, CancellationToken cancellationToken = default);
+}
+
+public sealed record PurchaseOrderWorkflowTransitionData(
+    int OrderId,
+    IReadOnlyCollection<string> ExpectedCurrentStatuses,
+    string NextStatus,
+    string Action,
+    int ApprovalLevel,
+    string? Observation,
+    int UserId,
+    string? UserName);
+
+public enum PurchaseOrderWorkflowTransitionOutcome
+{
+    Updated,
+    NotFound,
+    Conflict
+}
+
+public sealed record PurchaseOrderWorkflowTransitionResult(
+    PurchaseOrderWorkflowTransitionOutcome Outcome,
+    PurchaseOrderDto? Order)
+{
+    public static PurchaseOrderWorkflowTransitionResult Updated(PurchaseOrderDto order) =>
+        new(PurchaseOrderWorkflowTransitionOutcome.Updated, order);
+
+    public static PurchaseOrderWorkflowTransitionResult NotFound() =>
+        new(PurchaseOrderWorkflowTransitionOutcome.NotFound, null);
+
+    public static PurchaseOrderWorkflowTransitionResult Conflict() =>
+        new(PurchaseOrderWorkflowTransitionOutcome.Conflict, null);
+}
+
+public static class PurchaseOrderWorkflowActions
+{
+    public const string RequestApproval = "RequestApproval";
+    public const string Approve = "Approve";
+    public const string Reject = "Reject";
 }
 
 public sealed record PurchaseOrderPersistData(

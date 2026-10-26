@@ -118,6 +118,7 @@ public sealed class PurchaseOrderApprovalDto
     public int Id { get; set; }
     public int ApprovalLevel { get; set; }
     public string? RoleName { get; set; }
+    public int? UserId { get; set; }
     public string? UserName { get; set; }
     public DateTime RequestedAt { get; set; }
     public DateTime? RespondedAt { get; set; }

@@ -15,13 +15,13 @@ public sealed record SendPurchaseOrderToApprovalCommand(
 
 public sealed record ApprovePurchaseOrderCommand(
     int Id,
-    string? Observation,
+    string? Observation = null,
     int? AuditUserId = null,
     string? AuditUserName = null) : ICommand<PurchaseOrderDto>;
 
 public sealed record RejectPurchaseOrderCommand(
     int Id,
-    string? Observation,
+    string? Observation = null,
     int? AuditUserId = null,
     string? AuditUserName = null) : ICommand<PurchaseOrderDto>;
 

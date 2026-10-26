@@ -40,6 +40,7 @@ public sealed class SqlServerTenantDatabaseInitializer(
                       "021_inventory_item_families_master.sql",
                       "043_inventory_item_master_profile.sql",
                       "044_inventory_auxiliary_catalogs.sql",
+                      "046_tenant_purchase_orders.sql",
                       "048_tenant_sap_supplier_import.sql",
                       "050_tenant_sap_sync_worker.sql",
                       "051_tenant_security_document_series.sql",
@@ -98,6 +99,7 @@ public sealed class SqlServerTenantDatabaseInitializer(
                        ,"221_tenant_item_alert_types_master.sql"
                        ,"223_tenant_item_auxiliary_delete_hardening.sql"
                        ,"226_tenant_sales_channels_master.sql"
+                       ,"237_tenant_purchase_order_approval_workflow.sql"
                    })
         {
             var scriptPath = FindDatabaseScriptPath(fileName);

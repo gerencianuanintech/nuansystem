@@ -122,7 +122,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Message.Should().Be(PurchaseOrderWorkflowPolicy.SendToApprovalInvalidMessage);
         await _repository.DidNotReceive()
-            .UpdateStatusIfCurrentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+            .TransitionWorkflowAsync(Arg.Any<PurchaseOrderWorkflowTransitionData>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -138,12 +138,11 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Message.Should().Be("Orden enviada a aprobacion.");
         await _repository.Received(1)
-            .UpdateStatusIfCurrentAsync(
-                OrderId,
-                PurchaseOrderStatuses.PendingApproval,
-                Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected)),
-                AuditUserId,
-                AuditUserName,
+            .TransitionWorkflowAsync(
+                Arg.Is<PurchaseOrderWorkflowTransitionData>(data =>
+                    data.OrderId == OrderId
+                    && data.NextStatus == PurchaseOrderStatuses.PendingApproval
+                    && Matches(data.ExpectedCurrentStatuses, PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected)),
                 Arg.Any<CancellationToken>());
     }
 
@@ -160,6 +159,82 @@ public sealed class PurchaseOrderWorkflowHandlerTests
     }
 
     [Fact]
+    public async Task SendToApproval_CreatesOnePendingLevelOneApprovalWithTrustedIdentity()
+    {
+        var current = CreateOrder(PurchaseOrderStatuses.Draft);
+        var transitioned = CreateOrder(PurchaseOrderStatuses.PendingApproval);
+        _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>()).Returns(current);
+        _repository.TransitionWorkflowAsync(
+                Arg.Any<PurchaseOrderWorkflowTransitionData>(),
+                Arg.Any<CancellationToken>())
+            .Returns(PurchaseOrderWorkflowTransitionResult.Updated(transitioned));
+
+        var result = await CreateSendToApprovalHandler().Handle(CreateSendToApprovalCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        await _repository.Received(1).TransitionWorkflowAsync(
+            Arg.Is<PurchaseOrderWorkflowTransitionData>(data =>
+                data.OrderId == OrderId
+                && data.Action == PurchaseOrderWorkflowActions.RequestApproval
+                && data.ApprovalLevel == 1
+                && data.NextStatus == PurchaseOrderStatuses.PendingApproval
+                && data.Observation == null
+                && data.UserId == AuditUserId
+                && data.UserName == AuditUserName),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(true, PurchaseOrderStatuses.Approved, PurchaseOrderWorkflowActions.Approve, "ok")]
+    [InlineData(false, PurchaseOrderStatuses.Rejected, PurchaseOrderWorkflowActions.Reject, "no")]
+    public async Task Decision_UpdatesThePendingApprovalAtomically(
+        bool approve,
+        string nextStatus,
+        string action,
+        string observation)
+    {
+        var current = CreateOrder(PurchaseOrderStatuses.PendingApproval);
+        var transitioned = CreateOrder(nextStatus);
+        _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>()).Returns(current);
+        _repository.TransitionWorkflowAsync(
+                Arg.Any<PurchaseOrderWorkflowTransitionData>(),
+                Arg.Any<CancellationToken>())
+            .Returns(PurchaseOrderWorkflowTransitionResult.Updated(transitioned));
+
+        var result = approve
+            ? await CreateApproveHandler().Handle(CreateApproveCommand(), CancellationToken.None)
+            : await CreateRejectHandler().Handle(CreateRejectCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        await _repository.Received(1).TransitionWorkflowAsync(
+            Arg.Is<PurchaseOrderWorkflowTransitionData>(data =>
+                data.Action == action
+                && data.NextStatus == nextStatus
+                && data.Observation == observation
+                && data.ExpectedCurrentStatuses.SequenceEqual(new[] { PurchaseOrderStatuses.PendingApproval })
+                && data.UserId == AuditUserId
+                && data.UserName == AuditUserName),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Approve_ReturnsConflict_WhenAtomicWorkflowTransitionLosesTheRace()
+    {
+        _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
+            .Returns(CreateOrder(PurchaseOrderStatuses.PendingApproval));
+        _repository.TransitionWorkflowAsync(
+                Arg.Any<PurchaseOrderWorkflowTransitionData>(),
+                Arg.Any<CancellationToken>())
+            .Returns(PurchaseOrderWorkflowTransitionResult.Conflict());
+
+        var result = await CreateApproveHandler().Handle(CreateApproveCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.FailureKind.Should().Be(FailureKind.Conflict);
+        result.Errors.Should().ContainSingle(error => error.Code == "PURCHASE_ORDER_STATE_CONFLICT");
+    }
+
+    [Fact]
     public async Task Approve_ReturnsFailure_WhenOrderIsDraft()
     {
         _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
@@ -171,7 +246,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Message.Should().Be(PurchaseOrderWorkflowPolicy.ApproveInvalidMessage);
         await _repository.DidNotReceive()
-            .UpdateStatusIfCurrentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+            .TransitionWorkflowAsync(Arg.Any<PurchaseOrderWorkflowTransitionData>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -185,12 +260,11 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Message.Should().Be("Orden aprobada correctamente.");
         await _repository.Received(1)
-            .UpdateStatusIfCurrentAsync(
-                OrderId,
-                PurchaseOrderStatuses.Approved,
-                Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.PendingApproval)),
-                AuditUserId,
-                AuditUserName,
+            .TransitionWorkflowAsync(
+                Arg.Is<PurchaseOrderWorkflowTransitionData>(data =>
+                    data.OrderId == OrderId
+                    && data.NextStatus == PurchaseOrderStatuses.Approved
+                    && Matches(data.ExpectedCurrentStatuses, PurchaseOrderStatuses.PendingApproval)),
                 Arg.Any<CancellationToken>());
     }
 
@@ -206,7 +280,7 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Message.Should().Be(PurchaseOrderWorkflowPolicy.RejectInvalidMessage);
         await _repository.DidNotReceive()
-            .UpdateStatusIfCurrentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+            .TransitionWorkflowAsync(Arg.Any<PurchaseOrderWorkflowTransitionData>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -220,12 +294,11 @@ public sealed class PurchaseOrderWorkflowHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Message.Should().Be("Orden rechazada.");
         await _repository.Received(1)
-            .UpdateStatusIfCurrentAsync(
-                OrderId,
-                PurchaseOrderStatuses.Rejected,
-                Arg.Is<IReadOnlyCollection<string>>(statuses => Matches(statuses, PurchaseOrderStatuses.PendingApproval)),
-                AuditUserId,
-                AuditUserName,
+            .TransitionWorkflowAsync(
+                Arg.Is<PurchaseOrderWorkflowTransitionData>(data =>
+                    data.OrderId == OrderId
+                    && data.NextStatus == PurchaseOrderStatuses.Rejected
+                    && Matches(data.ExpectedCurrentStatuses, PurchaseOrderStatuses.PendingApproval)),
                 Arg.Any<CancellationToken>());
     }
 
@@ -471,15 +544,13 @@ public sealed class PurchaseOrderWorkflowHandlerTests
     private void SetupStatusChange(string currentStatus, string nextStatus, bool updated = true)
     {
         _repository.GetByIdAsync(OrderId, Arg.Any<CancellationToken>())
-            .Returns(CreateOrder(currentStatus), CreateOrder(nextStatus));
-        _repository.UpdateStatusIfCurrentAsync(
-                OrderId,
-                nextStatus,
-                Arg.Any<IReadOnlyCollection<string>>(),
-                AuditUserId,
-                AuditUserName,
+            .Returns(CreateOrder(currentStatus));
+        _repository.TransitionWorkflowAsync(
+                Arg.Any<PurchaseOrderWorkflowTransitionData>(),
                 Arg.Any<CancellationToken>())
-            .Returns(updated);
+            .Returns(updated
+                ? PurchaseOrderWorkflowTransitionResult.Updated(CreateOrder(nextStatus))
+                : PurchaseOrderWorkflowTransitionResult.Conflict());
     }
 
     private void SetupSapLog()

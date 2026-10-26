@@ -15,6 +15,7 @@ public sealed class PurchaseOrderRepository(ITenantConnectionFactory connectionF
     private const string UpdateProcedure = "dbo.SP_NA_PUT_PURCHASEORDERS_ACTUALIZAR";
     private const string DeleteProcedure = "dbo.SP_NA_DELETE_PURCHASEORDERS_ELIMINAR";
     private const string UpdateStatusProcedure = "dbo.SP_NA_PATCH_PURCHASEORDERS_ESTADO";
+    private const string TransitionWorkflowProcedure = "dbo.SP_NA_PATCH_PURCHASEORDERS_WORKFLOW";
     private const string AddSapLogProcedure = "dbo.SP_NA_POST_PURCHASEORDERS_SAPLOG";
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
@@ -34,6 +35,11 @@ public sealed class PurchaseOrderRepository(ITenantConnectionFactory connectionF
         using var grid = await connection.QueryMultipleAsync(
             new CommandDefinition(GetByIdProcedure, new { Id = id }, cancellationToken: cancellationToken, commandType: CommandType.StoredProcedure));
 
+        return await ReadOrderAsync(grid);
+    }
+
+    private static async Task<PurchaseOrderDto?> ReadOrderAsync(SqlMapper.GridReader grid)
+    {
         var order = await grid.ReadSingleOrDefaultAsync<PurchaseOrderDto>();
         if (order is null)
         {
@@ -192,6 +198,52 @@ public sealed class PurchaseOrderRepository(ITenantConnectionFactory connectionF
                 commandType: CommandType.StoredProcedure));
 
         return affectedRows > 0;
+    }
+
+    public async Task<PurchaseOrderWorkflowTransitionResult> TransitionWorkflowAsync(
+        PurchaseOrderWorkflowTransitionData data,
+        CancellationToken cancellationToken = default)
+    {
+        if (data.ExpectedCurrentStatuses is null || data.ExpectedCurrentStatuses.Count == 0)
+        {
+            throw new ArgumentException("At least one expected current status is required.", nameof(data));
+        }
+
+        using var connection = connectionFactory.CreateConnection();
+        using var grid = await connection.QueryMultipleAsync(
+            new CommandDefinition(
+                TransitionWorkflowProcedure,
+                new
+                {
+                    Id = data.OrderId,
+                    ExpectedStatusesJson = JsonSerializer.Serialize(data.ExpectedCurrentStatuses, JsonOptions),
+                    data.NextStatus,
+                    data.Action,
+                    data.ApprovalLevel,
+                    data.Observation,
+                    data.UserId,
+                    data.UserName
+                },
+                cancellationToken: cancellationToken,
+                commandType: CommandType.StoredProcedure));
+
+        var outcome = await grid.ReadSingleAsync<string>();
+        if (string.Equals(outcome, "NotFound", StringComparison.Ordinal))
+        {
+            return PurchaseOrderWorkflowTransitionResult.NotFound();
+        }
+
+        if (!string.Equals(outcome, "Updated", StringComparison.Ordinal))
+        {
+            return PurchaseOrderWorkflowTransitionResult.Conflict();
+        }
+
+        var order = await ReadOrderAsync(grid);
+        return order is null
+            ? new PurchaseOrderWorkflowTransitionResult(
+                PurchaseOrderWorkflowTransitionOutcome.Updated,
+                null)
+            : PurchaseOrderWorkflowTransitionResult.Updated(order);
     }
 
     public async Task<PurchaseOrderSapSyncLogDto> AddSapLogAsync(int id, string process, string status, string? message, int? userId, string? userName, CancellationToken cancellationToken = default)

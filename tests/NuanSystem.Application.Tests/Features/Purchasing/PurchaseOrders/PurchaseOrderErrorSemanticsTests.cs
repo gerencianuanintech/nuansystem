@@ -79,11 +79,12 @@ public sealed class PurchaseOrderErrorSemanticsTests
     public async Task Missing_read_after_a_successful_transition_is_Unexpected_not_NotFound()
     {
         var fixture = new Fixture(PurchaseOrderStatuses.Draft);
-        fixture.Repository.GetByIdAsync(7, Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<PurchaseOrderDto?>(new() { Id = 7, DocumentSeriesId = 3, Status = PurchaseOrderStatuses.Draft }),
-                Task.FromResult<PurchaseOrderDto?>(null));
-        fixture.Repository.UpdateStatusIfCurrentAsync(7, Arg.Any<string>(), Arg.Any<IReadOnlyCollection<string>>(),
-            Arg.Any<int?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>()).Returns(true);
+        fixture.Repository.TransitionWorkflowAsync(
+                Arg.Any<PurchaseOrderWorkflowTransitionData>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new PurchaseOrderWorkflowTransitionResult(
+                PurchaseOrderWorkflowTransitionOutcome.Updated,
+                null));
 
         var result = await fixture.Send.Handle(new SendPurchaseOrderToApprovalCommand(7, 1, "tester"), CancellationToken.None);
 
@@ -106,7 +107,13 @@ public sealed class PurchaseOrderErrorSemanticsTests
             context.CurrentCompany.Returns(new CompanyConnectionInfo(1, "TEST", "Test", DatabaseEngine.SqlServer,
                 string.Empty, SapIntegrationMode.None));
             if (status is not null)
+            {
                 Repository.GetByIdAsync(7, Arg.Any<CancellationToken>()).Returns(new PurchaseOrderDto { Id = 7, DocumentSeriesId = 3, Status = status });
+                Repository.TransitionWorkflowAsync(
+                        Arg.Any<PurchaseOrderWorkflowTransitionData>(),
+                        Arg.Any<CancellationToken>())
+                    .Returns(PurchaseOrderWorkflowTransitionResult.Conflict());
+            }
             AllowSeries(true);
             Delete = new(Repository, Access, context);
             Send = new(Repository, Access, context);

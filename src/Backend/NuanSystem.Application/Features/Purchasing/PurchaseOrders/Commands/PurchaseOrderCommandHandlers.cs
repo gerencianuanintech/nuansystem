@@ -211,6 +211,8 @@ public sealed class SendPurchaseOrderToApprovalCommandHandler(
             [PurchaseOrderStatuses.Draft, PurchaseOrderStatuses.Rejected],
             PurchaseOrderWorkflowPolicy.EnsureCanSendToApproval,
             PurchaseOrderSecurity.ActionApprove,
+            PurchaseOrderWorkflowActions.RequestApproval,
+            observation: null,
             request.AuditUserId,
             request.AuditUserName,
             cancellationToken);
@@ -235,6 +237,8 @@ public sealed class ApprovePurchaseOrderCommandHandler(
             [PurchaseOrderStatuses.PendingApproval],
             PurchaseOrderWorkflowPolicy.EnsureCanApprove,
             PurchaseOrderSecurity.ActionApprove,
+            PurchaseOrderWorkflowActions.Approve,
+            request.Observation,
             request.AuditUserId,
             request.AuditUserName,
             cancellationToken);
@@ -259,6 +263,8 @@ public sealed class RejectPurchaseOrderCommandHandler(
             [PurchaseOrderStatuses.PendingApproval],
             PurchaseOrderWorkflowPolicy.EnsureCanReject,
             PurchaseOrderSecurity.ActionReject,
+            PurchaseOrderWorkflowActions.Reject,
+            request.Observation,
             request.AuditUserId,
             request.AuditUserName,
             cancellationToken);
@@ -436,6 +442,8 @@ internal static class PurchaseOrderWorkflow
         IReadOnlyCollection<string> expectedCurrentStatuses,
         Func<string, Result<bool>> validateCurrentStatus,
         string actionKey,
+        string workflowAction,
+        string? observation,
         int? userId,
         string? userName,
         CancellationToken cancellationToken)
@@ -467,18 +475,37 @@ internal static class PurchaseOrderWorkflow
                 seriesValidation.FailureKind ?? FailureKind.Validation, seriesValidation.Errors);
         }
 
-        // TODO: Persistir aprobador, fecha, observacion y nivel de aprobacion.
-        var updated = await repository.UpdateStatusIfCurrentAsync(id, status, expectedCurrentStatuses, userId, userName, cancellationToken);
-        if (!updated)
+        var transition = await repository.TransitionWorkflowAsync(
+            new PurchaseOrderWorkflowTransitionData(
+                id,
+                expectedCurrentStatuses,
+                status,
+                workflowAction,
+                ApprovalLevel: 1,
+                observation,
+                userId!.Value,
+                userName),
+            cancellationToken);
+        if (transition.Outcome == PurchaseOrderWorkflowTransitionOutcome.NotFound)
+        {
+            return Result<PurchaseOrderDto>.Failure("No se encontro la orden de compra.", FailureKind.NotFound,
+                [new ApiError("PURCHASE_ORDER_NOT_FOUND", "La orden de compra no existe.", "Id")]);
+        }
+
+        if (transition.Outcome != PurchaseOrderWorkflowTransitionOutcome.Updated)
         {
             return Result<PurchaseOrderDto>.Failure("No se pudo actualizar el estado de la orden.", FailureKind.Conflict,
                 [new ApiError("PURCHASE_ORDER_STATE_CONFLICT", "La orden ya no admite la transicion solicitada.")]);
         }
 
-        var order = await repository.GetByIdAsync(id, cancellationToken);
-        return order is null
-            ? Result<PurchaseOrderDto>.Failure("No se pudo recuperar la orden de compra.", FailureKind.Unexpected)
-            : Result<PurchaseOrderDto>.Success(order, message);
+        if (transition.Order is null)
+        {
+            return Result<PurchaseOrderDto>.Failure(
+                "No se pudo recuperar la orden de compra.",
+                FailureKind.Unexpected);
+        }
+
+        return Result<PurchaseOrderDto>.Success(transition.Order, message);
     }
 }
 
