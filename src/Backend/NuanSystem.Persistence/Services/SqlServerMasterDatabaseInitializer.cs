@@ -776,6 +776,12 @@ END;
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
         }
 
+        scriptPath = FindDatabaseScriptPath("049_master_sap_sync_worker.sql");
+        if (scriptPath is not null)
+        {
+            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
+        }
+
         scriptPath = FindDatabaseScriptPath("116_master_sri_document_queue_security.sql");
         if (scriptPath is not null)
         {
@@ -831,12 +837,6 @@ END;
         }
 
         scriptPath = FindDatabaseScriptPath("012_master_configuration_settings.sql");
-        if (scriptPath is not null)
-        {
-            await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);
-        }
-
-        scriptPath = FindDatabaseScriptPath("049_master_sap_sync_worker.sql");
         if (scriptPath is not null)
         {
             await ExecuteScriptFileAsync(connection, scriptPath, cancellationToken);

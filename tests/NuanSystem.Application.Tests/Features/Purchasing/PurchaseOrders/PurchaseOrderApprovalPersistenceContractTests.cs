@@ -10,6 +10,8 @@ public sealed class PurchaseOrderApprovalPersistenceContractTests
         var script = ReadSource("database", "sql", "237_tenant_purchase_order_approval_workflow.sql");
 
         script.Should().Contain("CREATE OR ALTER PROCEDURE dbo.SP_NA_PATCH_PURCHASEORDERS_WORKFLOW");
+        script.Should().Contain("SET ANSI_NULLS ON");
+        script.Should().Contain("SET QUOTED_IDENTIFIER ON");
         script.Should().Contain("SET XACT_ABORT ON");
         script.Should().Contain("BEGIN TRANSACTION");
         script.Should().Contain("WITH (UPDLOCK, HOLDLOCK)");

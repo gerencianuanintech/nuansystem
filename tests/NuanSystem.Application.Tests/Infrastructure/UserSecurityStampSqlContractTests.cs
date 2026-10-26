@@ -10,6 +10,8 @@ public sealed class UserSecurityStampSqlContractTests
         var script = ReadSource("database", "sql", "238_master_user_security_stamp.sql");
 
         script.Should().Contain("SecurityStamp uniqueidentifier");
+        script.Should().Contain("SET ANSI_NULLS ON");
+        script.Should().Contain("SET QUOTED_IDENTIFIER ON");
         script.Should().Contain("TR_Users_RotateSecurityStamp");
         script.Should().Contain("TR_UserRoles_RotateSecurityStamp");
         script.Should().Contain("TR_RolePermissions_RotateSecurityStamp");
@@ -27,6 +29,17 @@ public sealed class UserSecurityStampSqlContractTests
 
         initializer.IndexOf("238_master_user_security_stamp.sql", StringComparison.Ordinal)
             .Should().BeGreaterThan(initializer.IndexOf("010_master_security_roles.sql", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Master_initializer_creates_worker_heartbeat_before_operational_repairs()
+    {
+        var initializer = ReadSource("src", "Backend", "NuanSystem.Persistence", "Services", "SqlServerMasterDatabaseInitializer.cs");
+
+        var foundation = initializer.IndexOf("049_master_sap_sync_worker.sql", StringComparison.Ordinal);
+        foundation.Should().BeGreaterThan(-1);
+        foundation.Should().BeLessThan(initializer.IndexOf("120_master_worker_heartbeat_operations.sql", StringComparison.Ordinal));
+        foundation.Should().BeLessThan(initializer.IndexOf("122_master_worker_heartbeat_operations_idempotency_fix.sql", StringComparison.Ordinal));
     }
 
     private static string ReadSource(params string[] pathParts)
