@@ -74,7 +74,7 @@ public sealed class CompanyContextMiddleware(
         return path == "/"
             || path.StartsWithSegments("/health")
             || path.StartsWithSegments("/swagger")
-            || path.StartsWithSegments("/api/auth")
+            || path.StartsWithSegments("/api/security/auth")
             || path.StartsWithSegments("/api/companies");
     }
 

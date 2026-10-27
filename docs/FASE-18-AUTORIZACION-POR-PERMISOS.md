@@ -66,7 +66,7 @@ Ejemplos:
 - Envio SAP: `SAP.SYNC.MANAGE`
 - Parametros: `SETTINGS.PARAMETERS.MANAGE`
 
-`/api/auth/login`, `/health` y `/api/companies/my-companies` conservan su comportamiento especial.
+`/api/security/auth/login`, `/health` y `/api/companies/my-companies` conservan su comportamiento especial.
 
 ## Seed de permisos
 

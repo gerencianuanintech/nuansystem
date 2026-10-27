@@ -147,7 +147,7 @@ Responsabilidades:
 Login:
 
 ```http
-POST /api/auth/login
+POST /api/security/auth/login
 ```
 
 Body:
@@ -271,7 +271,7 @@ El resultado mantiene el bloqueo operativo ya identificado: SQL Server responde,
 - Ejecutar `--init-only`.
 - Crear el primer usuario administrador.
 - Asociar el usuario a una empresa mediante `UserCompanies`.
-- Probar `POST /api/auth/login`.
+- Probar `POST /api/security/auth/login`.
 - Probar `GET /api/companies/my-companies`.
 - Probar `GET /api/tenancy/current` con JWT y `X-Company-Code`.
 - Implementar refresh token completo en una fase posterior si se decide activarlo.

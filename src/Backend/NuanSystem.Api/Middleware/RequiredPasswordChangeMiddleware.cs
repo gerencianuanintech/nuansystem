@@ -37,7 +37,7 @@ public sealed class RequiredPasswordChangeMiddleware(RequestDelegate next)
         return path == "/"
             || path.StartsWithSegments("/health")
             || path.StartsWithSegments("/swagger")
-            || path.StartsWithSegments("/api/auth/login")
-            || path.StartsWithSegments("/api/auth/change-password");
+            || path.StartsWithSegments("/api/security/auth/login")
+            || path.StartsWithSegments("/api/security/auth/change-password");
     }
 }

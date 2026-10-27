@@ -8,7 +8,7 @@ using NuanSystem.Application.Features.SecurityAccess.Dtos;
 using NuanSystem.Application.Features.SecurityAccess.Queries;
 using NuanSystem.Shared.Constants;
 
-namespace NuanSystem.Api.Endpoints;
+namespace NuanSystem.Api.Endpoints.Seguridad;
 
 public static class SecurityDocumentSeriesAccessEndpoints
 {

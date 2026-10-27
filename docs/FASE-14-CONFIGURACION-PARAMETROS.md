@@ -96,7 +96,7 @@ Tambien se levanto una instancia temporal en `http://localhost:5099` para probar
 GET /health
 Healthy
 
-POST /api/auth/login
+POST /api/security/auth/login
 LoginSuccess = True
 
 GET /api/settings/parameters

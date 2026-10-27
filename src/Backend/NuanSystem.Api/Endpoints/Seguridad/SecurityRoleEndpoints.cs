@@ -2,38 +2,40 @@ using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
 using NuanSystem.Api.OpenApi;
-using NuanSystem.Application.Features.SecurityMenus.Commands;
-using NuanSystem.Application.Features.SecurityMenus.Queries;
+using NuanSystem.Application.Features.SecurityRoles.Commands;
+using NuanSystem.Application.Features.SecurityRoles.Queries;
 
-namespace NuanSystem.Api.Endpoints;
+namespace NuanSystem.Api.Endpoints.Seguridad;
 
-public static class SecurityMenuEndpoints
+public static class SecurityRoleEndpoints
 {
-    public static IEndpointRouteBuilder MapSecurityMenuEndpoints(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapSecurityRoleEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/security/menus", async (
+        app.MapGet("/api/security/roles", async (
             ISender sender,
             CancellationToken cancellationToken) =>
         {
-            var result = await sender.Send(new GetSecurityMenusQuery(), cancellationToken);
+            var result = await sender.Send(new GetSecurityRolesQuery(), cancellationToken);
+
             return result.ToHttpResult();
         })
-        .WithTags(SwaggerTags.SecurityMenus)
-        .RequireFormOperation("security-menus", "refresh");
+        .WithTags(SwaggerTags.SecurityRoles)
+        .RequireFormOperation("security-roles", "refresh");
 
-        app.MapGet("/api/security/menus/{id:int}", async (
+        app.MapGet("/api/security/roles/{id:int}", async (
             int id,
             ISender sender,
             CancellationToken cancellationToken) =>
         {
-            var result = await sender.Send(new GetSecurityMenuByIdQuery(id), cancellationToken);
+            var result = await sender.Send(new GetSecurityRoleByIdQuery(id), cancellationToken);
+
             return result.ToHttpResult();
         })
-        .WithTags(SwaggerTags.SecurityMenus)
-        .RequireFormOperation("security-menus", "consult");
+        .WithTags(SwaggerTags.SecurityRoles)
+        .RequireFormOperation("security-roles", "consult");
 
-        app.MapPost("/api/security/menus", async (
-            CreateSecurityMenuCommand command,
+        app.MapPost("/api/security/roles", async (
+            CreateSecurityRoleCommand command,
             ClaimsPrincipal user,
             ISender sender,
             CancellationToken cancellationToken) =>
@@ -47,12 +49,12 @@ public static class SecurityMenuEndpoints
 
             return result.ToHttpResult();
         })
-        .WithTags(SwaggerTags.SecurityMenus)
-        .RequireFormOperation("security-menus", "create");
+        .WithTags(SwaggerTags.SecurityRoles)
+        .RequireFormOperation("security-roles", "create");
 
-        app.MapPut("/api/security/menus/{id:int}", async (
+        app.MapPut("/api/security/roles/{id:int}", async (
             int id,
-            UpdateSecurityMenuCommand command,
+            UpdateSecurityRoleCommand command,
             ClaimsPrincipal user,
             ISender sender,
             CancellationToken cancellationToken) =>
@@ -67,21 +69,22 @@ public static class SecurityMenuEndpoints
 
             return result.ToHttpResult();
         })
-        .WithTags(SwaggerTags.SecurityMenus)
-        .RequireFormOperation("security-menus", "update");
+        .WithTags(SwaggerTags.SecurityRoles)
+        .RequireFormOperation("security-roles", "update");
 
-        app.MapDelete("/api/security/menus/{id:int}", async (
+        app.MapDelete("/api/security/roles/{id:int}", async (
             int id,
             ClaimsPrincipal user,
             ISender sender,
             CancellationToken cancellationToken) =>
         {
             var auditUser = EndpointContextHelper.GetAuditUser(user);
-            var result = await sender.Send(new DeleteSecurityMenuCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
+            var result = await sender.Send(new DeleteSecurityRoleCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
+
             return result.ToHttpResult();
         })
-        .WithTags(SwaggerTags.SecurityMenus)
-        .RequireFormOperation("security-menus", "delete");
+        .WithTags(SwaggerTags.SecurityRoles)
+        .RequireFormOperation("security-roles", "delete");
 
         return app;
     }

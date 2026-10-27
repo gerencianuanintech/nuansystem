@@ -2,40 +2,38 @@ using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
 using NuanSystem.Api.OpenApi;
-using NuanSystem.Application.Features.SecurityRoles.Commands;
-using NuanSystem.Application.Features.SecurityRoles.Queries;
+using NuanSystem.Application.Features.SecurityForms.Commands;
+using NuanSystem.Application.Features.SecurityForms.Queries;
 
-namespace NuanSystem.Api.Endpoints;
+namespace NuanSystem.Api.Endpoints.Seguridad;
 
-public static class RoleEndpoints
+public static class SecurityFormEndpoints
 {
-    public static IEndpointRouteBuilder MapRoleEndpoints(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapSecurityFormEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/security/roles", async (
+        app.MapGet("/api/security/forms", async (
             ISender sender,
             CancellationToken cancellationToken) =>
         {
-            var result = await sender.Send(new GetSecurityRolesQuery(), cancellationToken);
-
+            var result = await sender.Send(new GetSecurityFormsQuery(), cancellationToken);
             return result.ToHttpResult();
         })
-        .WithTags(SwaggerTags.SecurityRoles)
-        .RequireFormOperation("security-roles", "refresh");
+        .WithTags(SwaggerTags.SecurityForms)
+        .RequireFormOperation("security-forms", "refresh");
 
-        app.MapGet("/api/security/roles/{id:int}", async (
+        app.MapGet("/api/security/forms/{id:int}", async (
             int id,
             ISender sender,
             CancellationToken cancellationToken) =>
         {
-            var result = await sender.Send(new GetSecurityRoleByIdQuery(id), cancellationToken);
-
+            var result = await sender.Send(new GetSecurityFormByIdQuery(id), cancellationToken);
             return result.ToHttpResult();
         })
-        .WithTags(SwaggerTags.SecurityRoles)
-        .RequireFormOperation("security-roles", "consult");
+        .WithTags(SwaggerTags.SecurityForms)
+        .RequireFormOperation("security-forms", "consult");
 
-        app.MapPost("/api/security/roles", async (
-            CreateSecurityRoleCommand command,
+        app.MapPost("/api/security/forms", async (
+            CreateSecurityFormCommand command,
             ClaimsPrincipal user,
             ISender sender,
             CancellationToken cancellationToken) =>
@@ -49,12 +47,12 @@ public static class RoleEndpoints
 
             return result.ToHttpResult();
         })
-        .WithTags(SwaggerTags.SecurityRoles)
-        .RequireFormOperation("security-roles", "create");
+        .WithTags(SwaggerTags.SecurityForms)
+        .RequireFormOperation("security-forms", "create");
 
-        app.MapPut("/api/security/roles/{id:int}", async (
+        app.MapPut("/api/security/forms/{id:int}", async (
             int id,
-            UpdateSecurityRoleCommand command,
+            UpdateSecurityFormCommand command,
             ClaimsPrincipal user,
             ISender sender,
             CancellationToken cancellationToken) =>
@@ -69,22 +67,21 @@ public static class RoleEndpoints
 
             return result.ToHttpResult();
         })
-        .WithTags(SwaggerTags.SecurityRoles)
-        .RequireFormOperation("security-roles", "update");
+        .WithTags(SwaggerTags.SecurityForms)
+        .RequireFormOperation("security-forms", "update");
 
-        app.MapDelete("/api/security/roles/{id:int}", async (
+        app.MapDelete("/api/security/forms/{id:int}", async (
             int id,
             ClaimsPrincipal user,
             ISender sender,
             CancellationToken cancellationToken) =>
         {
             var auditUser = EndpointContextHelper.GetAuditUser(user);
-            var result = await sender.Send(new DeleteSecurityRoleCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
-
+            var result = await sender.Send(new DeleteSecurityFormCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
             return result.ToHttpResult();
         })
-        .WithTags(SwaggerTags.SecurityRoles)
-        .RequireFormOperation("security-roles", "delete");
+        .WithTags(SwaggerTags.SecurityForms)
+        .RequireFormOperation("security-forms", "delete");
 
         return app;
     }

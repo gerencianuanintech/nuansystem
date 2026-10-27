@@ -7,13 +7,13 @@ using NuanSystem.Application.Features.Auth.Commands;
 using NuanSystem.Shared.Contracts.Auth;
 using NuanSystem.Shared.Responses;
 
-namespace NuanSystem.Api.Endpoints;
+namespace NuanSystem.Api.Endpoints.Seguridad;
 
-public static class AuthEndpoints
+public static class SecurityAuthEndpoints
 {
-    public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapSecurityAuthEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/api/auth/login", async (
+        app.MapPost("/api/security/auth/login", async (
             LoginRequest request,
             IAuthService authService,
             CancellationToken cancellationToken) =>
@@ -56,7 +56,7 @@ public static class AuthEndpoints
         .RequireRateLimiting("auth-login")
         .AllowAnonymous();
 
-        app.MapPost("/api/auth/change-password", async (
+        app.MapPost("/api/security/auth/change-password", async (
             ChangePasswordRequest request,
             ClaimsPrincipal user,
             ISender sender,

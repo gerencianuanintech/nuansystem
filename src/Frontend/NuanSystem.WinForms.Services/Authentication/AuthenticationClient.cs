@@ -18,7 +18,7 @@ public sealed class AuthenticationClient : IAuthenticationClient
     public async Task<LoginResponse> LoginAsync(string userNameOrEmail, string password, CancellationToken cancellationToken = default)
     {
         var response = await apiClient.PostAsync<LoginRequest, LoginResponse>(
-            "/api/auth/login",
+            "/api/security/auth/login",
             new LoginRequest(userNameOrEmail, password),
             cancellationToken);
 
@@ -29,7 +29,7 @@ public sealed class AuthenticationClient : IAuthenticationClient
     public async Task ChangePasswordAsync(string currentPassword, string newPassword, CancellationToken cancellationToken = default)
     {
         await apiClient.PostAsync<ChangePasswordRequest, object>(
-            "/api/auth/change-password",
+            "/api/security/auth/change-password",
             new ChangePasswordRequest(currentPassword, newPassword),
             cancellationToken);
 

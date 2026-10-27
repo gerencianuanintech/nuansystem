@@ -37,7 +37,7 @@ public static class ServiceCollectionExtensions
                 Type = SecuritySchemeType.Http,
                 Scheme = "bearer",
                 BearerFormat = "JWT",
-                Description = "Ingrese el token JWT obtenido en POST /api/auth/login."
+                Description = "Ingrese el token JWT obtenido en POST /api/security/auth/login."
             });
             options.AddSecurityDefinition(companyCodeScheme, new OpenApiSecurityScheme
             {

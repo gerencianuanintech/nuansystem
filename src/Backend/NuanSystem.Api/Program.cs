@@ -7,6 +7,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using NuanSystem.Api.Endpoints;
 using NuanSystem.Api.Endpoints.Definitions.General;
 using NuanSystem.Api.Endpoints.Geography.Common;
+using NuanSystem.Api.Endpoints.Seguridad;
 using NuanSystem.Api.Extensions;
 using NuanSystem.Application.Abstractions.Data;
 using NuanSystem.Shared.Responses;
@@ -102,7 +103,7 @@ try
         Swagger = "/swagger"
     }));
 
-    app.MapAuthEndpoints();
+    app.MapSecurityAuthEndpoints();
     app.MapCompanyEndpoints();
     app.MapConfigurationCompanyEndpoints();
     app.MapConfigurationSettingEndpoints();
@@ -114,8 +115,8 @@ app.MapSapSyncMappingEndpoints();
 app.MapSapIdentityPolicyEndpoints();
     app.MapSapSyncExecutionEndpoints();
     app.MapSettingsEndpoints();
-    app.MapUserEndpoints();
-    app.MapRoleEndpoints();
+    app.MapSecurityUserEndpoints();
+    app.MapSecurityRoleEndpoints();
     app.MapSecurityOperationEndpoints();
     app.MapSecurityMenuEndpoints();
     app.MapSecurityFormEndpoints();

@@ -2,38 +2,38 @@ using System.Security.Claims;
 using MediatR;
 using NuanSystem.Api.Extensions;
 using NuanSystem.Api.OpenApi;
-using NuanSystem.Application.Features.SecurityForms.Commands;
-using NuanSystem.Application.Features.SecurityForms.Queries;
+using NuanSystem.Application.Features.SecurityMenus.Commands;
+using NuanSystem.Application.Features.SecurityMenus.Queries;
 
-namespace NuanSystem.Api.Endpoints;
+namespace NuanSystem.Api.Endpoints.Seguridad;
 
-public static class SecurityFormEndpoints
+public static class SecurityMenuEndpoints
 {
-    public static IEndpointRouteBuilder MapSecurityFormEndpoints(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapSecurityMenuEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/security/forms", async (
+        app.MapGet("/api/security/menus", async (
             ISender sender,
             CancellationToken cancellationToken) =>
         {
-            var result = await sender.Send(new GetSecurityFormsQuery(), cancellationToken);
+            var result = await sender.Send(new GetSecurityMenusQuery(), cancellationToken);
             return result.ToHttpResult();
         })
-        .WithTags(SwaggerTags.SecurityForms)
-        .RequireFormOperation("security-forms", "refresh");
+        .WithTags(SwaggerTags.SecurityMenus)
+        .RequireFormOperation("security-menus", "refresh");
 
-        app.MapGet("/api/security/forms/{id:int}", async (
+        app.MapGet("/api/security/menus/{id:int}", async (
             int id,
             ISender sender,
             CancellationToken cancellationToken) =>
         {
-            var result = await sender.Send(new GetSecurityFormByIdQuery(id), cancellationToken);
+            var result = await sender.Send(new GetSecurityMenuByIdQuery(id), cancellationToken);
             return result.ToHttpResult();
         })
-        .WithTags(SwaggerTags.SecurityForms)
-        .RequireFormOperation("security-forms", "consult");
+        .WithTags(SwaggerTags.SecurityMenus)
+        .RequireFormOperation("security-menus", "consult");
 
-        app.MapPost("/api/security/forms", async (
-            CreateSecurityFormCommand command,
+        app.MapPost("/api/security/menus", async (
+            CreateSecurityMenuCommand command,
             ClaimsPrincipal user,
             ISender sender,
             CancellationToken cancellationToken) =>
@@ -47,12 +47,12 @@ public static class SecurityFormEndpoints
 
             return result.ToHttpResult();
         })
-        .WithTags(SwaggerTags.SecurityForms)
-        .RequireFormOperation("security-forms", "create");
+        .WithTags(SwaggerTags.SecurityMenus)
+        .RequireFormOperation("security-menus", "create");
 
-        app.MapPut("/api/security/forms/{id:int}", async (
+        app.MapPut("/api/security/menus/{id:int}", async (
             int id,
-            UpdateSecurityFormCommand command,
+            UpdateSecurityMenuCommand command,
             ClaimsPrincipal user,
             ISender sender,
             CancellationToken cancellationToken) =>
@@ -67,21 +67,21 @@ public static class SecurityFormEndpoints
 
             return result.ToHttpResult();
         })
-        .WithTags(SwaggerTags.SecurityForms)
-        .RequireFormOperation("security-forms", "update");
+        .WithTags(SwaggerTags.SecurityMenus)
+        .RequireFormOperation("security-menus", "update");
 
-        app.MapDelete("/api/security/forms/{id:int}", async (
+        app.MapDelete("/api/security/menus/{id:int}", async (
             int id,
             ClaimsPrincipal user,
             ISender sender,
             CancellationToken cancellationToken) =>
         {
             var auditUser = EndpointContextHelper.GetAuditUser(user);
-            var result = await sender.Send(new DeleteSecurityFormCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
+            var result = await sender.Send(new DeleteSecurityMenuCommand(id, auditUser.UserId, auditUser.UserName), cancellationToken);
             return result.ToHttpResult();
         })
-        .WithTags(SwaggerTags.SecurityForms)
-        .RequireFormOperation("security-forms", "delete");
+        .WithTags(SwaggerTags.SecurityMenus)
+        .RequireFormOperation("security-menus", "delete");
 
         return app;
     }

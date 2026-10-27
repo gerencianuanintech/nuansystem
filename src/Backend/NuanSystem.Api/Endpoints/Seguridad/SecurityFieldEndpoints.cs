@@ -5,7 +5,7 @@ using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Features.SecurityFields.Commands;
 using NuanSystem.Application.Features.SecurityFields.Queries;
 
-namespace NuanSystem.Api.Endpoints;
+namespace NuanSystem.Api.Endpoints.Seguridad;
 
 public static class SecurityFieldEndpoints
 {

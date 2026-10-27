@@ -131,7 +131,7 @@ X-Company-Code: EMPRESA01
 
 Comportamiento:
 
-- Omite resolucion en `/`, `/health`, `/swagger`, `/api/auth` y `/api/companies`.
+- Omite resolucion en `/`, `/health`, `/swagger`, `/api/security/auth` y `/api/companies`.
 - Para endpoints de negocio exige `X-Company-Code`.
 - Si el header falta, responde `400 Bad Request`.
 - Si la empresa no existe o esta inactiva, responde `403 Forbidden`.

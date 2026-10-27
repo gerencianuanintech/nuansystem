@@ -41,7 +41,7 @@ Capa de consumo HTTP reutilizable:
 
 - `ApiSession`: guarda token JWT, usuario actual y empresa activa.
 - `NuanApiClient`: cliente HTTP comun que agrega `Authorization: Bearer` y `X-Company-Code`.
-- `AuthenticationClient`: consume `POST /api/auth/login`.
+- `AuthenticationClient`: consume `POST /api/security/auth/login`.
 - `CompanyClient`: consume `GET /api/companies/my-companies`.
 - `SapClient`: consume endpoints de integracion SAP.
 
@@ -74,7 +74,7 @@ Por ahora se usan controles WinForms nativos para mantener la solucion compilabl
 1. `Program` crea la composicion del frontend.
 2. `LoginForm` llama a `LoginViewModel`.
 3. `LoginViewModel` usa `AuthenticationClient`.
-4. `AuthenticationClient` llama `POST /api/auth/login`.
+4. `AuthenticationClient` llama `POST /api/security/auth/login`.
 5. `ApiSession` conserva el token JWT.
 6. `CompanySelectionForm` carga empresas autorizadas.
 7. Al confirmar empresa, `ApiSession` guarda `CompanyCode`.

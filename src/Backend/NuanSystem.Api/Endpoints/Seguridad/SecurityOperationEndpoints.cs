@@ -5,7 +5,7 @@ using NuanSystem.Api.OpenApi;
 using NuanSystem.Application.Features.SecurityOperations.Commands;
 using NuanSystem.Application.Features.SecurityOperations.Queries;
 
-namespace NuanSystem.Api.Endpoints;
+namespace NuanSystem.Api.Endpoints.Seguridad;
 
 public static class SecurityOperationEndpoints
 {

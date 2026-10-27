@@ -44,9 +44,9 @@ Funciones:
 
 Endpoints agregados:
 
-- `GET /api/users`
-- `POST /api/users`
-- `GET /api/users/roles`
+- `GET /api/security/users`
+- `POST /api/security/users`
+- `GET /api/security/users/roles`
 
 Se reutiliza el endpoint existente:
 

@@ -6,7 +6,7 @@ using NuanSystem.Application.Features.Documents.SecurityDocumentSeries.Commands;
 using NuanSystem.Application.Features.Documents.SecurityDocumentSeries.Queries;
 using NuanSystem.Shared.Constants;
 
-namespace NuanSystem.Api.Endpoints;
+namespace NuanSystem.Api.Endpoints.Seguridad;
 
 public static class SecurityDocumentSeriesEndpoints
 {

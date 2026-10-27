@@ -43,7 +43,7 @@ Recomendacion:
 
 - Mover el flujo a `Application.Features.Auth.Commands.ChangePasswordCommand`.
 - Implementar acceso en `Persistence` mediante repositorio/servicio de seguridad.
-- Mantener ruta `/api/auth/change-password` intacta.
+- Mantener el contrato de cambio de clave en `/api/security/auth/change-password`.
 
 No corregir todavia en fase 1.
 
@@ -182,7 +182,7 @@ Recomendacion:
 - Algunos scripts SQL legacy redefinen procedimientos previamente definidos en scripts posteriores, por ejemplo areas de Items y BusinessPartners. Requiere orden de ejecucion muy claro.
 - `database/sql` sigue siendo carpeta legacy; el estandar recomendado del skill indica migrar progresivamente a `database/sqlserver` cuando se haga una normalizacion.
 - `GeographyEndpoints` usa rutas cortas como `/countries`, `/provinces`, `/cities`, mientras otros modulos usan prefijo `/api/...`. Si son rutas existentes, deben conservarse y documentarse como legacy/canonicas.
-- `Program.cs` tiene endpoints duplicados funcionalmente como `/api/users` y `/api/security/users`, y `/api/roles` y `/api/security/roles`. Esto puede ser valido por compatibilidad, pero debe quedar documentado.
+- La nomenclatura de seguridad fue consolidada bajo `/api/security/...`; las rutas legacy de usuarios ya no se registran.
 
 ## 5. Arquitectura actual
 
@@ -247,8 +247,8 @@ Evaluacion:
 Endpoints en `Program.cs`:
 
 - `/`
-- `/api/auth/login`
-- `/api/auth/change-password`
+- `/api/security/auth/login`
+- `/api/security/auth/change-password`
 - `/api/companies/my-companies`
 - `/api/companies`
 - `/api/companies/validate-connection`
@@ -261,7 +261,6 @@ Endpoints en `Program.cs`:
 - `/api/sap/suppliers/preview`
 - `/api/sap/suppliers/import`
 - `/api/settings/parameters`
-- `/api/users`
 - `/api/security/users`
 - `/api/roles`
 - `/api/security/roles`
@@ -291,8 +290,7 @@ Endpoints modularizados:
 
 Duplicidades o rutas paralelas:
 
-- `/api/users` y `/api/security/users`.
-- `/api/users/roles` y `/api/security/users/roles`.
+- Las antiguas rutas paralelas de usuarios fueron retiradas; se conserva solo `/api/security/users`.
 - `/api/roles` y `/api/security/roles`.
 - Business partners tiene rutas genericas y especializadas para customers/suppliers.
 
@@ -303,7 +301,7 @@ Convencion recomendada:
 - Mantener rutas existentes.
 - Definir rutas canonicas documentadas:
   - Seguridad: `/api/security/...`.
-  - Usuarios legacy: `/api/users` como compatibilidad.
+  - Usuarios: `/api/security/users`.
   - Roles legacy: `/api/roles` como compatibilidad.
   - Geography: evaluar prefijo `/api/geography/...` futuro, manteniendo rutas cortas como legacy.
 - Cada archivo endpoint en namespace `NuanSystem.Api.Endpoints`.
@@ -929,7 +927,7 @@ Riesgo: alto por tamano del formulario y amplitud funcional.
 ## Anexo B: Que no se debe tocar todavia
 
 - No cambiar rutas de API.
-- No eliminar rutas legacy `/api/users`, `/api/roles`, `/countries`, `/provinces`, `/cities`.
+- No eliminar rutas legacy `/api/roles`, `/countries`, `/provinces`, `/cities` sin una migracion aprobada.
 - No modificar `.csproj` DevExpress hasta definir estrategia y validar build.
 - No implementar worker SAP completo sin tabla de cola, pruebas e idempotencia.
 - No dividir `ItemEditForm.Designer.cs` sin una estrategia compatible con Visual Studio Designer.

@@ -6,23 +6,12 @@ using NuanSystem.Application.Features.SecurityUsers.Commands;
 using NuanSystem.Application.Features.SecurityUsers.Queries;
 using NuanSystem.Shared.Constants;
 
-namespace NuanSystem.Api.Endpoints;
+namespace NuanSystem.Api.Endpoints.Seguridad;
 
-public static class UserEndpoints
+public static class SecurityUserEndpoints
 {
-    public static IEndpointRouteBuilder MapUserEndpoints(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapSecurityUserEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/users", async (
-            ISender sender,
-            CancellationToken cancellationToken) =>
-        {
-            var result = await sender.Send(new GetUsersQuery(), cancellationToken);
-
-            return result.ToHttpResult();
-        })
-        .WithTags(SwaggerTags.SecurityUsers)
-        .RequirePermission(PermissionCodes.UsersManage);
-
         app.MapGet("/api/security/users", async (
             ISender sender,
             CancellationToken cancellationToken) =>
@@ -45,24 +34,6 @@ public static class UserEndpoints
         })
         .WithTags(SwaggerTags.SecurityUsers)
         .RequireFormOperation("users", "consult");
-
-        app.MapPost("/api/users", async (
-            CreateUserCommand command,
-            ClaimsPrincipal user,
-            ISender sender,
-            CancellationToken cancellationToken) =>
-        {
-            var auditUser = EndpointContextHelper.GetAuditUser(user);
-            var result = await sender.Send(command with
-            {
-                AuditUserId = auditUser.UserId,
-                AuditUserName = auditUser.UserName
-            }, cancellationToken);
-
-            return result.ToHttpResult();
-        })
-        .WithTags(SwaggerTags.SecurityUsers)
-        .RequirePermission(PermissionCodes.UsersManage);
 
         app.MapPost("/api/security/users", async (
             CreateUserCommand command,
@@ -115,17 +86,6 @@ public static class UserEndpoints
         })
         .WithTags(SwaggerTags.SecurityUsers)
         .RequireFormOperation("users", "delete");
-
-        app.MapGet("/api/users/roles", async (
-            ISender sender,
-            CancellationToken cancellationToken) =>
-        {
-            var result = await sender.Send(new GetRolesQuery(), cancellationToken);
-
-            return result.ToHttpResult();
-        })
-        .WithTags(SwaggerTags.SecurityUsers)
-        .RequirePermission(PermissionCodes.UsersManage);
 
         app.MapGet("/api/security/users/roles", async (
             ISender sender,
